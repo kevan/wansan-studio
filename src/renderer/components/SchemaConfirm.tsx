@@ -1,8 +1,64 @@
-import {ColumnSchema, useFileStore} from '../stores/useFileStore'
+import { ColumnSchema, useFileStore } from '../stores/useFileStore'
+import { Hash, Type, Calendar, Key, Link2 } from 'lucide-react'
 
 interface SchemaConfirmProps {
   onConfirm: () => void
   onCancel: () => void
+}
+
+// 类型映射配置
+type FormatType = 'number' | 'text' | 'date'
+
+interface FormatConfig {
+  label: string
+  icon: typeof Hash
+  bgColor: string
+  textColor: string
+}
+
+const FORMAT_CONFIG: Record<FormatType, FormatConfig> = {
+  number: {
+    label: '数字',
+    icon: Hash,
+    bgColor: 'bg-blue-50',
+    textColor: 'text-blue-600',
+  },
+  text: {
+    label: '文本',
+    icon: Type,
+    bgColor: 'bg-zinc-100',
+    textColor: 'text-zinc-600',
+  },
+  date: {
+    label: '日期',
+    icon: Calendar,
+    bgColor: 'bg-green-50',
+    textColor: 'text-green-600',
+  },
+}
+
+// 将技术类型映射到业务类型
+function mapToFormatType(type: string): FormatType {
+  const lowerType = type.toLowerCase()
+  if (
+    lowerType.includes('int') ||
+    lowerType.includes('decimal') ||
+    lowerType.includes('double') ||
+    lowerType.includes('float') ||
+    lowerType.includes('bigint') ||
+    lowerType.includes('number') ||
+    lowerType.includes('numeric')
+  ) {
+    return 'number'
+  }
+  if (
+    lowerType.includes('date') ||
+    lowerType.includes('time') ||
+    lowerType.includes('timestamp')
+  ) {
+    return 'date'
+  }
+  return 'text'
 }
 
 export function SchemaConfirm({ onConfirm, onCancel }: SchemaConfirmProps) {
@@ -29,7 +85,7 @@ export function SchemaConfirm({ onConfirm, onCancel }: SchemaConfirmProps) {
           确认数据结构
         </h2>
         <p className="text-sm text-zinc-500">
-          检查字段类型，并标记关联键（🔑）以便多表 Join 分析
+          检查字段格式，并标记关联键以便多表 Join 分析
         </p>
       </div>
 
@@ -48,7 +104,7 @@ export function SchemaConfirm({ onConfirm, onCancel }: SchemaConfirmProps) {
             >
               {file.name}
               {file.columns.some(c => c.isKey) && (
-                <span className="ml-1">🔑</span>
+                <Key className="inline-block ml-1 w-3 h-3" />
               )}
             </button>
           ))}
@@ -79,18 +135,16 @@ export function SchemaConfirm({ onConfirm, onCancel }: SchemaConfirmProps) {
             <table className="w-full">
               <thead>
                 <tr className="bg-zinc-50 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                  <th className="px-4 py-3 w-12">Key</th>
-                  <th className="px-4 py-3">字段名</th>
-                  <th className="px-4 py-3 w-32">类型</th>
-                  <th className="px-4 py-3 w-24">可空</th>
+                  <th className="px-4 py-3">Field Name</th>
+                  <th className="px-4 py-3 w-28">Format</th>
+                  <th className="px-4 py-3">Preview</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {currentFile.columns.map((col, _idx) => (
+                {currentFile.columns.map(col => (
                   <ColumnRow
                     key={col.name}
                     column={col}
-                    fileId={currentFile.id}
                     onToggleKey={() =>
                       toggleKeyColumn(currentFile.id, col.name)
                     }
@@ -140,45 +194,67 @@ export function SchemaConfirm({ onConfirm, onCancel }: SchemaConfirmProps) {
 // 列行组件
 interface ColumnRowProps {
   column: ColumnSchema
-  fileId: string
   onToggleKey: () => void
   isLinked: boolean
 }
 
 function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
+  const formatType = mapToFormatType(column.type)
+  const config = FORMAT_CONFIG[formatType]
+  const IconComponent = config.icon
+
+  // 格式化预览值
+  const previewText =
+    column.sampleValues && column.sampleValues.length > 0
+      ? column.sampleValues.join(', ') +
+        (column.sampleValues.length >= 3 ? '...' : '')
+      : '—'
+
   return (
     <tr className="hover:bg-zinc-50 transition-colors">
+      {/* Field Name - 包含 Key 图标 */}
       <td className="px-4 py-3">
-        <button
-          onClick={onToggleKey}
-          className={`w-6 h-6 rounded flex items-center justify-center transition-colors ${
-            column.isKey
-              ? 'bg-indigo-100 text-indigo-600'
-              : 'bg-zinc-100 text-zinc-400 hover:bg-zinc-200'
-          }`}
-          title={column.isKey ? '取消关联键' : '设为关联键'}
-        >
-          🔑
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Key 图标按钮 */}
+          <button
+            onClick={onToggleKey}
+            className={`w-5 h-5 rounded flex items-center justify-center transition-colors flex-shrink-0 ${
+              column.isKey
+                ? 'bg-amber-100 text-amber-600 hover:bg-amber-200'
+                : 'text-zinc-300 hover:text-zinc-400 hover:bg-zinc-100'
+            }`}
+            title={column.isKey ? '取消关联键' : '设为关联键'}
+          >
+            <Key className="w-3.5 h-3.5" />
+          </button>
+
+          {/* 字段名 */}
+          <span className="text-sm text-zinc-900">{column.name}</span>
+
+          {/* 已关联标记 */}
+          {isLinked && (
+            <span className="inline-flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+              <Link2 className="w-3 h-3" />
+              已关联
+            </span>
+          )}
+        </div>
       </td>
-      <td className="px-4 py-3">
-        <span className="text-sm text-zinc-900">{column.name}</span>
-        {isLinked && (
-          <span className="ml-2 text-xs text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
-            🔗 已关联
-          </span>
-        )}
-      </td>
-      <td className="px-4 py-3">
-        <span className="text-xs font-mono text-zinc-600 bg-zinc-100 px-2 py-1 rounded">
-          {column.type}
-        </span>
-      </td>
+
+      {/* Format - 带图标的 Badge */}
       <td className="px-4 py-3">
         <span
-          className={`text-xs ${column.nullable ? 'text-zinc-400' : 'text-zinc-600'}`}
+          className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded ${config.bgColor} ${config.textColor}`}
         >
-          {column.nullable ? 'Yes' : 'No'}
+          <IconComponent className="w-3.5 h-3.5" />
+          {config.label}
+        </span>
+      </td>
+
+      {/* Preview */}
+      <td className="px-4 py-3">
+        <span className="text-xs text-muted-foreground text-zinc-400 truncate block max-w-[200px]">
+          {previewText}
         </span>
       </td>
     </tr>

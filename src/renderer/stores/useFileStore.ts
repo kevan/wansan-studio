@@ -9,6 +9,7 @@ export interface ColumnSchema {
   type: string
   nullable: boolean
   isKey?: boolean // 是否为 Join Key
+  sampleValues?: string[] // 前几个非空样本值用于预览
 }
 
 // 文件资产类型

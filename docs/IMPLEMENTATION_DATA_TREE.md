@@ -185,3 +185,29 @@ Copy the following block to your Code Agent (Cursor/Copilot):
 -   Do NOT implement the "Drag to Relate" logic yet. Just get the rendering and selection working perfectly first.
 -   Ensure TypeScript types are strict.
 ```
+
+
+### TASK: Refactor Column Definition UI
+
+**Goal**: Make the table user-friendly for non-technical users.
+
+**Changes**:
+
+1.  **Remove "Nullable" Column**: It's too technical.
+2.  **Rename Headers**:
+    -   "Name" -> "Field Name"
+    -   "Type" -> "Format"
+    -   "PK" -> Remove column, move logic to "Field Name" column.
+3.  **Type Column**:
+    -   Replace the native `<select>` with a Shadcn `Select` or `DropdownMenu`.
+    -   Map technical types to business types with Icons:
+        -   `varchar` -> Icon `Type` (Text)
+        -   `int` -> Icon `Hash` (Number)
+        -   `date` -> Icon `Calendar` (Date)
+    -   Add color badges for types (e.g., Blue for Number, Green for Date).
+4.  **Primary Key**:
+    -   Add a `Key` icon (Lucide) next to the field name if `isPrimaryKey` is true.
+    -   Allow toggling PK by clicking the icon.
+5.  **Add "Preview" Column**:
+    -   Add a new column showing the first 3 non-null values from the file (e.g., "A, B, C...").
+    -   Style it with `text-muted-foreground text-xs`.

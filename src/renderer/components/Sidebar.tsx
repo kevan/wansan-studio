@@ -50,10 +50,59 @@ export function Sidebar(_props: SidebarProps) {
             updateFile(fileId, { status: 'processing' })
             const parseResult = await parseFileMutation.mutateAsync(filePath)
 
+            // 从 preview 数据中提取每列的样本值
+            const columns = (parseResult.schema?.columns || []).map(
+              (
+                col: { name: string; type: string; nullable: boolean },
+                colIndex: number
+              ) => {
+                // preview 可能是 [[header...], [row1...], ...] 或 [{col: val}, ...]
+                const preview = parseResult.preview || []
+                const sampleValues: string[] = []
+
+                // 如果是对象数组格式 (CSV 解析结果)
+                if (
+                  preview.length > 0 &&
+                  typeof preview[0] === 'object' &&
+                  !Array.isArray(preview[0])
+                ) {
+                  for (const row of preview.slice(0, 5)) {
+                    const val = row[col.name]
+                    if (
+                      val !== null &&
+                      val !== undefined &&
+                      val !== '' &&
+                      sampleValues.length < 3
+                    ) {
+                      sampleValues.push(String(val))
+                    }
+                  }
+                } else if (Array.isArray(preview[0])) {
+                  // 如果是二维数组格式 (Excel 解析结果)，跳过第一行（表头）
+                  for (const row of preview.slice(1, 6)) {
+                    const val = row[colIndex]
+                    if (
+                      val !== null &&
+                      val !== undefined &&
+                      val !== '' &&
+                      sampleValues.length < 3
+                    ) {
+                      sampleValues.push(String(val))
+                    }
+                  }
+                }
+
+                return {
+                  ...col,
+                  sampleValues,
+                }
+              }
+            )
+
             updateFile(fileId, {
               status: 'ready',
               tableName: parseResult.tableName,
-              columns: parseResult.schema?.columns || [],
+              columns,
               rowCount: parseResult.rowCount,
             })
           } catch (error) {
