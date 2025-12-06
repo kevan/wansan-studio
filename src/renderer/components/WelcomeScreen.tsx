@@ -1,31 +1,113 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useParseFile } from '../hooks/useIPC'
+import { useFileStore } from '../stores/useFileStore'
 
 interface WelcomeScreenProps {
-  onDataImported: (tableName: string) => void
+  onDataImported?: (tableName: string) => void
 }
 
 export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
   const parseFileMutation = useParseFile()
+  const { addFile, updateFile } = useFileStore()
+  const [isDragging, setIsDragging] = useState(false)
+  const [processingCount, setProcessingCount] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
+
+  const allowedExtensions = ['.xlsx', '.xls', '.csv']
+
+  // 处理单个文件
+  const processFile = async (
+    filePath: string,
+    fileName: string,
+    fileSize?: number
+  ) => {
+    // 添加文件到 store（状态: uploading）
+    const fileId = addFile({
+      name: fileName,
+      path: filePath,
+      tableName: '',
+      status: 'uploading',
+      size: fileSize,
+      columns: [],
+    })
+
+    try {
+      // 更新状态为 processing
+      updateFile(fileId, { status: 'processing' })
+
+      // 解析文件
+      const parseResult = await parseFileMutation.mutateAsync(filePath)
+
+      // 更新文件信息
+      updateFile(fileId, {
+        status: 'ready',
+        tableName: parseResult.tableName,
+        columns: parseResult.schema?.columns || [],
+        rowCount: parseResult.rowCount,
+      })
+
+      onDataImported?.(parseResult.tableName)
+      return true
+    } catch (error) {
+      // 更新状态为 error
+      updateFile(fileId, {
+        status: 'error',
+        error: error instanceof Error ? error.message : '解析失败',
+      })
+      console.error('File processing error:', error)
+      return false
+    }
+  }
+
+  // 批量处理文件
+  const processFiles = async (
+    files: { path: string; name: string; size?: number }[]
+  ) => {
+    setTotalCount(files.length)
+    setProcessingCount(0)
+
+    for (const file of files) {
+      await processFile(file.path, file.name, file.size)
+      setProcessingCount(prev => prev + 1)
+    }
+
+    setTotalCount(0)
+    setProcessingCount(0)
+  }
 
   const handleFileSelect = async () => {
     try {
-      // 检查是否有 electronAPI
       if (!window.electronAPI) {
         alert('Electron API 不可用，请在 Electron 环境中运行')
         return
       }
 
-      const result = await window.electronAPI.selectFile()
-      if (result.success && result.data) {
-        // 解析文件
-        const parseResult = await parseFileMutation.mutateAsync(result.data)
-        onDataImported(parseResult.tableName)
+      // 使用多选文件对话框
+      const result = await window.electronAPI.selectFiles()
+      if (result.success && result.data && result.data.length > 0) {
+        setTotalCount(result.data.length)
+        setProcessingCount(0)
+
+        for (const filePath of result.data) {
+          const fileName = filePath.split('/').pop() || 'unknown'
+          await processFile(filePath, fileName)
+        }
       }
     } catch (error) {
       console.error('File selection error:', error)
-      alert(`文件选择失败: ${error instanceof Error ? error.message : '未知错误'}`)
     }
+  }
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -36,108 +118,97 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    setIsDragging(false)
 
-    const files = Array.from(e.dataTransfer.files)
-    const file = files[0]
+    const droppedFiles = Array.from(e.dataTransfer.files)
 
-    if (!file) return
+    // 过滤支持的文件类型
+    const validFiles = droppedFiles.filter(file => {
+      const ext = '.' + file.name.split('.').pop()?.toLowerCase()
+      return allowedExtensions.includes(ext)
+    })
 
-    // 检查文件类型
-    const allowedTypes = ['.xlsx', '.xls', '.csv']
-    const fileExt = '.' + file.name.split('.').pop()?.toLowerCase()
-    
-    if (!allowedTypes.includes(fileExt)) {
+    if (validFiles.length === 0) {
       alert('不支持的文件类型，请选择 Excel (.xlsx, .xls) 或 CSV (.csv) 文件')
       return
     }
 
-    try {
-      // 解析文件
-      const parseResult = await parseFileMutation.mutateAsync(file.path)
-      onDataImported(parseResult.tableName)
-    } catch (error) {
-      console.error('File drop error:', error)
-      alert(`文件处理失败: ${error instanceof Error ? error.message : '未知错误'}`)
-    }
+    // 批量处理文件
+    await processFiles(
+      validFiles.map(f => ({
+        path: f.path,
+        name: f.name,
+        size: f.size,
+      }))
+    )
   }
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[500px] text-center">
-      {/* 欢迎信息 */}
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          欢迎使用 Wansan Studio
-        </h2>
-        <p className="text-lg text-gray-600 mb-2">
-          本地优先的智能商业报表工具
-        </p>
-        <p className="text-sm text-gray-500">
-          数据聚宝，日进斗金 - 让您的数据产生价值
-        </p>
-      </div>
+  const isProcessing = totalCount > 0
 
-      {/* 文件上传区域 */}
+  return (
+    <div className="flex-1 flex items-center justify-center p-8">
+      {/* Drop Zone - 核心空态界面 */}
       <div
-        className="w-full max-w-md p-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-400 transition-colors cursor-pointer"
+        className={`wansan-drop-zone w-full max-w-2xl text-center animate-card-enter ${
+          isDragging ? 'active' : ''
+        }`}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        onClick={handleFileSelect}
+        onClick={isProcessing ? undefined : handleFileSelect}
       >
-        <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 bg-primary-100 rounded-full flex items-center justify-center">
-            <svg className="w-8 h-8 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
+        {/* 批量处理状态 */}
+        {isProcessing ? (
+          <div className="py-8">
+            <div className="w-16 h-16 mx-auto mb-6 wansan-spinner"></div>
+            <p className="text-lg font-medium text-zinc-700 mb-2">
+              正在处理 {processingCount + 1}/{totalCount} 个文件...
+            </p>
+            <p className="text-sm text-zinc-500">Cleaning merged cells...</p>
+            {/* 进度条 */}
+            <div className="w-48 mx-auto mt-4 h-1.5 bg-zinc-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-indigo-600 transition-all duration-300"
+                style={{ width: `${(processingCount / totalCount) * 100}%` }}
+              />
+            </div>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            导入您的数据文件
-          </h3>
-          <p className="text-sm text-gray-500 mb-4">
-            拖拽文件到此处或点击选择文件
-          </p>
-          <p className="text-xs text-gray-400">
-            支持 Excel (.xlsx, .xls) 和 CSV (.csv) 格式
-          </p>
-        </div>
-      </div>
+        ) : (
+          <>
+            {/* Icon */}
+            <div className="w-20 h-20 mx-auto mb-6 bg-zinc-100 rounded-2xl flex items-center justify-center">
+              <svg
+                className={`w-10 h-10 transition-colors ${isDragging ? 'text-indigo-600' : 'text-zinc-400'}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
 
-      {/* 加载状态 */}
-      {parseFileMutation.isPending && (
-        <div className="mt-4 flex items-center space-x-2 text-primary-600">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
-          <span>正在处理文件...</span>
-        </div>
-      )}
+            {/* 主文案 */}
+            <h2 className="text-xl font-semibold text-zinc-900 mb-2">
+              拖拽 Excel/CSV 文件到此处
+            </h2>
+            <p className="text-zinc-500 mb-4">
+              支持批量拖拽多个文件，或点击选择
+            </p>
 
-      {/* 功能特性 */}
-      <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl">
-        <div className="text-center">
-          <div className="w-12 h-12 mx-auto mb-3 bg-green-100 rounded-full flex items-center justify-center">
-            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-          <h4 className="font-medium text-gray-900">数据隐私</h4>
-          <p className="text-sm text-gray-500">本地处理，数据不出域</p>
-        </div>
-        <div className="text-center">
-          <div className="w-12 h-12 mx-auto mb-3 bg-blue-100 rounded-full flex items-center justify-center">
-            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <h4 className="font-medium text-gray-900">极速处理</h4>
-          <p className="text-sm text-gray-500">本地算力，秒级响应</p>
-        </div>
-        <div className="text-center">
-          <div className="w-12 h-12 mx-auto mb-3 bg-purple-100 rounded-full flex items-center justify-center">
-            <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-          </div>
-          <h4 className="font-medium text-gray-900">智能分析</h4>
-          <p className="text-sm text-gray-500">AI 驱动的数据洞察</p>
-        </div>
+            {/* 支持的格式 */}
+            <div className="flex items-center justify-center gap-3 text-xs text-zinc-400">
+              <span className="px-2 py-1 bg-zinc-100 rounded">.xlsx</span>
+              <span className="px-2 py-1 bg-zinc-100 rounded">.xls</span>
+              <span className="px-2 py-1 bg-zinc-100 rounded">.csv</span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

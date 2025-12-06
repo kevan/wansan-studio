@@ -1,46 +1,207 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
+/* ================================
+   Wansan Studio - Design System
+   Based on docs/DESIGN_UX_UI.md
+   ================================ */
+
+/* Typography */
 body {
-  background-color: #f9fafb;
-  color: #111827;
-  font-feature-settings: "rlig" 1, "calt" 1;
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  background-color: #ffffff; /* bg-white for main canvas */
+  color: #18181b; /* zinc-900 */
+  font-feature-settings:
+    'rlig' 1,
+    'calt' 1;
 }
 
-.wansan-gradient {
-  background: linear-gradient(to right, #ed7419, #de5a0f);
+/* Monospace for code/SQL */
+.font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }
+
+/* ================================
+   Color System (Zinc-based)
+   ================================ */
+
+/* Primary: Black #18181B */
+/* Secondary: Zinc-100 #F4F4F5 */
+/* Accent: Indigo-600 #4F46E5 */
+/* Success: Emerald-600 */
+/* Error: Rose-600 */
+
+/* ================================
+   Layout Components
+   ================================ */
+
+/* macOS 窗口拖动区域 */
+.drag-region {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Sidebar - 260px fixed width */
+.wansan-sidebar {
+  width: 260px;
+  min-width: 260px;
+  background-color: #fafafa; /* zinc-50 */
+  border-right: 1px solid #e4e4e7; /* zinc-200 */
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Main Canvas - Flex-1 */
+.wansan-canvas {
+  flex: 1;
+  background-color: #ffffff; /* white */
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* 关键：允许 flex 子元素收缩 */
+  overflow: hidden; /* 不在这里滚动，让子组件自己处理 */
+}
+
+/* ================================
+   Card Components
+   ================================ */
 
 .wansan-card {
   background-color: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem; /* rounded-md */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+  border: 1px solid #e4e4e7; /* zinc-200 */
   padding: 1.5rem;
 }
 
+/* ================================
+   Button Components
+   ================================ */
+
 .wansan-button {
   padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
+  height: 2.25rem; /* h-9 compact */
+  border-radius: 0.375rem; /* rounded-md */
   font-weight: 500;
-  transition: background-color 0.2s;
+  font-size: 0.875rem;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
+/* Primary Button - Black */
 .wansan-button-primary {
-  background-color: #ed7419;
+  background-color: #18181b; /* zinc-900 */
   color: white;
 }
 
 .wansan-button-primary:hover {
-  background-color: #de5a0f;
+  background-color: #27272a; /* zinc-800 */
 }
 
+/* Secondary Button */
 .wansan-button-secondary {
-  background-color: #f3f4f6;
-  color: #111827;
+  background-color: #f4f4f5; /* zinc-100 */
+  color: #18181b; /* zinc-900 */
+  border: 1px solid #e4e4e7; /* zinc-200 */
 }
 
 .wansan-button-secondary:hover {
-  background-color: #e5e7eb;
+  background-color: #e4e4e7; /* zinc-200 */
+}
+
+/* ================================
+   Drop Zone (Empty State)
+   ================================ */
+
+.wansan-drop-zone {
+  border: 2px dashed #d4d4d8; /* zinc-300 */
+  border-radius: 0.75rem;
+  padding: 4rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.wansan-drop-zone:hover {
+  border-color: #a1a1aa; /* zinc-400 */
+  background-color: #fafafa; /* zinc-50 */
+}
+
+.wansan-drop-zone.active {
+  border-color: #4f46e5; /* indigo-600 */
+  border-style: solid;
+  background-color: #eef2ff; /* indigo-50 */
+}
+
+/* ================================
+   Table Components
+   ================================ */
+
+.wansan-table {
+  font-size: 0.875rem; /* text-sm */
+}
+
+.wansan-table thead {
+  background-color: #fafafa; /* zinc-50 */
+}
+
+/* ================================
+   Animations
+   ================================ */
+
+/* Card Entry Animation */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-card-enter {
+  animation: card-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Loading Spinner */
+.wansan-spinner {
+  border: 2px solid #e4e4e7;
+  border-top-color: #4f46e5; /* indigo-600 */
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ================================
+   Accent Colors
+   ================================ */
+
+.wansan-accent {
+  color: #4f46e5; /* indigo-600 */
+}
+
+.wansan-success {
+  color: #059669; /* emerald-600 */
+}
+
+.wansan-error {
+  color: #e11d48; /* rose-600 */
 }

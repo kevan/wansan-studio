@@ -12,7 +12,7 @@ const mockIPC = {
   invoke: async (channel: string, ...args: any[]): Promise<IPCResponse> => {
     console.log(`IPC Mock: ${channel}`, args)
     return { success: true, data: null }
-  }
+  },
 }
 
 // 声明全局 electronAPI（将由主进程注入）
@@ -20,6 +20,15 @@ declare global {
   interface Window {
     electronAPI?: {
       invoke: (channel: string, ...args: any[]) => Promise<IPCResponse>
+      selectFile: () => Promise<IPCResponse<string>>
+      selectFiles: () => Promise<IPCResponse<string[]>>
+      parseFile: (filePath: string) => Promise<IPCResponse>
+      runSQL: (sql: string) => Promise<IPCResponse>
+      getSchema: (tableName?: string) => Promise<IPCResponse>
+      generateSQL: (prompt: string, schema: any) => Promise<IPCResponse>
+      exportPDF: (data: any) => Promise<IPCResponse>
+      platform: string
+      version: NodeJS.ProcessVersions
     }
   }
 }

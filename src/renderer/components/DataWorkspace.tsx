@@ -1,33 +1,36 @@
-import React, { useState } from 'react'
-import { useGetSchema, useRunSQL } from '../hooks/useIPC'
+import React, { useState, useEffect } from 'react'
+import { useFileStore } from '../stores/useFileStore'
+import { useRunSQL } from '../hooks/useIPC'
 import { DataTable } from './DataTable'
-import { QueryPanel } from './QueryPanel'
 
-interface DataWorkspaceProps {
-  tableName: string
+interface DataWorkspaceNewProps {
   onReset: () => void
 }
 
-export function DataWorkspace({ tableName, onReset }: DataWorkspaceProps) {
-  const [currentData, setCurrentData] = useState<any[]>([])
-  const [currentColumns, setCurrentColumns] = useState<any[]>([])
-  
-  const { data: schema, isLoading: schemaLoading } = useGetSchema(tableName)
+export function DataWorkspace({ onReset }: DataWorkspaceNewProps) {
+  const { files, relations, activeFileId, setActiveFile, setShowSchemaConfirm } = useFileStore()
   const runSQLMutation = useRunSQL()
 
-  // 初始加载数据
-  React.useEffect(() => {
-    if (schema && !schemaLoading) {
-      handleRunQuery(`SELECT * FROM ${tableName} LIMIT 100`)
+  const [currentData, setCurrentData] = useState<any[]>([])
+  const [currentColumns, setCurrentColumns] = useState<any[]>([])
+  const [sqlInput, setSqlInput] = useState('')
+  const [naturalInput, setNaturalInput] = useState('')
+
+  const readyFiles = files.filter(f => f.status === 'ready')
+  const currentFile = readyFiles.find(f => f.id === activeFileId) || readyFiles[0]
+
+  // 加载当前选中表的数据
+  useEffect(() => {
+    if (currentFile?.tableName) {
+      handleRunQuery(`SELECT * FROM ${currentFile.tableName} LIMIT 100`)
     }
-  }, [schema, schemaLoading, tableName])
+  }, [currentFile?.tableName])
 
   const handleRunQuery = async (sql: string) => {
     try {
       const result = await runSQLMutation.mutateAsync(sql)
       setCurrentData(result)
-      
-      // 根据结果生成列定义
+
       if (result.length > 0) {
         const columns = Object.keys(result[0]).map(key => ({
           accessorKey: key,
@@ -40,86 +43,117 @@ export function DataWorkspace({ tableName, onReset }: DataWorkspaceProps) {
         setCurrentColumns(columns)
       }
     } catch (error) {
-      console.error('Query execution error:', error)
-      alert(`查询执行失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      console.error('Query error:', error)
+      alert(`查询失败: ${error instanceof Error ? error.message : '未知错误'}`)
     }
   }
 
-  if (schemaLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex items-center space-x-2 text-primary-600">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
-          <span>正在加载数据结构...</span>
-        </div>
-      </div>
-    )
+  const handleSqlSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (sqlInput.trim()) {
+      handleRunQuery(sqlInput.trim())
+    }
   }
 
+  // 生成可用表的列表
+  const tableList = readyFiles.map(f => f.tableName).join(', ')
+
   return (
-    <div className="space-y-6">
-      {/* 工具栏 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            数据工作区
-          </h2>
-          <span className="px-2 py-1 bg-primary-100 text-primary-800 text-sm rounded">
-            {tableName}
-          </span>
+    <div className="flex-1 flex flex-col p-6 overflow-hidden">
+      {/* 顶部工具栏 */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-semibold text-zinc-900">数据工作区</h2>
+          <div className="flex gap-2">
+            {readyFiles.map(file => (
+              <button
+                key={file.id}
+                onClick={() => setActiveFile(file.id)}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  file.id === currentFile?.id
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                }`}
+              >
+                {file.name}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <button 
-            className="wansan-button-secondary"
-            onClick={onReset}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSchemaConfirm(true)}
+            className="wansan-button wansan-button-secondary"
           >
-            重新导入
+            查看 Schema
           </button>
-          <button className="wansan-button-primary">
-            导出报表
+          <button onClick={onReset} className="wansan-button wansan-button-secondary">
+            重新开始
           </button>
         </div>
       </div>
 
-      {/* 查询面板 */}
-      <QueryPanel 
-        schema={schema}
-        onRunQuery={handleRunQuery}
-        isLoading={runSQLMutation.isPending}
-      />
+      {/* SQL 输入区 */}
+      <div className="mb-4 p-4 bg-zinc-50 rounded-lg border border-zinc-200">
+        <form onSubmit={handleSqlSubmit} className="flex gap-3">
+          <div className="flex-1">
+            <input
+              type="text"
+              value={sqlInput}
+              onChange={(e) => setSqlInput(e.target.value)}
+              placeholder={`输入 SQL 查询... (可用表: ${tableList})`}
+              className="w-full px-3 py-2 text-sm font-mono border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={runSQLMutation.isPending}
+            className="wansan-button wansan-button-primary"
+          >
+            {runSQLMutation.isPending ? '执行中...' : '执行'}
+          </button>
+        </form>
+
+        {/* 快捷查询示例 */}
+        {relations.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-zinc-200">
+            <p className="text-xs text-zinc-500 mb-2">💡 试试 Join 查询:</p>
+            <button
+              onClick={() => {
+                const rel = relations[0]
+                const fileA = files.find(f => f.id === rel.fileAId)
+                const fileB = files.find(f => f.id === rel.fileBId)
+                if (fileA && fileB) {
+                  const sql = `SELECT * FROM ${fileA.tableName} a JOIN ${fileB.tableName} b ON a.${rel.columnA} = b.${rel.columnB} LIMIT 100`
+                  setSqlInput(sql)
+                }
+              }}
+              className="text-xs text-indigo-600 hover:underline"
+            >
+              自动生成 Join 语句
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* 数据表格 */}
-      {currentData.length > 0 && currentColumns.length > 0 && (
-        <div className="wansan-card">
-          <div className="mb-4">
-            <h3 className="text-lg font-medium text-gray-900">查询结果</h3>
-            <p className="text-sm text-gray-500">
-              显示 {currentData.length} 条记录
-            </p>
+      <div className="flex-1 overflow-auto">
+        {currentData.length > 0 && currentColumns.length > 0 ? (
+          <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden">
+            <div className="px-4 py-3 bg-zinc-50 border-b border-zinc-200 flex items-center justify-between">
+              <span className="text-sm font-medium text-zinc-700">
+                查询结果: {currentData.length} 行
+              </span>
+            </div>
+            <DataTable data={currentData} columns={currentColumns} />
           </div>
-          <DataTable 
-            data={currentData} 
-            columns={currentColumns}
-          />
-        </div>
-      )}
-
-      {/* 空状态 */}
-      {currentData.length === 0 && !runSQLMutation.isPending && (
-        <div className="wansan-card text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
+        ) : (
+          <div className="flex items-center justify-center h-full text-zinc-400">
+            <p>输入 SQL 查询以查看数据</p>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            暂无查询结果
-          </h3>
-          <p className="text-gray-500">
-            请在上方查询面板中输入 SQL 语句或自然语言描述
-          </p>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
+

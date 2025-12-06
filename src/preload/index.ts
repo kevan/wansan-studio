@@ -3,22 +3,26 @@ import { contextBridge, ipcRenderer } from 'electron'
 // 定义暴露给渲染进程的 API
 const electronAPI = {
   // IPC 通信
-  invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args),
-  
+  invoke: (channel: string, ...args: any[]) =>
+    ipcRenderer.invoke(channel, ...args),
+
   // 文件操作
   selectFile: () => ipcRenderer.invoke('select-file'),
+  selectFiles: () => ipcRenderer.invoke('select-files'), // 多文件选择
   parseFile: (filePath: string) => ipcRenderer.invoke('parse-file', filePath),
-  
+
   // 数据库操作
   runSQL: (sql: string) => ipcRenderer.invoke('run-sql', sql),
-  getSchema: (tableName?: string) => ipcRenderer.invoke('get-schema', tableName),
-  
+  getSchema: (tableName?: string) =>
+    ipcRenderer.invoke('get-schema', tableName),
+
   // AI 功能
-  generateSQL: (prompt: string, schema: any) => ipcRenderer.invoke('generate-sql', prompt, schema),
-  
+  generateSQL: (prompt: string, schema: any) =>
+    ipcRenderer.invoke('generate-sql', prompt, schema),
+
   // 导出功能
   exportPDF: (data: any) => ipcRenderer.invoke('export-pdf', data),
-  
+
   // 系统信息
   platform: process.platform,
   version: process.versions,
