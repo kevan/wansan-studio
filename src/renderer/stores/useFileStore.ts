@@ -1,16 +1,11 @@
 import { create } from 'zustand'
+import type { ColumnSchema } from '../../shared/types'
+
+// Re-export shared types for other components to use
+export type { ColumnSchema }
 
 // 文件状态类型
 export type FileStatus = 'uploading' | 'processing' | 'ready' | 'error'
-
-// 列 Schema 类型
-export interface ColumnSchema {
-  name: string
-  type: string
-  nullable: boolean
-  isKey?: boolean // 是否为 Join Key
-  sampleValues?: string[] // 前几个非空样本值用于预览
-}
 
 // 文件资产类型
 export interface FileAsset {
