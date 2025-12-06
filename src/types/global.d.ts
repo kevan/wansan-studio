@@ -1,0 +1,57 @@
+import { ElectronAPI } from '../preload'
+
+declare global {
+  interface Window {
+    electronAPI: ElectronAPI
+  }
+}
+
+// 数据库相关类型
+export interface DatabaseSchema {
+  tableName: string
+  columns: DatabaseColumn[]
+}
+
+export interface DatabaseColumn {
+  name: string
+  type: string
+  nullable: boolean
+}
+
+// 文件解析结果类型
+export interface ParseFileResult {
+  tableName: string
+  schema: DatabaseSchema
+  rowCount: number
+  preview: any[][]
+}
+
+// IPC 响应类型
+export interface IPCResponse<T = any> {
+  success: boolean
+  data?: T
+  error?: string
+}
+
+// AI 相关类型
+export interface GenerateSQLRequest {
+  prompt: string
+  schema: DatabaseSchema
+}
+
+// 应用状态类型
+export interface AppState {
+  currentTable: string | null
+  isLoading: boolean
+  error: string | null
+}
+
+// 查询历史类型
+export interface QueryHistory {
+  id: string
+  timestamp: Date
+  query: string
+  type: 'natural' | 'sql'
+  result?: any[]
+  error?: string
+}
