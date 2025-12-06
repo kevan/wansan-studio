@@ -12,7 +12,6 @@ export interface ColumnSchema {
 export interface TableSchema {
   tableName: string;  // Normalized table name (e.g., "t_orders")
   columns: ColumnSchema[];
-  primaryKey?: string; // [NEW FIELD] Optional hint for AI to know the Primary Key
 }
 
 export interface AnalysisResult {

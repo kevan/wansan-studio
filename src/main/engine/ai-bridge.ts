@@ -112,7 +112,7 @@ You are an expert Data Modeler assistant. Your task is to analyze provided table
 1.  **仅识别主键到外键的关系**: 识别一个表的主键列可能与另一个表的外键列匹配的情况。
 2.  **考虑列名**: 寻找名称相似的列（例如，'product_id' 和 'id'，或者 'customer_name' 和 'name'）。
 3.  **考虑数据类型**: 匹配的列应该具有兼容的数据类型。
-4.  **提供置信度**: 根据匹配的强度（例如，名称、类型、primaryKey 提示）分配 0.0 到 1.0 的置信度。
+4.  **提供置信度**: 根据匹配的强度（例如，名称、类型）分配 0.0 到 1.0 的置信度。
 5.  **提供理由**: 简要说明你提出关系的原因。
 6.  **避免自引用**: 不要在同一个表内建议关系。
 
@@ -147,9 +147,8 @@ const RelationSuggestionListSchema = z.array(RelationSuggestionSchema);
 
 function serializeSchemas(schemas: TableSchema[]): string {
   return schemas.map(table => {
-    const pkHint = table.primaryKey ? ` [Primary Key: "${table.primaryKey}"]` : '';
     const columnsStr = table.columns.map(col => `- "${col.name}" (${col.type})`).join('\n');
-    return `Table: "${table.tableName}"${pkHint}\nColumns:\n${columnsStr}`;
+    return `Table: "${table.tableName}"\nColumns:\n${columnsStr}`;
   }).join('\n\n');
 }
 

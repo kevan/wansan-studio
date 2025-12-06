@@ -155,3 +155,38 @@ export async function inferRelationships(schemas: TableSchema[]): Promise<Relati
 1.  Check if `RelationSuggestion` is exported in `types.ts`.
 2.  Check if `inferRelationships` is exported in `ai-bridge.ts`.
 3.  Confirm **NO** `JoinType` enum was created.
+
+### TASK: Refactor Data Model (Remove Technical Debt)
+
+**Context**: We are simplifying the data model for non-technical users. Concepts like "Primary Key" and "Join Type" are unnecessary cognitive loads.
+
+**Objective**:
+1.  **Remove `primaryKey`**: The AI and the Relationship definition will handle the join logic. We do not need to explicitly flag columns as PKs.
+
+**Action**:
+
+#### Update `src/shared/types.ts`
+
+Modify the `TableSchema` interface to **REMOVE** the `primaryKey` field.
+
+```typescript
+export interface TableSchema {
+  tableName: string;
+  columns: ColumnSchema[];
+  // [DELETED] primaryKey?: string; <-- Remove this line
+}
+
+// Ensure RelationSuggestion remains simple
+export interface RelationSuggestion {
+  sourceTable: string;
+  sourceColumn: string;
+  targetTable: string;
+  targetColumn: string;
+  confidence: number;
+  reason: string;
+}
+```
+
+**Verification**:
+-   Ensure `TableSchema` only contains `tableName` and `columns`.
+-   Ensure no other code relies on `primaryKey`.
