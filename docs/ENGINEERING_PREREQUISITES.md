@@ -91,4 +91,67 @@ Code Agent 需确认具备以下能力：
 *   **[Capability 9] Error Loop (Optional for MVP Phase 1)**:
     *   *Logic*: If `db.all()` throws an error, capture the error message and be ready to feed it back to the AI for a retry.
 
----ww
+---
+
+
+### TASK: Enhance Engine Capabilities for Multi-Table Support
+
+**Context**: You have successfully scaffolded the core engine for single-file analysis. Now we need to add the capability to handle **Multiple Files** and **Relationship Inference**, which was missing in the previous step.
+
+**Objective**: Update `types.ts` and `ai-bridge.ts` to support detecting relationships between tables (e.g., detecting that `orders.product_id` links to `products.id`).
+
+**Constraint**:
+-   **Do NOT introduce a `JoinType` enum** (e.g., LEFT/INNER). We will handle this logic in the System Prompt later.
+-   Keep existing code intact, only **append** or **extend**.
+
+---
+
+#### Step 1: Update `src/shared/types.ts`
+
+**Action**: Append the `RelationSuggestion` interface and update `TableSchema`.
+
+```typescript
+// [UPDATE] Add this new interface
+export interface RelationSuggestion {
+  sourceTable: string;  // e.g., "t_orders"
+  sourceColumn: string; // e.g., "product_id"
+  targetTable: string;  // e.g., "t_products"
+  targetColumn: string; // e.g., "id"
+  confidence: number;   // 0.0 to 1.0
+  reason: string;       // Explanation for the UI (e.g. "Column names match")
+}
+
+// [UPDATE] Extend the existing TableSchema interface
+export interface TableSchema {
+  tableName: string;
+  columns: ColumnSchema[];
+  // [NEW FIELD] Optional hint for AI to know the Primary Key
+  primaryKey?: string; 
+}
+```
+
+#### Step 2: Update `src/main/engine/ai-bridge.ts`
+
+**Action**: Export a new function signature for relationship inference.
+
+```typescript
+import { TableSchema, RelationSuggestion } from '../../shared/types'; // Update import
+
+// [NEW FUNCTION]
+/**
+ * Analyze multiple table schemas to deduce potential Foreign Key relationships.
+ * This is run immediately after file ingestion to populate the "Relationship Manager" UI.
+ */
+export async function inferRelationships(schemas: TableSchema[]): Promise<RelationSuggestion[]> {
+  // Logic: Construct a prompt sending all schemas to LLM and asking for JSON array of relations.
+  // TODO: Implement OpenAI call
+  throw new Error("Not implemented");
+}
+```
+
+---
+
+**Verification Checklist**:
+1.  Check if `RelationSuggestion` is exported in `types.ts`.
+2.  Check if `inferRelationships` is exported in `ai-bridge.ts`.
+3.  Confirm **NO** `JoinType` enum was created.

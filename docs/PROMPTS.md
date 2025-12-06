@@ -33,7 +33,10 @@ Your mission is to translate natural language questions into executable **DuckDB
     -   If a column looks like a date (e.g., "2023-01-01"), use `strptime("date_col", '%Y-%m-%d')` or `CAST("date_col" AS DATE)` if safe.
 4.  **LIMITATION**:
     -   Always add `LIMIT 100` to the final query unless the user explicitly asks for "all" or "export".
-
+5.  **JOIN STRATEGY (CRITICAL)**:
+    -   **ALWAYS use `LEFT JOIN`** by default.
+    -   Never use `INNER JOIN` unless the user explicitly asks for "intersection" or "common records".
+    -   Reason: We must preserve all records from the main transactional table (e.g., Orders, Logs), even if the dimensional data (e.g., Users, Products) is missing.
 ---
 
 ### 📊 VISUALIZATION RULES

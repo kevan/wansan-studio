@@ -1,6 +1,6 @@
 import { OpenAI } from 'openai';
 import { z } from 'zod';
-import { TableSchema, AnalysisResult } from '../../shared/types';
+import { TableSchema, AnalysisResult, RelationSuggestion } from '../../shared/types';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -45,7 +45,10 @@ Your mission is to translate natural language questions into executable **DuckDB
     -   If a column looks like a date (e.g., "2023-01-01"), use \`strptime("date_col", '%Y-%m-%d')\` or \`CAST("date_col" AS DATE)\` if safe.
 4.  **LIMITATION**:
     -   Always add \`LIMIT 100\` to the final query unless the user explicitly asks for "all" or "export".
-
+5.  **JOIN STRATEGY (CRITICAL)**:
+    -   **ALWAYS use \`LEFT JOIN\`** by default.
+    -   Never use \`INNER JOIN\` unless the user explicitly asks for "intersection" or "common records".
+    -   Reason: We must preserve all records from the main transactional table (e.g., Orders, Logs), even if the dimensional data (e.g., Users, Products) is missing.
 ---
 
 ### 📊 VISUALIZATION RULES
@@ -84,7 +87,7 @@ User: "统计各省份的销售额，按从高到低排"
 Schema: Table "data" ["省份", "销售额"]
 Output:
 {
-  "sql": "SELECT \\"省份\\", SUM(\\"销售额\\") AS \\"total_sales\\" FROM \\"data\\" GROUP BY \\"省份\\" ORDER BY \\"total_sales\\" DESC LIMIT 100",
+  "sql": "SELECT \"省份\", SUM(\"销售额\") AS \"total_sales\" FROM \"data\" GROUP BY \"省份\" ORDER BY \"total_sales\" DESC LIMIT 100",
   "viz_type": "bar",
   "viz_config": { "x_axis": "省份", "y_axis": "total_sales" }
 }
@@ -94,16 +97,59 @@ User: "看下每月的订单趋势"
 Schema: Table "orders" ["下单时间" (VARCHAR), "id"]
 Output:
 {
-  "sql": "WITH clean AS (SELECT strptime(\\"下单时间\\", '%Y-%m-%d') AS dt, \\"id\\" FROM \\"orders\\") SELECT strftime(dt, '%Y-%m') AS \\"month\\", COUNT(\\"id\\") AS \\"count\\" FROM clean GROUP BY \\"month\\" ORDER BY \\"month\\" ASC",
+  "sql": "WITH clean AS (SELECT strptime(\"下单时间\", '%Y-%m-%d') AS dt, \"id\" FROM \"orders\") SELECT strftime(dt, '%Y-%m') AS \"month\", COUNT(\"id\") AS \"count\" FROM clean GROUP BY \"month\" ORDER BY \"month\" ASC",
   "viz_type": "line",
   "viz_config": { "x_axis": "month", "y_axis": "count" }
 }
 `;
 
+const RELATION_INFERENCE_SYSTEM_PROMPT = `
+You are an expert Data Modeler assistant. Your task is to analyze provided table schemas and suggest potential foreign key relationships between them.
+
+---
+
+### 规则 (RULES)
+1.  **仅识别主键到外键的关系**: 识别一个表的主键列可能与另一个表的外键列匹配的情况。
+2.  **考虑列名**: 寻找名称相似的列（例如，'product_id' 和 'id'，或者 'customer_name' 和 'name'）。
+3.  **考虑数据类型**: 匹配的列应该具有兼容的数据类型。
+4.  **提供置信度**: 根据匹配的强度（例如，名称、类型、primaryKey 提示）分配 0.0 到 1.0 的置信度。
+5.  **提供理由**: 简要说明你提出关系的原因。
+6.  **避免自引用**: 不要在同一个表内建议关系。
+
+---
+
+### 📤 输出格式 (JSON ONLY)
+返回一个 JSON 数组。数组中的每个对象代表一个建议的关系。
+
+结构:
+[
+  {
+    "sourceTable": "String (外键所在的表名)",
+    "sourceColumn": "String (外键列名)",
+    "targetTable": "String (主键所在的表名)",
+    "targetColumn": "String (主键列名)",
+    "confidence": "Number (0.0 到 1.0)",
+    "reason": "String (简要说明此关系被推断出的原因)"
+  }
+]
+`;
+
+const RelationSuggestionSchema = z.object({
+  sourceTable: z.string(),
+  sourceColumn: z.string(),
+  targetTable: z.string(),
+  targetColumn: z.string(),
+  confidence: z.number().min(0.0).max(1.0),
+  reason: z.string(),
+});
+
+const RelationSuggestionListSchema = z.array(RelationSuggestionSchema);
+
 function serializeSchemas(schemas: TableSchema[]): string {
   return schemas.map(table => {
+    const pkHint = table.primaryKey ? ` [Primary Key: "${table.primaryKey}"]` : '';
     const columnsStr = table.columns.map(col => `- "${col.name}" (${col.type})`).join('\n');
-    return `Table: "${table.tableName}"\nColumns:\n${columnsStr}`;
+    return `Table: "${table.tableName}"${pkHint}\nColumns:\n${columnsStr}`;
   }).join('\n\n');
 }
 
@@ -147,5 +193,47 @@ ${schemaContext}
   } catch (error) {
     console.error("Failed to parse or validate AI response:", error);
     throw new Error(`AI returned invalid JSON or structure. Raw response: ${resultJson}`);
+  }
+}
+
+/**
+ * Analyze multiple table schemas to deduce potential Foreign Key relationships.
+ * This is run immediately after file ingestion to populate the "Relationship Manager" UI.
+ */
+export async function inferRelationships(schemas: TableSchema[]): Promise<RelationSuggestion[]> {
+  const schemaContext = serializeSchemas(schemas);
+
+  const userPrompt = `### 📂 DATABASE SCHEMA
+The following table schemas are available. Please suggest potential foreign key relationships between them.
+
+${schemaContext}
+
+### 🤖 YOUR RESPONSE (JSON ARRAY)
+`;
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4-turbo-preview', // Or another suitable model
+    messages: [
+      { role: 'system', content: RELATION_INFERENCE_SYSTEM_PROMPT },
+      { role: 'user', content: userPrompt },
+    ],
+    response_format: { type: 'json_object' }, // The API will return an object with a single key for the array
+  });
+
+  const resultJson = response.choices[0].message.content;
+  if (!resultJson) {
+    throw new Error('AI returned an empty response for relationship inference.');
+  }
+
+  try {
+    // The API might return an object like { "relationships": [...] } or directly the array.
+    // Let's assume it might wrap it in an object for safety if response_format is json_object
+    const rawResult = JSON.parse(resultJson);
+    const relationships = Array.isArray(rawResult) ? rawResult : rawResult.relationships;
+
+    return RelationSuggestionListSchema.parse(relationships);
+  } catch (error) {
+    console.error("Failed to parse or validate AI response for relationship inference:", error);
+    throw new Error(`AI returned invalid JSON or structure for relationships. Raw response: ${resultJson}`);
   }
 }
