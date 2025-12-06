@@ -1,5 +1,4 @@
-import React, { useState } from 'react'
-import { useFileStore, FileAsset, ColumnSchema } from '../stores/useFileStore'
+import {ColumnSchema, useFileStore} from '../stores/useFileStore'
 
 interface SchemaConfirmProps {
   onConfirm: () => void
@@ -87,7 +86,7 @@ export function SchemaConfirm({ onConfirm, onCancel }: SchemaConfirmProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {currentFile.columns.map((col, idx) => (
+                {currentFile.columns.map((col, _idx) => (
                   <ColumnRow
                     key={col.name}
                     column={col}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import  { useState } from 'react'
 import { useGenerateSQL } from '../hooks/useIPC'
 
 interface QueryPanelProps {
@@ -11,7 +11,7 @@ export function QueryPanel({ schema, onRunQuery, isLoading }: QueryPanelProps) {
   const [queryMode, setQueryMode] = useState<'natural' | 'sql'>('natural')
   const [naturalQuery, setNaturalQuery] = useState('')
   const [sqlQuery, setSqlQuery] = useState('')
-  
+
   const generateSQLMutation = useGenerateSQL()
 
   const handleNaturalQuery = async () => {

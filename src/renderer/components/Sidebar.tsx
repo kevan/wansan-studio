@@ -1,23 +1,15 @@
-import React, { useState } from 'react'
-import { useFileStore, FileAsset, FileStatus } from '../stores/useFileStore'
+import { useState } from 'react'
+import { useFileStore } from '../stores/useFileStore'
 import { useParseFile } from '../hooks/useIPC'
+import { DataTreeManager } from './data-tree'
 
 interface SidebarProps {
   onImportData?: () => void
 }
 
-export function Sidebar({ onImportData }: SidebarProps) {
-  const {
-    projectName,
-    setProjectName,
-    files,
-    relations,
-    activeFileId,
-    setActiveFile,
-    removeFile,
-    addFile,
-    updateFile,
-  } = useFileStore()
+export function Sidebar(_props: SidebarProps) {
+  const { projectName, setProjectName, files, addFile, updateFile } =
+    useFileStore()
   const [isEditingName, setIsEditingName] = useState(false)
   const [editName, setEditName] = useState(projectName)
   const [isImporting, setIsImporting] = useState(false)
@@ -155,80 +147,19 @@ export function Sidebar({ onImportData }: SidebarProps) {
         </button>
       </div>
 
-      {/* 文件列表区 */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {files.length > 0 ? (
-          <div className="space-y-4">
-            {/* 数据源标题 */}
-            <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wide">
-              Data Sources ({files.length})
-            </h3>
+      {/* 数据树 */}
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+        {/* 数据源标题 */}
+        <div className="px-4 pt-4 pb-2 flex-shrink-0">
+          <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wide">
+            Data Sources {files.length > 0 && `(${files.length})`}
+          </h3>
+        </div>
 
-            {/* 文件卡片列表 */}
-            <div className="space-y-2">
-              {files.map(file => (
-                <FileCard
-                  key={file.id}
-                  file={file}
-                  isActive={file.id === activeFileId}
-                  onSelect={() => setActiveFile(file.id)}
-                  onRemove={() => removeFile(file.id)}
-                />
-              ))}
-            </div>
-
-            {/* 关联视图 */}
-            {relations.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wide mb-2">
-                  Relations
-                </h3>
-                <div className="space-y-2">
-                  {relations.map(rel => {
-                    const fileA = files.find(f => f.id === rel.fileAId)
-                    const fileB = files.find(f => f.id === rel.fileBId)
-                    if (!fileA || !fileB) return null
-                    return (
-                      <div
-                        key={rel.id}
-                        className="text-xs text-zinc-500 bg-zinc-100 rounded px-2 py-1.5"
-                      >
-                        <span className="text-zinc-700">{fileA.name}</span>
-                        <span className="mx-1">—</span>
-                        <span className="text-indigo-600">({rel.columnA})</span>
-                        <span className="mx-1">🔗</span>
-                        <span className="text-indigo-600">({rel.columnB})</span>
-                        <span className="mx-1">—</span>
-                        <span className="text-zinc-700">{fileB.name}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          /* 空状态 */
-          <div className="text-center py-8">
-            <div className="w-12 h-12 mx-auto mb-3 bg-zinc-100 rounded-full flex items-center justify-center">
-              <svg
-                className="w-6 h-6 text-zinc-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-            </div>
-            <p className="text-sm text-zinc-500">导入数据开始分析</p>
-            <p className="text-xs text-zinc-400 mt-1">支持 Excel / CSV</p>
-          </div>
-        )}
+        {/* DataTreeManager - 填满剩余空间 */}
+        <div className="flex-1 overflow-hidden px-2 min-h-0">
+          <DataTreeManager className="no-drag" />
+        </div>
       </div>
 
       {/* 底部: 设置 */}
@@ -257,92 +188,5 @@ export function Sidebar({ onImportData }: SidebarProps) {
         </button>
       </div>
     </aside>
-  )
-}
-
-// 状态指示灯颜色
-const statusColors: Record<FileStatus, string> = {
-  uploading: 'bg-yellow-400',
-  processing: 'bg-yellow-400 animate-pulse',
-  ready: 'bg-green-500',
-  error: 'bg-red-500',
-}
-
-// 文件图标
-function getFileIcon(name: string) {
-  const ext = name.split('.').pop()?.toLowerCase()
-  if (ext === 'csv') return '📄'
-  if (ext === 'xlsx' || ext === 'xls') return '📊'
-  return '📁'
-}
-
-// 格式化文件大小
-function formatSize(bytes?: number) {
-  if (!bytes) return ''
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-// 文件卡片组件
-interface FileCardProps {
-  file: FileAsset
-  isActive: boolean
-  onSelect: () => void
-  onRemove: () => void
-}
-
-function FileCard({ file, isActive, onSelect, onRemove }: FileCardProps) {
-  return (
-    <div
-      className={`group relative flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer transition-colors ${
-        isActive ? 'bg-white shadow-sm' : 'hover:bg-zinc-100'
-      }`}
-      onClick={onSelect}
-    >
-      {/* 状态指示灯 */}
-      <div
-        className={`w-2 h-2 rounded-full ${statusColors[file.status]}`}
-        title={file.status}
-      />
-
-      {/* 文件图标 + 名称 */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1">
-          <span className="text-sm">{getFileIcon(file.name)}</span>
-          <span className="text-sm text-zinc-900 truncate">{file.name}</span>
-        </div>
-        {file.size && (
-          <p className="text-xs text-zinc-400">{formatSize(file.size)}</p>
-        )}
-        {file.error && (
-          <p className="text-xs text-red-500 truncate">{file.error}</p>
-        )}
-      </div>
-
-      {/* 删除按钮 */}
-      <button
-        className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-zinc-200 transition-all"
-        onClick={e => {
-          e.stopPropagation()
-          onRemove()
-        }}
-        title="移除文件"
-      >
-        <svg
-          className="w-4 h-4 text-zinc-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-          />
-        </svg>
-      </button>
-    </div>
   )
 }

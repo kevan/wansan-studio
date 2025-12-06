@@ -14,7 +14,7 @@ export function DataWorkspace({ onReset }: DataWorkspaceNewProps) {
   const [currentData, setCurrentData] = useState<any[]>([])
   const [currentColumns, setCurrentColumns] = useState<any[]>([])
   const [sqlInput, setSqlInput] = useState('')
-  const [naturalInput, setNaturalInput] = useState('')
+  // const [naturalInput, setNaturalInput] = useState('')
 
   const readyFiles = files.filter(f => f.status === 'ready')
   const currentFile = readyFiles.find(f => f.id === activeFileId) || readyFiles[0]
