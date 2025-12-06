@@ -221,6 +221,13 @@ export class DatabaseService {
     }
   }
 
+  getDb(): duckdb.Database {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+    return this.db;
+  }
+
   async close(): Promise<void> {
     if (this.connection) {
       this.connection.close()

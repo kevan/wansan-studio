@@ -2,6 +2,8 @@ import { ipcMain, dialog } from 'electron'
 import { DatabaseService } from '../database/duckdb'
 import { FileService } from './file'
 import { AIService } from './ai'
+import { executeSQL } from '../engine/executor'
+import type { TableSchema } from '../../shared/types'
 
 export function setupIPC(databaseService: DatabaseService) {
   const fileService = new FileService(databaseService)
@@ -28,9 +30,6 @@ export function setupIPC(databaseService: DatabaseService) {
         properties: ['openFile'],
         filters: [
           { name: 'Data Files', extensions: ['xlsx', 'xls', 'csv'] },
-          { name: 'Excel Files', extensions: ['xlsx', 'xls'] },
-          { name: 'CSV Files', extensions: ['csv'] },
-          { name: 'All Files', extensions: ['*'] },
         ],
       })
 
@@ -40,45 +39,14 @@ export function setupIPC(databaseService: DatabaseService) {
 
       return { success: true, data: result.filePaths[0] }
     } catch (error) {
-      console.error('Select file error:', error)
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }
-    }
-  })
-
-  // 选择多个文件对话框
-  ipcMain.handle('select-files', async () => {
-    try {
-      const result = await dialog.showOpenDialog({
-        properties: ['openFile', 'multiSelections'],
-        filters: [
-          { name: 'Data Files', extensions: ['xlsx', 'xls', 'csv'] },
-          { name: 'Excel Files', extensions: ['xlsx', 'xls'] },
-          { name: 'CSV Files', extensions: ['csv'] },
-          { name: 'All Files', extensions: ['*'] },
-        ],
-      })
-
-      if (result.canceled) {
-        return { success: false, error: 'User cancelled' }
-      }
-
-      return { success: true, data: result.filePaths }
-    } catch (error) {
-      console.error('Select files error:', error)
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }
+      return { success: false, error: 'File selection error' }
     }
   })
 
   // 执行 SQL
   ipcMain.handle('run-sql', async (_event, sql: string) => {
     try {
-      const result = await databaseService.query(sql)
+      const result = await executeSQL(sql, databaseService.getDb())
       return { success: true, data: result }
     } catch (error) {
       console.error('SQL execution error:', error)
@@ -103,15 +71,15 @@ export function setupIPC(databaseService: DatabaseService) {
     }
   })
 
-  // AI 生成 SQL
+  // AI 生成分析
   ipcMain.handle(
-    'generate-sql',
-    async (_event, prompt: string, schema: any) => {
+    'generate-analysis',
+    async (_event, userQuery: string, schemas: TableSchema[]) => {
       try {
-        const result = await aiService.generateSQL(prompt, schema)
+        const result = await aiService.getAnalysis(userQuery, schemas)
         return { success: true, data: result }
       } catch (error) {
-        console.error('Generate SQL error:', error)
+        console.error('Generate analysis error:', error)
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -120,19 +88,22 @@ export function setupIPC(databaseService: DatabaseService) {
     }
   )
 
-  // 导出 PDF
-  ipcMain.handle('export-pdf', async (_event, _data: any) => {
-    try {
-      // TODO: 实现 PDF 导出功能
-      return { success: true, data: 'PDF export not implemented yet' }
-    } catch (error) {
-      console.error('Export PDF error:', error)
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+  // AI 推断关系
+  ipcMain.handle(
+    'infer-relationships',
+    async (_event, schemas: TableSchema[]) => {
+      try {
+        const result = await aiService.getRelationSuggestions(schemas)
+        return { success: true, data: result }
+      } catch (error) {
+        console.error('Infer relationships error:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
       }
     }
-  })
+  )
 
-  console.log('IPC handlers registered successfully')
+  console.log('IPC handlers registered and updated successfully')
 }

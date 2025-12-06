@@ -61,7 +61,11 @@ async function getSampleValues(db: Database, tableName: string, columnName: stri
     return new Promise((resolve, reject) => {
         db.all(`SELECT DISTINCT "${columnName}" FROM "${tableName}" WHERE "${columnName}" IS NOT NULL LIMIT 3`, (err, res) => {
             if (err) return reject(err);
-            resolve(res.map(row => row[columnName]));
+            const samples = res.map(row => {
+                const val = row[columnName];
+                return typeof val === 'bigint' ? val.toString() : val;
+            });
+            resolve(samples);
         });
     });
 }

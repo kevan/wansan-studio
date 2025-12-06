@@ -2,9 +2,16 @@ import { OpenAI } from 'openai';
 import { z } from 'zod';
 import { TableSchema, AnalysisResult, RelationSuggestion } from '../../shared/types';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let openaiInstance: OpenAI | null = null;
+
+function getOpenAI(): OpenAI {
+  if (!openaiInstance) {
+    openaiInstance = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openaiInstance;
+}
 
 const AnalysisResultSchema = z.object({
   sql: z.string(),
@@ -42,7 +49,9 @@ Your mission is to translate natural language questions into executable **DuckDB
     -   Do not write nested JOINs. Break logic into \`WITH\` steps.
     -   Step 1: Clean/Rename columns. Step 2: Join. Step 3: Aggregate.
 3.  **DATE HANDLING**:
-    -   If a column looks like a date (e.g., "2023-01-01"), use \`strptime("date_col", '%Y-%m-%d')\` or \`CAST("date_col" AS DATE)\` if safe.
+    -   **Check the Column Type**: 
+        -   If type is already \`DATE\` or \`TIMESTAMP\`, use it directly (e.g., \`strftime("date_col", '%Y-%m')\`).
+        -   If type is \`VARCHAR\` but contains dates, use \`strptime("date_col", '%Y-%m-%d')\`.
 4.  **LIMITATION**:
     -   Always add \`LIMIT 100\` to the final query unless the user explicitly asks for "all" or "export".
 5.  **JOIN STRATEGY (CRITICAL)**:
@@ -172,7 +181,7 @@ ${schemaContext}
 
 ### 🤖 YOUR RESPONSE (JSON)`;
 
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model: 'gpt-4-turbo-preview',
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -210,7 +219,7 @@ ${schemaContext}
 ### 🤖 YOUR RESPONSE (JSON ARRAY)
 `;
 
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model: 'gpt-4-turbo-preview', // Or another suitable model
     messages: [
       { role: 'system', content: RELATION_INFERENCE_SYSTEM_PROMPT },
