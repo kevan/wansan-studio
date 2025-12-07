@@ -13,6 +13,19 @@ const mockIPC = {
     console.log(`IPC Mock: ${channel}`, args)
     return { success: true, data: null }
   },
+  selectFile: async () => { return { success: true, data: 'mock/path/to/file.xlsx' } },
+  selectFiles: async () => { return { success: true, data: ['mock/path/to/file1.xlsx', 'mock/path/to/file2.csv'] } },
+  parseFile: async (filePath: string) => { console.log(`Mock parseFile: ${filePath}`); return { success: true, data: { tableName: 'mock_table', schema: { columns: [] }, rowCount: 0 } } },
+  runSQL: async (sql: string) => { console.log(`Mock runSQL: ${sql}`); return { success: true, data: [] } },
+  getSchema: async (tableName?: string) => { console.log(`Mock getSchema: ${tableName}`); return { success: true, data: { tableName: tableName || 'mock_table', columns: [] } } },
+  generateSQL: async (prompt: string, schema: any) => { console.log(`Mock generateSQL: ${prompt}, Schema: ${JSON.stringify(schema)}`); return { success: true, data: { sql: 'SELECT 1', title: 'Mock Report', summary: 'Mock Summary', viz_type: 'table', viz_config: { x_axis: '', y_axis: '' }, reasoning: 'Mock Reason' } } },
+  askAI: async (query: string, schemas: any[]) => { console.log(`Mock askAI: ${query}, Schemas: ${JSON.stringify(schemas)}`); return { success: true, data: { sql: 'SELECT 1', title: 'Mock Report', summary: 'Mock Summary', viz_type: 'table', viz_config: { x_axis: '', y_axis: '' }, reasoning: 'Mock Reason' } } },
+  inferRelationships: async (schemas: any[]) => { console.log(`Mock inferRelationships, Schemas: ${JSON.stringify(schemas)}`); return { success: true, data: [] } },
+  getAIConfig: async () => { return { success: true, data: {} } },
+  setAIConfig: async (config: any) => { console.log(`Mock setAIConfig: ${config}`); return { success: true } },
+  exportPDF: async (data: any) => { console.log(`Mock exportPDF: ${data}`); return { success: true } },
+  platform: 'darwin', // Mock platform
+  version: { electron: 'mock', chrome: 'mock', node: 'mock' } // Mock versions
 }
 
 // 声明全局 electronAPI（将由主进程注入）
@@ -37,13 +50,27 @@ declare global {
   }
 }
 
-const ipc = window.electronAPI || mockIPC
+function getIpc() {
+  // 在 Electron 环境中，window.electronAPI 会被注入
+  if (window.electronAPI) {
+    return window.electronAPI
+  } else if (import.meta.env.DEV) {
+    // 在开发模式下，如果不在 Electron 环境，则使用 mockIPC
+    console.warn(
+      'Running in non-Electron environment or electronAPI not yet available. Using mock IPC.'
+    )
+    return mockIPC
+  } else {
+    // 在生产环境下，如果 electronAPI 不可用，则抛出错误
+    throw new Error('Electron API is not available.')
+  }
+}
 
 // 文件解析 Hook
 export const useParseFile = () => {
   return useMutation({
     mutationFn: async (filePath: string) => {
-      const response = await ipc.invoke('parse-file', filePath)
+      const response = await getIpc().invoke('parse-file', filePath)
       if (!response.success) {
         throw new Error(response.error || 'Failed to parse file')
       }
@@ -56,7 +83,7 @@ export const useParseFile = () => {
 export const useRunSQL = () => {
   return useMutation({
     mutationFn: async (sql: string) => {
-      const response = await ipc.invoke('run-sql', sql)
+      const response = await getIpc().invoke('run-sql', sql)
       if (!response.success) {
         throw new Error(response.error || 'Failed to execute SQL')
       }
@@ -70,7 +97,7 @@ export const useGetSchema = (tableName?: string) => {
   return useQuery({
     queryKey: ['schema', tableName],
     queryFn: async () => {
-      const response = await ipc.invoke('get-schema', tableName)
+      const response = await getIpc().invoke('get-schema', tableName)
       if (!response.success) {
         throw new Error(response.error || 'Failed to get schema')
       }
@@ -84,7 +111,7 @@ export const useGetSchema = (tableName?: string) => {
 export const useGenerateSQL = () => {
   return useMutation({
     mutationFn: async ({ prompt, schema }: { prompt: string; schema: any }) => {
-      const response = await ipc.invoke('generate-sql', prompt, schema)
+      const response = await getIpc().invoke('generate-sql', prompt, schema)
       if (!response.success) {
         throw new Error(response.error || 'Failed to generate SQL')
       }
@@ -97,7 +124,7 @@ export const useGenerateSQL = () => {
 export const useExportPDF = () => {
   return useMutation({
     mutationFn: async (data: any) => {
-      const response = await ipc.invoke('export-pdf', data)
+      const response = await getIpc().invoke('export-pdf', data)
       if (!response.success) {
         throw new Error(response.error || 'Failed to export PDF')
       }
@@ -105,3 +132,99 @@ export const useExportPDF = () => {
     },
   })
 }
+
+// AI 配置 Hook
+export const useAIConfig = () => {
+  return useQuery({
+    queryKey: ['ai-config'],
+    queryFn: async () => {
+      const response = await getIpc().invoke('get-ai-config')
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to get AI config')
+      }
+      return response.data
+    },
+  })
+}
+
+export const useSetAIConfig = () => {
+  return useMutation({
+    mutationFn: async (config: any) => {
+      const response = await getIpc().invoke('set-ai-config', config)
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to set AI config')
+      }
+      return response.data
+    },
+  })
+}
+
+// 清理 AI 配置 Hook
+export const useClearAIConfig = () => {
+  return useMutation({
+    mutationFn: async () => {
+      const response = await getIpc().invoke('clear-ai-config')
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to clear AI config')
+      }
+      return response.data
+    },
+  })
+}
+
+// 关系推断 Hook
+export const useInferRelationships = () => {
+  return useMutation({
+    mutationFn: async (schemas: any[]) => {
+      const response = await getIpc().invoke('infer-relationships', schemas)
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to infer relationships')
+      }
+      return response.data
+    },
+  })
+}
+
+// 文件选择 Hook
+export const useSelectFile = () => {
+  return useMutation({
+    mutationFn: async () => {
+      const response = await getIpc().invoke('select-file')
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to select file')
+      }
+      return response.data
+    },
+  })
+}
+
+export const useSelectFiles = () => {
+  return useMutation({
+    mutationFn: async () => {
+      const response = await getIpc().invoke('select-files')
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to select files')
+      }
+      return response.data
+    },
+  })
+}
+
+// 获取平台信息 Hook
+export const usePlatform = () => {
+  return useQuery({
+    queryKey: ['platform'],
+    queryFn: async () => getIpc().platform,
+    staleTime: Infinity,
+  })
+}
+
+// 获取版本信息 Hook
+export const useVersion = () => {
+  return useQuery({
+    queryKey: ['version'],
+    queryFn: async () => getIpc().version,
+    staleTime: Infinity,
+  })
+}
+

@@ -36,6 +36,7 @@ function getOpenAI(apiKey?: string, baseURL?: string): OpenAI {
 }
 
 export function setAIConfig(config: { apiKey?: string; baseURL?: string; model?: string }) {
+  console.log('setAIConfig', config)
   if (config.apiKey !== undefined) currentApiKey = config.apiKey
   if (config.baseURL !== undefined) currentBaseURL = config.baseURL
   if (config.model !== undefined) currentModel = config.model
@@ -49,7 +50,15 @@ export function isAIConfigured(): boolean {
 
 
 export function getModelToUse() {
-  return currentModel || process.env.OPENAI_MODEL || 'gpt-4-turbo-preview'
+  const envModel = process.env.OPENAI_MODEL
+  if (isDev()) {
+    console.log('[AI Bridge] getModelToUse debug:', {
+      currentModel,
+      envModel,
+      allEnvKeys: Object.keys(process.env).filter(k => k.startsWith('OPENAI'))
+    })
+  }
+  return currentModel || envModel || 'gpt-4-turbo-preview'
 }
 
 const AnalysisResultSchema = z.object({

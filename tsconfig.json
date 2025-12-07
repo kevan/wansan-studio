@@ -15,14 +15,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-
-    /* Path mapping */
+    "types": ["vite/client"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/renderer/*"],

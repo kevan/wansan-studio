@@ -23,6 +23,7 @@ const electronAPI = {
     ipcRenderer.invoke('infer-relationships', schemas),
   getAIConfig: () => ipcRenderer.invoke('get-ai-config'),
   setAIConfig: (config: any) => ipcRenderer.invoke('set-ai-config', config),
+  clearAIConfig: () => ipcRenderer.invoke('clear-ai-config'),
 
   // 导出功能
   exportPDF: (data: any) => ipcRenderer.invoke('export-pdf', data),

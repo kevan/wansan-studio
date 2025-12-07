@@ -1,4 +1,4 @@
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import { extname, basename } from 'path';
 import { DatabaseService } from '../database/duckdb';
 import { ingestExcelFile, getUniqueTableName } from '../engine/ingestion';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useParseFile } from '../hooks/useIPC'
+import { useParseFile, useSelectFiles } from '../hooks/useIPC'
 import { useFileStore } from '../stores/useFileStore'
 
 interface WelcomeScreenProps {
@@ -8,6 +8,7 @@ interface WelcomeScreenProps {
 
 export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
   const parseFileMutation = useParseFile()
+  const selectFilesMutation = useSelectFiles()
   const { addFile, updateFile } = useFileStore()
   const [isDragging, setIsDragging] = useState(false)
   const [processingCount, setProcessingCount] = useState(0)
@@ -77,24 +78,19 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
 
   const handleFileSelect = async () => {
     try {
-      if (!window.electronAPI) {
-        alert('Electron API 不可用，请在 Electron 环境中运行')
-        return
-      }
-
-      // 使用多选文件对话框
-      const result = await window.electronAPI.selectFiles()
-      if (result.success && result.data && result.data.length > 0) {
-        setTotalCount(result.data.length)
+      const result = await selectFilesMutation.mutateAsync()
+      if (result && result.length > 0) {
+        setTotalCount(result.length)
         setProcessingCount(0)
 
-        for (const filePath of result.data) {
+        for (const filePath of result) {
           const fileName = filePath.split('/').pop() || 'unknown'
           await processFile(filePath, fileName)
         }
       }
     } catch (error) {
       console.error('File selection error:', error)
+      alert(`文件选择失败: ${error instanceof Error ? error.message : '未知错误'}`)
     }
   }
 

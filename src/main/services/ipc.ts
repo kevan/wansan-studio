@@ -5,9 +5,8 @@ import { AIService } from './ai'
 import { executeSQL } from '../engine/executor'
 import type { TableSchema } from '../../shared/types'
 
-export function setupIPC(databaseService: DatabaseService) {
+export function setupIPC(databaseService: DatabaseService, aiService: AIService) {
   const fileService = new FileService(databaseService)
-  const aiService = new AIService()
 
   // 文件解析
   ipcMain.handle('parse-file', async (_event, filePath: string) => {
@@ -40,6 +39,26 @@ export function setupIPC(databaseService: DatabaseService) {
       return { success: true, data: result.filePaths[0] }
     } catch (error) {
       return { success: false, error: 'File selection error' }
+    }
+  })
+
+  // 选择文件对话框（多个文件）
+  ipcMain.handle('select-files', async () => {
+    try {
+      const result = await dialog.showOpenDialog({
+        properties: ['openFile', 'multiSelections'],
+        filters: [
+          { name: 'Data Files', extensions: ['xlsx', 'xls', 'csv'] },
+        ],
+      })
+
+      if (result.canceled) {
+        return { success: false, error: 'User cancelled' }
+      }
+
+      return { success: true, data: result.filePaths }
+    } catch (error) {
+      return { success: false, error: 'Multi-file selection error' }
     }
   })
 
@@ -124,6 +143,16 @@ export function setupIPC(databaseService: DatabaseService) {
       return { success: false, error: 'Failed to set AI config' }
     }
   })
+
+  // 清理 AI 配置
+  ipcMain.handle('clear-ai-config', async () => {
+    try {
+      aiService.clearConfig();
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'Failed to clear AI config' };
+    }
+  });
 
   console.log('IPC handlers registered and updated successfully')
 }
