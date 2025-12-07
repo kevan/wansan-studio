@@ -18,7 +18,7 @@ const mockIPC = {
 // 声明全局 electronAPI（将由主进程注入）
 declare global {
   interface Window {
-    electronAPI?: {
+    electronAPI: { // Removed ? to match global.d.ts
       invoke: (channel: string, ...args: any[]) => Promise<IPCResponse>
       selectFile: () => Promise<IPCResponse<string>>
       selectFiles: () => Promise<IPCResponse<string[]>>
@@ -26,6 +26,8 @@ declare global {
       runSQL: (sql: string) => Promise<IPCResponse>
       getSchema: (tableName?: string) => Promise<IPCResponse>
       generateSQL: (prompt: string, schema: any) => Promise<IPCResponse>
+      askAI: (query: string, schemas: any[]) => Promise<IPCResponse>
+      inferRelationships: (schemas: any[]) => Promise<IPCResponse>
       exportPDF: (data: any) => Promise<IPCResponse>
       platform: string
       version: NodeJS.ProcessVersions

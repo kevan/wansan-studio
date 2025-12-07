@@ -17,8 +17,10 @@ const electronAPI = {
     ipcRenderer.invoke('get-schema', tableName),
 
   // AI 功能
-  generateSQL: (prompt: string, schema: any) =>
-    ipcRenderer.invoke('generate-sql', prompt, schema),
+  askAI: (query: string, schemas: any[]) =>
+    ipcRenderer.invoke('ask-ai', query, schemas),
+  inferRelationships: (schemas: any[]) =>
+    ipcRenderer.invoke('infer-relationships', schemas),
 
   // 导出功能
   exportPDF: (data: any) => ipcRenderer.invoke('export-pdf', data),

@@ -148,36 +148,126 @@ export function A4Summary({ content, insights, className = "" }: A4SummaryProps)
   )
 }
 
-// 图表占位组件
-interface A4ChartPlaceholderProps {
+import ReactECharts from 'echarts-for-react';
+
+// ... (previous imports)
+
+// 图表组件
+interface A4ChartProps {
   type?: 'bar' | 'line' | 'pie' | 'area'
   title?: string
+  data?: Array<Record<string, any>>
+  config?: {
+    x_axis: string
+    y_axis: string
+    series_name?: string
+  }
   className?: string
 }
 
-export function A4ChartPlaceholder({
+export function A4Chart({
   type = 'bar',
   title = "数据图表",
+  data = [],
+  config,
   className = ""
-}: A4ChartPlaceholderProps) {
-  const chartIcons = {
-    bar: '📊',
-    line: '📈',
-    pie: '🥧',
-    area: '📉'
+}: A4ChartProps) {
+  if (!data || data.length === 0 || !config) {
+    return (
+      <div className={`
+        h-64 border-2 border-dashed border-gray-300 rounded-lg
+        flex flex-col items-center justify-center bg-gray-50 ${className}
+      `}>
+        <div className="text-4xl mb-2">📊</div>
+        <div className="text-lg font-medium text-gray-600 mb-1">{title}</div>
+        <div className="text-sm text-gray-500">
+          {(!data || data.length === 0) ? '暂无图表数据' : '配置信息缺失'}
+        </div>
+      </div>
+    )
   }
 
+  const { x_axis, y_axis, series_name } = config;
+
+  const getOption = () => {
+    const xData = data.map(item => item[x_axis]);
+    const yData = data.map(item => item[y_axis]);
+
+    const baseOption = {
+      title: {
+        text: title,
+        left: 'center',
+        textStyle: { fontSize: 16 }
+      },
+      tooltip: {
+        trigger: 'axis'
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        data: xData,
+        axisLabel: { interval: 0, rotate: 30 } // Avoid overlap
+      },
+      yAxis: {
+        type: 'value'
+      },
+      series: [
+        {
+          name: series_name || y_axis,
+          type: type,
+          data: yData,
+          itemStyle: {
+            color: '#4F46E5' // Indigo-600
+          }
+        }
+      ]
+    };
+
+    if (type === 'pie') {
+      return {
+        title: { text: title, left: 'center' },
+        tooltip: { trigger: 'item' },
+        series: [
+          {
+            name: series_name || y_axis,
+            type: 'pie',
+            radius: '50%',
+            data: data.map(item => ({
+              value: item[y_axis],
+              name: item[x_axis]
+            })),
+            emphasis: {
+              itemStyle: {
+                shadowBlur: 10,
+                shadowOffsetX: 0,
+                shadowColor: 'rgba(0, 0, 0, 0.5)'
+              }
+            }
+          }
+        ]
+      };
+    }
+
+    return baseOption;
+  };
+
   return (
-    <div className={`
-      h-64 border-2 border-dashed border-gray-300 rounded-lg
-      flex flex-col items-center justify-center bg-gray-50 ${className}
-    `}>
-      <div className="text-4xl mb-2">{chartIcons[type]}</div>
-      <div className="text-lg font-medium text-gray-600 mb-1">{title}</div>
-      <div className="text-sm text-gray-500">图表将在此处显示</div>
+    <div className={className}>
+      <ReactECharts 
+        option={getOption()} 
+        style={{ height: '300px', width: '100%' }} 
+        opts={{ renderer: 'canvas' }}
+      />
     </div>
   )
 }
+
+// ... (other components)
 
 // 数据表格组件
 interface A4DataTableProps {
@@ -250,6 +340,11 @@ interface A4ReportLayoutProps {
   chartType?: 'bar' | 'line' | 'pie' | 'area'
   chartTitle?: string
   tableData?: Array<Record<string, any>>
+  vizConfig?: {
+    x_axis: string
+    y_axis: string
+    series_name?: string
+  }
   logo?: string
   className?: string
 }
@@ -262,6 +357,7 @@ export function A4ReportLayout({
   chartType = 'bar',
   chartTitle,
   tableData,
+  vizConfig,
   logo,
   className = ""
 }: A4ReportLayoutProps) {
@@ -280,7 +376,12 @@ export function A4ReportLayout({
       )}
 
       <A4Section title="数据可视化">
-        <A4ChartPlaceholder type={chartType} title={chartTitle} />
+        <A4Chart 
+          type={chartType} 
+          title={chartTitle} 
+          data={tableData} 
+          config={vizConfig}
+        />
       </A4Section>
 
       {tableData && tableData.length > 0 && (

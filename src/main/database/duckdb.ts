@@ -1,4 +1,4 @@
-import * as duckdb from 'duckdb'
+import duckdb from 'duckdb'
 
 export class DatabaseService {
   private db: duckdb.Database | null = null

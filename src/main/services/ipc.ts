@@ -73,7 +73,7 @@ export function setupIPC(databaseService: DatabaseService) {
 
   // AI 生成分析
   ipcMain.handle(
-    'generate-analysis',
+    'ask-ai',
     async (_event, userQuery: string, schemas: TableSchema[]) => {
       try {
         const result = await aiService.getAnalysis(userQuery, schemas)

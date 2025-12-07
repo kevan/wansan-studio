@@ -5,7 +5,7 @@ import { AutocompleteInput, AutocompleteOption } from './AutocompleteInput'
 import { LoadingState, LoadingType } from './LoadingStates'
 import { A4ReportLayout } from './A4Canvas'
 
-interface ChatMessage {
+export interface ChatMessage {
   id: string
   type: 'user' | 'assistant'
   content: string
@@ -18,12 +18,18 @@ interface ChatMessage {
     chartType?: 'bar' | 'line' | 'pie' | 'area'
     chartTitle?: string
     tableData?: Array<Record<string, any>>
+    vizConfig?: {
+        x_axis: string
+        y_axis: string
+        series_name?: string
+    }
   }
 }
 
 interface ChatInterfaceProps {
   tableName?: string
   columns?: string[]
+  messages: ChatMessage[]
   onQuerySubmit: (query: string) => void
   loading?: LoadingType | null
   className?: string
@@ -32,11 +38,11 @@ interface ChatInterfaceProps {
 export function ChatInterface({ 
   tableName, 
   columns = [], 
+  messages,
   onQuerySubmit,
   loading = null,
   className = ""
 }: ChatInterfaceProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState('')
   const [useAutocomplete, setUseAutocomplete] = useState(false)
 
@@ -90,36 +96,13 @@ export function ChatInterface({
   ]
 
   const handleQuerySubmit = (query: string) => {
-    // 添加用户消息
-    const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      type: 'user',
-      content: query,
-      timestamp: new Date()
-    }
-    
-    setMessages(prev => [...prev, userMessage])
     setInputValue('')
-    
     // 调用外部处理函数
     onQuerySubmit(query)
   }
 
   const handleQuickCommand = (command: QuickCommand) => {
     handleQuerySubmit(command.query)
-  }
-
-  // 模拟添加助手回复（实际应该从外部传入）
-  const addAssistantMessage = (content: string, reportData?: ChatMessage['reportData']) => {
-    const assistantMessage: ChatMessage = {
-      id: `assistant-${Date.now()}`,
-      type: 'assistant',
-      content,
-      timestamp: new Date(),
-      reportData
-    }
-    
-    setMessages(prev => [...prev, assistantMessage])
   }
 
   return (
@@ -150,8 +133,8 @@ export function ChatInterface({
                 {message.type === 'user' ? (
                   <div>{message.content}</div>
                 ) : (
-                  <div>
-                    <div className="mb-4">{message.content}</div>
+                  <div className="w-full">
+                    {message.content && <div className="mb-4">{message.content}</div>}
                     {message.reportData && (
                       <A4ReportLayout {...message.reportData} />
                     )}

@@ -121,10 +121,30 @@ export function ComponentShowcase() {
         <h2 className="text-xl font-semibold p-6 pb-0">6. 聊天界面 (ChatInterface)</h2>
         <div className="h-96">
           <ChatInterface
-            tableName="销售数据"
-            columns={sampleColumns}
-            onQuerySubmit={handleQuerySubmit}
-            loading={currentLoading}
+            tableName="sales_data"
+            columns={['日期', '销售额', '客户名称', '产品类型']}
+            messages={[
+              {
+                id: '1',
+                type: 'user',
+                content: '帮我分析一下销售趋势',
+                timestamp: new Date()
+              },
+              {
+                id: '2',
+                type: 'assistant',
+                content: '好的，这是最近的销售趋势分析：',
+                timestamp: new Date(),
+                reportData: {
+                  title: '销售趋势分析',
+                  summary: '本月销售额呈上升趋势...',
+                  chartType: 'line',
+                  tableData: [{ 日期: '2023-01', 销售额: 100 }, { 日期: '2023-02', 销售额: 150 }]
+                }
+              }
+            ]}
+            onQuerySubmit={(q) => console.log('Query:', q)}
+            loading={null}
           />
         </div>
       </section>
