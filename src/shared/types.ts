@@ -11,6 +11,7 @@ export interface ColumnSchema {
 
 export interface TableSchema {
   tableName: string;  // Normalized table name (e.g., "t_orders")
+  description?: string; // Original file name for AI context (e.g., "Sales 2023.xlsx")
   columns: ColumnSchema[];
 }
 

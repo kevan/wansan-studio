@@ -70,7 +70,7 @@ async function getSampleValues(db: duckdb.Database, tableName: string, columnNam
     });
 }
 
-export async function ingestExcelFile(fileBuffer: Buffer, db: duckdb.Database): Promise<TableSchema> {
+export async function ingestExcelFile(fileBuffer: Buffer, db: duckdb.Database, fileName: string): Promise<TableSchema> {
   const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
   const firstSheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[firstSheetName];
@@ -93,7 +93,7 @@ export async function ingestExcelFile(fileBuffer: Buffer, db: duckdb.Database): 
     }).join(',')
   ).join('\n');
 
-  const tableName = `t_${Date.now()}`;
+  const tableName = await getUniqueTableName(db, fileName);
   const tempFilePath = path.join(os.tmpdir(), `${tableName}.csv`);
 
   try {
@@ -124,8 +124,31 @@ export async function ingestExcelFile(fileBuffer: Buffer, db: duckdb.Database): 
       });
     }
 
-    return { tableName, columns };
+    return { tableName, description: fileName, columns };
   } finally {
     await fs.unlink(tempFilePath).catch(err => console.error(`Failed to delete temp file: ${tempFilePath}`, err));
+  }
+}
+
+export async function getUniqueTableName(db: duckdb.Database, originalName: string): Promise<string> {
+  const baseName = path.parse(originalName).name;
+  // Allow Chinese, alphanum, underscore. Replace others with _
+  let safeName = "t_" + baseName.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, "_");
+  // Trim underscores
+  safeName = safeName.replace(/_+/g, '_').replace(/_$/, '');
+
+  let currentName = safeName;
+  let counter = 1;
+
+  while (true) {
+      const exists = await new Promise<boolean>((resolve) => {
+          db.all(`SELECT table_name FROM information_schema.tables WHERE table_name = '${currentName}' AND table_schema = 'main'`, (err, res) => {
+               if (err) { console.error(err); resolve(false); }
+               else resolve(res && res.length > 0);
+          });
+      });
+
+      if (!exists) return currentName;
+      currentName = `${safeName}_${counter++}`;
   }
 }

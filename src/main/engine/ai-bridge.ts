@@ -196,7 +196,8 @@ const RelationSuggestionListSchema = z.array(RelationSuggestionSchema)
 function serializeSchemas(schemas: TableSchema[]): string {
   return schemas.map(table => {
     const columnsStr = table.columns.map(col => `- "${col.name}" (${col.type})`).join('\n')
-    return `Table: "${table.tableName}"\nColumns:\n${columnsStr}`
+    const descStr = table.description ? ` (Source: "${table.description}")` : ''
+    return `Table: "${table.tableName}"${descStr}\nColumns:\n${columnsStr}`
   }).join('\n\n')
 }
 

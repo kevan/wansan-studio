@@ -138,3 +138,31 @@ The project uses path aliases in `tsconfig.json` and `vite.config.ts` for cleane
     *   **实现细节**: 调整了 TypeScript 编译配置 (`module: NodeNext`, `moduleResolution: NodeNext`)。
 *   **构建工具升级**: 将主进程的构建工具从 `tsc` 切换到 `tsup`，以更好地处理 ESM 模块的打包和兼容性问题，并自动处理 `__dirname` 和 `__filename` 的 shim。
     *   **核心文件**: `package.json` (`build:main` 脚本), `tsup.config.ts`
+
+## 会话摘要：语义化表格命名 (2025-12-07)
+
+本次会话的主要目标是改进 Wansan Studio 的表格命名机制，使其从随机命名变为基于文件名的语义化命名，从而提升 LLM 对数据上下文的理解。
+
+### 核心改进点：
+
+*   **`TableSchema` 更新**: 在 `src/shared/types.ts` 中的 `TableSchema` 接口中添加了可选字段 `description`，用于存储原始的用户友好型文件名。
+    *   **涉及文件**: `src/shared/types.ts`
+*   **摄取逻辑 (Ingestion Logic) 更新**:
+    *   在 `src/main/engine/ingestion.ts` 中新增了 `getUniqueTableName` 辅助函数。该函数负责：
+        *   将文件名（不含扩展名）进行 SQL 安全处理，包括添加 `t_` 前缀，将空格和特殊字符替换为下划线，并支持中文字符。
+        *   通过查询 DuckDB 数据库确保生成的表名唯一性，并在冲突时追加数字后缀（如 `_1`）。
+    *   更新了 `ingestExcelFile` 和 `parseCSVFile` 函数 (在 `src/main/services/file.ts` 中调用)，使其能够接受原始文件名作为参数，并利用 `getUniqueTableName` 生成语义化表名，同时将原始文件名作为 `description` 字段存储。
+    *   **涉及文件**: `src/main/engine/ingestion.ts`, `src/main/services/file.ts`
+*   **AI 桥接 (AI Bridge) 更新**:
+    *   修改了 `src/main/engine/ai-bridge.ts` 中的 `serializeSchemas` 函数。在向 LLM 传递表格 Schema 上下文时，现在会包含 `(Source: "文件名")` 这样的描述，以增强 AI 对数据来源的理解。
+    *   **涉及文件**: `src/main/engine/ai-bridge.ts`
+
+### 验证:
+
+*   **单元测试**: 更新了 `src/main/engine/__tests__/robustness.test.ts` 中的 `ingestExcelFile` 调用，使其符合新的函数签名。
+*   **测试结果**: 运行 `npm test src/main/engine/__tests__/robustness.test.ts` 后，所有测试均通过，确认了语义化命名和上下文传递的正确性，以及 AI 功能的持续稳定。
+*   **类型检查**: 运行 `npm run type-check`，确认没有新的 TypeScript 类型错误引入。
+
+### 成果:
+
+现在，Wansan Studio 在数据摄取过程中能够从文件名派生出更具业务意义的表格名称，并将这些名称及其原始文件名作为重要上下文传递给 AI 模型，从而显著提升了 AI 理解用户查询和生成准确 SQL 的能力。

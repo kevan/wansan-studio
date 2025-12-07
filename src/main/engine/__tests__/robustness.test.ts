@@ -75,7 +75,7 @@ describe('Engine Robustness & Integration', () => {
 
   it('Task A: Ingestion should handle nasty files', async () => {
     const fileBuffer = await fs.readFile(TEST_FILE_PATH);
-    schema = await ingestExcelFile(fileBuffer, db);
+    schema = await ingestExcelFile(fileBuffer, db, 'nasty.xlsx');
 
     expect(schema).toBeDefined();
     expect(schema.columns).toHaveLength(7);
@@ -134,8 +134,8 @@ describe('Engine Robustness & Integration', () => {
     if (!process.env.OPENAI_API_KEY) return;
 
     // Ingest
-    ordersSchema = await ingestExcelFile(await fs.readFile(ORDERS_FILE_PATH), db);
-    customersSchema = await ingestExcelFile(await fs.readFile(CUSTOMERS_FILE_PATH), db);
+    ordersSchema = await ingestExcelFile(await fs.readFile(ORDERS_FILE_PATH), db, 'orders.xlsx');
+    customersSchema = await ingestExcelFile(await fs.readFile(CUSTOMERS_FILE_PATH), db, 'customers.xlsx');
 
     // AI Inference
     const suggestions = await inferRelationships([ordersSchema, customersSchema]);

@@ -190,3 +190,78 @@ export interface RelationSuggestion {
 **Verification**:
 -   Ensure `TableSchema` only contains `tableName` and `columns`.
 -   Ensure no other code relies on `primaryKey`.
+
+
+
+### 解决方案：文件名即表名 (Filename as Table Name)
+
+我们不需要复杂的 AI 重命名，直接利用用户上传的**文件名**。
+
+**策略**：
+1.  **用户上传**：`2024Q1销售数据.xlsx`
+2.  **清洗 (Sanitize)**：将文件名转换为合法的 SQL 表名（去除空格、特殊符号，保留中文或转拼音，或者干脆加引号）。
+3.  **最终表名**：`t_2024Q1销售数据` (DuckDB 支持中文表名，只要加双引号)。
+4.  **Prompt 增强**：在发给 LLM 的 JSON 中，同时提供 `tableName` 和 `description` (原文件名)。
+
+---
+
+### 🚀 给 Code Agent 的修正指令
+
+请发布以下指令，要求 Code Agent 修改数据入库和类型定义的逻辑。
+
+---
+
+### TASK: Improve Semantic Table Naming
+
+**Context**: The current system generates random table names (e.g., `t_1765...`). This confuses the LLM. We need to derive table names from the uploaded **File Names** to preserve business context.
+
+**Objective**:
+1.  **Update `TableSchema`**: Add a field to store the original human-readable file name.
+2.  **Update Ingestion Logic**: Generate sanitized, meaningful table names from file names.
+3.  **Update AI Bridge**: Pass this context to the LLM.
+
+**Action**:
+
+#### Step 1: Update `src/shared/types.ts`
+
+```typescript
+export interface TableSchema {
+  // The SQL-safe table name used in queries (e.g., "t_sales_2023")
+  tableName: string;
+  
+  // [NEW] The original file name for AI context (e.g., "Sales 2023 (Final).xlsx")
+  description?: string; 
+  
+  columns: ColumnSchema[];
+}
+```
+
+#### Step 2: Update `src/main/engine/ingestion.ts`
+
+Implement a `generateTableName` helper function using these rules:
+1.  Start with `t_` prefix (to ensure valid SQL identifier start).
+2.  Take the filename (without extension).
+3.  Replace spaces and special characters with `_`.
+4.  **Allow Chinese characters** (DuckDB supports them if quoted).
+5.  Ensure uniqueness (append `_1`, `_2` if name collision exists).
+
+```typescript
+// Pseudo-code for ingestion logic
+const baseName = path.parse(filePath).name;
+// Regex: Allow Letters, Numbers, Underscores, and Chinese characters (\u4e00-\u9fa5)
+const safeName = "t_" + baseName.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, "_");
+
+// Assign this 'safeName' to tableName
+// Assign 'baseName' to description
+```
+
+#### Step 3: Update `src/main/engine/ai-bridge.ts`
+
+Modify the `generateSQL` prompt construction to include the description.
+
+```typescript
+// When serializing schemas for the Prompt:
+const schemaDesc = schemas.map(s => {
+  return `Table: "${s.tableName}" (Source: "${s.description}")\nColumns: ...`;
+}).join("\n");
+```
