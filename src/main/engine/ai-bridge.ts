@@ -1,11 +1,13 @@
 import { OpenAI } from 'openai';
 import { z } from 'zod';
 import { TableSchema, AnalysisResult, RelationSuggestion } from '../../shared/types';
+import { ClientOptions } from 'openai/client'
+import { isDev } from '../utils/env'
 
 let openaiInstance: OpenAI | null = null;
 let currentApiKey: string | undefined = undefined;
 let currentBaseURL: string | undefined = undefined;
-let currentModel: string = process.env.OPENAI_MODEL || 'gpt-4-turbo-preview';
+let currentModel: string | undefined = undefined;
 
 function getOpenAI(apiKey?: string, baseURL?: string): OpenAI {
   const keyToUse = apiKey || currentApiKey || process.env.OPENAI_API_KEY;
@@ -17,10 +19,15 @@ function getOpenAI(apiKey?: string, baseURL?: string): OpenAI {
 
   // Re-initialize if key or url changed, or instance is null
   if (!openaiInstance || keyToUse !== currentApiKey || urlToUse !== currentBaseURL) {
-    openaiInstance = new OpenAI({
+    let opts: ClientOptions = {
       apiKey: keyToUse,
       baseURL: urlToUse,
-    });
+    }
+    if (isDev()){
+      opts.logLevel= 'debug'
+    }
+
+    openaiInstance = new OpenAI(opts);
     currentApiKey = keyToUse;
     currentBaseURL = urlToUse;
   }
@@ -31,12 +38,17 @@ export function setAIConfig(config: { apiKey?: string; baseURL?: string; model?:
   if (config.apiKey !== undefined) currentApiKey = config.apiKey;
   if (config.baseURL !== undefined) currentBaseURL = config.baseURL;
   if (config.model !== undefined) currentModel = config.model;
-  
+
   openaiInstance = null; // Force re-initialization
 }
 
 export function isAIConfigured(): boolean {
   return !!(currentApiKey || process.env.OPENAI_API_KEY);
+}
+
+
+export function getModelToUse() {
+    return currentModel || process.env.OPENAI_MODEL || 'gpt-4-turbo-preview';
 }
 
 const AnalysisResultSchema = z.object({
@@ -206,15 +218,16 @@ ${schemaContext}
 "${userQuery}"
 
 ### 🤖 YOUR RESPONSE (JSON)`;
+  const modelToUse =  getModelToUse();
 
   const response = await getOpenAI().chat.completions.create({
-    model: currentModel,
+    model: modelToUse,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: userPrompt },
     ],
     response_format: { type: 'json_object' },
-  });
+  })
 
   const resultJson = response.choices[0].message.content;
   if (!resultJson) {
@@ -246,7 +259,7 @@ ${schemaContext}
 `;
 
   const response = await getOpenAI().chat.completions.create({
-    model: currentModel, // Or another suitable model
+    model: getModelToUse(), // Or another suitable model
     messages: [
       { role: 'system', content: RELATION_INFERENCE_SYSTEM_PROMPT },
       { role: 'user', content: userPrompt },

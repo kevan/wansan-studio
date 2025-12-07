@@ -14,10 +14,7 @@ const __dirname = path.dirname(__filename);
 // Load env vars
 dotenv.config();
 
-// Ensure OpenAI Key
-if (!process.env.OPENAI_API_KEY) {
-  console.warn("⚠️  WARNING: OPENAI_API_KEY is not set. AI tests will fail or must be mocked.");
-}
+console.log(`ℹ️  OpenAI Key Configured: ${!!process.env.OPENAI_API_KEY}`);
 
 async function createNastyExcel(filePath: string) {
   const wb = XLSX.utils.book_new();
@@ -62,6 +59,10 @@ async function runTest() {
   const testFilePath = path.join(__dirname, 'test_nasty.xlsx');
 
   try {
+    if (fs.pathExistsSync(testFilePath)) {
+      fs.unlinkSync(testFilePath);
+    }
+
     // --- Step 1: Generate File ---
     await createNastyExcel(testFilePath);
     const fileBuffer = await fs.readFile(testFilePath);
@@ -94,24 +95,16 @@ async function runTest() {
     }
 
 
-    // --- Step 3: Test AI Bridge (Task B) ---
-    console.log("\n🧪 Task B: Testing AI Bridge (Schema-Only Prompt)...");
-    const userQuery = "按日期统计销售额总和，并展示趋势";
+        // --- Step 3: Test AI Bridge (Task B) ---
+        console.log("\n🧪 Task B: Testing AI Bridge (Schema-Only Prompt)...");
+        const userQuery = "按日期统计销售额总和，并展示趋势";
 
-    let aiResult;
-    // Check if API key is present before calling
-    if (!process.env.OPENAI_API_KEY) {
-        console.log("⚠️  Skipping AI Test (No API Key). Using MOCK response for Task C.");
-        aiResult = {
-          sql: `SELECT strptime("日期", '%Y-%m-%d') AS "dt", SUM("销售额") AS "total_sales" FROM "${schema.tableName}" GROUP BY "dt" ORDER BY "dt" ASC LIMIT 100`,
-          title: "销售趋势分析",
-          summary: "销售额随日期的变化趋势。",
-          viz_type: "line",
-          viz_config: { x_axis: "dt", y_axis: "total_sales" },
-          reasoning: "Mocked response"
-        };
-    } else {
-        aiResult = await generateAnalysis(userQuery, [schema]);
+        // Check if API key is present
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error("❌ OPENAI_API_KEY is missing. Cannot run real AI test.");
+        }
+
+        const aiResult = await generateAnalysis(userQuery, [schema]);
         console.log("AI Result:", JSON.stringify(aiResult, null, 2));
 
         // Validation B1: SQL Quote Check
@@ -120,8 +113,6 @@ async function runTest() {
         } else {
           console.error("❌ SQL Quoting failed. SQL:", aiResult.sql);
         }
-    }
-
     // --- Step 4: Test Execution & Visualization (Task C) ---
     console.log("\n🧪 Task C: Testing Execution & Viz Config...");
     const data = await executeSQL(aiResult.sql, db);
@@ -135,15 +126,34 @@ async function runTest() {
 
     if (data.length > 0) {
        console.log("✅ Data Execution passed.");
+
+       // Data Logic Validation
+       // Use viz_config to find which columns correspond to X (Date) and Y (Sales)
+       const xCol = aiResult.viz_config.x_axis;
+       const yCol = aiResult.viz_config.y_axis;
+
+       console.log(`ℹ️  Verifying using Viz Config - X: ${xCol}, Y: ${yCol}`);
+
+       const row1 = data.find(r => String(r[xCol]).includes('2023-01-01'));
+       const row2 = data.find(r => String(r[xCol]).includes('2023-01-02'));
+
+       const sales1 = Number(row1?.[yCol]);
+       const sales2 = Number(row2?.[yCol]);
+
+       if (sales1 === 1500 && sales2 === 2600) {
+         console.log("✅ Data Logic passed (2023-01-01: 1500, 2023-01-02: 2600).");
+       } else {
+         console.error(`❌ Data Logic failed. Expected 1500/2600, got ${sales1}/${sales2}. Data:`, data);
+       }
     }
 
   } catch (error) {
     console.error("💥 Test Failed:", error);
   } finally {
     // Cleanup
-    if (fs.existsSync(testFilePath)) {
-      fs.unlinkSync(testFilePath);
-    }
+    // if (fs.pathExistsSync(testFilePath)) {
+    //   fs.unlinkSync(testFilePath);
+    // }
   }
 }
 
