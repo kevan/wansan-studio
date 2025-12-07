@@ -1,4 +1,4 @@
-import { Database } from 'duckdb';
+import duckdb from 'duckdb';
 
 /**
  * Validates SQL to prevent potentially destructive operations.
@@ -44,7 +44,7 @@ function postProcessResult(data: any[]): any[] {
  * @param db The DuckDB database instance.
  * @returns A promise that resolves to the query result data.
  */
-export async function executeSQL(sql: string, db: Database): Promise<any[]> {
+export async function executeSQL(sql: string, db: duckdb.Database): Promise<any[]> {
   validateSQL(sql);
 
   return new Promise((resolve, reject) => {

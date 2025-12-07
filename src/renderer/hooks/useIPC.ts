@@ -28,6 +28,8 @@ declare global {
       generateSQL: (prompt: string, schema: any) => Promise<IPCResponse>
       askAI: (query: string, schemas: any[]) => Promise<IPCResponse>
       inferRelationships: (schemas: any[]) => Promise<IPCResponse>
+      getAIConfig: () => Promise<IPCResponse>
+      setAIConfig: (config: any) => Promise<IPCResponse>
       exportPDF: (data: any) => Promise<IPCResponse>
       platform: string
       version: NodeJS.ProcessVersions

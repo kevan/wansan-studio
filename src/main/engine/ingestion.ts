@@ -1,8 +1,8 @@
 import * as XLSX from 'xlsx';
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import * as os from 'os';
 import * as path from 'path';
-import { Database } from 'duckdb';
+import duckdb from 'duckdb';
 import { TableSchema, ColumnSchema, ColumnType } from '../../shared/types';
 
 function unmergeCells(worksheet: XLSX.WorkSheet): void {
@@ -57,7 +57,7 @@ function findHeaderRow(data: any[][]): { headerRowIndex: number; headers: string
   return { headerRowIndex, headers };
 }
 
-async function getSampleValues(db: Database, tableName: string, columnName: string): Promise<any[]> {
+async function getSampleValues(db: duckdb.Database, tableName: string, columnName: string): Promise<any[]> {
     return new Promise((resolve, reject) => {
         db.all(`SELECT DISTINCT "${columnName}" FROM "${tableName}" WHERE "${columnName}" IS NOT NULL LIMIT 3`, (err, res) => {
             if (err) return reject(err);
@@ -70,7 +70,7 @@ async function getSampleValues(db: Database, tableName: string, columnName: stri
     });
 }
 
-export async function ingestExcelFile(fileBuffer: Buffer, db: Database): Promise<TableSchema> {
+export async function ingestExcelFile(fileBuffer: Buffer, db: duckdb.Database): Promise<TableSchema> {
   const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
   const firstSheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[firstSheetName];

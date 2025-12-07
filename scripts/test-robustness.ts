@@ -1,12 +1,15 @@
 import * as XLSX from 'xlsx';
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import * as path from 'path';
-import { Database } from 'duckdb';
+import { fileURLToPath } from 'url';
+import duckdb from 'duckdb';
 import { ingestExcelFile } from '../src/main/engine/ingestion';
 import { generateAnalysis } from '../src/main/engine/ai-bridge';
 import { executeSQL } from '../src/main/engine/executor';
-import { TableSchema } from '../src/shared/types';
 import * as dotenv from 'dotenv';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load env vars
 dotenv.config();
@@ -18,7 +21,7 @@ if (!process.env.OPENAI_API_KEY) {
 
 async function createNastyExcel(filePath: string) {
   const wb = XLSX.utils.book_new();
-  
+
   // Data with:
   // 1. Empty rows at start
   // 2. Merged Cells (Category A covers 2 rows)
@@ -26,7 +29,7 @@ async function createNastyExcel(filePath: string) {
   // 4. Duplicate Headers (Test, Test)
   // 5. Special Chars (Profit %)
   // 6. Dates (Mixed format if possible, but let's stick to standard Excel dates)
-  
+
   const headers = ["日期", "Category", "Sub-Category", "销售额", "Profit %", "Test", "Test"];
   const data = [
     [null, null, null, null, null, null, null], // Empty Row
@@ -55,7 +58,7 @@ async function createNastyExcel(filePath: string) {
 
 async function runTest() {
   console.log("🚀 Starting Robustness Test...");
-  const db = new Database(':memory:');
+  const db = new duckdb.Database(':memory:');
   const testFilePath = path.join(__dirname, 'test_nasty.xlsx');
 
   try {
@@ -83,7 +86,7 @@ async function runTest() {
         if (err) reject(err); else resolve(rows);
       });
     });
-    
+
     if (checkMerge[0]?.Category === 'Electronics') {
       console.log("✅ Unmerge Logic passed (Value filled down).");
     } else {
@@ -94,7 +97,7 @@ async function runTest() {
     // --- Step 3: Test AI Bridge (Task B) ---
     console.log("\n🧪 Task B: Testing AI Bridge (Schema-Only Prompt)...");
     const userQuery = "按日期统计销售额总和，并展示趋势";
-    
+
     let aiResult;
     // Check if API key is present before calling
     if (!process.env.OPENAI_API_KEY) {

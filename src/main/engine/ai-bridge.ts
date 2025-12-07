@@ -3,14 +3,40 @@ import { z } from 'zod';
 import { TableSchema, AnalysisResult, RelationSuggestion } from '../../shared/types';
 
 let openaiInstance: OpenAI | null = null;
+let currentApiKey: string | undefined = undefined;
+let currentBaseURL: string | undefined = undefined;
+let currentModel: string = process.env.OPENAI_MODEL || 'gpt-4-turbo-preview';
 
-function getOpenAI(): OpenAI {
-  if (!openaiInstance) {
+function getOpenAI(apiKey?: string, baseURL?: string): OpenAI {
+  const keyToUse = apiKey || currentApiKey || process.env.OPENAI_API_KEY;
+  const urlToUse = baseURL || currentBaseURL || process.env.OPENAI_BASE_URL;
+
+  if (!keyToUse) {
+    throw new Error('OpenAI API key is not configured.');
+  }
+
+  // Re-initialize if key or url changed, or instance is null
+  if (!openaiInstance || keyToUse !== currentApiKey || urlToUse !== currentBaseURL) {
     openaiInstance = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: keyToUse,
+      baseURL: urlToUse,
     });
+    currentApiKey = keyToUse;
+    currentBaseURL = urlToUse;
   }
   return openaiInstance;
+}
+
+export function setAIConfig(config: { apiKey?: string; baseURL?: string; model?: string }) {
+  if (config.apiKey !== undefined) currentApiKey = config.apiKey;
+  if (config.baseURL !== undefined) currentBaseURL = config.baseURL;
+  if (config.model !== undefined) currentModel = config.model;
+  
+  openaiInstance = null; // Force re-initialization
+}
+
+export function isAIConfigured(): boolean {
+  return !!(currentApiKey || process.env.OPENAI_API_KEY);
 }
 
 const AnalysisResultSchema = z.object({
@@ -182,7 +208,7 @@ ${schemaContext}
 ### 🤖 YOUR RESPONSE (JSON)`;
 
   const response = await getOpenAI().chat.completions.create({
-    model: 'gpt-4-turbo-preview',
+    model: currentModel,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: userPrompt },
@@ -220,7 +246,7 @@ ${schemaContext}
 `;
 
   const response = await getOpenAI().chat.completions.create({
-    model: 'gpt-4-turbo-preview', // Or another suitable model
+    model: currentModel, // Or another suitable model
     messages: [
       { role: 'system', content: RELATION_INFERENCE_SYSTEM_PROMPT },
       { role: 'user', content: userPrompt },

@@ -105,5 +105,25 @@ export function setupIPC(databaseService: DatabaseService) {
     }
   )
 
+  // 获取 AI 配置
+  ipcMain.handle('get-ai-config', async () => {
+    try {
+      const config = aiService.getConfig()
+      return { success: true, data: config }
+    } catch (error) {
+      return { success: false, error: 'Failed to get AI config' }
+    }
+  })
+
+  // 设置 AI 配置
+  ipcMain.handle('set-ai-config', async (_event, config: any) => {
+    try {
+      aiService.setConfig(config)
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: 'Failed to set AI config' }
+    }
+  })
+
   console.log('IPC handlers registered and updated successfully')
 }

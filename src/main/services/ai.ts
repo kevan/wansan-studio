@@ -1,43 +1,82 @@
-import { generateAnalysis, inferRelationships } from '../engine/ai-bridge';
+import Store from 'electron-store';
+import { generateAnalysis, inferRelationships, setAIConfig, isAIConfigured } from '../engine/ai-bridge';
 import type { TableSchema, AnalysisResult, RelationSuggestion } from '../../shared/types';
+
+interface AIConfig {
+  apiKey?: string;
+  baseURL?: string;
+  model?: string;
+}
+
+// Define schema for electron-store
+const schema = {
+  aiConfig: {
+    type: 'object',
+    properties: {
+      apiKey: { type: 'string' },
+      baseURL: { type: 'string' },
+      model: { type: 'string' }
+    },
+    default: {
+      model: 'gpt-4-turbo-preview'
+    }
+  }
+} as const;
+
+const store = new Store({ schema });
 
 export class AIService {
   constructor() {
-    if (!process.env.OPENAI_API_KEY) {
-      console.warn('OpenAI API key not configured. Please set the OPENAI_API_KEY environment variable.');
+    this.loadConfig();
+  }
+
+  private loadConfig() {
+    const config = store.get('aiConfig') as AIConfig;
+    const apiKey = config.apiKey || process.env.OPENAI_API_KEY;
+    const baseURL = config.baseURL || process.env.OPENAI_BASE_URL;
+    const model = config.model || process.env.OPENAI_MODEL || 'gpt-4-turbo-preview';
+
+    setAIConfig({ apiKey, baseURL, model });
+
+    if (!isAIConfigured()) {
+      console.warn('AI Service: Not configured (missing API Key).');
     }
   }
 
   /**
-   * Generates a full analysis, including SQL, title, summary, and visualization config.
-   * @param userQuery The natural language query from the user.
-   * @param schemas The schemas of the available tables.
-   * @returns A promise that resolves to the structured analysis result.
+   * Generates a full analysis.
    */
   async getAnalysis(userQuery: string, schemas: TableSchema[]): Promise<AnalysisResult> {
-    if (!this.hasApiKey()) {
-      throw new Error('OpenAI API key is not set.');
-    }
     return generateAnalysis(userQuery, schemas);
   }
 
   /**
-   * Analyzes multiple table schemas to deduce potential Foreign Key relationships.
-   * @param schemas The schemas of the tables to analyze.
-   * @returns A promise that resolves to an array of relationship suggestions.
+   * Analyzes multiple table schemas.
    */
   async getRelationSuggestions(schemas: TableSchema[]): Promise<RelationSuggestion[]> {
-    if (!this.hasApiKey()) {
-      throw new Error('OpenAI API key is not set.');
-    }
     return inferRelationships(schemas);
   }
   
-  setApiKey(apiKey: string) {
-    process.env.OPENAI_API_KEY = apiKey;
+  /**
+   * Sets and persists AI configuration.
+   */
+  setConfig(config: AIConfig) {
+    const current = store.get('aiConfig') as AIConfig;
+    const newConfig = { ...current, ...config };
+    store.set('aiConfig', newConfig);
+    
+    // Reload to apply
+    this.loadConfig();
+  }
+
+  /**
+   * Gets current persisted configuration.
+   */
+  getConfig(): AIConfig {
+    return store.get('aiConfig') as AIConfig;
   }
 
   hasApiKey(): boolean {
-    return !!process.env.OPENAI_API_KEY;
+    return isAIConfigured();
   }
 }
