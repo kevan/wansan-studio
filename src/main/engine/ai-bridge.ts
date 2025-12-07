@@ -1,20 +1,21 @@
-import { OpenAI } from 'openai';
-import { z } from 'zod';
-import { TableSchema, AnalysisResult, RelationSuggestion } from '../../shared/types';
+import { OpenAI } from 'openai'
+import { z } from 'zod'
+import { AnalysisResult, RelationSuggestion, TableSchema } from '../../shared/types'
 import { ClientOptions } from 'openai/client'
 import { isDev } from '../utils/env'
+import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources'
 
-let openaiInstance: OpenAI | null = null;
-let currentApiKey: string | undefined = undefined;
-let currentBaseURL: string | undefined = undefined;
-let currentModel: string | undefined = undefined;
+let openaiInstance: OpenAI | null = null
+let currentApiKey: string | undefined = undefined
+let currentBaseURL: string | undefined = undefined
+let currentModel: string | undefined = undefined
 
 function getOpenAI(apiKey?: string, baseURL?: string): OpenAI {
-  const keyToUse = apiKey || currentApiKey || process.env.OPENAI_API_KEY;
-  const urlToUse = baseURL || currentBaseURL || process.env.OPENAI_BASE_URL;
+  const keyToUse = apiKey || currentApiKey || process.env.OPENAI_API_KEY
+  const urlToUse = baseURL || currentBaseURL || process.env.OPENAI_BASE_URL
 
   if (!keyToUse) {
-    throw new Error('OpenAI API key is not configured.');
+    throw new Error('OpenAI API key is not configured.')
   }
 
   // Re-initialize if key or url changed, or instance is null
@@ -23,32 +24,32 @@ function getOpenAI(apiKey?: string, baseURL?: string): OpenAI {
       apiKey: keyToUse,
       baseURL: urlToUse,
     }
-    if (isDev()){
-      opts.logLevel= 'debug'
+    if (isDev()) {
+      opts.logLevel = 'debug'
     }
 
-    openaiInstance = new OpenAI(opts);
-    currentApiKey = keyToUse;
-    currentBaseURL = urlToUse;
+    openaiInstance = new OpenAI(opts)
+    currentApiKey = keyToUse
+    currentBaseURL = urlToUse
   }
-  return openaiInstance;
+  return openaiInstance
 }
 
 export function setAIConfig(config: { apiKey?: string; baseURL?: string; model?: string }) {
-  if (config.apiKey !== undefined) currentApiKey = config.apiKey;
-  if (config.baseURL !== undefined) currentBaseURL = config.baseURL;
-  if (config.model !== undefined) currentModel = config.model;
+  if (config.apiKey !== undefined) currentApiKey = config.apiKey
+  if (config.baseURL !== undefined) currentBaseURL = config.baseURL
+  if (config.model !== undefined) currentModel = config.model
 
-  openaiInstance = null; // Force re-initialization
+  openaiInstance = null // Force re-initialization
 }
 
 export function isAIConfigured(): boolean {
-  return !!(currentApiKey || process.env.OPENAI_API_KEY);
+  return !!(currentApiKey || process.env.OPENAI_API_KEY)
 }
 
 
 export function getModelToUse() {
-    return currentModel || process.env.OPENAI_MODEL || 'gpt-4-turbo-preview';
+  return currentModel || process.env.OPENAI_MODEL || 'gpt-4-turbo-preview'
 }
 
 const AnalysisResultSchema = z.object({
@@ -62,7 +63,7 @@ const AnalysisResultSchema = z.object({
     series_name: z.string().optional(),
   }),
   reasoning: z.string(),
-});
+})
 
 const SYSTEM_PROMPT = `
 ### SYSTEM PROMPT
@@ -148,7 +149,7 @@ Output:
   "viz_type": "line",
   "viz_config": { "x_axis": "month", "y_axis": "count" }
 }
-`;
+`
 
 const RELATION_INFERENCE_SYSTEM_PROMPT = `
 You are an expert Data Modeler assistant. Your task is to analyze provided table schemas and suggest potential foreign key relationships between them.
@@ -179,7 +180,7 @@ You are an expert Data Modeler assistant. Your task is to analyze provided table
     "reason": "String (简要说明此关系被推断出的原因)"
   }
 ]
-`;
+`
 
 const RelationSuggestionSchema = z.object({
   sourceTable: z.string(),
@@ -188,23 +189,26 @@ const RelationSuggestionSchema = z.object({
   targetColumn: z.string(),
   confidence: z.number().min(0.0).max(1.0),
   reason: z.string(),
-});
+})
 
-const RelationSuggestionListSchema = z.array(RelationSuggestionSchema);
+const RelationSuggestionListSchema = z.array(RelationSuggestionSchema)
 
 function serializeSchemas(schemas: TableSchema[]): string {
   return schemas.map(table => {
-    const columnsStr = table.columns.map(col => `- "${col.name}" (${col.type})`).join('\n');
-    return `Table: "${table.tableName}"\nColumns:\n${columnsStr}`;
-  }).join('\n\n');
+    const columnsStr = table.columns.map(col => `- "${col.name}" (${col.type})`).join('\n')
+    return `Table: "${table.tableName}"\nColumns:\n${columnsStr}`
+  }).join('\n\n')
 }
 
 export async function generateAnalysis(
   userQuery: string,
-  schemas: TableSchema[]
+  schemas: TableSchema[],
 ): Promise<AnalysisResult> {
-  const schemaContext = serializeSchemas(schemas);
-  const currentDate = new Date().toISOString().split('T')[0];
+  if (isDev()) {
+    console.log('generateAnalysis pre request - schemas:', JSON.stringify(schemas))
+  }
+  const schemaContext = serializeSchemas(schemas)
+  const currentDate = new Date().toISOString().split('T')[0]
 
   const userPrompt = `### 📅 CONTEXT
 Current Date: ${currentDate}
@@ -217,29 +221,33 @@ ${schemaContext}
 ### 👤 USER QUESTION
 "${userQuery}"
 
-### 🤖 YOUR RESPONSE (JSON)`;
-  const modelToUse =  getModelToUse();
+### 🤖 YOUR RESPONSE (JSON)`
+  const modelToUse = getModelToUse()
 
-  const response = await getOpenAI().chat.completions.create({
+  const body: ChatCompletionCreateParamsNonStreaming = {
     model: modelToUse,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: userPrompt },
     ],
     response_format: { type: 'json_object' },
-  })
+  }
+  if (isDev()) {
+    console.log('pre request - body', body)
+  }
+  const response = await getOpenAI().chat.completions.create(body)
 
-  const resultJson = response.choices[0].message.content;
+  const resultJson = response.choices[0].message.content
   if (!resultJson) {
-    throw new Error('AI returned an empty response.');
+    throw new Error('AI returned an empty response.')
   }
 
   try {
-    const parsedResult = JSON.parse(resultJson);
-    return AnalysisResultSchema.parse(parsedResult);
+    const parsedResult = JSON.parse(resultJson)
+    return AnalysisResultSchema.parse(parsedResult)
   } catch (error) {
-    console.error("Failed to parse or validate AI response:", error);
-    throw new Error(`AI returned invalid JSON or structure. Raw response: ${resultJson}`);
+    console.error('Failed to parse or validate AI response:', error)
+    throw new Error(`AI returned invalid JSON or structure. Raw response: ${resultJson}`)
   }
 }
 
@@ -248,7 +256,11 @@ ${schemaContext}
  * This is run immediately after file ingestion to populate the "Relationship Manager" UI.
  */
 export async function inferRelationships(schemas: TableSchema[]): Promise<RelationSuggestion[]> {
-  const schemaContext = serializeSchemas(schemas);
+  if (isDev()) {
+    console.log('inferRelationships pre request - schemas:', JSON.stringify(schemas))
+  }
+
+  const schemaContext = serializeSchemas(schemas)
 
   const userPrompt = `### 📂 DATABASE SCHEMA
 The following table schemas are available. Please suggest potential foreign key relationships between them.
@@ -256,31 +268,35 @@ The following table schemas are available. Please suggest potential foreign key 
 ${schemaContext}
 
 ### 🤖 YOUR RESPONSE (JSON ARRAY)
-`;
+`
 
-  const response = await getOpenAI().chat.completions.create({
+  const body: ChatCompletionCreateParamsNonStreaming = {
     model: getModelToUse(), // Or another suitable model
     messages: [
       { role: 'system', content: RELATION_INFERENCE_SYSTEM_PROMPT },
       { role: 'user', content: userPrompt },
     ],
     response_format: { type: 'json_object' }, // The API will return an object with a single key for the array
-  });
+  }
+  if (isDev()) {
+    console.log('pre request - body', body)
+  }
+  const response = await getOpenAI().chat.completions.create(body)
 
-  const resultJson = response.choices[0].message.content;
+  const resultJson = response.choices[0].message.content
   if (!resultJson) {
-    throw new Error('AI returned an empty response for relationship inference.');
+    throw new Error('AI returned an empty response for relationship inference.')
   }
 
   try {
     // The API might return an object like { "relationships": [...] } or directly the array.
     // Let's assume it might wrap it in an object for safety if response_format is json_object
-    const rawResult = JSON.parse(resultJson);
-    const relationships = Array.isArray(rawResult) ? rawResult : rawResult.relationships;
+    const rawResult = JSON.parse(resultJson)
+    const relationships = Array.isArray(rawResult) ? rawResult : rawResult.relationships
 
-    return RelationSuggestionListSchema.parse(relationships);
+    return RelationSuggestionListSchema.parse(relationships)
   } catch (error) {
-    console.error("Failed to parse or validate AI response for relationship inference:", error);
-    throw new Error(`AI returned invalid JSON or structure for relationships. Raw response: ${resultJson}`);
+    console.error('Failed to parse or validate AI response for relationship inference:', error)
+    throw new Error(`AI returned invalid JSON or structure for relationships. Raw response: ${resultJson}`)
   }
 }

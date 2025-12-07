@@ -24,7 +24,8 @@
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "NODE_ENV=development vitest --run"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.12",
@@ -71,6 +72,7 @@
     "typescript": "^5.3.3",
     "vite": "^5.0.10",
     "vite-plugin-electron": "^0.29.0",
+    "vitest": "^4.0.15",
     "wait-on": "^7.2.0"
   },
   "build": {

@@ -95,3 +95,46 @@ The project uses path aliases in `tsconfig.json` and `vite.config.ts` for cleane
 *   `@/`: Maps to `src/renderer/`
 *   `@shared/`: Maps to `src/shared/`
 *   `@types/`: Maps to `src/types/`
+
+## Session Summary: AI API 增强与测试框架迁移 (2025-12-07)
+
+本次会话中，我们对 Wansan Studio 进行了多项关键改进和现代化升级：
+
+### 📈 AI API 增强 (Bring Your Own Key - BYOK)
+
+*   **灵活配置**: 实现了对第三方 OpenAI 兼容 API 的完整支持，用户现在可以配置自定义的 `API Key`、`Base URL` 和 `Model`。
+    *   **核心文件**: `src/main/engine/ai-bridge.ts`, `src/main/services/ai.ts`
+    *   **实现细节**:
+        *   `ai-bridge.ts` 中的 `getOpenAI` 函数现在支持动态的 `apiKey` 和 `baseURL`。
+        *   引入了 `setAIConfig` 函数来集中管理 `apiKey`、`baseURL` 和 `model` 的更新。
+        *   `generateAnalysis` 和 `inferRelationships` 函数现在使用可配置的 `currentModel`。
+*   **配置持久化**: 通过集成 `electron-store`，AI 配置（`apiKey`, `baseURL`, `model`）现在可以跨应用会话持久化。
+    *   **核心文件**: `src/main/services/ai.ts`
+    *   **实现细节**: `AIService` 负责从 `electron-store` 加载、保存和应用 AI 配置。
+*   **环境变量支持**: `OPENAI_BASE_URL` 和 `OPENAI_MODEL` 已添加到 `.env.example`，并且应用会优先使用用户配置或环境变量中的值。
+*   **IPC 暴露**: 新增了 `get-ai-config` 和 `set-ai-config` IPC 通道，以便前端 UI 能够获取和更新 AI 配置。
+    *   **核心文件**: `src/main/services/ipc.ts`, `src/preload/index.ts`, `src/renderer/hooks/useIPC.ts`
+
+### 🧪 单元测试框架迁移与增强
+
+*   **引入 Vitest**: 将测试框架从一次性脚本迁移到现代的 [Vitest](https://vitest.dev/)。
+    *   **核心文件**: `package.json`, `vitest.config.ts`
+    *   **实现细节**:
+        *   安装 `vitest` 并创建 `vitest.config.ts`，配置了 Node.js 测试环境、别名解析和更长的测试超时时间（30秒）。
+        *   `package.json` 中的 `test` 脚本已更新为 `vitest --run`，确保测试在完成后退出，而非进入监听模式。
+*   **鲁棒性测试重构**:
+    *   将 `scripts/test-robustness.ts` 的逻辑重构为标准的 Vitest 测试套件 `src/main/engine/__tests__/robustness.test.ts`。
+    *   **修复了 ESM 兼容性问题**: 解决了 `duckdb` 和 `fs-extra` 在 ESM 模块导入中的 `SyntaxError` 和 `TypeError`，确保后端核心功能在 ESM 环境下正常运行。
+    *   **端到端 AI 验证**: 移除了 AI Key 缺失时的 Mock 逻辑，强制进行真实的 AI 调用，验证 AI 生成的 SQL 在 DuckDB 中的执行。
+    *   **增强数据验证**: 在测试中引入了更精细的数据断言，利用 AI 返回的 `viz_config` 动态验证 SQL 聚合结果的正确性。
+*   **多表关联测试**: 新增了对多表关联功能（`inferRelationships` 和多表 `generateAnalysis`）的测试。
+    *   **核心文件**: `src/main/engine/__tests__/robustness.test.ts`
+    *   **实现细节**: 模拟了 `orders.xlsx` 和 `customers.xlsx` 两个文件的导入，断言 `inferRelationships` 能正确识别 `customer_id` 到 `id` 的关联，并验证 AI 生成的多表 JOIN 查询结果的准确性。
+
+### 现代化与兼容性改进
+
+*   **ESM 迁移**: 将整个项目的主进程构建环境迁移到 ESM 模块系统。
+    *   **核心文件**: `package.json` (`"type": "module"`), `.eslintrc.js` (重命名为 `.eslintrc.cjs`), `tsconfig.main.json`
+    *   **实现细节**: 调整了 TypeScript 编译配置 (`module: NodeNext`, `moduleResolution: NodeNext`)。
+*   **构建工具升级**: 将主进程的构建工具从 `tsc` 切换到 `tsup`，以更好地处理 ESM 模块的打包和兼容性问题，并自动处理 `__dirname` 和 `__filename` 的 shim。
+    *   **核心文件**: `package.json` (`build:main` 脚本), `tsup.config.ts`
