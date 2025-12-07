@@ -70,7 +70,7 @@ async function getSampleValues(db: duckdb.Database, tableName: string, columnNam
     });
 }
 
-export async function ingestExcelFile(fileBuffer: Buffer, db: duckdb.Database, fileName: string): Promise<TableSchema> {
+export async function ingestExcelFile(fileBuffer: Buffer, db: duckdb.Database, fileName: string, targetTableName?: string): Promise<TableSchema> {
   const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
   const firstSheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[firstSheetName];
@@ -93,7 +93,19 @@ export async function ingestExcelFile(fileBuffer: Buffer, db: duckdb.Database, f
     }).join(',')
   ).join('\n');
 
-  const tableName = await getUniqueTableName(db, fileName);
+  let tableName: string;
+  if (targetTableName) {
+    tableName = targetTableName;
+    await new Promise<void>((resolve, reject) => {
+      db.exec(`DROP TABLE IF EXISTS "${tableName}"`, (err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+  } else {
+    tableName = await getUniqueTableName(db, fileName);
+  }
+  
   const tempFilePath = path.join(os.tmpdir(), `${tableName}.csv`);
 
   try {

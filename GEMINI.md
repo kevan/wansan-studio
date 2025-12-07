@@ -197,3 +197,31 @@ The project uses path aliases in `tsconfig.json` and `vite.config.ts` for cleane
 *   **Toast 通知系统**: 创建了轻量级的 Toast Store 和组件，用于展示 AI 分析状态（Analyzing/Success/Error）。
 *   **测试增强**: 为渲染层组件（Renderer）配置了 Vitest 支持，并为 `tree-utils` 编写了单元测试。
 *   **类型定义**: 扩展了 `ColumnType` 以支持 `INTEGER` 和 `TIMESTAMP`，完善了 TypeScript 类型安全。
+
+## 会话摘要：数据同步与 Schema 演进处理 (2025-12-08)
+
+本次会话实现了完整的数据同步闭环，确保 DuckDB 中的数据与用户本地文件保持一致，并处理了文件重载时的 Schema 变更问题。
+
+### 🔄 数据同步闭环 (Data Sync Loop)
+
+*   **被动检测**: 实现了 `useFileSync` Hook，监听窗口 `focus` 事件。当应用获得焦点时，调用主进程 `checkFilesConsistency` 对比文件 `mtime`。
+*   **状态管理**: `FileNode` 新增 `status` ('synced' | 'out-of-sync') 和 `lastModified` 字段。
+*   **UI 反馈**: 当检测到文件变更时，左侧文件树节点会显示黄色圆点（`AlertCircle`），提示用户数据已过时。
+
+### ♻️ 手动重载与 Schema 演进 (Reload & Schema Evolution)
+
+*   **重载机制**:
+    *   **UI**: 文件树右键菜单新增 "Reload Data" 选项。
+    *   **后端**: `FileService.reIngestFile` 复用摄取逻辑，支持覆盖现有 DuckDB 表，并返回新的 Schema 和时间戳。
+*   **Schema 调和策略 (Merge Strategy)**:
+    *   在 `useFileStore.reloadFile` 中实现了智能合并算法。
+    *   **保留配置**: 如果新旧 Schema 中列名一致，自动继承用户的语义配置（`userType`, `alias`, `isKey`）。
+    *   **新增/删除**: 新增列使用默认配置；删除列自动清理相关的表关联关系。
+    *   **用户反馈**: 如果重载导致关联关系断裂，通过 Toast 显示警告而非简单的成功提示。
+
+### 涉及核心文件
+
+*   `src/renderer/hooks/useFileSync.ts`: 焦点检测逻辑。
+*   `src/renderer/stores/useFileStore.ts`: `reloadFile` 合并算法。
+*   `src/main/services/file.ts`: `reIngestFile` 实现。
+*   `src/renderer/components/data-tree/TreeNode.tsx`: UI 状态指示与菜单动作。

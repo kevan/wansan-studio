@@ -1,25 +1,9 @@
 import { create } from 'zustand'
-import type { ColumnSchema } from '../../shared/types'
+import type { ColumnSchema, FileNode, SyncStatus } from '../../shared/types'
 
 // Re-export shared types for other components to use
-export type { ColumnSchema }
-
-// 文件状态类型
-export type FileStatus = 'uploading' | 'processing' | 'ready' | 'error'
-
-// 文件资产类型
-export interface FileAsset {
-  id: string
-  name: string
-  path: string
-  tableName: string // DuckDB 中的表名
-  status: FileStatus
-  size?: number
-  columns: ColumnSchema[]
-  rowCount?: number
-  error?: string
-  createdAt: number
-}
+export type { ColumnSchema, FileNode, SyncStatus }
+export type FileAsset = FileNode; // Backward compatibility alias
 
 // 表关联类型
 export interface Relation {
@@ -49,7 +33,7 @@ export interface ProjectState {
   projectName: string
 
   // 文件资产
-  files: FileAsset[]
+  files: FileNode[]
 
   // 表关联关系
   relations: Relation[]
@@ -65,8 +49,8 @@ export interface ProjectState {
 
   // Actions
   setProjectName: (name: string) => void
-  addFile: (file: Omit<FileAsset, 'id' | 'createdAt'>) => string
-  updateFile: (id: string, updates: Partial<FileAsset>) => void
+  addFile: (file: Omit<FileNode, 'id' | 'createdAt' | 'lastModified'> & { status?: SyncStatus }) => string
+  updateFile: (id: string, updates: Partial<FileNode>) => void
   removeFile: (id: string) => void
   setActiveFile: (id: string | null) => void
 
@@ -89,6 +73,10 @@ export interface ProjectState {
   // Schema 确认
   setShowSchemaConfirm: (show: boolean) => void
   confirmSchema: () => void
+
+  // Sync Actions
+  markAsStale: (ids: string[]) => void
+  reloadFile: (fileId: string, result: { lastModified: number, newColumns: ColumnSchema[] }) => number // Returns dropped relations count
 
   // 重置
   reset: () => void
@@ -115,10 +103,13 @@ export const useFileStore = create<ProjectState>((set, get) => ({
 
   addFile: file => {
     const id = generateId()
-    const newFile: FileAsset = {
+    const now = Date.now()
+    const newFile: FileNode = {
       ...file,
       id,
-      createdAt: Date.now(),
+      createdAt: now,
+      lastModified: now, // Initial assumption, will be corrected by watcher if needed
+      status: file.status || 'ready', // Default to ready if not provided (e.g. direct load), or use provided (e.g. uploading)
     }
     set(state => ({
       files: [...state.files, newFile],
@@ -253,6 +244,61 @@ export const useFileStore = create<ProjectState>((set, get) => ({
   setShowSchemaConfirm: show => set({ showSchemaConfirm: show }),
 
   confirmSchema: () => set({ showSchemaConfirm: false }),
+
+  markAsStale: (ids) => set((state) => ({
+    files: state.files.map(f => ids.includes(f.id) ? { ...f, status: 'out-of-sync' } : f)
+  })),
+
+  reloadFile: (fileId, { lastModified, newColumns }) => {
+    let droppedRelationsCount = 0;
+    set((state) => {
+      const file = state.files.find(f => f.id === fileId);
+      if (!file) return state;
+
+      const oldColumns = file.columns;
+      
+      const mergedColumns = newColumns.map(newCol => {
+        const oldCol = oldColumns.find(c => c.name === newCol.name);
+        
+        if (oldCol) {
+          return {
+            ...newCol,
+            userType: oldCol.userType,
+            alias: oldCol.alias,
+            isKey: oldCol.isKey,
+            // If the user changed the type in UI, it's stored in 'type' currently. 
+            // We should preserve 'type' as well if we consider it user-defined.
+            // But if the underlying type changed (e.g. string -> int), keeping 'type' might be wrong.
+            // However, 'userType' is the new explicit override. 
+            // Existing logic uses 'type'. Let's preserve 'type' if it matches 'userType' or just preserve it?
+            // "Preserve user configurations (semantic types)"
+            type: oldCol.type, 
+          };
+        } else {
+          return newCol;
+        }
+      });
+
+      const activeRelations = state.relations.filter(r => {
+        let valid = true;
+        if (r.fileAId === fileId) {
+          if (!mergedColumns.some(c => c.name === r.columnA)) valid = false;
+        }
+        if (r.fileBId === fileId) {
+          if (!mergedColumns.some(c => c.name === r.columnB)) valid = false;
+        }
+        return valid;
+      });
+
+      droppedRelationsCount = state.relations.length - activeRelations.length;
+
+      return {
+        files: state.files.map(f => f.id === fileId ? { ...f, columns: mergedColumns, status: 'ready', lastModified } : f),
+        relations: activeRelations
+      };
+    });
+    return droppedRelationsCount;
+  },
 
   reset: () => set(initialState),
 }))

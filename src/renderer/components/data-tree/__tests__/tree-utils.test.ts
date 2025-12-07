@@ -19,6 +19,7 @@ describe('tree-utils', () => {
         tableName: 't_test',
         status: 'ready',
         createdAt: 123456,
+        lastModified: 123456,
         columns: [
           { name: 'id', safeName: 'id', type: 'INTEGER', sampleValues: [] },
           { name: 'name', safeName: 'name', type: 'VARCHAR', sampleValues: [] }
@@ -42,10 +43,12 @@ describe('tree-utils', () => {
     it('should mark foreign keys', () => {
       const mockFile1: FileAsset = {
         id: 'f1', name: 'orders', path: '', tableName: 't_orders', status: 'ready', createdAt: 0,
+        lastModified: Date.now(),
         columns: [{ name: 'user_id', safeName: 'user_id', type: 'INTEGER', sampleValues: [] }]
       }
       const mockFile2: FileAsset = {
         id: 'f2', name: 'users', path: '', tableName: 't_users', status: 'ready', createdAt: 0,
+        lastModified: Date.now(),
         columns: [{ name: 'id', safeName: 'id', type: 'INTEGER', sampleValues: [] }]
       }
       

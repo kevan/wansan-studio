@@ -1,4 +1,4 @@
-import { FileAsset, Relation } from '../../stores/useFileStore'
+import { FileNode, Relation, SyncStatus } from '../../stores/useFileStore'
 
 export interface TreeNodeData {
   id: string
@@ -13,6 +13,7 @@ export interface TreeNodeData {
   columnType?: string
   isKey?: boolean // Is Primary Key (or similar concept in our simple app)
   isForeignKey?: boolean // Is part of a relation
+  status?: SyncStatus
 }
 
 export const NODE_TYPES = {
@@ -26,7 +27,7 @@ export const NODE_TYPES = {
  * Transforms Store data into a Tree structure
  */
 export function buildTreeData(
-  files: FileAsset[],
+  files: FileNode[],
   relations: Relation[]
 ): TreeNodeData[] {
   // 1. Build File Nodes (Data Sources)
@@ -55,6 +56,7 @@ export function buildTreeData(
       type: 'file',
       fileId: file.id,
       children: columnNodes,
+      status: file.status,
     }
   })
 

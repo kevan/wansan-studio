@@ -25,6 +25,12 @@ const electronAPI = {
   setAIConfig: (config: any) => ipcRenderer.invoke('set-ai-config', config),
   clearAIConfig: () => ipcRenderer.invoke('clear-ai-config'),
 
+  // 文件同步
+  checkFilesConsistency: (files: any[]) =>
+    ipcRenderer.invoke('check-files-consistency', files),
+  reIngestFile: (filePath: string, tableName: string) =>
+    ipcRenderer.invoke('re-ingest-file', filePath, tableName),
+
   // 导出功能
   exportPDF: (data: any) => ipcRenderer.invoke('export-pdf', data),
 

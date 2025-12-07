@@ -2,6 +2,7 @@ import fs from 'fs-extra';
 import { extname, basename } from 'path';
 import { DatabaseService } from '../database/duckdb';
 import { ingestExcelFile, getUniqueTableName } from '../engine/ingestion';
+import { ReloadResult, ColumnSchema, ColumnType } from '../../shared/types';
 
 export class FileService {
   constructor(private databaseService: DatabaseService) {}
@@ -71,5 +72,64 @@ export class FileService {
     } catch (error) {
       throw new Error(`Failed to parse CSV file: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  async reIngestFile(filePath: string, tableName: string): Promise<ReloadResult> {
+    const ext = extname(filePath).toLowerCase();
+    const stats = await fs.stat(filePath);
+    let columns: ColumnSchema[] = [];
+
+    if (ext === '.xlsx' || ext === '.xls') {
+       const fileBuffer = await fs.readFile(filePath);
+       const fileName = basename(filePath);
+       // ingestExcelFile returns TableSchema which has columns
+       const result = await ingestExcelFile(fileBuffer, this.databaseService.getDb(), fileName, tableName);
+       columns = result.columns;
+    } else if (ext === '.csv') {
+       await this.databaseService.query(`DROP TABLE IF EXISTS "${tableName}"`);
+       const sql = `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${filePath.replace(/\\/g, '/')}')`;
+       await this.databaseService.query(sql);
+
+       // We need to fetch the schema manually for CSV as we did in parseCSVFile
+       // Ideally parseCSVFile logic should be extracted but for now duplication is small
+       const columnsResult = await new Promise<any[]>((resolve, reject) => {
+          this.databaseService.getDb().all(`PRAGMA table_info('${tableName}');`, (err, res) => {
+              if (err) return reject(err);
+              resolve(res);
+          });
+       });
+       
+       for (const col of columnsResult) {
+          // We can't easily get sample values here without importing getSampleValues helper or duplicate it.
+          // But ingestExcelFile uses getSampleValues. 
+          // Let's reuse DatabaseService.getSchema logic? 
+          // DatabaseService.getSchema returns { columns: ... } but maybe not sampleValues as robustly as ingestion?
+          // Actually DatabaseService.getSchema calls PRAGMA table_info too.
+          // ingestExcelFile calculates sampleValues.
+          // For CSV, we didn't calculate sampleValues in reIngestFile before (it was missing).
+          // Now we need newColumns.
+          
+          // Let's use databaseService.query to get sample values
+          const samplesRes = await this.databaseService.query(`SELECT DISTINCT "${col.name}" FROM "${tableName}" WHERE "${col.name}" IS NOT NULL LIMIT 3`);
+          const sampleValues = samplesRes.map(row => {
+             const val = row[col.name];
+             return typeof val === 'bigint' ? val.toString() : val;
+          });
+
+          columns.push({
+            name: col.name,
+            safeName: col.name,
+            type: col.type as ColumnType,
+            sampleValues,
+          });
+       }
+    } else {
+       throw new Error(`Unsupported file type: ${ext}`);
+    }
+    
+    return {
+      lastModified: stats.mtimeMs,
+      newColumns: columns
+    };
   }
 }

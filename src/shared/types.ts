@@ -7,6 +7,8 @@ export interface ColumnSchema {
   sampleValues: any[]; // Top 3 non-null values for AI context
   nullable?: boolean; // From UI state, indicates if column can have nulls
   isKey?: boolean;    // From UI state, indicates if column is a join key
+  alias?: string;     // User defined alias for the column
+  userType?: ColumnType; // User defined type override
 }
 
 export interface TableSchema {
@@ -37,4 +39,25 @@ export interface RelationSuggestion {
   targetColumn: string; // e.g., "id"
   confidence: number;   // 0.0 to 1.0
   reason: string;       // Explanation for the UI (e.g. "Column names match")
+}
+
+export type SyncStatus = 'uploading' | 'processing' | 'ready' | 'error' | 'out-of-sync' | 'missing';
+
+export interface FileNode {
+  id: string;
+  name: string;
+  path: string;
+  tableName: string; // DuckDB table name
+  status: SyncStatus;
+  size?: number;
+  columns: ColumnSchema[];
+  rowCount?: number;
+  error?: string;
+  lastModified: number; // Timestamp (ms) of file modification
+  createdAt: number;
+}
+
+export interface ReloadResult {
+  lastModified: number;
+  newColumns: ColumnSchema[];
 }

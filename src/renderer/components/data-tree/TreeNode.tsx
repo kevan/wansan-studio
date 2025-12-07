@@ -16,7 +16,8 @@ import {
   Eye,
   Pencil,
   RefreshCw,
-  X
+  X,
+  AlertCircle
 } from 'lucide-react'
 import { MouseEvent } from 'react'
 import {
@@ -31,6 +32,7 @@ import {
 } from '../ui/context-menu'
 import { useFileStore } from '../../stores/useFileStore'
 import { useToastStore } from '../../stores/useToastStore'
+import { useReIngestFile } from '../../hooks/useIPC'
 
 interface TreeNodeProps {
   node: NodeApi<TreeNodeData>
@@ -41,8 +43,9 @@ interface TreeNodeProps {
 export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
   const data = node.data
   const isSelected = node.isSelected
-  const { removeFile, setActiveFile, removeRelation, updateColumn } = useFileStore()
+  const { removeFile, setActiveFile, removeRelation, updateColumn, files } = useFileStore()
   const { addToast } = useToastStore()
+  const reIngest = useReIngestFile()
 
   // --- Icon Logic ---
   const getIcon = () => {
@@ -117,6 +120,40 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
     addToast({ title: 'Rename Feature', description: 'Coming soon...', type: 'info', duration: 2000 })
   }
 
+  const handleReload = async () => {
+    if (!data.fileId) return
+    const file = files.find(f => f.id === data.fileId)
+    if (!file) return
+
+    // Dismiss any existing persistent toast? We don't have IDs easily. 
+    // Just add new ones.
+    const toastId = addToast({ title: 'Reloading...', type: 'info', duration: 0 }) 
+    
+    try {
+        const result = await reIngest.mutateAsync({ filePath: file.path, tableName: file.tableName })
+        // result is ReloadResult { lastModified, newColumns }
+        
+        // Call store action
+        // We need to access the store action. It's not destructured above.
+        // Let's grab it from the store hook.
+        const droppedCount = useFileStore.getState().reloadFile(file.id, result)
+
+        addToast({ title: 'Reloaded successfully', type: 'success', duration: 2000 })
+        
+        if (droppedCount > 0) {
+           addToast({ 
+             title: 'Warning', 
+             description: `Reload complete, but ${droppedCount} relationship(s) were removed due to missing columns.`, 
+             type: 'warning', 
+             duration: 5000 
+           })
+        }
+
+    } catch (e) {
+        addToast({ title: 'Reload failed', description: String(e), type: 'error', duration: 3000 })
+    }
+  }
+
   // --- Interaction ---
   const handleClick = (e: MouseEvent) => {
     e.stopPropagation()
@@ -154,8 +191,13 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
           </div>
 
           {/* Icon */}
-          <div className="flex items-center justify-center w-5 shrink-0 mr-1">
+          <div className="flex items-center justify-center w-5 shrink-0 mr-1 relative">
             {getIcon()}
+            {data.type === 'file' && data.status === 'out-of-sync' && (
+                <div className="absolute -top-1 -right-1 bg-white rounded-full">
+                   <AlertCircle className="w-2.5 h-2.5 text-amber-500 fill-white" />
+                </div>
+            )}
           </div>
 
           {/* Label */}
@@ -184,6 +226,10 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
             <ContextMenuItem onClick={handlePreviewFile}>
               <Eye className="w-4 h-4 mr-2" />
               Preview Data
+            </ContextMenuItem>
+            <ContextMenuItem onClick={handleReload} disabled={reIngest.isPending}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${reIngest.isPending ? 'animate-spin' : ''}`} />
+              Reload Data
             </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem 

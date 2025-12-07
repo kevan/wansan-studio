@@ -3,6 +3,7 @@ import { useFileStore } from '../stores/useFileStore'
 import { useParseFile } from '../hooks/useIPC'
 import { DataTreeManager } from './data-tree'
 import { useAutoLink } from '../hooks/useAutoLink'
+import { useFileSync } from '../hooks/useFileSync'
 
 interface SidebarProps {
   onImportData?: () => void
@@ -16,6 +17,9 @@ export function Sidebar(_props: SidebarProps) {
   const [isImporting, setIsImporting] = useState(false)
   const parseFileMutation = useParseFile()
   const { checkAutoLink } = useAutoLink()
+  
+  // Enable automatic file synchronization checks
+  useFileSync()
 
   const handleNameSubmit = () => {
     if (editName.trim()) {

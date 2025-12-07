@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
+import type { ReloadResult } from '../../shared/types'
 
 // IPC 通信接口类型定义
 interface IPCResponse<T = any> {
@@ -23,6 +24,9 @@ const mockIPC = {
   inferRelationships: async (schemas: any[]) => { console.log(`Mock inferRelationships, Schemas: ${JSON.stringify(schemas)}`); return { success: true, data: [] } },
   getAIConfig: async () => { return { success: true, data: {} } },
   setAIConfig: async (config: any) => { console.log(`Mock setAIConfig: ${config}`); return { success: true } },
+  clearAIConfig: async () => { console.log(`Mock clearAIConfig`); return { success: true } },
+  checkFilesConsistency: async (files: any[]) => { console.log(`Mock checkFilesConsistency: ${files.length}`); return { success: true, data: [] } },
+  reIngestFile: async (filePath: string, tableName: string) => { console.log(`Mock reIngestFile: ${filePath}`); return { success: true, data: { lastModified: Date.now(), newColumns: [] } } },
   exportPDF: async (data: any) => { console.log(`Mock exportPDF: ${data}`); return { success: true } },
   platform: 'darwin', // Mock platform
   version: { electron: 'mock', chrome: 'mock', node: 'mock' } // Mock versions
@@ -43,6 +47,9 @@ declare global {
       inferRelationships: (schemas: any[]) => Promise<IPCResponse>
       getAIConfig: () => Promise<IPCResponse>
       setAIConfig: (config: any) => Promise<IPCResponse>
+      clearAIConfig: () => Promise<IPCResponse>
+      checkFilesConsistency: (files: any[]) => Promise<IPCResponse>
+      reIngestFile: (filePath: string, tableName: string) => Promise<IPCResponse<ReloadResult>>
       exportPDF: (data: any) => Promise<IPCResponse>
       platform: string
       version: NodeJS.ProcessVersions
@@ -225,6 +232,32 @@ export const useVersion = () => {
     queryKey: ['version'],
     queryFn: async () => getIpc().version,
     staleTime: Infinity,
+  })
+}
+
+// 检查文件一致性 Hook
+export const useCheckFilesConsistency = () => {
+  return useMutation({
+    mutationFn: async (files: any[]) => {
+      const response = await getIpc().invoke('check-files-consistency', files)
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to check files consistency')
+      }
+      return response.data
+    },
+  })
+}
+
+// 重新摄取文件 Hook
+export const useReIngestFile = () => {
+  return useMutation({
+    mutationFn: async ({ filePath, tableName }: { filePath: string; tableName: string }) => {
+      const response = await getIpc().invoke('re-ingest-file', filePath, tableName)
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to re-ingest file')
+      }
+      return response.data as ReloadResult
+    },
   })
 }
 

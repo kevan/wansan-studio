@@ -3,7 +3,8 @@ import { DatabaseService } from '../database/duckdb'
 import { FileService } from './file'
 import { AIService } from './ai'
 import { executeSQL } from '../engine/executor'
-import type { TableSchema } from '../../shared/types'
+import { checkFilesConsistency } from '../engine/file-watcher'
+import type { TableSchema, FileNode } from '../../shared/types'
 
 export function setupIPC(databaseService: DatabaseService, aiService: AIService) {
   const fileService = new FileService(databaseService)
@@ -151,6 +152,34 @@ export function setupIPC(databaseService: DatabaseService, aiService: AIService)
       return { success: true };
     } catch (error) {
       return { success: false, error: 'Failed to clear AI config' };
+    }
+  });
+
+  // 检查文件一致性
+  ipcMain.handle('check-files-consistency', async (_event, files: FileNode[]) => {
+    try {
+      const changedIds = await checkFilesConsistency(files);
+      return { success: true, data: changedIds };
+    } catch (error) {
+      console.error('Check files consistency error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  });
+
+  // 重新摄取文件
+  ipcMain.handle('re-ingest-file', async (_event, filePath: string, tableName: string) => {
+    try {
+      const result = await fileService.reIngestFile(filePath, tableName);
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('Re-ingest file error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
     }
   });
 
