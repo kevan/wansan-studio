@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useFileStore } from '../stores/useFileStore'
 import { useParseFile } from '../hooks/useIPC'
 import { DataTreeManager } from './data-tree'
+import { useAutoLink } from '../hooks/useAutoLink'
 
 interface SidebarProps {
   onImportData?: () => void
@@ -14,6 +15,7 @@ export function Sidebar(_props: SidebarProps) {
   const [editName, setEditName] = useState(projectName)
   const [isImporting, setIsImporting] = useState(false)
   const parseFileMutation = useParseFile()
+  const { checkAutoLink } = useAutoLink()
 
   const handleNameSubmit = () => {
     if (editName.trim()) {
@@ -24,6 +26,7 @@ export function Sidebar(_props: SidebarProps) {
 
   // 处理多文件导入
   const handleImportClick = async () => {
+    console.log('handleImportClick: Started')
     if (!window.electronAPI) {
       alert('Electron API 不可用')
       return
@@ -32,10 +35,13 @@ export function Sidebar(_props: SidebarProps) {
     try {
       setIsImporting(true)
       const result = await window.electronAPI.selectFiles()
+      console.log('handleImportClick: selectFiles result', result)
 
       if (result.success && result.data && result.data.length > 0) {
+        console.log('handleImportClick: Files selected', result.data.length)
         for (const filePath of result.data) {
           const fileName = filePath.split('/').pop() || 'unknown'
+          console.log('handleImportClick: Processing file', fileName)
 
           // 添加文件到 store
           const fileId = addFile({
@@ -49,6 +55,7 @@ export function Sidebar(_props: SidebarProps) {
           try {
             updateFile(fileId, { status: 'processing' })
             const parseResult = await parseFileMutation.mutateAsync(filePath)
+            console.log('handleImportClick: Parsed file', fileName, parseResult.tableName)
 
             // 从 preview 数据中提取每列的样本值
             const columns = (parseResult.schema?.columns || []).map(
@@ -106,12 +113,20 @@ export function Sidebar(_props: SidebarProps) {
               rowCount: parseResult.rowCount,
             })
           } catch (error) {
+            console.error('handleImportClick: Error processing file', fileName, error)
             updateFile(fileId, {
               status: 'error',
               error: error instanceof Error ? error.message : '解析失败',
             })
           }
         }
+        
+        // Trigger auto-link analysis after all files are processed
+        const currentFiles = useFileStore.getState().files
+        console.log('Processed files. Triggering auto-link with:', currentFiles.length, 'files')
+        checkAutoLink(currentFiles)
+      } else {
+        console.log('handleImportClick: No files selected or failed')
       }
     } catch (error) {
       console.error('Import error:', error)

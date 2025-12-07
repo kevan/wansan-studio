@@ -1,158 +1,122 @@
-/**
- * Tree data transformation utilities
- * 将 Store 数据转换为 react-arborist 树数据结构
- */
+import { FileAsset, Relation } from '../../stores/useFileStore'
 
-import { FileAsset, Relation, ColumnSchema } from '../../stores/useFileStore'
-
-// 树节点类型
-export type TreeNodeType = 'file' | 'column' | 'group' | 'relation'
-
-// 列类型映射
-export type ColumnDisplayType = 'string' | 'number' | 'date' | 'boolean' | 'unknown'
-
-// 树节点数据接口
 export interface TreeNodeData {
   id: string
   name: string
-  type: TreeNodeType
-  // File 相关
-  fileId?: string
-  fileName?: string
-  fileStatus?: string
-  // Column 相关
-  columnName?: string
-  columnType?: ColumnDisplayType
-  isKey?: boolean
-  // Relation 相关
-  sourceFileId?: string
-  sourceColId?: string
-  targetFileId?: string
-  targetColId?: string
-  relationId?: string
-  // 子节点
+  type: 'folder' | 'file' | 'column' | 'relation'
   children?: TreeNodeData[]
+  // Original data references
+  fileId?: string
+  columnName?: string
+  relationId?: string
+  // Display metadata
+  columnType?: string
+  isKey?: boolean // Is Primary Key (or similar concept in our simple app)
+  isForeignKey?: boolean // Is part of a relation
 }
 
-/**
- * 将 ColumnSchema 的类型映射到显示类型
- */
-function mapColumnType(type: string): ColumnDisplayType {
-  const lowerType = type.toLowerCase()
-  if (lowerType.includes('int') || lowerType.includes('float') || lowerType.includes('double') || lowerType.includes('decimal') || lowerType.includes('numeric')) {
-    return 'number'
-  }
-  if (lowerType.includes('date') || lowerType.includes('time') || lowerType.includes('timestamp')) {
-    return 'date'
-  }
-  if (lowerType.includes('bool')) {
-    return 'boolean'
-  }
-  if (lowerType.includes('varchar') || lowerType.includes('text') || lowerType.includes('string') || lowerType.includes('char')) {
-    return 'string'
-  }
-  return 'unknown'
-}
+export const NODE_TYPES = {
+  FOLDER: 'folder',
+  FILE: 'file',
+  COLUMN: 'column',
+  RELATION: 'relation',
+} as const
 
 /**
- * 将 FileAsset 转换为树节点
+ * Transforms Store data into a Tree structure
  */
-function fileToTreeNode(file: FileAsset): TreeNodeData {
-  const children: TreeNodeData[] = file.columns.map((col: ColumnSchema) => ({
-    id: `col_${file.id}_${col.name}`,
-    name: col.name,
-    type: 'column' as TreeNodeType,
-    fileId: file.id,
-    fileName: file.name,
-    columnName: col.name,
-    columnType: mapColumnType(col.type),
-    isKey: col.isKey,
-  }))
+export function buildTreeData(
+  files: FileAsset[],
+  relations: Relation[]
+): TreeNodeData[] {
+  // 1. Build File Nodes (Data Sources)
+  const fileNodes: TreeNodeData[] = files.map(file => {
+    // Check if any column in this file is involved in a relation
+    const relatedColumns = new Set<string>()
+    relations.forEach(rel => {
+      if (rel.fileAId === file.id) relatedColumns.add(rel.columnA)
+      if (rel.fileBId === file.id) relatedColumns.add(rel.columnB)
+    })
 
-  return {
-    id: `file_${file.id}`,
-    name: file.name,
-    type: 'file',
-    fileId: file.id,
-    fileName: file.name,
-    fileStatus: file.status,
-    children: children.length > 0 ? children : undefined,
-  }
-}
+    const columnNodes: TreeNodeData[] = file.columns.map(col => ({
+      id: `col:${file.id}:${col.name}`,
+      name: col.name,
+      type: 'column',
+      fileId: file.id,
+      columnName: col.name,
+      columnType: col.type,
+      isKey: col.isKey,
+      isForeignKey: relatedColumns.has(col.name),
+    }))
 
-/**
- * 将 Relation 转换为树节点
- */
-function relationToTreeNode(relation: Relation, files: FileAsset[]): TreeNodeData | null {
-  const sourceFile = files.find(f => f.id === relation.fileAId)
-  const targetFile = files.find(f => f.id === relation.fileBId)
-  
-  if (!sourceFile || !targetFile) return null
-
-  const name = `${sourceFile.name}.${relation.columnA} → ${targetFile.name}.${relation.columnB}`
-
-  return {
-    id: `rel_${relation.id}`,
-    name,
-    type: 'relation',
-    relationId: relation.id,
-    sourceFileId: relation.fileAId,
-    sourceColId: relation.columnA,
-    targetFileId: relation.fileBId,
-    targetColId: relation.columnB,
-  }
-}
-
-/**
- * 将 Store 数据转换为树数据结构
- */
-export function buildTreeData(files: FileAsset[], relations: Relation[]): TreeNodeData[] {
-  const treeData: TreeNodeData[] = []
-
-  // 添加文件节点
-  files.forEach(file => {
-    treeData.push(fileToTreeNode(file))
+    return {
+      id: `file:${file.id}`,
+      name: file.tableName || file.name, // Prefer tableName (e.g. t_orders)
+      type: 'file',
+      fileId: file.id,
+      children: columnNodes,
+    }
   })
 
-  // 如果有关联关系，添加关联组
-  if (relations.length > 0) {
-    const relationNodes = relations
-      .map(rel => relationToTreeNode(rel, files))
-      .filter((node): node is TreeNodeData => node !== null)
+  // 2. Build Relation Nodes
+  const relationNodes: TreeNodeData[] = relations.map(rel => {
+    const fileA = files.find(f => f.id === rel.fileAId)
+    const fileB = files.find(f => f.id === rel.fileBId)
+    
+    // Fallback names if file not found (shouldn't happen)
+    const tableA = fileA?.tableName || rel.fileAId
+    const tableB = fileB?.tableName || rel.fileBId
 
-    if (relationNodes.length > 0) {
-      treeData.push({
-        id: 'group_relations',
-        name: 'Relations',
-        type: 'group',
-        children: relationNodes,
-      })
+    return {
+      id: `rel:${rel.id}`,
+      name: `${tableA} ↔ ${tableB}`,
+      type: 'relation',
+      relationId: rel.id,
     }
-  }
+  })
 
-  return treeData
+  // 3. Construct Root Nodes
+  const rootNodes: TreeNodeData[] = [
+    {
+      id: 'root_files',
+      name: 'Data Sources',
+      type: 'folder',
+      children: fileNodes,
+    },
+    {
+      id: 'root_relations',
+      name: 'Relationships',
+      type: 'folder',
+      children: relationNodes,
+    },
+  ]
+
+  return rootNodes
 }
 
 /**
- * 从树节点 ID 中提取实际的文件/列 ID
+ * Helper to parse node IDs for actions
  */
-export function parseNodeId(nodeId: string): { type: TreeNodeType; id: string; parentId?: string } {
-  if (nodeId.startsWith('file_')) {
-    return { type: 'file', id: nodeId.replace('file_', '') }
+export function parseNodeId(id: string) {
+  const parts = id.split(':')
+  // Handle root nodes
+  if (id.startsWith('root_')) {
+    return { type: 'folder', id }
   }
-  if (nodeId.startsWith('col_')) {
-    const parts = nodeId.replace('col_', '').split('_')
-    // 格式: col_{fileId}_{columnName}
-    const fileId = parts[0]
-    const columnName = parts.slice(1).join('_')
-    return { type: 'column', id: columnName, parentId: fileId }
+  
+  const type = parts[0]
+  
+  if (type === 'file') {
+    return { type: 'file', id: parts[1] }
   }
-  if (nodeId.startsWith('rel_')) {
-    return { type: 'relation', id: nodeId.replace('rel_', '') }
+  
+  if (type === 'col') {
+    return { type: 'column', parentId: parts[1], id: parts[2] } // id here is columnName
   }
-  if (nodeId.startsWith('group_')) {
-    return { type: 'group', id: nodeId.replace('group_', '') }
-  }
-  return { type: 'file', id: nodeId }
-}
 
+  if (type === 'rel') {
+    return { type: 'relation', id: parts[1] }
+  }
+
+  return { type: 'unknown', id }
+}

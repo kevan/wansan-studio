@@ -3,6 +3,7 @@ import { Sidebar } from './components/Sidebar'
 import { MainContent } from './components/MainContent'
 import { DevConsole } from './components/DevConsole'
 import { isDev } from './utils/env'
+import { ToastContainer } from './components/Toast'
 
 function App() {
   const [showShowcase, setShowShowcase] = useState(false)
@@ -31,6 +32,7 @@ function App() {
 
   return (
     <div className="flex h-screen overflow-hidden">
+      <ToastContainer />
       {/* 左侧 Sidebar - 260px fixed */}
       <Sidebar onImportData={handleImportData} />
 

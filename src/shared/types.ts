@@ -1,4 +1,4 @@
-export type ColumnType = 'VARCHAR' | 'DOUBLE' | 'BOOLEAN' | 'DATE';
+export type ColumnType = 'VARCHAR' | 'DOUBLE' | 'BOOLEAN' | 'DATE' | 'INTEGER' | 'TIMESTAMP';
 
 export interface ColumnSchema {
   name: string;       // Original column name (e.g., "销售额(万元)")

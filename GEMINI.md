@@ -166,3 +166,34 @@ The project uses path aliases in `tsconfig.json` and `vite.config.ts` for cleane
 ### 成果:
 
 现在，Wansan Studio 在数据摄取过程中能够从文件名派生出更具业务意义的表格名称，并将这些名称及其原始文件名作为重要上下文传递给 AI 模型，从而显著提升了 AI 理解用户查询和生成准确 SQL 的能力。
+
+## 会话摘要: 数据树管理器与自动关联逻辑 (2025-12-08)
+
+本次会话重点实现了左侧边栏的数据管理核心功能，包括高性能树形视图、上下文菜单操作，以及基于 AI 的表关系自动推断。
+
+### 🌳 数据树管理器 (Tree Data Manager)
+
+*   **架构设计**: 采用 `react-arborist` 实现了高性能的虚拟化树形组件，支持大量文件和列的流畅渲染。
+*   **数据转换**: 实现了 `tree-utils.ts` 中的 `buildTreeData` 函数，将 Zustand Store 的扁平化数据动态转换为层级结构（File -> Column）。
+    *   **ID 策略**: `file:ID`, `col:fileID:colName`, `rel:ID`。
+    *   **视觉增强**: 为不同数据类型（文本、数字、日期、布尔）和外键（FK Badge）实现了特定的图标和徽章。
+*   **交互实现**:
+    *   **双向同步**: 树节点选择与 `useFileStore` 的全局选中状态（`activeFileId`, `selectedNode`）实时同步。
+    *   **右键菜单**: 集成 `shadcn/ui` 的 `ContextMenu` 组件，实现了预览文件、删除文件、重命名列别名（预留）、修改列类型等操作。
+*   **核心文件**: `src/renderer/components/data-tree/` (`index.tsx`, `TreeNode.tsx`, `tree-utils.ts`)
+
+### 🤖 自动关系推断 (Auto-Link Logic)
+
+*   **智能检测**: 实现了 `useAutoLink` Hook，当用户导入多个文件（Count >= 2）时，自动调用 AI 引擎分析表结构。
+    *   **阈值控制**: 仅自动建立置信度 > 0.8 的关系，确保准确性。
+    *   **非阻塞体验**: AI 分析在后台异步运行，并通过 Toast 系统通知用户进度和结果。
+*   **状态管理优化**:
+    *   **Zustand 集成**: 解决了 React Closure 导致的 State Stale 问题，通过 `useFileStore.getState()` 直接获取最新的文件列表，确保在批量导入后能准确触发分析。
+    *   **逻辑复用**: 将自动关联逻辑统一集成到 `Sidebar` (导入按钮) 和 `WelcomeScreen` (拖拽/点击上传) 两个入口，保证体验一致性。
+*   **核心文件**: `src/renderer/hooks/useAutoLink.ts`, `src/renderer/components/Sidebar.tsx`, `src/renderer/components/WelcomeScreen.tsx`
+
+### 🏗️ 基础设施升级
+
+*   **Toast 通知系统**: 创建了轻量级的 Toast Store 和组件，用于展示 AI 分析状态（Analyzing/Success/Error）。
+*   **测试增强**: 为渲染层组件（Renderer）配置了 Vitest 支持，并为 `tree-utils` 编写了单元测试。
+*   **类型定义**: 扩展了 `ColumnType` 以支持 `INTEGER` 和 `TIMESTAMP`，完善了 TypeScript 类型安全。

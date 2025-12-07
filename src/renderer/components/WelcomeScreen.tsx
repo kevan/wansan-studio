@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useParseFile, useSelectFiles } from '../hooks/useIPC'
 import { useFileStore } from '../stores/useFileStore'
+import { useAutoLink } from '../hooks/useAutoLink'
 
 interface WelcomeScreenProps {
   onDataImported?: (tableName: string) => void
@@ -10,6 +11,7 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
   const parseFileMutation = useParseFile()
   const selectFilesMutation = useSelectFiles()
   const { addFile, updateFile } = useFileStore()
+  const { checkAutoLink } = useAutoLink()
   const [isDragging, setIsDragging] = useState(false)
   const [processingCount, setProcessingCount] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
@@ -74,19 +76,24 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
 
     setTotalCount(0)
     setProcessingCount(0)
+    
+    // Trigger auto-link analysis after batch processing
+    const currentFiles = useFileStore.getState().files
+    console.log('WelcomeScreen: Batch processed. Triggering auto-link with:', currentFiles.length, 'files')
+    checkAutoLink(currentFiles)
   }
 
   const handleFileSelect = async () => {
     try {
       const result = await selectFilesMutation.mutateAsync()
       if (result && result.length > 0) {
-        setTotalCount(result.length)
-        setProcessingCount(0)
-
-        for (const filePath of result) {
-          const fileName = filePath.split('/').pop() || 'unknown'
-          await processFile(filePath, fileName)
-        }
+        // Transform to match processFiles signature
+        const filesToProcess = result.map(filePath => ({
+          path: filePath,
+          name: filePath.split('/').pop() || 'unknown'
+        }))
+        
+        await processFiles(filesToProcess)
       }
     } catch (error) {
       console.error('File selection error:', error)
