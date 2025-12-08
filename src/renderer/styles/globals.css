@@ -50,15 +50,14 @@ body {
   -webkit-app-region: no-drag;
 }
 
-/* Sidebar - 260px fixed width */
+/* Sidebar - Flexible width for ResizablePanel */
 .wansan-sidebar {
-  width: 260px;
-  min-width: 260px;
+  width: 100%;
   background-color: #fafafa; /* zinc-50 */
   border-right: 1px solid #e4e4e7; /* zinc-200 */
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
 }
 
 /* Main Canvas - Flex-1 */

@@ -4,6 +4,8 @@ import { MainContent } from './components/MainContent'
 import { DevConsole } from './components/DevConsole'
 import { isDev } from './utils/env'
 import { ToastContainer } from './components/Toast'
+import { Panel, PanelResizeHandle, PanelGroup } from 'react-resizable-panels'
+import { ReportCanvas } from './components/canvas/ReportCanvas'
 
 function App() {
   const [showShowcase, setShowShowcase] = useState(false)
@@ -31,20 +33,35 @@ function App() {
   }, [])
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="h-screen w-screen overflow-hidden bg-white">
       <ToastContainer />
-      {/* 左侧 Sidebar - 260px fixed */}
-      <Sidebar onImportData={handleImportData} />
+      <PanelGroup direction="horizontal">
+        {/* 左侧 Sidebar */}
+        <Panel defaultSize={20} minSize={15} maxSize={30}>
+          <Sidebar onImportData={handleImportData} />
+        </Panel>
+        
+        <PanelResizeHandle className="w-1 bg-zinc-100 hover:bg-zinc-300 transition-colors" />
 
-      {/* 主画布区域 - Flex-1 */}
-      <main className="wansan-canvas">
-        <MainContent
-          showShowcase={showShowcase}
-          showStyleTest={showStyleTest}
-          onCloseShowcase={() => setShowShowcase(false)}
-          onCloseStyleTest={() => setShowStyleTest(false)}
-        />
-      </main>
+        {/* 主画布区域 - Chat/Workspace */}
+        <Panel defaultSize={40} minSize={30}>
+          <main className="wansan-canvas h-full flex flex-col">
+            <MainContent
+              showShowcase={showShowcase}
+              showStyleTest={showStyleTest}
+              onCloseShowcase={() => setShowShowcase(false)}
+              onCloseStyleTest={() => setShowStyleTest(false)}
+            />
+          </main>
+        </Panel>
+
+        <PanelResizeHandle className="w-1 bg-zinc-100 hover:bg-zinc-300 transition-colors" />
+
+        {/* 右侧 Report Canvas */}
+        <Panel defaultSize={40} minSize={30}>
+           <ReportCanvas />
+        </Panel>
+      </PanelGroup>
 
       {/* 开发模式调试控制台 */}
       {/* {isDev && (

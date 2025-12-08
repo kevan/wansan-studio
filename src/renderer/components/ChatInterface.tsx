@@ -3,7 +3,7 @@ import { MagicInput } from './MagicInput'
 import { QuickCommands, QuickCommand, defaultQuickCommands } from './QuickCommands'
 import { AutocompleteInput, AutocompleteOption } from './AutocompleteInput'
 import { LoadingState, LoadingType } from './LoadingStates'
-import { A4ReportLayout } from './A4Canvas'
+import { ReportCard } from './chat/ReportCard'
 
 export interface ChatMessage {
   id: string
@@ -136,7 +136,11 @@ export function ChatInterface({
                   <div className="w-full">
                     {message.content && <div className="mb-4">{message.content}</div>}
                     {message.reportData && (
-                      <A4ReportLayout {...message.reportData} />
+                      <ReportCard 
+                        messageId={message.id} 
+                        reportData={message.reportData} 
+                        className="w-full"
+                      />
                     )}
                   </div>
                 )}
