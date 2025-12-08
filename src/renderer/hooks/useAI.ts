@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { useRunSQL } from './useIPC'
+import { useRunSQL, useFixSQL } from './useIPC'
 import { ChatMessage } from '../components/ChatInterface'
 import { TableSchema, AnalysisResult, RelationSuggestion } from '../../shared/types'
 import { LoadingType } from '../components/LoadingStates'
@@ -11,11 +11,11 @@ export function useAI() {
   
   // IPC mutation to ask AI
   const askAIMutation = useMutation({
-    mutationFn: async ({ query, schemas, relations }: { query: string; schemas: TableSchema[]; relations: RelationSuggestion[] }) => {
+    mutationFn: async ({ query, schemas, relations, context }: { query: string; schemas: TableSchema[]; relations: RelationSuggestion[]; context?: { lastSql: string, lastQuery: string } }) => {
       if (!window.electronAPI || !window.electronAPI.askAI) {
         throw new Error("AI capabilities not available in this environment")
       }
-      const response = await window.electronAPI.askAI(query, schemas, relations)
+      const response = await window.electronAPI.askAI(query, schemas, relations, context)
       if (!response.success || !response.data) {
         throw new Error(response.error || "AI request failed")
       }
@@ -27,12 +27,16 @@ export function useAI() {
 
   // IPC mutation to run SQL
   const runSQLMutation = useRunSQL()
+  
+  // IPC mutation to fix SQL
+  const fixSQLMutation = useFixSQL()
 
   const handleQuery = async (
     query: string, 
     schemas: TableSchema[],
     relations: RelationSuggestion[], 
-    addMessage: (msg: ChatMessage) => void
+    addMessage: (msg: ChatMessage) => void,
+    context?: { lastSql: string, lastQuery: string }
   ) => {
     try {
       // 1. Add User Message
@@ -45,12 +49,54 @@ export function useAI() {
 
       // 2. Ask AI
       setLoadingType('thinking')
-      const aiResponse = await askAIMutation.mutateAsync({ query, schemas, relations })
-      const { sql, title, summary, viz_type, viz_config, reasoning } = aiResponse
+      const aiResponse = await askAIMutation.mutateAsync({ query, schemas, relations, context })
+      
+      // Check for calculation errors or "impossible" requests
+      if (aiResponse.error) {
+        throw new Error(aiResponse.error)
+      }
 
-      // 3. Run SQL
+      // Use "let" so we can update them if retry happens
+      let { sql, title, summary, viz_type, viz_config, reasoning, suggestions } = aiResponse
+
+      // Ensure SQL is present before proceeding
+      if (!sql) {
+        throw new Error("AI could not generate a valid query.")
+      }
+
+      // 3. Run SQL with Auto-Retry (Self-Healing)
       setLoadingType('crunching')
-      const data = await runSQLMutation.mutateAsync(sql)
+      
+      let data: any[] = []
+      let attempts = 0
+      const maxRetries = 1
+      
+      while (attempts <= maxRetries) {
+        try {
+           data = await runSQLMutation.mutateAsync(sql)
+           break; // Success, exit loop
+        } catch (error) {
+           attempts++
+           if (attempts > maxRetries) {
+             throw error; // Give up
+           }
+           
+           console.warn(`[SQL Error] Attempt ${attempts} failed. Auto-fixing...`, error)
+           setLoadingType('fixing')
+           
+           // Call AI to fix the SQL
+           const fixResult = await fixSQLMutation.mutateAsync({ 
+             sql, 
+             error: error instanceof Error ? error.message : String(error), 
+             schemas 
+           })
+           
+           // Apply fix
+           sql = fixResult.sql
+           reasoning += `\n\n[Auto-Fix] SQL was corrected: ${fixResult.reasoning}`
+           setLoadingType('crunching') // Switch back to crunching for the next try
+        }
+      }
       
       setLoadingType(null)
 
@@ -58,11 +104,14 @@ export function useAI() {
       addMessage({
         id: `assistant-${Date.now()}`,
         type: 'assistant',
-        content: reasoning || "Analysis complete.",
+        content: "", // Content is now inside the ReportCard (reasoning)
         timestamp: new Date(),
         reportData: {
           title: title,
           summary: summary,
+          sql: sql,
+          reasoning: reasoning,
+          suggestions: suggestions,
           chartType: viz_type as any, // 'bar' | 'line' | 'pie' | 'table'
           chartTitle: title,
           tableData: data,

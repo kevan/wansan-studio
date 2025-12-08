@@ -104,17 +104,18 @@ export function DashboardWidget({
 
       <div className="flex-1 min-h-0 overflow-y-auto space-y-6 pr-2">
         {summary && (
-          <div className="text-sm">
+          <div className="prose prose-sm text-zinc-600 leading-relaxed mb-4 px-4">
             <A4Summary content={summary} insights={insights} />
           </div>
         )}
 
-        <div className="min-h-[300px]">
+        <div className="h-[250px] w-full px-4 pb-4 pt-2">
           <A4Chart 
             type={chartType} 
             title={chartTitle} 
             data={tableData} 
             config={vizConfig}
+            className="h-full w-full"
           />
         </div>
 

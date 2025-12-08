@@ -18,16 +18,17 @@ export interface TableSchema {
 }
 
 export interface AnalysisResult {
-  sql: string;
-  title: string;
-  summary: string;
-  viz_type: 'bar' | 'line' | 'pie' | 'table';
-  viz_config: {
+  sql?: string;
+  title?: string;
+  summary?: string;
+  viz_type?: 'bar' | 'line' | 'pie' | 'table';
+  viz_config?: {
     x_axis: string;
     y_axis: string;
     series_name?: string;
   };
-  reasoning: string;
+  reasoning?: string;
+  suggestions?: string[];
   error?: string;
 }
 

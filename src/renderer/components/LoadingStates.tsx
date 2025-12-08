@@ -1,6 +1,6 @@
 import React from 'react'
 
-export type LoadingType = 'cleaning' | 'thinking' | 'crunching'
+export type LoadingType = 'cleaning' | 'thinking' | 'crunching' | 'fixing'
 
 interface LoadingStateProps {
   type: LoadingType
@@ -32,6 +32,14 @@ const loadingConfig = {
     color: 'text-green-600',
     bgColor: 'bg-green-50',
     borderColor: 'border-green-200'
+  },
+  fixing: {
+    icon: '🔧',
+    defaultMessage: 'Auto-fixing SQL...',
+    description: '检测到查询错误，正在自动修复',
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-50',
+    borderColor: 'border-orange-200'
   }
 }
 

@@ -62,16 +62,18 @@ export function getModelToUse() {
 }
 
 const AnalysisResultSchema = z.object({
-  sql: z.string(),
-  title: z.string(),
-  summary: z.string(),
-  viz_type: z.enum(['bar', 'line', 'pie', 'table']),
+  sql: z.string().optional(),
+  title: z.string().optional(),
+  summary: z.string().optional(),
+  viz_type: z.enum(['bar', 'line', 'pie', 'table']).optional(),
   viz_config: z.object({
     x_axis: z.string(),
     y_axis: z.string(),
     series_name: z.string().optional(),
-  }),
-  reasoning: z.string(),
+  }).optional(),
+  reasoning: z.string().optional(),
+  suggestions: z.array(z.string()).optional(),
+  error: z.string().optional(),
 })
 
 const SYSTEM_PROMPT = `
@@ -108,6 +110,14 @@ Your mission is to translate natural language questions into executable **DuckDB
     -   Reason: We must preserve all records from the main transactional table (e.g., Orders, Logs), even if the dimensional data (e.g., Users, Products) is missing.
 ---
 
+### 🧮 CALCULATION RULES
+1.  **DERIVE METRICS**: If the user asks for a metric (e.g., "Profit", "Conversion Rate") that is NOT in the schema columns:
+    -   **DO NOT** invent a column name like "Profit".
+    -   **TRY TO CALCULATE** it from existing columns (e.g., \`"Sales" - "Cost"\`).
+    -   **IF IMPOSSIBLE**: Return a JSON with ONLY the "error" field: \`{"error": "Metric 'Profit' not found in schema and cannot be calculated."}\`.
+
+---
+
 ### 📊 VISUALIZATION RULES
 1.  **AUTO-DETECT CHART**: Based on the query result, recommend the best ECharts type:
     -   Time Series -> \`'line'\`
@@ -121,7 +131,7 @@ Your mission is to translate natural language questions into executable **DuckDB
 ### 📤 OUTPUT FORMAT (JSON ONLY)
 Return a **raw JSON object**. Do not wrap in markdown code blocks.
 
-Structure:
+**Success Structure:**
 {
   "sql": "String (The executable DuckDB SQL)",
   "title": "String (A short, professional report title)",
@@ -132,8 +142,16 @@ Structure:
     "y_axis": "column_name_for_y",
     "series_name": "Label for the data"
   },
-  "reasoning": "String (Briefly explain which columns you used and why)"
+  "reasoning": "String (Briefly explain which columns you used and why)",
+  "suggestions": ["String (Question 1)", "String (Question 2)", "String (Question 3)"]
 }
+
+**Error Structure (when metric cannot be calculated):**
+{
+  "error": "Explanation of why the metric cannot be calculated"
+}
+
+Instruction for 'suggestions': Generate 3 short, analytical follow-up questions based on the query result to help the user dive deeper.
 
 ---
 
@@ -146,7 +164,9 @@ Output:
 {
   "sql": "SELECT \"省份\", SUM(\"销售额\") AS \"total_sales\" FROM \"data\" GROUP BY \"省份\" ORDER BY \"total_sales\" DESC LIMIT 100",
   "viz_type": "bar",
-  "viz_config": { "x_axis": "省份", "y_axis": "total_sales" }
+  "viz_config": { "x_axis": "省份", "y_axis": "total_sales" },
+  "reasoning": "Aggregated sales by province.",
+  "suggestions": ["Which province has the highest average order value?", "Show me the sales trend for the top province", "Compare sales between North and South regions"]
 }
 
 **Example 2: Time Series (Date Handling)**
@@ -156,7 +176,9 @@ Output:
 {
   "sql": "WITH clean AS (SELECT strptime(\"下单时间\", '%Y-%m-%d') AS dt, \"id\" FROM \"orders\") SELECT strftime(dt, '%Y-%m') AS \"month\", COUNT(\"id\") AS \"count\" FROM clean GROUP BY \"month\" ORDER BY \"month\" ASC",
   "viz_type": "line",
-  "viz_config": { "x_axis": "month", "y_axis": "count" }
+  "viz_config": { "x_axis": "month", "y_axis": "count" },
+  "reasoning": "Extracted month from date and counted orders.",
+  "suggestions": ["Break down the monthly trend by product category", "What is the week-over-week growth rate?", "Show me the daily order count for last month"]
 }
 `
 
@@ -227,10 +249,12 @@ function serializeSchemas(schemas: TableSchema[]): string {
 export async function generateAnalysis(
   userQuery: string,
   schemas: TableSchema[],
-  relations: RelationSuggestion[], // <--- NEW PARAMETER
+  relations: RelationSuggestion[], 
+  context?: { lastSql: string, lastQuery: string }
 ): Promise<AnalysisResult> {
   if (isDev()) {
     console.log('generateAnalysis pre request - schemas:', JSON.stringify(schemas))
+    console.log('generateAnalysis context:', context)
   }
   const schemaContext = serializeSchemas(schemas)
   const currentDate = new Date().toISOString().split('T')[0]
@@ -240,6 +264,18 @@ export async function generateAnalysis(
         `- Table "${r.sourceTable}" can act as Fact Table, joining to Dimension Table "${r.targetTable}" via: ON "${r.sourceTable}"."${r.sourceColumn}" = "${r.targetTable}"."${r.targetColumn}"`
       ).join("\n")
     : "No specific relationships defined. Infer joins if necessary based on column names."
+
+  let contextSection = ""
+  if (context && context.lastSql && context.lastQuery) {
+    contextSection = `
+### 🕒 PREVIOUS CONTEXT
+Last Query: "${context.lastQuery}"
+Last SQL: "${context.lastSql.replace(/"/g, '\\"')}"
+
+If the current query is a follow-up (e.g. "remove outliers", "change to line chart"), modify the Last SQL.
+If it's a new topic, IGNORE the context.
+`
+  }
 
   const userPrompt = `### 📅 CONTEXT
 Current Date: ${currentDate}
@@ -252,7 +288,7 @@ ${schemaContext}
 ### 🔗 KNOWN RELATIONSHIPS (HINT FOR JOINING)
 Use these valid relationships to join tables if the user query requires data from multiple sources.
 ${relationsContext}
-
+${contextSection}
 ### 👤 USER QUESTION
 "${userQuery}"
 
@@ -339,5 +375,55 @@ ${schemaContext}
   } catch (error) {
     console.error('Failed to parse or validate AI response for relationship inference:', error)
     throw new Error(`AI returned invalid JSON or structure for relationships. Raw response: ${resultJson}`)
+  }
+}
+
+const FixSQLResultSchema = z.object({
+  sql: z.string(),
+  reasoning: z.string()
+})
+
+export async function fixSQL(
+  originalSql: string,
+  errorMessage: string,
+  schemas: TableSchema[]
+): Promise<{ sql: string; reasoning: string }> {
+  const schemaContext = serializeSchemas(schemas)
+
+  const systemPrompt = `You are a DuckDB SQL Repair Expert.
+Your goal is to FIX a broken SQL query based on the error message and table schema.
+
+OUTPUT: JSON object { "sql": "FIXED_SQL", "reasoning": "Brief explanation of the fix" }`
+
+  const userPrompt = `### 📂 SCHEMA
+${schemaContext}
+
+### ❌ BROKEN SQL
+${originalSql}
+
+### ⚠️ ERROR MESSAGE
+${errorMessage}
+
+### 🛠️ TASK
+Fix the SQL. Ensure all table/column names are double-quoted and match the schema exactly.`
+
+  const body: ChatCompletionCreateParamsNonStreaming = {
+    model: getModelToUse(),
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    response_format: { type: 'json_object' },
+  }
+
+  const response = await getOpenAI().chat.completions.create(body)
+  const resultJson = response.choices[0].message.content
+  
+  if (!resultJson) throw new Error("AI returned empty response for SQL fix")
+
+  try {
+    return FixSQLResultSchema.parse(JSON.parse(resultJson))
+  } catch (e) {
+    throw new Error(`Failed to parse fix result: ${resultJson}`)
   }
 }

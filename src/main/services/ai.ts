@@ -53,8 +53,24 @@ export class AIService {
   /**
    * Generates a full analysis.
    */
-  async getAnalysis(userQuery: string, schemas: TableSchema[], relations: RelationSuggestion[]): Promise<AnalysisResult> {
-    return generateAnalysis(userQuery, schemas, relations);
+  async getAnalysis(
+    userQuery: string, 
+    schemas: TableSchema[], 
+    relations: RelationSuggestion[],
+    context?: { lastSql: string, lastQuery: string }
+  ): Promise<AnalysisResult> {
+    return generateAnalysis(userQuery, schemas, relations, context);
+  }
+
+  /**
+   * Fixes a broken SQL query.
+   */
+  async fixQuery(originalSql: string, error: string, schemas: TableSchema[]): Promise<{ sql: string; reasoning: string }> {
+    // Import dynamically to avoid circular dependencies if any, or just use the imported function
+    // We already imported generateAnalysis, so let's import fixSQL too
+    // Note: Need to update imports at the top of the file
+    const { fixSQL } = await import('../engine/ai-bridge'); 
+    return fixSQL(originalSql, error, schemas);
   }
 
   /**

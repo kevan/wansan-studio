@@ -5,6 +5,9 @@ export interface ReportData {
   subtitle?: string;
   summary?: string;
   insights?: string[];
+  sql?: string;
+  reasoning?: string;
+  suggestions?: string[];
   chartType?: 'bar' | 'line' | 'pie' | 'area';
   chartTitle?: string;
   tableData?: Array<Record<string, any>>;

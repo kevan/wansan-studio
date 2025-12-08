@@ -94,12 +94,29 @@ export function setupIPC(databaseService: DatabaseService, aiService: AIService)
   // AI 生成分析
   ipcMain.handle(
     'ask-ai',
-    async (_event, userQuery: string, schemas: TableSchema[], relations: RelationSuggestion[]) => {
+    async (_event, userQuery: string, schemas: TableSchema[], relations: RelationSuggestion[], context?: { lastSql: string, lastQuery: string }) => {
       try {
-        const result = await aiService.getAnalysis(userQuery, schemas, relations)
+        const result = await aiService.getAnalysis(userQuery, schemas, relations, context)
         return { success: true, data: result }
       } catch (error) {
         console.error('Generate analysis error:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      }
+    }
+  )
+
+  // AI 修复 SQL
+  ipcMain.handle(
+    'ask-ai-fix',
+    async (_event, originalSql: string, error: string, schemas: TableSchema[]) => {
+      try {
+        const result = await aiService.fixQuery(originalSql, error, schemas)
+        return { success: true, data: result }
+      } catch (error) {
+        console.error('Fix SQL error:', error)
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error',

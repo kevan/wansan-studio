@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { MagicInput } from './MagicInput'
 import { QuickCommands, QuickCommand, defaultQuickCommands } from './QuickCommands'
 import { AutocompleteInput, AutocompleteOption } from './AutocompleteInput'
 import { LoadingState, LoadingType } from './LoadingStates'
 import { ReportCard } from './chat/ReportCard'
+import { User, Bot, Sparkles } from 'lucide-react'
 
 export interface ChatMessage {
   id: string
@@ -15,6 +16,9 @@ export interface ChatMessage {
     subtitle?: string
     summary?: string
     insights?: string[]
+    sql?: string;
+    reasoning?: string;
+    suggestions?: string[];
     chartType?: 'bar' | 'line' | 'pie' | 'area'
     chartTitle?: string
     tableData?: Array<Record<string, any>>
@@ -45,6 +49,12 @@ export function ChatInterface({
 }: ChatInterfaceProps) {
   const [inputValue, setInputValue] = useState('')
   const [useAutocomplete, setUseAutocomplete] = useState(false)
+  const dummyDivRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to bottom when messages or loading state changes
+  useEffect(() => {
+    dummyDivRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages.length, loading])
 
   // 生成自动完成选项
   const autocompleteOptions: AutocompleteOption[] = [
@@ -108,7 +118,7 @@ export function ChatInterface({
   return (
     <div className={`flex flex-col h-full ${className}`}>
       {/* 聊天消息区域 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {messages.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">💬</div>
@@ -128,19 +138,61 @@ export function ChatInterface({
           </div>
         ) : (
           messages.map((message) => (
-            <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-4xl ${message.type === 'user' ? 'bg-orange-500 text-white' : 'bg-white border'} rounded-lg p-4 shadow-sm`}>
+            <div key={message.id} className="flex gap-4 w-full max-w-5xl group">
+              {/* Avatar */}
+              <div className="flex-shrink-0 mt-1">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  message.type === 'user' ? 'bg-zinc-100 text-zinc-600' : 'bg-orange-50 text-orange-600'
+                }`}>
+                  {message.type === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-semibold text-zinc-900">
+                    {message.type === 'user' ? 'You' : 'Wansan AI'}
+                  </span>
+                  <span className="text-xs text-zinc-400">
+                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+
                 {message.type === 'user' ? (
-                  <div>{message.content}</div>
+                  <div className="text-zinc-800 font-medium text-lg leading-relaxed">
+                    {message.content}
+                  </div>
                 ) : (
                   <div className="w-full">
-                    {message.content && <div className="mb-4">{message.content}</div>}
+                    {message.content && <div className="mb-4 text-zinc-800">{message.content}</div>}
                     {message.reportData && (
-                      <ReportCard 
-                        messageId={message.id} 
-                        reportData={message.reportData} 
-                        className="w-full"
-                      />
+                      <div className="w-full mt-2 space-y-4">
+                        <ReportCard 
+                          messageId={message.id} 
+                          reportData={message.reportData} 
+                          className="w-full"
+                        />
+                        
+                        {/* Suggestions Chips */}
+                        {message.reportData.suggestions && message.reportData.suggestions.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                            <div className="flex items-center gap-1.5 text-xs font-medium text-purple-600 mr-1">
+                              <Sparkles className="w-3.5 h-3.5" />
+                              Suggested:
+                            </div>
+                            {message.reportData.suggestions.map((suggestion, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => handleQuerySubmit(suggestion)}
+                                className="px-3 py-1.5 rounded-full bg-white border border-zinc-200 text-zinc-600 text-xs hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700 transition-colors shadow-sm"
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
@@ -151,12 +203,25 @@ export function ChatInterface({
         
         {/* 加载状态 */}
         {loading && (
-          <div className="flex justify-start">
-            <div className="max-w-md">
-              <LoadingState type={loading} />
+          <div className="flex gap-4 w-full max-w-5xl">
+            <div className="flex-shrink-0 mt-1">
+               <div className="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center">
+                  <Bot className="w-5 h-5" />
+               </div>
+            </div>
+            <div className="flex-1">
+               <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-semibold text-zinc-900">Wansan AI</span>
+               </div>
+               <div className="max-w-md">
+                  <LoadingState type={loading} />
+               </div>
             </div>
           </div>
         )}
+
+        {/* Dummy div for auto-scrolling */}
+        <div ref={dummyDivRef} />
       </div>
 
       {/* 输入区域 */}

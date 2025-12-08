@@ -43,7 +43,8 @@ declare global {
       runSQL: (sql: string) => Promise<IPCResponse>
       getSchema: (tableName?: string) => Promise<IPCResponse>
       generateSQL: (prompt: string, schema: any) => Promise<IPCResponse>
-      askAI: (query: string, schemas: any[], relations: any[]) => Promise<IPCResponse>
+      askAI: (query: string, schemas: any[], relations: any[], context?: { lastSql: string, lastQuery: string }) => Promise<IPCResponse>
+      fixSQL: (originalSql: string, error: string, schemas: any[]) => Promise<IPCResponse>
       inferRelationships: (schemas: any[]) => Promise<IPCResponse>
       getAIConfig: () => Promise<IPCResponse>
       setAIConfig: (config: any) => Promise<IPCResponse>
@@ -186,6 +187,19 @@ export const useInferRelationships = () => {
       const response = await getIpc().invoke('infer-relationships', schemas)
       if (!response.success) {
         throw new Error(response.error || 'Failed to infer relationships')
+      }
+      return response.data
+    },
+  })
+}
+
+// SQL 修复 Hook
+export const useFixSQL = () => {
+  return useMutation({
+    mutationFn: async ({ sql, error, schemas }: { sql: string; error: string; schemas: any[] }) => {
+      const response = await getIpc().invoke('ask-ai-fix', sql, error, schemas)
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fix SQL')
       }
       return response.data
     },

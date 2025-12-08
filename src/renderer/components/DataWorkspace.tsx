@@ -40,9 +40,30 @@ export function DataWorkspace({ onReset }: DataWorkspaceNewProps) {
   }).filter((r): r is RelationSuggestion => r !== null)
 
   const onQuerySubmit = (query: string) => {
+    // Find context (last SQL and last User Query)
+    let context: { lastSql: string, lastQuery: string } | undefined = undefined;
+    
+    // Reverse iterate to find the last successful AI response
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const msg = messages[i];
+        if (msg.type === 'assistant' && msg.reportData?.sql) {
+            // Found last SQL, now find the user query that triggered it (usually the one before)
+            // We assume the structure is User -> Assistant
+            // But we need to be careful if there are error messages
+            const prevMsg = messages[i - 1];
+            if (prevMsg && prevMsg.type === 'user') {
+                context = {
+                    lastSql: msg.reportData.sql,
+                    lastQuery: prevMsg.content
+                };
+                break; // Found the pair, stop
+            }
+        }
+    }
+
     handleQuery(query, schemas, apiRelations, (msg) => {
       setMessages(prev => [...prev, msg])
-    })
+    }, context)
   }
 
   // Get current columns for autocomplete
