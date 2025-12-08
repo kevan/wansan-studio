@@ -55,7 +55,7 @@ export function getModelToUse() {
     console.log('[AI Bridge] getModelToUse debug:', {
       currentModel,
       envModel,
-      allEnvKeys: Object.keys(process.env).filter(k => k.startsWith('OPENAI'))
+      allEnvKeys: Object.keys(process.env).filter(k => k.startsWith('OPENAI')),
     })
   }
   return currentModel || envModel || 'gpt-4-turbo-preview'
@@ -251,6 +251,9 @@ ${schemaContext}
   if (!resultJson) {
     throw new Error('AI returned an empty response.')
   }
+  if (isDev()) {
+    console.log('generateAnalysis post request - resultJson:', resultJson)
+  }
 
   try {
     const parsedResult = JSON.parse(resultJson)
@@ -296,6 +299,9 @@ ${schemaContext}
   const resultJson = response.choices[0].message.content
   if (!resultJson) {
     throw new Error('AI returned an empty response for relationship inference.')
+  }
+  if (isDev()) {
+    console.log('generateAnalysis post request - resultJson:', resultJson)
   }
 
   try {
