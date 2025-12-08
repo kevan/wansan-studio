@@ -97,7 +97,7 @@ describe('Engine Robustness & Integration', () => {
     }
 
     const userQuery = "按日期统计销售额总和，并展示趋势";
-    const aiResult = await generateAnalysis(userQuery, [schema]);
+    const aiResult = await generateAnalysis(userQuery, [schema], []);
 
     expect(aiResult.sql).toBeDefined();
     expect(aiResult.viz_type).toBe('line');
@@ -158,7 +158,7 @@ describe('Engine Robustness & Integration', () => {
 
     const userQuery = "统计各区域(region)的订单总金额";
     // We pass both schemas to let AI know about available tables
-    const aiResult = await generateAnalysis(userQuery, [ordersSchema, customersSchema]);
+    const aiResult = await generateAnalysis(userQuery, [ordersSchema, customersSchema], []);
     console.log("Multi-Table SQL:", aiResult.sql);
 
     // Check for JOIN keyword (case insensitive)

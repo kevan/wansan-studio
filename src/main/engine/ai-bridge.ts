@@ -161,32 +161,46 @@ Output:
 `
 
 const RELATION_INFERENCE_SYSTEM_PROMPT = `
-You are an expert Data Modeler assistant. Your task is to analyze provided table schemas and suggest potential foreign key relationships between them.
+You are an expert Database Architect specializing in Data Modeling and Fuzzy Matching. 
+Your goal is to infer "Foreign Key" relationships between tables based on their Schema and Sample Data.
 
 ---
 
-### 规则 (RULES)
-1.  **仅识别主键到外键的关系**: 识别一个表的主键列可能与另一个表的外键列匹配的情况。
-2.  **考虑列名**: 寻找名称相似的列（例如，'product_id' 和 'id'，或者 'customer_name' 和 'name'）。
-3.  **考虑数据类型**: 匹配的列应该具有兼容的数据类型。
-4.  **提供置信度**: 根据匹配的强度（例如，名称、类型）分配 0.0 到 1.0 的置信度。
-5.  **提供理由**: 简要说明你提出关系的原因。
-6.  **避免自引用**: 不要在同一个表内建议关系。
+### 🧠 INFERENCE LOGIC (PRIORITY ORDER)
+1.  **Value Overlap (High Confidence)**: 
+    -   Look at the \`sampleValues\` provided in the schema.
+    -   If Column A in Table 1 has values ["A01", "A02"] and Column B in Table 2 has ["A01", "A02"], they are likely related, even if names differ slightly.
+2.  **Semantic Name Matching (Medium Confidence)**:
+    -   Check for synonyms, synonyms, and abbreviations.
+    -   **English Rules**: \`user_id\` == \`uid\`, \`prod_code\` == \`sku\`.
+    -   **Chinese Rules (Important)**:
+        -   Suffixes: "ID", "No", "Code", "Key", "编号", "代码", "码", "标识".
+        -   Synonyms: "商品" == "产品" (Product), "客户" == "用户" (User/Customer), "日期" == "时间" (Date/Time).
+3.  **Cardinality & Direction**:
+    -   Detect **Fact Tables** (Transaction data, e.g., "Orders", "Logs") vs **Dimension Tables** (Entity lists, e.g., "Users", "Products").
+    -   Relationship Direction: ALWAYS from **Fact Table (Source/FK)** -> to -> **Dimension Table (Target/PK)**.
 
 ---
 
-### 📤 输出格式 (JSON ONLY)
-返回一个 JSON 数组。数组中的每个对象代表一个建议的关系。
+### 🚫 NEGATIVE RULES (DO NOT MATCH)
+1.  **Do NOT** link common types that are not keys (e.g., "status" to "status", "gender" to "gender", "created_at" to "updated_at").
+2.  **Do NOT** suggest relationships if confidence is below 0.5.
+3.  **Do NOT** link a table to itself.
 
-结构:
+---
+
+### 📤 OUTPUT FORMAT (JSON ONLY)
+Return a strictly valid JSON Array.
+
+Example:
 [
   {
-    "sourceTable": "String (外键所在的表名)",
-    "sourceColumn": "String (外键列名)",
-    "targetTable": "String (主键所在的表名)",
-    "targetColumn": "String (主键列名)",
-    "confidence": "Number (0.0 到 1.0)",
-    "reason": "String (简要说明此关系被推断出的原因)"
+    "sourceTable": "t_orders",
+    "sourceColumn": "cust_id",
+    "targetTable": "t_customers",
+    "targetColumn": "id",
+    "confidence": 0.95,
+    "reason": "Strong Match: Column names 'cust_id' and 'id' align semantically, and sample values overlap."
   }
 ]
 `
@@ -213,12 +227,19 @@ function serializeSchemas(schemas: TableSchema[]): string {
 export async function generateAnalysis(
   userQuery: string,
   schemas: TableSchema[],
+  relations: RelationSuggestion[], // <--- NEW PARAMETER
 ): Promise<AnalysisResult> {
   if (isDev()) {
     console.log('generateAnalysis pre request - schemas:', JSON.stringify(schemas))
   }
   const schemaContext = serializeSchemas(schemas)
   const currentDate = new Date().toISOString().split('T')[0]
+
+  const relationsContext = relations.length > 0
+    ? relations.map(r => 
+        `- Table "${r.sourceTable}" can act as Fact Table, joining to Dimension Table "${r.targetTable}" via: ON "${r.sourceTable}"."${r.sourceColumn}" = "${r.targetTable}"."${r.targetColumn}"`
+      ).join("\n")
+    : "No specific relationships defined. Infer joins if necessary based on column names."
 
   const userPrompt = `### 📅 CONTEXT
 Current Date: ${currentDate}
@@ -227,6 +248,10 @@ Current Date: ${currentDate}
 The following tables are available in the local DuckDB instance:
 
 ${schemaContext}
+
+### 🔗 KNOWN RELATIONSHIPS (HINT FOR JOINING)
+Use these valid relationships to join tables if the user query requires data from multiple sources.
+${relationsContext}
 
 ### 👤 USER QUESTION
 "${userQuery}"

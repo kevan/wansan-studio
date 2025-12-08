@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useRunSQL } from './useIPC'
 import { ChatMessage } from '../components/ChatInterface'
-import { TableSchema, AnalysisResult } from '../../shared/types'
+import { TableSchema, AnalysisResult, RelationSuggestion } from '../../shared/types'
 import { LoadingType } from '../components/LoadingStates'
 
 // Hook to handle AI interactions
@@ -11,11 +11,11 @@ export function useAI() {
   
   // IPC mutation to ask AI
   const askAIMutation = useMutation({
-    mutationFn: async ({ query, schemas }: { query: string; schemas: TableSchema[] }) => {
+    mutationFn: async ({ query, schemas, relations }: { query: string; schemas: TableSchema[]; relations: RelationSuggestion[] }) => {
       if (!window.electronAPI || !window.electronAPI.askAI) {
         throw new Error("AI capabilities not available in this environment")
       }
-      const response = await window.electronAPI.askAI(query, schemas)
+      const response = await window.electronAPI.askAI(query, schemas, relations)
       if (!response.success || !response.data) {
         throw new Error(response.error || "AI request failed")
       }
@@ -30,7 +30,8 @@ export function useAI() {
 
   const handleQuery = async (
     query: string, 
-    schemas: TableSchema[], 
+    schemas: TableSchema[],
+    relations: RelationSuggestion[], 
     addMessage: (msg: ChatMessage) => void
   ) => {
     try {
@@ -44,7 +45,7 @@ export function useAI() {
 
       // 2. Ask AI
       setLoadingType('thinking')
-      const aiResponse = await askAIMutation.mutateAsync({ query, schemas })
+      const aiResponse = await askAIMutation.mutateAsync({ query, schemas, relations })
       const { sql, title, summary, viz_type, viz_config, reasoning } = aiResponse
 
       // 3. Run SQL

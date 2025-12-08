@@ -4,7 +4,7 @@ import { FileService } from './file'
 import { AIService } from './ai'
 import { executeSQL } from '../engine/executor'
 import { checkFilesConsistency } from '../engine/file-watcher'
-import type { TableSchema, FileNode } from '../../shared/types'
+import type { TableSchema, FileNode, RelationSuggestion } from '../../shared/types'
 
 export function setupIPC(databaseService: DatabaseService, aiService: AIService) {
   const fileService = new FileService(databaseService)
@@ -94,9 +94,9 @@ export function setupIPC(databaseService: DatabaseService, aiService: AIService)
   // AI 生成分析
   ipcMain.handle(
     'ask-ai',
-    async (_event, userQuery: string, schemas: TableSchema[]) => {
+    async (_event, userQuery: string, schemas: TableSchema[], relations: RelationSuggestion[]) => {
       try {
-        const result = await aiService.getAnalysis(userQuery, schemas)
+        const result = await aiService.getAnalysis(userQuery, schemas, relations)
         return { success: true, data: result }
       } catch (error) {
         console.error('Generate analysis error:', error)

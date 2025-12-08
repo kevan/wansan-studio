@@ -53,8 +53,8 @@ export class AIService {
   /**
    * Generates a full analysis.
    */
-  async getAnalysis(userQuery: string, schemas: TableSchema[]): Promise<AnalysisResult> {
-    return generateAnalysis(userQuery, schemas);
+  async getAnalysis(userQuery: string, schemas: TableSchema[], relations: RelationSuggestion[]): Promise<AnalysisResult> {
+    return generateAnalysis(userQuery, schemas, relations);
   }
 
   /**

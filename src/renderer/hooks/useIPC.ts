@@ -20,7 +20,7 @@ const mockIPC = {
   runSQL: async (sql: string) => { console.log(`Mock runSQL: ${sql}`); return { success: true, data: [] } },
   getSchema: async (tableName?: string) => { console.log(`Mock getSchema: ${tableName}`); return { success: true, data: { tableName: tableName || 'mock_table', columns: [] } } },
   generateSQL: async (prompt: string, schema: any) => { console.log(`Mock generateSQL: ${prompt}, Schema: ${JSON.stringify(schema)}`); return { success: true, data: { sql: 'SELECT 1', title: 'Mock Report', summary: 'Mock Summary', viz_type: 'table', viz_config: { x_axis: '', y_axis: '' }, reasoning: 'Mock Reason' } } },
-  askAI: async (query: string, schemas: any[]) => { console.log(`Mock askAI: ${query}, Schemas: ${JSON.stringify(schemas)}`); return { success: true, data: { sql: 'SELECT 1', title: 'Mock Report', summary: 'Mock Summary', viz_type: 'table', viz_config: { x_axis: '', y_axis: '' }, reasoning: 'Mock Reason' } } },
+  askAI: async (query: string, schemas: any[], relations: any[]) => { console.log(`Mock askAI: ${query}, Schemas: ${JSON.stringify(schemas)}, Relations: ${JSON.stringify(relations)}`); return { success: true, data: { sql: 'SELECT 1', title: 'Mock Report', summary: 'Mock Summary', viz_type: 'table', viz_config: { x_axis: '', y_axis: '' }, reasoning: 'Mock Reason' } } },
   inferRelationships: async (schemas: any[]) => { console.log(`Mock inferRelationships, Schemas: ${JSON.stringify(schemas)}`); return { success: true, data: [] } },
   getAIConfig: async () => { return { success: true, data: {} } },
   setAIConfig: async (config: any) => { console.log(`Mock setAIConfig: ${config}`); return { success: true } },
@@ -43,7 +43,7 @@ declare global {
       runSQL: (sql: string) => Promise<IPCResponse>
       getSchema: (tableName?: string) => Promise<IPCResponse>
       generateSQL: (prompt: string, schema: any) => Promise<IPCResponse>
-      askAI: (query: string, schemas: any[]) => Promise<IPCResponse>
+      askAI: (query: string, schemas: any[], relations: any[]) => Promise<IPCResponse>
       inferRelationships: (schemas: any[]) => Promise<IPCResponse>
       getAIConfig: () => Promise<IPCResponse>
       setAIConfig: (config: any) => Promise<IPCResponse>

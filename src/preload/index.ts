@@ -17,8 +17,8 @@ const electronAPI = {
     ipcRenderer.invoke('get-schema', tableName),
 
   // AI 功能
-  askAI: (query: string, schemas: any[]) =>
-    ipcRenderer.invoke('ask-ai', query, schemas),
+  askAI: (query: string, schemas: any[], relations: any[]) =>
+    ipcRenderer.invoke('ask-ai', query, schemas, relations),
   inferRelationships: (schemas: any[]) =>
     ipcRenderer.invoke('infer-relationships', schemas),
   getAIConfig: () => ipcRenderer.invoke('get-ai-config'),

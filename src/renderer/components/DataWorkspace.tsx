@@ -2,14 +2,14 @@ import React, { useState } from 'react'
 import { useFileStore } from '../stores/useFileStore'
 import { ChatInterface, ChatMessage } from './ChatInterface'
 import { useAI } from '../hooks/useAI'
-import { TableSchema } from '../../shared/types'
+import { TableSchema, RelationSuggestion } from '../../shared/types'
 
 interface DataWorkspaceNewProps {
   onReset: () => void
 }
 
 export function DataWorkspace({ onReset }: DataWorkspaceNewProps) {
-  const { files, activeFileId, setActiveFile, setShowSchemaConfirm } = useFileStore()
+  const { files, relations, activeFileId, setActiveFile, setShowSchemaConfirm } = useFileStore()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const { handleQuery, loading, error } = useAI()
 
@@ -22,8 +22,25 @@ export function DataWorkspace({ onReset }: DataWorkspaceNewProps) {
     columns: f.columns
   }))
 
+  // Convert internal relations to API expected format
+  const apiRelations: RelationSuggestion[] = relations.map(r => {
+    const fileA = files.find(f => f.id === r.fileAId)
+    const fileB = files.find(f => f.id === r.fileBId)
+    
+    if (!fileA || !fileB) return null
+    
+    return {
+      sourceTable: fileA.tableName,
+      sourceColumn: r.columnA,
+      targetTable: fileB.tableName,
+      targetColumn: r.columnB,
+      confidence: 1.0, // Existing confirmed relations are treated as 100% confidence
+      reason: "User confirmed or auto-detected in session"
+    }
+  }).filter((r): r is RelationSuggestion => r !== null)
+
   const onQuerySubmit = (query: string) => {
-    handleQuery(query, schemas, (msg) => {
+    handleQuery(query, schemas, apiRelations, (msg) => {
       setMessages(prev => [...prev, msg])
     })
   }
