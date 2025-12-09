@@ -1,8 +1,10 @@
 import React, { useCallback } from 'react'
 import { useWorkbenchStore } from '../../stores/useWorkbenchStore'
-import { DashboardWidget } from '../DashboardWidget'
-import { X, GripHorizontal } from 'lucide-react'
+import { ReportCard } from './ReportCard'
+import { Printer, FileCode } from 'lucide-react'
 import { Responsive, WidthProvider } from 'react-grid-layout'
+import { exportDashboardToHtml } from '../../utils/export-html'
+import { useToastStore } from '../../stores/useToastStore'
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
 
@@ -13,6 +15,7 @@ export function ReportCanvas() {
   const removeReport = useWorkbenchStore(state => state.removeReport)
   const updateReportTitle = useWorkbenchStore(state => state.updateReportTitle)
   const updateLayout = useWorkbenchStore(state => state.updateLayout)
+  const addToast = useToastStore(state => state.addToast)
 
   const handleLayoutChange = useCallback(
     (layout: any[]) => {
@@ -20,6 +23,28 @@ export function ReportCanvas() {
     },
     [updateLayout]
   )
+
+  const handlePrint = () => {
+    window.print()
+  }
+
+  const handleExportHtml = async () => {
+    try {
+      await exportDashboardToHtml(pinnedReports)
+      addToast({
+        title: 'Export Success',
+        description: 'Dashboard exported to HTML successfully.',
+        type: 'success'
+      })
+    } catch (error) {
+      console.error('Export HTML failed', error)
+      addToast({
+        title: 'Export Failed',
+        description: 'Failed to export dashboard to HTML.',
+        type: 'error'
+      })
+    }
+  }
 
   if (pinnedReports.length === 0) {
     return (
@@ -48,56 +73,56 @@ export function ReportCanvas() {
   }
 
   return (
-    <div className="h-full w-full bg-zinc-50/50 p-6 overflow-y-auto">
-      <ResponsiveGridLayout
-        className="layout"
-        layouts={{ lg: pinnedReports.map(r => r.layout) }}
-        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-        cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-        rowHeight={60}
-        draggableHandle=".drag-handle"
-        onLayoutChange={handleLayoutChange}
-        margin={[16, 16]}
-      >
-        {pinnedReports.map(report => (
-          <div
-            key={report.id}
-            data-grid={report.layout}
-            className="group relative bg-white border border-zinc-200 shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-all flex flex-col"
-          >
-            {/* Drag Handle */}
-            <div className="absolute top-0 left-0 right-0 h-6 flex items-center justify-center cursor-grab active:cursor-grabbing drag-handle z-20 hover:bg-zinc-50 transition-colors opacity-0 group-hover:opacity-100">
-              <GripHorizontal className="w-4 h-4 text-zinc-300" />
-            </div>
+    <div className="h-full w-full flex flex-col bg-zinc-50/50">
+      {/* Header with Print Button */}
+      <div className="h-12 border-b border-zinc-200 bg-white px-4 flex items-center justify-between flex-shrink-0 no-print">
+        <h2 className="text-sm font-semibold text-zinc-700">Report Canvas</h2>
+        <div className="flex items-center gap-2">
+            <button
+            onClick={handleExportHtml}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-zinc-600 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 transition-colors"
+            >
+            <FileCode className="w-3.5 h-3.5" />
+            Export HTML
+            </button>
+            <button
+            onClick={handlePrint}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-zinc-600 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 transition-colors"
+            >
+            <Printer className="w-3.5 h-3.5" />
+            Export PDF
+            </button>
+        </div>
+      </div>
 
-            {/* Controls */}
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-30 flex gap-2">
-              <button
-                onClick={e => {
-                  e.stopPropagation() // Prevent drag start if clicking button
-                  removeReport(report.id)
-                }}
-                onMouseDown={e => e.stopPropagation()}
-                className="p-1.5 bg-white text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md border border-zinc-200 shadow-sm transition-colors cursor-pointer"
-                title="Remove from Dashboard"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="flex-1 min-h-0 pt-4">
-              <DashboardWidget
-                {...report.reportData}
-                variant="dashboard"
+      <div className="flex-1 overflow-y-auto p-6" id="report-canvas-content">
+        <ResponsiveGridLayout
+          className="layout"
+          layouts={{ lg: pinnedReports.map(r => r.layout) }}
+          breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+          cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+          rowHeight={60}
+          draggableHandle=".drag-handle"
+          onLayoutChange={handleLayoutChange}
+          margin={[16, 16]}
+        >
+          {pinnedReports.map(report => (
+            <div
+              key={report.id}
+              data-grid={report.layout}
+            >
+              <ReportCard
+                report={report}
+                onRemove={() => removeReport(report.id)}
                 onTitleChange={newTitle =>
                   updateReportTitle(report.id, newTitle)
                 }
-                className="h-full"
+                className="h-full w-full"
               />
             </div>
-          </div>
-        ))}
-      </ResponsiveGridLayout>
+          ))}
+        </ResponsiveGridLayout>
+      </div>
     </div>
   )
 }

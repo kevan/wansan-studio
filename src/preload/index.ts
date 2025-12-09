@@ -39,6 +39,8 @@ const electronAPI = {
 
   // 导出功能
   exportPDF: (data: any) => ipcRenderer.invoke('export-pdf', data),
+  saveImage: (dataUrl: string) => ipcRenderer.invoke('save-image', dataUrl),
+  saveFile: (content: string, extension: string, name: string) => ipcRenderer.invoke('save-file', content, extension, name),
 
   // 系统信息
   platform: process.platform,

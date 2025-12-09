@@ -4,6 +4,7 @@ import { FileService } from './file'
 import { AIService } from './ai'
 import { executeSQL } from '../engine/executor'
 import { checkFilesConsistency } from '../engine/file-watcher'
+import fs from 'fs-extra'
 import type {
   TableSchema,
   FileNode,
@@ -225,6 +226,50 @@ export function setupIPC(
       }
     }
   )
+
+  // 保存图片
+  ipcMain.handle('save-image', async (_event, dataUrl: string) => {
+    try {
+      const { filePath } = await dialog.showSaveDialog({
+        filters: [{ name: 'Images', extensions: ['png'] }],
+      })
+
+      if (filePath) {
+        const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '')
+        await fs.writeFile(filePath, base64Data, 'base64')
+        return { success: true }
+      }
+      return { success: false, error: 'Cancelled' }
+    } catch (error) {
+      console.error('Save image error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  })
+
+  // 保存通用文件 (HTML, Text, etc)
+  ipcMain.handle('save-file', async (_event, content: string, extension: string, name: string) => {
+    try {
+      const { filePath } = await dialog.showSaveDialog({
+        defaultPath: name,
+        filters: [{ name: 'Files', extensions: [extension] }],
+      })
+
+      if (filePath) {
+        await fs.writeFile(filePath, content, 'utf-8')
+        return { success: true }
+      }
+      return { success: false, error: 'Cancelled' }
+    } catch (error) {
+      console.error('Save file error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  })
 
   console.log('IPC handlers registered and updated successfully')
 }

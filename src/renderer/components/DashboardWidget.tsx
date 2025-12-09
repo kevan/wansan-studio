@@ -53,7 +53,7 @@ export function DashboardWidget({
               <div className="relative">
                 <button
                   className={cn(
-                    'p-2 rounded-full transition-colors',
+                    'p-2 rounded-full transition-colors hide-on-export',
                     showSummary
                       ? 'bg-yellow-50 text-yellow-600'
                       : 'text-zinc-400 hover:text-yellow-600 hover:bg-zinc-50'
