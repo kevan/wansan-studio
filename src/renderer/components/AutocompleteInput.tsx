@@ -24,14 +24,16 @@ export function AutocompleteInput({
   onSubmit,
   options,
   disabled = false,
-  placeholder = "输入查询...",
-  className = ""
+  placeholder = '输入查询...',
+  className = '',
 }: AutocompleteInputProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [filteredOptions, setFilteredOptions] = useState<AutocompleteOption[]>([])
+  const [filteredOptions, setFilteredOptions] = useState<AutocompleteOption[]>(
+    []
+  )
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [isComposing, setIsComposing] = useState(false)
-  
+
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -58,10 +60,13 @@ export function AutocompleteInput({
       return
     }
 
-    const filtered = options.filter(option =>
-      option.label.toLowerCase().includes(currentWord.toLowerCase()) ||
-      option.value.toLowerCase().includes(currentWord.toLowerCase())
-    ).slice(0, 8) // 最多显示8个选项
+    const filtered = options
+      .filter(
+        option =>
+          option.label.toLowerCase().includes(currentWord.toLowerCase()) ||
+          option.value.toLowerCase().includes(currentWord.toLowerCase())
+      )
+      .slice(0, 8) // 最多显示8个选项
 
     setFilteredOptions(filtered)
     setIsOpen(filtered.length > 0)
@@ -88,13 +93,13 @@ export function AutocompleteInput({
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault()
-          setSelectedIndex(prev => 
+          setSelectedIndex(prev =>
             prev < filteredOptions.length - 1 ? prev + 1 : 0
           )
           break
         case 'ArrowUp':
           e.preventDefault()
-          setSelectedIndex(prev => 
+          setSelectedIndex(prev =>
             prev > 0 ? prev - 1 : filteredOptions.length - 1
           )
           break
@@ -126,18 +131,18 @@ export function AutocompleteInput({
     const cursorPos = textarea.selectionStart
     const textBeforeCursor = value.slice(0, cursorPos)
     const textAfterCursor = value.slice(cursorPos)
-    
+
     // 替换当前词
     const words = textBeforeCursor.split(/\s+/)
     words[words.length - 1] = option.value
     const newTextBefore = words.join(' ')
-    
+
     const newValue = newTextBefore + textAfterCursor
     onChange(newValue)
-    
+
     setIsOpen(false)
     setSelectedIndex(-1)
-    
+
     // 设置光标位置
     setTimeout(() => {
       if (textarea) {
@@ -157,10 +162,14 @@ export function AutocompleteInput({
 
   const getOptionIcon = (type: AutocompleteOption['type']) => {
     switch (type) {
-      case 'column': return '📊'
-      case 'function': return '⚡'
-      case 'keyword': return '🔤'
-      default: return '💡'
+      case 'column':
+        return '📊'
+      case 'function':
+        return '⚡'
+      case 'keyword':
+        return '🔤'
+      default:
+        return '💡'
     }
   }
 
@@ -172,7 +181,7 @@ export function AutocompleteInput({
             <textarea
               ref={textareaRef}
               value={value}
-              onChange={(e) => onChange(e.target.value)}
+              onChange={e => onChange(e.target.value)}
               onKeyDown={handleKeyDown}
               onCompositionStart={() => setIsComposing(true)}
               onCompositionEnd={() => setIsComposing(false)}
@@ -188,14 +197,25 @@ export function AutocompleteInput({
             disabled={disabled || !value.trim()}
             className={`
               flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center transition-colors
-              ${disabled || !value.trim() 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                : 'bg-orange-500 text-white hover:bg-orange-600'
+              ${
+                disabled || !value.trim()
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-orange-500 text-white hover:bg-orange-600'
               }
             `}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+              />
             </svg>
           </button>
         </div>
@@ -203,7 +223,7 @@ export function AutocompleteInput({
 
       {/* 自动完成下拉框 */}
       {isOpen && filteredOptions.length > 0 && (
-        <div 
+        <div
           ref={dropdownRef}
           className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
         >
@@ -222,10 +242,14 @@ export function AutocompleteInput({
               <div className="flex-1">
                 <div className="font-medium text-gray-900">{option.label}</div>
                 {option.description && (
-                  <div className="text-sm text-gray-500">{option.description}</div>
+                  <div className="text-sm text-gray-500">
+                    {option.description}
+                  </div>
                 )}
               </div>
-              <div className="text-xs text-gray-400 font-mono">{option.value}</div>
+              <div className="text-xs text-gray-400 font-mono">
+                {option.value}
+              </div>
             </button>
           ))}
         </div>

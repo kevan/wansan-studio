@@ -1,4 +1,4 @@
-import  { useState } from 'react'
+import { useState } from 'react'
 import { useGenerateSQL } from '../hooks/useIPC'
 
 interface QueryPanelProps {
@@ -23,13 +23,15 @@ export function QueryPanel({ schema, onRunQuery, isLoading }: QueryPanelProps) {
     try {
       const generatedSQL = await generateSQLMutation.mutateAsync({
         prompt: naturalQuery,
-        schema
+        schema,
       })
       setSqlQuery(generatedSQL)
       setQueryMode('sql')
     } catch (error) {
       console.error('Generate SQL error:', error)
-      alert(`SQL 生成失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      alert(
+        `SQL 生成失败: ${error instanceof Error ? error.message : '未知错误'}`
+      )
     }
   }
 
@@ -81,7 +83,7 @@ export function QueryPanel({ schema, onRunQuery, isLoading }: QueryPanelProps) {
                 rows={3}
                 placeholder="例如：显示销售额最高的前10个产品"
                 value={naturalQuery}
-                onChange={(e) => setNaturalQuery(e.target.value)}
+                onChange={e => setNaturalQuery(e.target.value)}
               />
             </div>
             <div className="flex space-x-2">
@@ -105,7 +107,7 @@ export function QueryPanel({ schema, onRunQuery, isLoading }: QueryPanelProps) {
                 rows={4}
                 placeholder="SELECT * FROM table_name WHERE ..."
                 value={sqlQuery}
-                onChange={(e) => setSqlQuery(e.target.value)}
+                onChange={e => setSqlQuery(e.target.value)}
               />
             </div>
             <div className="flex space-x-2">

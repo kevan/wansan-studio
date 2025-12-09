@@ -23,7 +23,6 @@ export function MainContent({
     showSchemaConfirm,
     setShowSchemaConfirm,
     confirmSchema,
-    reset,
   } = useFileStore()
 
   const readyFiles = files.filter(f => f.status === 'ready')
@@ -35,10 +34,6 @@ export function MainContent({
 
   const handleCancelSchema = () => {
     setShowSchemaConfirm(false)
-  }
-
-  const handleReset = () => {
-    reset()
   }
 
   // 开发模式下显示组件展示
@@ -98,7 +93,7 @@ export function MainContent({
         />
       ) : (
         // 数据工作区
-        <DataWorkspace onReset={handleReset} />
+        <DataWorkspace />
       )}
     </div>
   )

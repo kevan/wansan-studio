@@ -21,4 +21,3 @@ export const isProd = !isDev
  * 当前环境模式
  */
 export const mode = isDev ? 'development' : 'production'
-

@@ -4,9 +4,16 @@ import { FileService } from './file'
 import { AIService } from './ai'
 import { executeSQL } from '../engine/executor'
 import { checkFilesConsistency } from '../engine/file-watcher'
-import type { TableSchema, FileNode, RelationSuggestion } from '../../shared/types'
+import type {
+  TableSchema,
+  FileNode,
+  RelationSuggestion,
+} from '../../shared/types'
 
-export function setupIPC(databaseService: DatabaseService, aiService: AIService) {
+export function setupIPC(
+  databaseService: DatabaseService,
+  aiService: AIService
+) {
   const fileService = new FileService(databaseService)
 
   // 文件解析
@@ -28,9 +35,7 @@ export function setupIPC(databaseService: DatabaseService, aiService: AIService)
     try {
       const result = await dialog.showOpenDialog({
         properties: ['openFile'],
-        filters: [
-          { name: 'Data Files', extensions: ['xlsx', 'xls', 'csv'] },
-        ],
+        filters: [{ name: 'Data Files', extensions: ['xlsx', 'xls', 'csv'] }],
       })
 
       if (result.canceled) {
@@ -48,9 +53,7 @@ export function setupIPC(databaseService: DatabaseService, aiService: AIService)
     try {
       const result = await dialog.showOpenDialog({
         properties: ['openFile', 'multiSelections'],
-        filters: [
-          { name: 'Data Files', extensions: ['xlsx', 'xls', 'csv'] },
-        ],
+        filters: [{ name: 'Data Files', extensions: ['xlsx', 'xls', 'csv'] }],
       })
 
       if (result.canceled) {
@@ -94,9 +97,20 @@ export function setupIPC(databaseService: DatabaseService, aiService: AIService)
   // AI 生成分析
   ipcMain.handle(
     'ask-ai',
-    async (_event, userQuery: string, schemas: TableSchema[], relations: RelationSuggestion[], context?: { lastSql: string, lastQuery: string }) => {
+    async (
+      _event,
+      userQuery: string,
+      schemas: TableSchema[],
+      relations: RelationSuggestion[],
+      context?: { lastSql: string; lastQuery: string }
+    ) => {
       try {
-        const result = await aiService.getAnalysis(userQuery, schemas, relations, context)
+        const result = await aiService.getAnalysis(
+          userQuery,
+          schemas,
+          relations,
+          context
+        )
         return { success: true, data: result }
       } catch (error) {
         console.error('Generate analysis error:', error)
@@ -111,7 +125,12 @@ export function setupIPC(databaseService: DatabaseService, aiService: AIService)
   // AI 修复 SQL
   ipcMain.handle(
     'ask-ai-fix',
-    async (_event, originalSql: string, error: string, schemas: TableSchema[]) => {
+    async (
+      _event,
+      originalSql: string,
+      error: string,
+      schemas: TableSchema[]
+    ) => {
       try {
         const result = await aiService.fixQuery(originalSql, error, schemas)
         return { success: true, data: result }
@@ -165,40 +184,46 @@ export function setupIPC(databaseService: DatabaseService, aiService: AIService)
   // 清理 AI 配置
   ipcMain.handle('clear-ai-config', async () => {
     try {
-      aiService.clearConfig();
-      return { success: true };
+      aiService.clearConfig()
+      return { success: true }
     } catch (error) {
-      return { success: false, error: 'Failed to clear AI config' };
+      return { success: false, error: 'Failed to clear AI config' }
     }
-  });
+  })
 
   // 检查文件一致性
-  ipcMain.handle('check-files-consistency', async (_event, files: FileNode[]) => {
-    try {
-      const changedIds = await checkFilesConsistency(files);
-      return { success: true, data: changedIds };
-    } catch (error) {
-      console.error('Check files consistency error:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
+  ipcMain.handle(
+    'check-files-consistency',
+    async (_event, files: FileNode[]) => {
+      try {
+        const changedIds = await checkFilesConsistency(files)
+        return { success: true, data: changedIds }
+      } catch (error) {
+        console.error('Check files consistency error:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      }
     }
-  });
+  )
 
   // 重新摄取文件
-  ipcMain.handle('re-ingest-file', async (_event, filePath: string, tableName: string) => {
-    try {
-      const result = await fileService.reIngestFile(filePath, tableName);
-      return { success: true, data: result };
-    } catch (error) {
-      console.error('Re-ingest file error:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
+  ipcMain.handle(
+    're-ingest-file',
+    async (_event, filePath: string, tableName: string) => {
+      try {
+        const result = await fileService.reIngestFile(filePath, tableName)
+        return { success: true, data: result }
+      } catch (error) {
+        console.error('Re-ingest file error:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      }
     }
-  });
+  )
 
   console.log('IPC handlers registered and updated successfully')
 }

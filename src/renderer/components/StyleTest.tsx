@@ -6,7 +6,7 @@ export function StyleTest() {
       <h3 className="text-lg font-semibold mb-4 text-gray-900">
         Tailwind CSS 样式测试
       </h3>
-      
+
       {/* 基础颜色测试 */}
       <div className="mb-4">
         <p className="text-sm text-gray-600 mb-2">基础颜色:</p>

@@ -40,7 +40,7 @@ function App() {
         <Panel defaultSize={20} minSize={15} maxSize={30}>
           <Sidebar onImportData={handleImportData} />
         </Panel>
-        
+
         <PanelResizeHandle className="w-1 bg-zinc-100 hover:bg-zinc-300 transition-colors" />
 
         {/* 主画布区域 - Chat/Workspace */}
@@ -59,7 +59,7 @@ function App() {
 
         {/* 右侧 Report Canvas */}
         <Panel defaultSize={40} minSize={30}>
-           <ReportCanvas />
+          <ReportCanvas />
         </Panel>
       </PanelGroup>
 

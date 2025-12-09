@@ -22,8 +22,8 @@ describe('tree-utils', () => {
         lastModified: 123456,
         columns: [
           { name: 'id', safeName: 'id', type: 'INTEGER', sampleValues: [] },
-          { name: 'name', safeName: 'name', type: 'VARCHAR', sampleValues: [] }
-        ]
+          { name: 'name', safeName: 'name', type: 'VARCHAR', sampleValues: [] },
+        ],
       }
 
       const tree = buildTreeData([mockFile], [])
@@ -42,27 +42,50 @@ describe('tree-utils', () => {
 
     it('should mark foreign keys', () => {
       const mockFile1: FileAsset = {
-        id: 'f1', name: 'orders', path: '', tableName: 't_orders', status: 'ready', createdAt: 0,
+        id: 'f1',
+        name: 'orders',
+        path: '',
+        tableName: 't_orders',
+        status: 'ready',
+        createdAt: 0,
         lastModified: Date.now(),
-        columns: [{ name: 'user_id', safeName: 'user_id', type: 'INTEGER', sampleValues: [] }]
+        columns: [
+          {
+            name: 'user_id',
+            safeName: 'user_id',
+            type: 'INTEGER',
+            sampleValues: [],
+          },
+        ],
       }
       const mockFile2: FileAsset = {
-        id: 'f2', name: 'users', path: '', tableName: 't_users', status: 'ready', createdAt: 0,
+        id: 'f2',
+        name: 'users',
+        path: '',
+        tableName: 't_users',
+        status: 'ready',
+        createdAt: 0,
         lastModified: Date.now(),
-        columns: [{ name: 'id', safeName: 'id', type: 'INTEGER', sampleValues: [] }]
+        columns: [
+          { name: 'id', safeName: 'id', type: 'INTEGER', sampleValues: [] },
+        ],
       }
-      
+
       const mockRelation: Relation = {
         id: 'r1',
-        fileAId: 'f1', columnA: 'user_id',
-        fileBId: 'f2', columnB: 'id'
+        fileAId: 'f1',
+        columnA: 'user_id',
+        fileBId: 'f2',
+        columnB: 'id',
       }
 
       const tree = buildTreeData([mockFile1, mockFile2], [mockRelation])
-      
+
       // Check Orders -> user_id
       const ordersNode = tree[0].children?.find(n => n.fileId === 'f1')
-      const userIdNode = ordersNode?.children?.find(n => n.columnName === 'user_id')
+      const userIdNode = ordersNode?.children?.find(
+        n => n.columnName === 'user_id'
+      )
       expect(userIdNode?.isForeignKey).toBe(true)
 
       // Check Users -> id
@@ -78,7 +101,11 @@ describe('tree-utils', () => {
     })
 
     it('should parse column IDs', () => {
-      expect(parseNodeId('col:123:name')).toEqual({ type: 'column', parentId: '123', id: 'name' })
+      expect(parseNodeId('col:123:name')).toEqual({
+        type: 'column',
+        parentId: '123',
+        id: 'name',
+      })
     })
 
     it('should parse relation IDs', () => {
@@ -86,7 +113,10 @@ describe('tree-utils', () => {
     })
 
     it('should handle root nodes', () => {
-      expect(parseNodeId('root_files')).toEqual({ type: 'folder', id: 'root_files' })
+      expect(parseNodeId('root_files')).toEqual({
+        type: 'folder',
+        id: 'root_files',
+      })
     })
   })
 })

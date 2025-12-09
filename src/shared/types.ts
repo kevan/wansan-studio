@@ -1,64 +1,76 @@
-export type ColumnType = 'VARCHAR' | 'DOUBLE' | 'BOOLEAN' | 'DATE' | 'INTEGER' | 'TIMESTAMP';
+export type ColumnType =
+  | 'VARCHAR'
+  | 'DOUBLE'
+  | 'BOOLEAN'
+  | 'DATE'
+  | 'INTEGER'
+  | 'TIMESTAMP'
 
 export interface ColumnSchema {
-  name: string;       // Original column name (e.g., "销售额(万元)")
-  safeName: string;   // Sanitized name for SQL (e.g., "销售额(万元)") - *DuckDB supports utf8, but quoting is mandatory*
-  type: ColumnType;   // Inferred DuckDB type
-  sampleValues: any[]; // Top 3 non-null values for AI context
-  nullable?: boolean; // From UI state, indicates if column can have nulls
-  isKey?: boolean;    // From UI state, indicates if column is a join key
-  alias?: string;     // User defined alias for the column
-  userType?: ColumnType; // User defined type override
+  name: string // Original column name (e.g., "销售额(万元)")
+  safeName: string // Sanitized name for SQL (e.g., "销售额(万元)") - *DuckDB supports utf8, but quoting is mandatory*
+  type: ColumnType // Inferred DuckDB type
+  sampleValues: any[] // Top 3 non-null values for AI context
+  nullable?: boolean // From UI state, indicates if column can have nulls
+  isKey?: boolean // From UI state, indicates if column is a join key
+  alias?: string // User defined alias for the column
+  userType?: ColumnType // User defined type override
 }
 
 export interface TableSchema {
-  tableName: string;  // Normalized table name (e.g., "t_orders")
-  description?: string; // Original file name for AI context (e.g., "Sales 2023.xlsx")
-  columns: ColumnSchema[];
+  tableName: string // Normalized table name (e.g., "t_orders")
+  description?: string // Original file name for AI context (e.g., "Sales 2023.xlsx")
+  columns: ColumnSchema[]
 }
 
 export interface AnalysisResult {
-  sql?: string;
-  title?: string;
-  summary?: string;
-  viz_type?: 'bar' | 'line' | 'pie' | 'table';
+  sql?: string
+  title?: string
+  summary?: string
+  viz_type?: 'bar' | 'line' | 'pie' | 'table'
   viz_config?: {
-    x_axis: string;
-    y_axis: string;
-    series_name?: string;
-  };
-  reasoning?: string;
-  suggestions?: string[];
-  error?: string;
+    x_axis: string
+    y_axis: string
+    series_name?: string
+  }
+  reasoning?: string
+  suggestions?: string[]
+  error?: string
 }
 
 // [UPDATE] Add this new interface
 export interface RelationSuggestion {
-  sourceTable: string;  // e.g., "t_orders"
-  sourceColumn: string; // e.g., "product_id"
-  targetTable: string;  // e.g., "t_products"
-  targetColumn: string; // e.g., "id"
-  confidence: number;   // 0.0 to 1.0
-  reason: string;       // Explanation for the UI (e.g. "Column names match")
+  sourceTable: string // e.g., "t_orders"
+  sourceColumn: string // e.g., "product_id"
+  targetTable: string // e.g., "t_products"
+  targetColumn: string // e.g., "id"
+  confidence: number // 0.0 to 1.0
+  reason: string // Explanation for the UI (e.g. "Column names match")
 }
 
-export type SyncStatus = 'uploading' | 'processing' | 'ready' | 'error' | 'out-of-sync' | 'missing';
+export type SyncStatus =
+  | 'uploading'
+  | 'processing'
+  | 'ready'
+  | 'error'
+  | 'out-of-sync'
+  | 'missing'
 
 export interface FileNode {
-  id: string;
-  name: string;
-  path: string;
-  tableName: string; // DuckDB table name
-  status: SyncStatus;
-  size?: number;
-  columns: ColumnSchema[];
-  rowCount?: number;
-  error?: string;
-  lastModified: number; // Timestamp (ms) of file modification
-  createdAt: number;
+  id: string
+  name: string
+  path: string
+  tableName: string // DuckDB table name
+  status: SyncStatus
+  size?: number
+  columns: ColumnSchema[]
+  rowCount?: number
+  error?: string
+  lastModified: number // Timestamp (ms) of file modification
+  createdAt: number
 }
 
 export interface ReloadResult {
-  lastModified: number;
-  newColumns: ColumnSchema[];
+  lastModified: number
+  newColumns: ColumnSchema[]
 }

@@ -18,12 +18,8 @@ export function Header() {
 
           {/* 操作按钮 */}
           <div className="flex items-center space-x-3">
-            <button className="wansan-button-secondary">
-              设置
-            </button>
-            <button className="wansan-button-primary">
-              导入数据
-            </button>
+            <button className="wansan-button-secondary">设置</button>
+            <button className="wansan-button-primary">导入数据</button>
           </div>
         </div>
       </div>

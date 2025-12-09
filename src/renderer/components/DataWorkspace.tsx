@@ -4,66 +4,75 @@ import { ChatInterface, ChatMessage } from './ChatInterface'
 import { useAI } from '../hooks/useAI'
 import { TableSchema, RelationSuggestion } from '../../shared/types'
 
-interface DataWorkspaceNewProps {
-  onReset: () => void
-}
-
-export function DataWorkspace({ onReset }: DataWorkspaceNewProps) {
-  const { files, relations, activeFileId, setActiveFile, setShowSchemaConfirm } = useFileStore()
+export function DataWorkspace() {
+  const {
+    files,
+    relations,
+    activeFileId,
+  } = useFileStore()
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const { handleQuery, loading, error } = useAI()
+  const { handleQuery, loading } = useAI()
 
   const readyFiles = files.filter(f => f.status === 'ready')
-  const currentFile = readyFiles.find(f => f.id === activeFileId) || readyFiles[0]
+  const currentFile =
+    readyFiles.find(f => f.id === activeFileId) || readyFiles[0]
 
   // Map store files to TableSchema for AI
   const schemas: TableSchema[] = readyFiles.map(f => ({
     tableName: f.tableName || `table_${f.id}`,
-    columns: f.columns
+    columns: f.columns,
   }))
 
   // Convert internal relations to API expected format
-  const apiRelations: RelationSuggestion[] = relations.map(r => {
-    const fileA = files.find(f => f.id === r.fileAId)
-    const fileB = files.find(f => f.id === r.fileBId)
-    
-    if (!fileA || !fileB) return null
-    
-    return {
-      sourceTable: fileA.tableName,
-      sourceColumn: r.columnA,
-      targetTable: fileB.tableName,
-      targetColumn: r.columnB,
-      confidence: 1.0, // Existing confirmed relations are treated as 100% confidence
-      reason: "User confirmed or auto-detected in session"
-    }
-  }).filter((r): r is RelationSuggestion => r !== null)
+  const apiRelations: RelationSuggestion[] = relations
+    .map(r => {
+      const fileA = files.find(f => f.id === r.fileAId)
+      const fileB = files.find(f => f.id === r.fileBId)
+
+      if (!fileA || !fileB) return null
+
+      return {
+        sourceTable: fileA.tableName,
+        sourceColumn: r.columnA,
+        targetTable: fileB.tableName,
+        targetColumn: r.columnB,
+        confidence: 1.0, // Existing confirmed relations are treated as 100% confidence
+        reason: 'User confirmed or auto-detected in session',
+      }
+    })
+    .filter((r): r is RelationSuggestion => r !== null)
 
   const onQuerySubmit = (query: string) => {
     // Find context (last SQL and last User Query)
-    let context: { lastSql: string, lastQuery: string } | undefined = undefined;
-    
+    let context: { lastSql: string; lastQuery: string } | undefined = undefined
+
     // Reverse iterate to find the last successful AI response
     for (let i = messages.length - 1; i >= 0; i--) {
-        const msg = messages[i];
-        if (msg.type === 'assistant' && msg.reportData?.sql) {
-            // Found last SQL, now find the user query that triggered it (usually the one before)
-            // We assume the structure is User -> Assistant
-            // But we need to be careful if there are error messages
-            const prevMsg = messages[i - 1];
-            if (prevMsg && prevMsg.type === 'user') {
-                context = {
-                    lastSql: msg.reportData.sql,
-                    lastQuery: prevMsg.content
-                };
-                break; // Found the pair, stop
-            }
+      const msg = messages[i]
+      if (msg.type === 'assistant' && msg.reportData?.sql) {
+        // Found last SQL, now find the user query that triggered it (usually the one before)
+        // We assume the structure is User -> Assistant
+        // But we need to be careful if there are error messages
+        const prevMsg = messages[i - 1]
+        if (prevMsg && prevMsg.type === 'user') {
+          context = {
+            lastSql: msg.reportData.sql,
+            lastQuery: prevMsg.content,
+          }
+          break // Found the pair, stop
         }
+      }
     }
 
-    handleQuery(query, schemas, apiRelations, (msg) => {
-      setMessages(prev => [...prev, msg])
-    }, context)
+    handleQuery(
+      query,
+      schemas,
+      apiRelations,
+      msg => {
+        setMessages(prev => [...prev, msg])
+      },
+      context
+    )
   }
 
   // Get current columns for autocomplete
@@ -71,41 +80,6 @@ export function DataWorkspace({ onReset }: DataWorkspaceNewProps) {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-zinc-50">
-      {/* 顶部工具栏 - 简化版 */}
-      <div className="flex-shrink-0 h-14 bg-white border-b border-zinc-200 px-4 flex items-center justify-between shadow-sm z-10">
-        <div className="flex items-center gap-4">
-          <div className="flex gap-2">
-            {readyFiles.map(file => (
-              <button
-                key={file.id}
-                onClick={() => setActiveFile(file.id)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
-                  file.id === currentFile?.id
-                    ? 'bg-orange-100 text-orange-700 ring-1 ring-orange-200'
-                    : 'text-zinc-600 hover:bg-zinc-100'
-                }`}
-              >
-                {file.name}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowSchemaConfirm(true)}
-            className="text-sm text-zinc-500 hover:text-zinc-900 px-3 py-1.5 rounded-md hover:bg-zinc-100"
-          >
-            Schema
-          </button>
-          <button 
-            onClick={onReset} 
-            className="text-sm text-red-600 hover:text-red-700 px-3 py-1.5 rounded-md hover:bg-red-50"
-          >
-            Reset
-          </button>
-        </div>
-      </div>
-
       {/* 聊天主界面 */}
       <div className="flex-1 overflow-hidden relative">
         <ChatInterface
@@ -116,15 +90,7 @@ export function DataWorkspace({ onReset }: DataWorkspaceNewProps) {
           loading={loading}
           className="h-full"
         />
-        
-        {/* Error Toast (Simple) */}
-        {error && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-red-100 text-red-800 px-4 py-2 rounded-md shadow-lg text-sm border border-red-200">
-            Error: {error.message}
-          </div>
-        )}
       </div>
     </div>
   )
 }
-

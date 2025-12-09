@@ -17,7 +17,7 @@ export function Sidebar(_props: SidebarProps) {
   const [isImporting, setIsImporting] = useState(false)
   const parseFileMutation = useParseFile()
   const { checkAutoLink } = useAutoLink()
-  
+
   // Enable automatic file synchronization checks
   useFileSync()
 
@@ -59,7 +59,11 @@ export function Sidebar(_props: SidebarProps) {
           try {
             updateFile(fileId, { status: 'processing' })
             const parseResult = await parseFileMutation.mutateAsync(filePath)
-            console.log('handleImportClick: Parsed file', fileName, parseResult.tableName)
+            console.log(
+              'handleImportClick: Parsed file',
+              fileName,
+              parseResult.tableName
+            )
 
             // 从 preview 数据中提取每列的样本值
             const columns = (parseResult.schema?.columns || []).map(
@@ -117,17 +121,25 @@ export function Sidebar(_props: SidebarProps) {
               rowCount: parseResult.rowCount,
             })
           } catch (error) {
-            console.error('handleImportClick: Error processing file', fileName, error)
+            console.error(
+              'handleImportClick: Error processing file',
+              fileName,
+              error
+            )
             updateFile(fileId, {
               status: 'error',
               error: error instanceof Error ? error.message : '解析失败',
             })
           }
         }
-        
+
         // Trigger auto-link analysis after all files are processed
         const currentFiles = useFileStore.getState().files
-        console.log('Processed files. Triggering auto-link with:', currentFiles.length, 'files')
+        console.log(
+          'Processed files. Triggering auto-link with:',
+          currentFiles.length,
+          'files'
+        )
         checkAutoLink(currentFiles)
       } else {
         console.log('handleImportClick: No files selected or failed')

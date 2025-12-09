@@ -1,6 +1,10 @@
 import { OpenAI } from 'openai'
 import { z } from 'zod'
-import { AnalysisResult, RelationSuggestion, TableSchema } from '../../shared/types'
+import {
+  AnalysisResult,
+  RelationSuggestion,
+  TableSchema,
+} from '../../shared/types'
 import { ClientOptions } from 'openai/client'
 import { isDev } from '../utils/env'
 import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources'
@@ -19,7 +23,11 @@ function getOpenAI(apiKey?: string, baseURL?: string): OpenAI {
   }
 
   // Re-initialize if key or url changed, or instance is null
-  if (!openaiInstance || keyToUse !== currentApiKey || urlToUse !== currentBaseURL) {
+  if (
+    !openaiInstance ||
+    keyToUse !== currentApiKey ||
+    urlToUse !== currentBaseURL
+  ) {
     let opts: ClientOptions = {
       apiKey: keyToUse,
       baseURL: urlToUse,
@@ -35,7 +43,11 @@ function getOpenAI(apiKey?: string, baseURL?: string): OpenAI {
   return openaiInstance
 }
 
-export function setAIConfig(config: { apiKey?: string; baseURL?: string; model?: string }) {
+export function setAIConfig(config: {
+  apiKey?: string
+  baseURL?: string
+  model?: string
+}) {
   console.log('setAIConfig', config)
   if (config.apiKey !== undefined) currentApiKey = config.apiKey
   if (config.baseURL !== undefined) currentBaseURL = config.baseURL
@@ -47,7 +59,6 @@ export function setAIConfig(config: { apiKey?: string; baseURL?: string; model?:
 export function isAIConfigured(): boolean {
   return !!(currentApiKey || process.env.OPENAI_API_KEY)
 }
-
 
 export function getModelToUse() {
   const envModel = process.env.OPENAI_MODEL
@@ -66,11 +77,13 @@ const AnalysisResultSchema = z.object({
   title: z.string().optional(),
   summary: z.string().optional(),
   viz_type: z.enum(['bar', 'line', 'pie', 'table']).optional(),
-  viz_config: z.object({
-    x_axis: z.string(),
-    y_axis: z.string(),
-    series_name: z.string().optional(),
-  }).optional(),
+  viz_config: z
+    .object({
+      x_axis: z.string(),
+      y_axis: z.string(),
+      series_name: z.string().optional(),
+    })
+    .optional(),
   reasoning: z.string().optional(),
   suggestions: z.array(z.string()).optional(),
   error: z.string().optional(),
@@ -239,33 +252,46 @@ const RelationSuggestionSchema = z.object({
 const RelationSuggestionListSchema = z.array(RelationSuggestionSchema)
 
 function serializeSchemas(schemas: TableSchema[]): string {
-  return schemas.map(table => {
-    const columnsStr = table.columns.map(col => `- "${col.name}" (${col.type})`).join('\n')
-    const descStr = table.description ? ` (Source: "${table.description}")` : ''
-    return `Table: "${table.tableName}"${descStr}\nColumns:\n${columnsStr}`
-  }).join('\n\n')
+  return schemas
+    .map(table => {
+      const columnsStr = table.columns
+        .map(col => `- "${col.name}" (${col.type})`)
+        .join('\n')
+      const descStr = table.description
+        ? ` (Source: "${table.description}")`
+        : ''
+      return `Table: "${table.tableName}"${descStr}\nColumns:\n${columnsStr}`
+    })
+    .join('\n\n')
 }
 
 export async function generateAnalysis(
   userQuery: string,
   schemas: TableSchema[],
-  relations: RelationSuggestion[], 
-  context?: { lastSql: string, lastQuery: string }
+  relations: RelationSuggestion[],
+  context?: { lastSql: string; lastQuery: string }
 ): Promise<AnalysisResult> {
   if (isDev()) {
-    console.log('generateAnalysis pre request - schemas:', JSON.stringify(schemas))
+    console.log(
+      'generateAnalysis pre request - schemas:',
+      JSON.stringify(schemas)
+    )
     console.log('generateAnalysis context:', context)
   }
   const schemaContext = serializeSchemas(schemas)
   const currentDate = new Date().toISOString().split('T')[0]
 
-  const relationsContext = relations.length > 0
-    ? relations.map(r => 
-        `- Table "${r.sourceTable}" can act as Fact Table, joining to Dimension Table "${r.targetTable}" via: ON "${r.sourceTable}"."${r.sourceColumn}" = "${r.targetTable}"."${r.targetColumn}"`
-      ).join("\n")
-    : "No specific relationships defined. Infer joins if necessary based on column names."
+  const relationsContext =
+    relations.length > 0
+      ? relations
+          .map(
+            r =>
+              `- Table "${r.sourceTable}" can act as Fact Table, joining to Dimension Table "${r.targetTable}" via: ON "${r.sourceTable}"."${r.sourceColumn}" = "${r.targetTable}"."${r.targetColumn}"`
+          )
+          .join('\n')
+      : 'No specific relationships defined. Infer joins if necessary based on column names.'
 
-  let contextSection = ""
+  let contextSection = ''
   if (context && context.lastSql && context.lastQuery) {
     contextSection = `
 ### 🕒 PREVIOUS CONTEXT
@@ -321,7 +347,9 @@ ${contextSection}
     return AnalysisResultSchema.parse(parsedResult)
   } catch (error) {
     console.error('Failed to parse or validate AI response:', error)
-    throw new Error(`AI returned invalid JSON or structure. Raw response: ${resultJson}`)
+    throw new Error(
+      `AI returned invalid JSON or structure. Raw response: ${resultJson}`
+    )
   }
 }
 
@@ -329,9 +357,14 @@ ${contextSection}
  * Analyze multiple table schemas to deduce potential Foreign Key relationships.
  * This is run immediately after file ingestion to populate the "Relationship Manager" UI.
  */
-export async function inferRelationships(schemas: TableSchema[]): Promise<RelationSuggestion[]> {
+export async function inferRelationships(
+  schemas: TableSchema[]
+): Promise<RelationSuggestion[]> {
   if (isDev()) {
-    console.log('inferRelationships pre request - schemas:', JSON.stringify(schemas))
+    console.log(
+      'inferRelationships pre request - schemas:',
+      JSON.stringify(schemas)
+    )
   }
 
   const schemaContext = serializeSchemas(schemas)
@@ -369,18 +402,25 @@ ${schemaContext}
     // The API might return an object like { "relationships": [...] } or directly the array.
     // Let's assume it might wrap it in an object for safety if response_format is json_object
     const rawResult = JSON.parse(resultJson)
-    const relationships = Array.isArray(rawResult) ? rawResult : rawResult.relationships
+    const relationships = Array.isArray(rawResult)
+      ? rawResult
+      : rawResult.relationships
 
     return RelationSuggestionListSchema.parse(relationships)
   } catch (error) {
-    console.error('Failed to parse or validate AI response for relationship inference:', error)
-    throw new Error(`AI returned invalid JSON or structure for relationships. Raw response: ${resultJson}`)
+    console.error(
+      'Failed to parse or validate AI response for relationship inference:',
+      error
+    )
+    throw new Error(
+      `AI returned invalid JSON or structure for relationships. Raw response: ${resultJson}`
+    )
   }
 }
 
 const FixSQLResultSchema = z.object({
   sql: z.string(),
-  reasoning: z.string()
+  reasoning: z.string(),
 })
 
 export async function fixSQL(
@@ -418,8 +458,8 @@ Fix the SQL. Ensure all table/column names are double-quoted and match the schem
 
   const response = await getOpenAI().chat.completions.create(body)
   const resultJson = response.choices[0].message.content
-  
-  if (!resultJson) throw new Error("AI returned empty response for SQL fix")
+
+  if (!resultJson) throw new Error('AI returned empty response for SQL fix')
 
   try {
     return FixSQLResultSchema.parse(JSON.parse(resultJson))

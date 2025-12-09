@@ -17,8 +17,12 @@ const electronAPI = {
     ipcRenderer.invoke('get-schema', tableName),
 
   // AI 功能
-  askAI: (query: string, schemas: any[], relations: any[], context?: { lastSql: string, lastQuery: string }) =>
-    ipcRenderer.invoke('ask-ai', query, schemas, relations, context),
+  askAI: (
+    query: string,
+    schemas: any[],
+    relations: any[],
+    context?: { lastSql: string; lastQuery: string }
+  ) => ipcRenderer.invoke('ask-ai', query, schemas, relations, context),
   fixSQL: (originalSql: string, error: string, schemas: any[]) =>
     ipcRenderer.invoke('ask-ai-fix', originalSql, error, schemas),
   inferRelationships: (schemas: any[]) =>

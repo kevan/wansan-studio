@@ -7,11 +7,11 @@ interface MagicInputProps {
   className?: string
 }
 
-export function MagicInput({ 
-  onSubmit, 
-  disabled = false, 
-  placeholder = "用自然语言描述你想要的报表...",
-  className = ""
+export function MagicInput({
+  onSubmit,
+  disabled = false,
+  placeholder = '用自然语言描述你想要的报表...',
+  className = '',
 }: MagicInputProps) {
   const [query, setQuery] = useState('')
   const [isComposing, setIsComposing] = useState(false)
@@ -53,14 +53,16 @@ export function MagicInput({
   }
 
   return (
-    <div className={`bg-white border border-gray-200 rounded-lg shadow-sm ${className}`}>
+    <div
+      className={`bg-white border border-gray-200 rounded-lg shadow-sm ${className}`}
+    >
       <div className="flex items-end gap-3 p-4">
         {/* 输入框 */}
         <div className="flex-1 relative">
           <textarea
             ref={textareaRef}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             onCompositionStart={handleCompositionStart}
             onCompositionEnd={handleCompositionEnd}
@@ -68,9 +70,9 @@ export function MagicInput({
             disabled={disabled}
             rows={1}
             className="w-full resize-none border-0 outline-none text-gray-900 placeholder-gray-500 text-sm leading-6 min-h-[24px] max-h-[120px] overflow-y-auto"
-            style={{ 
+            style={{
               scrollbarWidth: 'thin',
-              scrollbarColor: '#e5e7eb transparent'
+              scrollbarColor: '#e5e7eb transparent',
             }}
           />
         </div>
@@ -81,24 +83,25 @@ export function MagicInput({
           disabled={disabled || !query.trim()}
           className={`
             flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center transition-colors
-            ${disabled || !query.trim() 
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-              : 'bg-orange-500 text-white hover:bg-orange-600 active:bg-orange-700'
+            ${
+              disabled || !query.trim()
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-orange-500 text-white hover:bg-orange-600 active:bg-orange-700'
             }
           `}
           title="发送 (Enter)"
         >
-          <svg 
-            className="w-4 h-4" 
-            fill="none" 
-            stroke="currentColor" 
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={2} 
-              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" 
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
             />
           </svg>
         </button>

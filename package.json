@@ -45,6 +45,7 @@
     "react-arborist": "^3.4.3",
     "react-dom": "^19.2.1",
     "react-resizable-panels": "^3.0.6",
+    "react-textarea-autosize": "^8.5.9",
     "tailwind-merge": "^3.4.0",
     "xlsx": "^0.18.5",
     "zod": "^4.1.13",

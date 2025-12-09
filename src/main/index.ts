@@ -23,7 +23,12 @@ class WansanApp {
         const envPath = join(app.getAppPath(), '.env')
         const result = dotenv.config({ path: envPath })
         console.log(`[Main] Loading .env from ${envPath}`)
-        console.log('[Main] .env loaded result:', result.parsed ? Object.keys(result.parsed).join(',') : 'No keys', 'Error:', result.error)
+        console.log(
+          '[Main] .env loaded result:',
+          result.parsed ? Object.keys(result.parsed).join(',') : 'No keys',
+          'Error:',
+          result.error
+        )
         console.log('[Main] OPENAI_MODEL from env:', process.env.OPENAI_MODEL)
       } catch (error) {
         console.error('Failed to load .env file:', error)

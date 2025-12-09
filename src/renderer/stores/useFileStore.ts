@@ -3,7 +3,7 @@ import type { ColumnSchema, FileNode, SyncStatus } from '../../shared/types'
 
 // Re-export shared types for other components to use
 export type { ColumnSchema, FileNode, SyncStatus }
-export type FileAsset = FileNode; // Backward compatibility alias
+export type FileAsset = FileNode // Backward compatibility alias
 
 // 表关联类型
 export interface Relation {
@@ -49,7 +49,11 @@ export interface ProjectState {
 
   // Actions
   setProjectName: (name: string) => void
-  addFile: (file: Omit<FileNode, 'id' | 'createdAt' | 'lastModified'> & { status?: SyncStatus }) => string
+  addFile: (
+    file: Omit<FileNode, 'id' | 'createdAt' | 'lastModified'> & {
+      status?: SyncStatus
+    }
+  ) => string
   updateFile: (id: string, updates: Partial<FileNode>) => void
   removeFile: (id: string) => void
   setActiveFile: (id: string | null) => void
@@ -76,7 +80,10 @@ export interface ProjectState {
 
   // Sync Actions
   markAsStale: (ids: string[]) => void
-  reloadFile: (fileId: string, result: { lastModified: number, newColumns: ColumnSchema[] }) => number // Returns dropped relations count
+  reloadFile: (
+    fileId: string,
+    result: { lastModified: number; newColumns: ColumnSchema[] }
+  ) => number // Returns dropped relations count
 
   // 重置
   reset: () => void
@@ -245,59 +252,66 @@ export const useFileStore = create<ProjectState>((set, get) => ({
 
   confirmSchema: () => set({ showSchemaConfirm: false }),
 
-  markAsStale: (ids) => set((state) => ({
-    files: state.files.map(f => ids.includes(f.id) ? { ...f, status: 'out-of-sync' } : f)
-  })),
+  markAsStale: ids =>
+    set(state => ({
+      files: state.files.map(f =>
+        ids.includes(f.id) ? { ...f, status: 'out-of-sync' } : f
+      ),
+    })),
 
   reloadFile: (fileId, { lastModified, newColumns }) => {
-    let droppedRelationsCount = 0;
-    set((state) => {
-      const file = state.files.find(f => f.id === fileId);
-      if (!file) return state;
+    let droppedRelationsCount = 0
+    set(state => {
+      const file = state.files.find(f => f.id === fileId)
+      if (!file) return state
 
-      const oldColumns = file.columns;
-      
+      const oldColumns = file.columns
+
       const mergedColumns = newColumns.map(newCol => {
-        const oldCol = oldColumns.find(c => c.name === newCol.name);
-        
+        const oldCol = oldColumns.find(c => c.name === newCol.name)
+
         if (oldCol) {
           return {
             ...newCol,
             userType: oldCol.userType,
             alias: oldCol.alias,
             isKey: oldCol.isKey,
-            // If the user changed the type in UI, it's stored in 'type' currently. 
+            // If the user changed the type in UI, it's stored in 'type' currently.
             // We should preserve 'type' as well if we consider it user-defined.
             // But if the underlying type changed (e.g. string -> int), keeping 'type' might be wrong.
-            // However, 'userType' is the new explicit override. 
+            // However, 'userType' is the new explicit override.
             // Existing logic uses 'type'. Let's preserve 'type' if it matches 'userType' or just preserve it?
             // "Preserve user configurations (semantic types)"
-            type: oldCol.type, 
-          };
+            type: oldCol.type,
+          }
         } else {
-          return newCol;
+          return newCol
         }
-      });
+      })
 
       const activeRelations = state.relations.filter(r => {
-        let valid = true;
+        let valid = true
         if (r.fileAId === fileId) {
-          if (!mergedColumns.some(c => c.name === r.columnA)) valid = false;
+          if (!mergedColumns.some(c => c.name === r.columnA)) valid = false
         }
         if (r.fileBId === fileId) {
-          if (!mergedColumns.some(c => c.name === r.columnB)) valid = false;
+          if (!mergedColumns.some(c => c.name === r.columnB)) valid = false
         }
-        return valid;
-      });
+        return valid
+      })
 
-      droppedRelationsCount = state.relations.length - activeRelations.length;
+      droppedRelationsCount = state.relations.length - activeRelations.length
 
       return {
-        files: state.files.map(f => f.id === fileId ? { ...f, columns: mergedColumns, status: 'ready', lastModified } : f),
-        relations: activeRelations
-      };
-    });
-    return droppedRelationsCount;
+        files: state.files.map(f =>
+          f.id === fileId
+            ? { ...f, columns: mergedColumns, status: 'ready', lastModified }
+            : f
+        ),
+        relations: activeRelations,
+      }
+    })
+    return droppedRelationsCount
   },
 
   reset: () => set(initialState),

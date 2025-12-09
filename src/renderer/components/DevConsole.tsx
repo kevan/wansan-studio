@@ -15,7 +15,11 @@ interface DevConsoleProps {
 }
 
 // 生产环境不渲染
-export function DevConsole({ defaultOpen = false, onShowcase, onStyleTest }: DevConsoleProps) {
+export function DevConsole({
+  defaultOpen = false,
+  onShowcase,
+  onStyleTest,
+}: DevConsoleProps) {
   if (!isDev) return null
 
   const [isOpen, setIsOpen] = useState(defaultOpen)
@@ -34,19 +38,26 @@ export function DevConsole({ defaultOpen = false, onShowcase, onStyleTest }: Dev
       info: console.info,
     }
 
-    const createLogger = (type: LogEntry['type']) => (...args: unknown[]) => {
-      originalConsole[type](...args)
-      const message = args.map(arg => 
-        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-      ).join(' ')
-      
-      setLogs(prev => [...prev.slice(-99), {
-        id: ++logIdRef.current,
-        type,
-        message,
-        timestamp: new Date(),
-      }])
-    }
+    const createLogger =
+      (type: LogEntry['type']) =>
+      (...args: unknown[]) => {
+        originalConsole[type](...args)
+        const message = args
+          .map(arg =>
+            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+          )
+          .join(' ')
+
+        setLogs(prev => [
+          ...prev.slice(-99),
+          {
+            id: ++logIdRef.current,
+            type,
+            message,
+            timestamp: new Date(),
+          },
+        ])
+      }
 
     console.log = createLogger('log')
     console.warn = createLogger('warn')
@@ -70,10 +81,14 @@ export function DevConsole({ defaultOpen = false, onShowcase, onStyleTest }: Dev
 
   const getLogColor = (type: LogEntry['type']) => {
     switch (type) {
-      case 'error': return 'text-red-600 bg-red-50'
-      case 'warn': return 'text-yellow-600 bg-yellow-50'
-      case 'info': return 'text-blue-600 bg-blue-50'
-      default: return 'text-gray-700'
+      case 'error':
+        return 'text-red-600 bg-red-50'
+      case 'warn':
+        return 'text-yellow-600 bg-yellow-50'
+      case 'info':
+        return 'text-blue-600 bg-blue-50'
+      default:
+        return 'text-gray-700'
     }
   }
 
@@ -104,7 +119,9 @@ export function DevConsole({ defaultOpen = false, onShowcase, onStyleTest }: Dev
       {/* 标题栏 */}
       <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center gap-4">
-          <span className="font-mono text-sm font-semibold">🛠️ Dev Console</span>
+          <span className="font-mono text-sm font-semibold">
+            🛠️ Dev Console
+          </span>
           <div className="flex gap-1">
             <button
               onClick={() => setActiveTab('console')}
@@ -121,9 +138,24 @@ export function DevConsole({ defaultOpen = false, onShowcase, onStyleTest }: Dev
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={clearLogs} className="px-2 py-1 text-xs hover:bg-gray-700 rounded">🗑️ Clear</button>
-          <button onClick={() => setIsMinimized(true)} className="px-2 py-1 text-xs hover:bg-gray-700 rounded">➖</button>
-          <button onClick={() => setIsOpen(false)} className="px-2 py-1 text-xs hover:bg-gray-700 rounded">✕</button>
+          <button
+            onClick={clearLogs}
+            className="px-2 py-1 text-xs hover:bg-gray-700 rounded"
+          >
+            🗑️ Clear
+          </button>
+          <button
+            onClick={() => setIsMinimized(true)}
+            className="px-2 py-1 text-xs hover:bg-gray-700 rounded"
+          >
+            ➖
+          </button>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="px-2 py-1 text-xs hover:bg-gray-700 rounded"
+          >
+            ✕
+          </button>
         </div>
       </div>
 
@@ -132,13 +164,24 @@ export function DevConsole({ defaultOpen = false, onShowcase, onStyleTest }: Dev
         {activeTab === 'console' ? (
           <div className="h-full overflow-y-auto p-2 font-mono text-xs space-y-1">
             {logs.length === 0 ? (
-              <div className="text-gray-500 text-center py-4">No logs yet...</div>
+              <div className="text-gray-500 text-center py-4">
+                No logs yet...
+              </div>
             ) : (
               logs.map(log => (
-                <div key={log.id} className={`px-2 py-1 rounded ${getLogColor(log.type)}`}>
-                  <span className="text-gray-400 mr-2">[{log.timestamp.toLocaleTimeString()}]</span>
-                  <span className="uppercase mr-2 font-semibold">{log.type}</span>
-                  <span className="whitespace-pre-wrap break-all">{log.message}</span>
+                <div
+                  key={log.id}
+                  className={`px-2 py-1 rounded ${getLogColor(log.type)}`}
+                >
+                  <span className="text-gray-400 mr-2">
+                    [{log.timestamp.toLocaleTimeString()}]
+                  </span>
+                  <span className="uppercase mr-2 font-semibold">
+                    {log.type}
+                  </span>
+                  <span className="whitespace-pre-wrap break-all">
+                    {log.message}
+                  </span>
                 </div>
               ))
             )}
@@ -147,11 +190,36 @@ export function DevConsole({ defaultOpen = false, onShowcase, onStyleTest }: Dev
         ) : (
           <div className="h-full p-4">
             <div className="flex flex-wrap gap-2">
-              <button onClick={onShowcase} className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded text-sm">🎨 组件展示</button>
-              <button onClick={onStyleTest} className="px-3 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm">🎨 样式测试</button>
-              <button onClick={() => console.log('Test log')} className="px-3 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm">📝 Test Log</button>
-              <button onClick={() => console.warn('Test warning')} className="px-3 py-2 bg-yellow-600 hover:bg-yellow-500 rounded text-sm">⚠️ Test Warn</button>
-              <button onClick={() => console.error('Test error')} className="px-3 py-2 bg-red-600 hover:bg-red-500 rounded text-sm">❌ Test Error</button>
+              <button
+                onClick={onShowcase}
+                className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded text-sm"
+              >
+                🎨 组件展示
+              </button>
+              <button
+                onClick={onStyleTest}
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm"
+              >
+                🎨 样式测试
+              </button>
+              <button
+                onClick={() => console.log('Test log')}
+                className="px-3 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm"
+              >
+                📝 Test Log
+              </button>
+              <button
+                onClick={() => console.warn('Test warning')}
+                className="px-3 py-2 bg-yellow-600 hover:bg-yellow-500 rounded text-sm"
+              >
+                ⚠️ Test Warn
+              </button>
+              <button
+                onClick={() => console.error('Test error')}
+                className="px-3 py-2 bg-red-600 hover:bg-red-500 rounded text-sm"
+              >
+                ❌ Test Error
+              </button>
             </div>
           </div>
         )}
@@ -159,4 +227,3 @@ export function DevConsole({ defaultOpen = false, onShowcase, onStyleTest }: Dev
     </div>
   )
 }
-

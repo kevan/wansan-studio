@@ -17,7 +17,7 @@ import {
   Pencil,
   RefreshCw,
   X,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react'
 import { MouseEvent } from 'react'
 import {
@@ -43,7 +43,8 @@ interface TreeNodeProps {
 export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
   const data = node.data
   const isSelected = node.isSelected
-  const { removeFile, setActiveFile, removeRelation, updateColumn, files } = useFileStore()
+  const { removeFile, setActiveFile, removeRelation, updateColumn, files } =
+    useFileStore()
   const { addToast } = useToastStore()
   const reIngest = useReIngestFile()
 
@@ -67,15 +68,27 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
 
     if (data.type === 'column') {
       const type = data.columnType?.toUpperCase() || 'VARCHAR'
-      
-      if (['DOUBLE', 'BIGINT', 'INT', 'INTEGER', 'DECIMAL', 'FLOAT', 'HUGEINT', 'TINYINT', 'SMALLINT'].some(t => type.includes(t))) {
+
+      if (
+        [
+          'DOUBLE',
+          'BIGINT',
+          'INT',
+          'INTEGER',
+          'DECIMAL',
+          'FLOAT',
+          'HUGEINT',
+          'TINYINT',
+          'SMALLINT',
+        ].some(t => type.includes(t))
+      ) {
         return <Hash className="w-3.5 h-3.5 text-blue-600" />
       }
-      
+
       if (['DATE', 'TIMESTAMP', 'TIME'].some(t => type.includes(t))) {
         return <Calendar className="w-3.5 h-3.5 text-emerald-600" />
       }
-      
+
       if (['BOOLEAN', 'BOOL'].includes(type)) {
         return <ToggleLeft className="w-3.5 h-3.5 text-purple-600" />
       }
@@ -104,20 +117,35 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
   const handleRemoveRelation = () => {
     if (data.relationId) {
       removeRelation(data.relationId)
-      addToast({ title: 'Relationship Removed', type: 'success', duration: 2000 })
+      addToast({
+        title: 'Relationship Removed',
+        type: 'success',
+        duration: 2000,
+      })
     }
   }
-  
-  const handleColumnTypeChange = (newType: 'VARCHAR' | 'DOUBLE' | 'DATE' | 'BOOLEAN') => {
+
+  const handleColumnTypeChange = (
+    newType: 'VARCHAR' | 'DOUBLE' | 'DATE' | 'BOOLEAN'
+  ) => {
     if (data.fileId && data.columnName) {
       updateColumn(data.fileId, data.columnName, { type: newType })
-      addToast({ title: `Type changed to ${newType}`, type: 'success', duration: 2000 })
+      addToast({
+        title: `Type changed to ${newType}`,
+        type: 'success',
+        duration: 2000,
+      })
     }
   }
 
   const handleRenameAlias = () => {
     // Placeholder for rename logic
-    addToast({ title: 'Rename Feature', description: 'Coming soon...', type: 'info', duration: 2000 })
+    addToast({
+      title: 'Rename Feature',
+      description: 'Coming soon...',
+      type: 'info',
+      duration: 2000,
+    })
   }
 
   const handleReload = async () => {
@@ -125,32 +153,47 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
     const file = files.find(f => f.id === data.fileId)
     if (!file) return
 
-    // Dismiss any existing persistent toast? We don't have IDs easily. 
+    // Dismiss any existing persistent toast? We don't have IDs easily.
     // Just add new ones.
-    const toastId = addToast({ title: 'Reloading...', type: 'info', duration: 0 }) 
-    
+    const toastId = addToast({
+      title: 'Reloading...',
+      type: 'info',
+      duration: 0,
+    })
+
     try {
-        const result = await reIngest.mutateAsync({ filePath: file.path, tableName: file.tableName })
-        // result is ReloadResult { lastModified, newColumns }
-        
-        // Call store action
-        // We need to access the store action. It's not destructured above.
-        // Let's grab it from the store hook.
-        const droppedCount = useFileStore.getState().reloadFile(file.id, result)
+      const result = await reIngest.mutateAsync({
+        filePath: file.path,
+        tableName: file.tableName,
+      })
+      // result is ReloadResult { lastModified, newColumns }
 
-        addToast({ title: 'Reloaded successfully', type: 'success', duration: 2000 })
-        
-        if (droppedCount > 0) {
-           addToast({ 
-             title: 'Warning', 
-             description: `Reload complete, but ${droppedCount} relationship(s) were removed due to missing columns.`, 
-             type: 'warning', 
-             duration: 5000 
-           })
-        }
+      // Call store action
+      // We need to access the store action. It's not destructured above.
+      // Let's grab it from the store hook.
+      const droppedCount = useFileStore.getState().reloadFile(file.id, result)
 
+      addToast({
+        title: 'Reloaded successfully',
+        type: 'success',
+        duration: 2000,
+      })
+
+      if (droppedCount > 0) {
+        addToast({
+          title: 'Warning',
+          description: `Reload complete, but ${droppedCount} relationship(s) were removed due to missing columns.`,
+          type: 'warning',
+          duration: 5000,
+        })
+      }
     } catch (e) {
-        addToast({ title: 'Reload failed', description: String(e), type: 'error', duration: 3000 })
+      addToast({
+        title: 'Reload failed',
+        description: String(e),
+        type: 'error',
+        duration: 3000,
+      })
     }
   }
 
@@ -158,7 +201,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
   const handleClick = (e: MouseEvent) => {
     e.stopPropagation()
     node.select()
-    // node.edit() 
+    // node.edit()
   }
 
   const handleToggle = (e: MouseEvent) => {
@@ -170,40 +213,44 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
   const containerClass = `
     flex items-center w-full h-full cursor-pointer select-none text-sm pr-2 outline-none
     ${isSelected ? 'bg-zinc-100 text-zinc-900 border-l-2 border-zinc-900' : 'text-zinc-600 border-l-2 border-transparent hover:bg-zinc-50'}
-  `.replace(/\s+/g, ' ').trim()
+  `
+    .replace(/\s+/g, ' ')
+    .trim()
 
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <div 
-          style={style} 
+        <div
+          style={style}
           className={containerClass}
           onClick={handleClick}
           ref={dragHandle}
         >
           {/* Indentation / Arrow */}
-          <div className="flex items-center justify-center w-6 shrink-0" onClick={handleToggle}>
-            {!node.isLeaf && (
-              node.isOpen ? 
-              <ChevronDown className="w-3 h-3 text-zinc-400" /> : 
-              <ChevronRight className="w-3 h-3 text-zinc-400" />
-            )}
+          <div
+            className="flex items-center justify-center w-6 shrink-0"
+            onClick={handleToggle}
+          >
+            {!node.isLeaf &&
+              (node.isOpen ? (
+                <ChevronDown className="w-3 h-3 text-zinc-400" />
+              ) : (
+                <ChevronRight className="w-3 h-3 text-zinc-400" />
+              ))}
           </div>
 
           {/* Icon */}
           <div className="flex items-center justify-center w-5 shrink-0 mr-1 relative">
             {getIcon()}
             {data.type === 'file' && data.status === 'out-of-sync' && (
-                <div className="absolute -top-1 -right-1 bg-white rounded-full">
-                   <AlertCircle className="w-2.5 h-2.5 text-amber-500 fill-white" />
-                </div>
+              <div className="absolute -top-1 -right-1 bg-white rounded-full">
+                <AlertCircle className="w-2.5 h-2.5 text-amber-500 fill-white" />
+              </div>
             )}
           </div>
 
           {/* Label */}
-          <span className="truncate flex-1">
-            {data.name}
-          </span>
+          <span className="truncate flex-1">{data.name}</span>
 
           {/* Badges / Indicators */}
           {data.isKey && (
@@ -227,12 +274,17 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
               <Eye className="w-4 h-4 mr-2" />
               Preview Data
             </ContextMenuItem>
-            <ContextMenuItem onClick={handleReload} disabled={reIngest.isPending}>
-              <RefreshCw className={`w-4 h-4 mr-2 ${reIngest.isPending ? 'animate-spin' : ''}`} />
+            <ContextMenuItem
+              onClick={handleReload}
+              disabled={reIngest.isPending}
+            >
+              <RefreshCw
+                className={`w-4 h-4 mr-2 ${reIngest.isPending ? 'animate-spin' : ''}`}
+              />
               Reload Data
             </ContextMenuItem>
             <ContextMenuSeparator />
-            <ContextMenuItem 
+            <ContextMenuItem
               onClick={handleRemoveFile}
               className="text-rose-600 focus:text-rose-600 focus:bg-rose-50"
             >
@@ -254,16 +306,22 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
                 Change Type
               </ContextMenuSubTrigger>
               <ContextMenuSubContent className="w-32">
-                <ContextMenuItem onClick={() => handleColumnTypeChange('VARCHAR')}>
+                <ContextMenuItem
+                  onClick={() => handleColumnTypeChange('VARCHAR')}
+                >
                   <Type className="w-4 h-4 mr-2" /> Text
                 </ContextMenuItem>
-                <ContextMenuItem onClick={() => handleColumnTypeChange('DOUBLE')}>
+                <ContextMenuItem
+                  onClick={() => handleColumnTypeChange('DOUBLE')}
+                >
                   <Hash className="w-4 h-4 mr-2" /> Number
                 </ContextMenuItem>
                 <ContextMenuItem onClick={() => handleColumnTypeChange('DATE')}>
                   <Calendar className="w-4 h-4 mr-2" /> Date
                 </ContextMenuItem>
-                <ContextMenuItem onClick={() => handleColumnTypeChange('BOOLEAN')}>
+                <ContextMenuItem
+                  onClick={() => handleColumnTypeChange('BOOLEAN')}
+                >
                   <ToggleLeft className="w-4 h-4 mr-2" /> Boolean
                 </ContextMenuItem>
               </ContextMenuSubContent>
@@ -272,7 +330,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
         )}
 
         {data.type === 'relation' && (
-          <ContextMenuItem 
+          <ContextMenuItem
             onClick={handleRemoveRelation}
             className="text-rose-600 focus:text-rose-600 focus:bg-rose-50"
           >
@@ -280,11 +338,11 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
             Delete Relationship
           </ContextMenuItem>
         )}
-        
+
         {data.type === 'folder' && (
-             <ContextMenuItem disabled className="text-zinc-400">
-                Folder Actions (N/A)
-            </ContextMenuItem>
+          <ContextMenuItem disabled className="text-zinc-400">
+            Folder Actions (N/A)
+          </ContextMenuItem>
         )}
       </ContextMenuContent>
     </ContextMenu>

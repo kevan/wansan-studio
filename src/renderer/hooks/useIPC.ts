@@ -14,28 +14,101 @@ const mockIPC = {
     console.log(`IPC Mock: ${channel}`, args)
     return { success: true, data: null }
   },
-  selectFile: async () => { return { success: true, data: 'mock/path/to/file.xlsx' } },
-  selectFiles: async () => { return { success: true, data: ['mock/path/to/file1.xlsx', 'mock/path/to/file2.csv'] } },
-  parseFile: async (filePath: string) => { console.log(`Mock parseFile: ${filePath}`); return { success: true, data: { tableName: 'mock_table', schema: { columns: [] }, rowCount: 0 } } },
-  runSQL: async (sql: string) => { console.log(`Mock runSQL: ${sql}`); return { success: true, data: [] } },
-  getSchema: async (tableName?: string) => { console.log(`Mock getSchema: ${tableName}`); return { success: true, data: { tableName: tableName || 'mock_table', columns: [] } } },
-  generateSQL: async (prompt: string, schema: any) => { console.log(`Mock generateSQL: ${prompt}, Schema: ${JSON.stringify(schema)}`); return { success: true, data: { sql: 'SELECT 1', title: 'Mock Report', summary: 'Mock Summary', viz_type: 'table', viz_config: { x_axis: '', y_axis: '' }, reasoning: 'Mock Reason' } } },
-  askAI: async (query: string, schemas: any[], relations: any[]) => { console.log(`Mock askAI: ${query}, Schemas: ${JSON.stringify(schemas)}, Relations: ${JSON.stringify(relations)}`); return { success: true, data: { sql: 'SELECT 1', title: 'Mock Report', summary: 'Mock Summary', viz_type: 'table', viz_config: { x_axis: '', y_axis: '' }, reasoning: 'Mock Reason' } } },
-  inferRelationships: async (schemas: any[]) => { console.log(`Mock inferRelationships, Schemas: ${JSON.stringify(schemas)}`); return { success: true, data: [] } },
-  getAIConfig: async () => { return { success: true, data: {} } },
-  setAIConfig: async (config: any) => { console.log(`Mock setAIConfig: ${config}`); return { success: true } },
-  clearAIConfig: async () => { console.log(`Mock clearAIConfig`); return { success: true } },
-  checkFilesConsistency: async (files: any[]) => { console.log(`Mock checkFilesConsistency: ${files.length}`); return { success: true, data: [] } },
-  reIngestFile: async (filePath: string, tableName: string) => { console.log(`Mock reIngestFile: ${filePath}`); return { success: true, data: { lastModified: Date.now(), newColumns: [] } } },
-  exportPDF: async (data: any) => { console.log(`Mock exportPDF: ${data}`); return { success: true } },
+  selectFile: async () => {
+    return { success: true, data: 'mock/path/to/file.xlsx' }
+  },
+  selectFiles: async () => {
+    return {
+      success: true,
+      data: ['mock/path/to/file1.xlsx', 'mock/path/to/file2.csv'],
+    }
+  },
+  parseFile: async (filePath: string) => {
+    console.log(`Mock parseFile: ${filePath}`)
+    return {
+      success: true,
+      data: { tableName: 'mock_table', schema: { columns: [] }, rowCount: 0 },
+    }
+  },
+  runSQL: async (sql: string) => {
+    console.log(`Mock runSQL: ${sql}`)
+    return { success: true, data: [] }
+  },
+  getSchema: async (tableName?: string) => {
+    console.log(`Mock getSchema: ${tableName}`)
+    return {
+      success: true,
+      data: { tableName: tableName || 'mock_table', columns: [] },
+    }
+  },
+  generateSQL: async (prompt: string, schema: any) => {
+    console.log(
+      `Mock generateSQL: ${prompt}, Schema: ${JSON.stringify(schema)}`
+    )
+    return {
+      success: true,
+      data: {
+        sql: 'SELECT 1',
+        title: 'Mock Report',
+        summary: 'Mock Summary',
+        viz_type: 'table',
+        viz_config: { x_axis: '', y_axis: '' },
+        reasoning: 'Mock Reason',
+      },
+    }
+  },
+  askAI: async (query: string, schemas: any[], relations: any[]) => {
+    console.log(
+      `Mock askAI: ${query}, Schemas: ${JSON.stringify(schemas)}, Relations: ${JSON.stringify(relations)}`
+    )
+    return {
+      success: true,
+      data: {
+        sql: 'SELECT 1',
+        title: 'Mock Report',
+        summary: 'Mock Summary',
+        viz_type: 'table',
+        viz_config: { x_axis: '', y_axis: '' },
+        reasoning: 'Mock Reason',
+      },
+    }
+  },
+  inferRelationships: async (schemas: any[]) => {
+    console.log(`Mock inferRelationships, Schemas: ${JSON.stringify(schemas)}`)
+    return { success: true, data: [] }
+  },
+  getAIConfig: async () => {
+    return { success: true, data: {} }
+  },
+  setAIConfig: async (config: any) => {
+    console.log(`Mock setAIConfig: ${config}`)
+    return { success: true }
+  },
+  clearAIConfig: async () => {
+    console.log(`Mock clearAIConfig`)
+    return { success: true }
+  },
+  checkFilesConsistency: async (files: any[]) => {
+    console.log(`Mock checkFilesConsistency: ${files.length}`)
+    return { success: true, data: [] }
+  },
+  reIngestFile: async (filePath: string, tableName: string) => {
+    console.log(`Mock reIngestFile: ${filePath}`)
+    return { success: true, data: { lastModified: Date.now(), newColumns: [] } }
+  },
+  exportPDF: async (data: any) => {
+    console.log(`Mock exportPDF: ${data}`)
+    return { success: true }
+  },
   platform: 'darwin', // Mock platform
-  version: { electron: 'mock', chrome: 'mock', node: 'mock' } // Mock versions
+  version: { electron: 'mock', chrome: 'mock', node: 'mock' }, // Mock versions
 }
 
 // 声明全局 electronAPI（将由主进程注入）
 declare global {
   interface Window {
-    electronAPI: { // Removed ? to match global.d.ts
+    electronAPI: {
+      // Removed ? to match global.d.ts
       invoke: (channel: string, ...args: any[]) => Promise<IPCResponse>
       selectFile: () => Promise<IPCResponse<string>>
       selectFiles: () => Promise<IPCResponse<string[]>>
@@ -43,14 +116,26 @@ declare global {
       runSQL: (sql: string) => Promise<IPCResponse>
       getSchema: (tableName?: string) => Promise<IPCResponse>
       generateSQL: (prompt: string, schema: any) => Promise<IPCResponse>
-      askAI: (query: string, schemas: any[], relations: any[], context?: { lastSql: string, lastQuery: string }) => Promise<IPCResponse>
-      fixSQL: (originalSql: string, error: string, schemas: any[]) => Promise<IPCResponse>
+      askAI: (
+        query: string,
+        schemas: any[],
+        relations: any[],
+        context?: { lastSql: string; lastQuery: string }
+      ) => Promise<IPCResponse>
+      fixSQL: (
+        originalSql: string,
+        error: string,
+        schemas: any[]
+      ) => Promise<IPCResponse>
       inferRelationships: (schemas: any[]) => Promise<IPCResponse>
       getAIConfig: () => Promise<IPCResponse>
       setAIConfig: (config: any) => Promise<IPCResponse>
       clearAIConfig: () => Promise<IPCResponse>
       checkFilesConsistency: (files: any[]) => Promise<IPCResponse>
-      reIngestFile: (filePath: string, tableName: string) => Promise<IPCResponse<ReloadResult>>
+      reIngestFile: (
+        filePath: string,
+        tableName: string
+      ) => Promise<IPCResponse<ReloadResult>>
       exportPDF: (data: any) => Promise<IPCResponse>
       platform: string
       version: NodeJS.ProcessVersions
@@ -196,7 +281,15 @@ export const useInferRelationships = () => {
 // SQL 修复 Hook
 export const useFixSQL = () => {
   return useMutation({
-    mutationFn: async ({ sql, error, schemas }: { sql: string; error: string; schemas: any[] }) => {
+    mutationFn: async ({
+      sql,
+      error,
+      schemas,
+    }: {
+      sql: string
+      error: string
+      schemas: any[]
+    }) => {
       const response = await getIpc().invoke('ask-ai-fix', sql, error, schemas)
       if (!response.success) {
         throw new Error(response.error || 'Failed to fix SQL')
@@ -265,8 +358,18 @@ export const useCheckFilesConsistency = () => {
 // 重新摄取文件 Hook
 export const useReIngestFile = () => {
   return useMutation({
-    mutationFn: async ({ filePath, tableName }: { filePath: string; tableName: string }) => {
-      const response = await getIpc().invoke('re-ingest-file', filePath, tableName)
+    mutationFn: async ({
+      filePath,
+      tableName,
+    }: {
+      filePath: string
+      tableName: string
+    }) => {
+      const response = await getIpc().invoke(
+        're-ingest-file',
+        filePath,
+        tableName
+      )
       if (!response.success) {
         throw new Error(response.error || 'Failed to re-ingest file')
       }
@@ -274,4 +377,3 @@ export const useReIngestFile = () => {
     },
   })
 }
-

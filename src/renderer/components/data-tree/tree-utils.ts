@@ -64,7 +64,7 @@ export function buildTreeData(
   const relationNodes: TreeNodeData[] = relations.map(rel => {
     const fileA = files.find(f => f.id === rel.fileAId)
     const fileB = files.find(f => f.id === rel.fileBId)
-    
+
     // Fallback names if file not found (shouldn't happen)
     const tableA = fileA?.tableName || rel.fileAId
     const tableB = fileB?.tableName || rel.fileBId
@@ -105,13 +105,13 @@ export function parseNodeId(id: string) {
   if (id.startsWith('root_')) {
     return { type: 'folder', id }
   }
-  
+
   const type = parts[0]
-  
+
   if (type === 'file') {
     return { type: 'file', id: parts[1] }
   }
-  
+
   if (type === 'col') {
     return { type: 'column', parentId: parts[1], id: parts[2] } // id here is columnName
   }

@@ -76,10 +76,14 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
 
     setTotalCount(0)
     setProcessingCount(0)
-    
+
     // Trigger auto-link analysis after batch processing
     const currentFiles = useFileStore.getState().files
-    console.log('WelcomeScreen: Batch processed. Triggering auto-link with:', currentFiles.length, 'files')
+    console.log(
+      'WelcomeScreen: Batch processed. Triggering auto-link with:',
+      currentFiles.length,
+      'files'
+    )
     checkAutoLink(currentFiles)
   }
 
@@ -90,14 +94,16 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
         // Transform to match processFiles signature
         const filesToProcess = result.map(filePath => ({
           path: filePath,
-          name: filePath.split('/').pop() || 'unknown'
+          name: filePath.split('/').pop() || 'unknown',
         }))
-        
+
         await processFiles(filesToProcess)
       }
     } catch (error) {
       console.error('File selection error:', error)
-      alert(`文件选择失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      alert(
+        `文件选择失败: ${error instanceof Error ? error.message : '未知错误'}`
+      )
     }
   }
 
