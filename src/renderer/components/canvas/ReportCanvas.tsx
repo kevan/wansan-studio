@@ -17,12 +17,28 @@ export function ReportCanvas() {
   const updateLayout = useWorkbenchStore(state => state.updateLayout)
   const addToast = useToastStore(state => state.addToast)
 
+  React.useEffect(() => {
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('dashboard:layout-changed'))
+    })
+  }, [pinnedReports.length])
+
   const handleLayoutChange = useCallback(
     (layout: any[]) => {
       updateLayout(layout)
+      // Notify charts to resize after layout settles
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new Event('dashboard:layout-changed'))
+      })
     },
     [updateLayout]
   )
+
+  const handleResizeStop = useCallback(() => {
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('dashboard:layout-changed'))
+    })
+  }, [])
 
   const handlePrint = () => {
     window.print()
@@ -104,6 +120,8 @@ export function ReportCanvas() {
           rowHeight={60}
           draggableHandle=".drag-handle"
           onLayoutChange={handleLayoutChange}
+          onResizeStop={handleResizeStop}
+          onDragStop={handleResizeStop}
           margin={[16, 16]}
         >
           {pinnedReports.map(report => (

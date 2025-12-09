@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Edit2 } from 'lucide-react'
 
 interface A4CanvasProps {
@@ -213,6 +213,37 @@ export function A4Chart({
   config,
   className = '',
 }: A4ChartProps) {
+  const chartRef = useRef<any>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+
+  const resizeChart = useCallback(() => {
+    const instance = chartRef.current?.getEchartsInstance?.()
+    if (instance) {
+      instance.resize()
+    }
+  }, [])
+
+  useEffect(() => {
+    resizeChart()
+  }, [resizeChart, data, type, config])
+
+  useEffect(() => {
+    const handler = () => requestAnimationFrame(resizeChart)
+    window.addEventListener('resize', handler)
+    window.addEventListener('dashboard:layout-changed', handler)
+    return () => {
+      window.removeEventListener('resize', handler)
+      window.removeEventListener('dashboard:layout-changed', handler)
+    }
+  }, [resizeChart])
+
+  useEffect(() => {
+    if (!containerRef.current) return
+    const observer = new ResizeObserver(() => resizeChart())
+    observer.observe(containerRef.current)
+    return () => observer.disconnect()
+  }, [resizeChart])
+
   // Safety check: If no config, or missing axes (unless it's a special type, but generally we need axes for charts), return null
   // We explicitly check for x_axis and y_axis. If they are null/undefined, we can't render an EChart.
   if (
@@ -293,11 +324,13 @@ export function A4Chart({
   }
 
   return (
-    <div className={className}>
+    <div className={className} ref={containerRef} style={{ height: '100%', width: '100%' }}>
       <ReactECharts
         option={getOption()}
-        style={{ height: '300px', width: '100%' }}
+        style={{ height: '100%', width: '100%' }}
         opts={{ renderer: 'canvas' }}
+        ref={chartRef}
+        onChartReady={resizeChart}
       />
     </div>
   )

@@ -205,6 +205,22 @@ body {
   color: #e11d48; /* rose-600 */
 }
 
+/* ================================
+   Shadow tweaks for PDF/print
+   ================================ */
+
+/* Remove heavier shadows on second row and beyond in the canvas */
+#report-canvas-content .react-grid-item:nth-child(n+2) > div {
+  box-shadow: none !important;
+}
+
+@media print {
+  /* Flatten shadows for all cards when printing/PDF */
+  #report-canvas-content .react-grid-item > div {
+    box-shadow: none !important;
+  }
+}
+
 /* Print Styles */
 @media print {
   /* Hide all non-printable elements */

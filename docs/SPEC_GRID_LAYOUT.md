@@ -25,9 +25,9 @@ export interface ReportWidget {
 
 When `pinReport` is called, determine the default size based on `viz_type`:
 
-*   **Big Number**: `w: 3, h: 2` (Small & Compact)
-*   **Bar/Line Chart**: `w: 6, h: 4` (Half Width)
-*   **Table / Complex Chart**: `w: 12, h: 6` (Full Width)
+*   **Big Number**: `w: 4, h: 3` (Compact but more breathing room)
+*   **Bar/Line/Area/Pie**: `w: 8, h: 5` (Wider canvas for axes/legends)
+*   **Table / Complex Chart**: `w: 12, h: 8` (Full width, taller for rows)
 *   **Placement**: Automatically place at `x: 0, y: Infinity` (RGL handles placing it at the bottom).
 
 ## 3. Component Implementation (`report-canvas.tsx`)

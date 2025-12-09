@@ -49,23 +49,48 @@ export const useWorkbenchStore = create<WorkbenchState>(set => ({
       }
 
       const id = crypto.randomUUID()
-      let w = 6
-      let h = 4
-
-      // Determine default size based on viz type
-      const isBigNumber =
-        reportData.chartType === 'table' &&
-        reportData.tableData &&
-        reportData.tableData.length === 1
-      const isTable = reportData.chartType === 'table' && !isBigNumber
-
-      if (isBigNumber) {
-        w = 3
-        h = 2
-      } else if (isTable) {
-        w = 12
-        h = 6
+      const isBigNumberData = (data?: Array<Record<string, any>>) => {
+        if (!data || data.length !== 1) return false
+        const keys = Object.keys(data[0] || {})
+        return keys.length <= 1
       }
+
+      let w = 6
+      let h = 5
+
+      switch (reportData.chartType) {
+        case 'table':
+          if (isBigNumberData(reportData.tableData)) {
+            w = 3
+            h = 2
+          } else {
+            w = 6
+            h = 6
+          }
+          break
+        case 'pie':
+          w = 4
+          h = 4
+          break
+        case 'bar':
+        case 'line':
+        case 'area':
+          if ((reportData.tableData?.length || 0) > 20) {
+            w = 12
+            h = 6
+          } else {
+            w = 6
+            h = 5
+          }
+          break
+        default:
+          w = 6
+          h = 5
+      }
+
+      // Respect 12-column grid and keep positive dimensions
+      w = Math.min(12, Math.max(1, w))
+      h = Math.max(1, h)
 
       return {
         pinnedReports: [

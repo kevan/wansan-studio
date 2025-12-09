@@ -78,7 +78,6 @@ class WansanApp {
     // 加载应用
     if (isDev()) {
       this.mainWindow.loadURL('http://localhost:5173')
-      // this.mainWindow.webContents.openDevTools()
     } else {
       this.mainWindow.loadFile(join(__dirname, '../../renderer/index.html'))
     }
@@ -87,9 +86,9 @@ class WansanApp {
     this.mainWindow.once('ready-to-show', () => {
       this.mainWindow?.show()
 
-      if (isDev()) {
-        this.mainWindow?.webContents.openDevTools()
-      }
+      // if (isDev()) {
+      //   this.mainWindow?.webContents.openDevTools()
+      // }
     })
 
     // 窗口关闭事件
