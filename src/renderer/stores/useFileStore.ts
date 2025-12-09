@@ -38,6 +38,9 @@ export interface ProjectState {
   // 表关联关系
   relations: Relation[]
 
+  // AI 建议的提示词
+  suggestedPrompts: string[]
+
   // 当前选中的文件 ID (保留向后兼容)
   activeFileId: string | null
 
@@ -74,6 +77,8 @@ export interface ProjectState {
   removeRelation: (id: string) => void
   detectRelations: () => void
 
+  setSuggestedPrompts: (prompts: string[]) => void
+
   // Schema 确认
   setShowSchemaConfirm: (show: boolean) => void
   confirmSchema: () => void
@@ -98,6 +103,7 @@ const initialState = {
   projectName: '未命名项目',
   files: [],
   relations: [],
+  suggestedPrompts: [],
   activeFileId: null,
   selectedNode: null,
   showSchemaConfirm: false,
@@ -247,6 +253,8 @@ export const useFileStore = create<ProjectState>((set, get) => ({
     // 添加新检测到的关联
     newRelations.forEach(r => get().addRelation(r))
   },
+
+  setSuggestedPrompts: prompts => set({ suggestedPrompts: prompts }),
 
   setShowSchemaConfirm: show => set({ showSchemaConfirm: show }),
 

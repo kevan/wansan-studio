@@ -8,12 +8,12 @@ interface DashboardWidgetProps {
   subtitle?: string
   summary?: string
   insights?: string[]
-  chartType?: 'bar' | 'line' | 'pie' | 'area'
+  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table'
   chartTitle?: string
   tableData?: Array<Record<string, any>>
   vizConfig?: {
-    x_axis: string
-    y_axis: string
+    x_axis?: string | null
+    y_axis?: string | null
     series_name?: string
   }
   className?: string
@@ -81,13 +81,25 @@ export function DashboardWidget({
 
         {/* Chart takes priority space */}
         <div className="flex-1 min-h-0 w-full mb-0">
-          <A4Chart
-            type={chartType}
-            title={chartTitle}
-            data={tableData}
-            config={vizConfig}
-            className="h-full w-full"
-          />
+          {chartType !== 'table' &&
+            vizConfig?.x_axis &&
+            vizConfig?.y_axis && (
+              <A4Chart
+                type={chartType}
+                title={chartTitle}
+                data={tableData}
+                config={vizConfig}
+                className="h-full w-full"
+              />
+            )}
+          {(chartType === 'table' ||
+            !vizConfig?.x_axis ||
+            !vizConfig?.y_axis) &&
+            tableData && (
+              <div className="h-full w-full overflow-auto">
+                <A4DataTable data={tableData} maxRows={100} />
+              </div>
+            )}
         </div>
       </div>
     )
@@ -105,15 +117,17 @@ export function DashboardWidget({
           </div>
         )}
 
-        <div className="h-[250px] w-full px-4 pb-4 pt-2">
-          <A4Chart
-            type={chartType}
-            title={chartTitle}
-            data={tableData}
-            config={vizConfig}
-            className="h-full w-full"
-          />
-        </div>
+        {chartType !== 'table' && vizConfig?.x_axis && vizConfig?.y_axis && (
+          <div className="h-[250px] w-full px-4 pb-4 pt-2">
+            <A4Chart
+              type={chartType}
+              title={chartTitle}
+              data={tableData}
+              config={vizConfig}
+              className="h-full w-full"
+            />
+          </div>
+        )}
 
         {tableData && tableData.length > 0 && (
           <div>

@@ -29,8 +29,8 @@ export interface AnalysisResult {
   summary?: string
   viz_type?: 'bar' | 'line' | 'pie' | 'table'
   viz_config?: {
-    x_axis: string
-    y_axis: string
+    x_axis?: string | null
+    y_axis?: string | null
     series_name?: string
   }
   reasoning?: string
@@ -46,6 +46,11 @@ export interface RelationSuggestion {
   targetColumn: string // e.g., "id"
   confidence: number // 0.0 to 1.0
   reason: string // Explanation for the UI (e.g. "Column names match")
+}
+
+export interface ContextAnalysisResult {
+  relationships: RelationSuggestion[]
+  suggestedPrompts: string[]
 }
 
 export type SyncStatus =

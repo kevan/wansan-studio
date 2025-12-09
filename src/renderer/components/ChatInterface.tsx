@@ -22,8 +22,8 @@ export interface ChatMessage {
     chartTitle?: string
     tableData?: Array<Record<string, any>>
     vizConfig?: {
-      x_axis: string
-      y_axis: string
+      x_axis?: string | null
+      y_axis?: string | null
       series_name?: string
     }
   }

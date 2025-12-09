@@ -1,12 +1,12 @@
 import { useCallback } from 'react'
 import { FileAsset, useFileStore } from '../stores/useFileStore'
-import { useInferRelationships } from './useIPC'
+import { useContextAnalysis } from './useIPC'
 import { useToastStore } from '../stores/useToastStore'
 import type { RelationSuggestion } from '../../shared/types'
 
 export function useAutoLink() {
   // Use hooks for mutations and toasts
-  const inferMutation = useInferRelationships()
+  const analysisMutation = useContextAnalysis()
   const { addToast } = useToastStore()
 
   // We do NOT destructure state from useFileStore here for the callback dependencies.
@@ -20,12 +20,13 @@ export function useAutoLink() {
       const filesToUse = currentFiles || store.files
       const relationsToUse = store.relations
       const addRelation = store.addRelation
+      const setSuggestedPrompts = store.setSuggestedPrompts
 
       console.log('checkAutoLink called. Files count:', filesToUse.length)
 
       // 2. Validation
-      if (filesToUse.length < 2) {
-        console.log('Not enough files for auto-link (Min: 2)')
+      if (filesToUse.length === 0) {
+        console.log('No files to analyze')
         return
       }
 
@@ -43,20 +44,27 @@ export function useAutoLink() {
       try {
         // 4. Notify User
         addToast({
-          title: 'Analyzing Relationships',
-          description: 'AI is looking for connections between your tables...',
+          title: 'Analyzing Data Context',
+          description: 'AI is analyzing your data structure and relationships...',
           type: 'info',
           duration: 3000,
         })
 
         // 5. Call AI Service
-        const suggestions = await inferMutation.mutateAsync(schemas)
-        console.log('AI Suggestions:', suggestions)
+        const result = await analysisMutation.mutateAsync(schemas)
+        console.log('AI Analysis Result:', result)
 
+        const { relationships, suggestedPrompts } = result
+
+        // Update Prompts
+        if (suggestedPrompts && suggestedPrompts.length > 0) {
+          setSuggestedPrompts(suggestedPrompts)
+        }
+
+        // Process Relationships (only if we have multiple files)
         let addedCount = 0
-
-        if (suggestions && Array.isArray(suggestions)) {
-          suggestions.forEach((suggestion: RelationSuggestion) => {
+        if (relationships && Array.isArray(relationships) && filesToUse.length > 1) {
+          relationships.forEach((suggestion: RelationSuggestion) => {
             if (suggestion.confidence > 0.8) {
               const fileA = filesToUse.find(
                 f => f.tableName === suggestion.sourceTable
@@ -89,8 +97,6 @@ export function useAutoLink() {
                     autoDetected: true,
                   })
                   addedCount++
-                } else {
-                  console.log('Relation already exists, skipping:', suggestion)
                 }
               }
             }
@@ -98,24 +104,30 @@ export function useAutoLink() {
         }
 
         // 6. Final Result Toast
-        if (addedCount > 0) {
-          addToast({
-            title: 'Relationships Detected',
-            description: `Automatically linked ${addedCount} table pair${addedCount > 1 ? 's' : ''}.`,
-            type: 'success',
-          })
-        }
+        const promptMsg = suggestedPrompts?.length
+          ? 'Generated starter prompts.'
+          : ''
+        const relationMsg =
+          addedCount > 0
+            ? `Linked ${addedCount} table pair${addedCount > 1 ? 's' : ''}.`
+            : ''
+
+        addToast({
+          title: 'Analysis Complete',
+          description: `${promptMsg} ${relationMsg}`.trim() || 'Analysis finished.',
+          type: 'success',
+        })
       } catch (error) {
         console.error('Auto-link failed:', error)
         addToast({
           title: 'Analysis Failed',
-          description: 'Could not infer relationships.',
+          description: 'Could not analyze data context.',
           type: 'error',
         })
       }
     },
-    [inferMutation, addToast]
+    [analysisMutation, addToast]
   ) // Dependencies are stable now
 
-  return { checkAutoLink, isAnalyzing: inferMutation.isPending }
+  return { checkAutoLink, isAnalyzing: analysisMutation.isPending }
 }

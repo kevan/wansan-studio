@@ -195,12 +195,12 @@ import ReactECharts from 'echarts-for-react'
 
 // 图表组件
 interface A4ChartProps {
-  type?: 'bar' | 'line' | 'pie' | 'area'
+  type?: 'bar' | 'line' | 'pie' | 'area' | 'table' // Added 'table' to be safe, though handled in parent
   title?: string
   data?: Array<Record<string, any>>
   config?: {
-    x_axis: string
-    y_axis: string
+    x_axis?: string | null
+    y_axis?: string | null
     series_name?: string
   }
   className?: string
@@ -213,26 +213,25 @@ export function A4Chart({
   config,
   className = '',
 }: A4ChartProps) {
-  if (!data || data.length === 0 || !config) {
-    return (
-      <div
-        className={`
-        h-64 border-2 border-dashed border-gray-300 rounded-lg
-        flex flex-col items-center justify-center bg-gray-50 ${className}
-      `}
-      >
-        <div className="text-4xl mb-2">📊</div>
-        <div className="text-lg font-medium text-gray-600 mb-1">{title}</div>
-        <div className="text-sm text-gray-500">
-          {!data || data.length === 0 ? '暂无图表数据' : '配置信息缺失'}
-        </div>
-      </div>
-    )
+  // Safety check: If no config, or missing axes (unless it's a special type, but generally we need axes for charts), return null
+  // We explicitly check for x_axis and y_axis. If they are null/undefined, we can't render an EChart.
+  if (
+    !data ||
+    data.length === 0 ||
+    !config ||
+    !config.x_axis ||
+    !config.y_axis ||
+    type === 'table'
+  ) {
+    return null
   }
 
   const { x_axis, y_axis, series_name } = config
 
   const getOption = () => {
+    // Double check for TS safety, though covered by the if above
+    if (!x_axis || !y_axis) return {}
+
     const xData = data.map(item => item[x_axis])
     const yData = data.map(item => item[y_axis])
 
@@ -378,12 +377,12 @@ interface A4ReportLayoutProps {
   subtitle?: string
   summary?: string
   insights?: string[]
-  chartType?: 'bar' | 'line' | 'pie' | 'area'
+  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table'
   chartTitle?: string
   tableData?: Array<Record<string, any>>
   vizConfig?: {
-    x_axis: string
-    y_axis: string
+    x_axis?: string | null
+    y_axis?: string | null
     series_name?: string
   }
   logo?: string

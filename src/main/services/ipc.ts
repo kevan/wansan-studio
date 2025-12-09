@@ -8,6 +8,7 @@ import type {
   TableSchema,
   FileNode,
   RelationSuggestion,
+  ContextAnalysisResult,
 } from '../../shared/types'
 
 export function setupIPC(
@@ -144,15 +145,15 @@ export function setupIPC(
     }
   )
 
-  // AI 推断关系
+  // AI 分析上下文 (关系 + 提示词)
   ipcMain.handle(
-    'infer-relationships',
+    'analyze-context',
     async (_event, schemas: TableSchema[]) => {
       try {
-        const result = await aiService.getRelationSuggestions(schemas)
+        const result = await aiService.getContextAnalysis(schemas)
         return { success: true, data: result }
       } catch (error) {
-        console.error('Infer relationships error:', error)
+        console.error('Analyze context error:', error)
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error',

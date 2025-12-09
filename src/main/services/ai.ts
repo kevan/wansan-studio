@@ -1,7 +1,7 @@
 import Store from 'electron-store'
 import {
   generateAnalysis,
-  inferRelationships,
+  analyzeContext,
   setAIConfig,
   isAIConfigured,
 } from '../engine/ai-bridge'
@@ -9,6 +9,7 @@ import type {
   TableSchema,
   AnalysisResult,
   RelationSuggestion,
+  ContextAnalysisResult,
 } from '../../shared/types'
 
 interface AIConfig {
@@ -88,12 +89,12 @@ export class AIService {
   }
 
   /**
-   * Analyzes multiple table schemas.
+   * Analyzes multiple table schemas for relationships and starter prompts.
    */
-  async getRelationSuggestions(
+  async getContextAnalysis(
     schemas: TableSchema[]
-  ): Promise<RelationSuggestion[]> {
-    return inferRelationships(schemas)
+  ): Promise<ContextAnalysisResult> {
+    return analyzeContext(schemas)
   }
 
   /**

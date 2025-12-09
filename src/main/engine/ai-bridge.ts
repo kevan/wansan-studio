@@ -4,6 +4,7 @@ import {
   AnalysisResult,
   RelationSuggestion,
   TableSchema,
+  ContextAnalysisResult,
 } from '../../shared/types'
 import { ClientOptions } from 'openai/client'
 import { isDev } from '../utils/env'
@@ -79,8 +80,8 @@ const AnalysisResultSchema = z.object({
   viz_type: z.enum(['bar', 'line', 'pie', 'table']).optional(),
   viz_config: z
     .object({
-      x_axis: z.string(),
-      y_axis: z.string(),
+      x_axis: z.string().nullable().optional(),
+      y_axis: z.string().nullable().optional(),
       series_name: z.string().optional(),
     })
     .optional(),
@@ -195,50 +196,60 @@ Output:
 }
 `
 
-const RELATION_INFERENCE_SYSTEM_PROMPT = `
-You are an expert Database Architect specializing in Data Modeling and Fuzzy Matching. 
-Your goal is to infer "Foreign Key" relationships between tables based on their Schema and Sample Data.
+const CONTEXT_ANALYSIS_SYSTEM_PROMPT = `
+You are an expert Database Architect specializing in Data Modeling and Business Intelligence.
+Your goal is to analyze the provided table schemas to:
+1. Infer "Foreign Key" relationships (Data Modeling).
+2. Generate 4 relevant "Starter Prompts" (Business Intelligence) for a user to explore the data.
 
 ---
 
-### 🧠 INFERENCE LOGIC (PRIORITY ORDER)
+### 🧠 PART 1: RELATIONSHIP INFERENCE (PRIORITY ORDER)
 1.  **Value Overlap (High Confidence)**: 
     -   Look at the \`sampleValues\` provided in the schema.
-    -   If Column A in Table 1 has values ["A01", "A02"] and Column B in Table 2 has ["A01", "A02"], they are likely related, even if names differ slightly.
+    -   If Column A in Table 1 has values ["A01", "A02"] and Column B in Table 2 has ["A01", "A02"], they are likely related.
 2.  **Semantic Name Matching (Medium Confidence)**:
-    -   Check for synonyms, synonyms, and abbreviations.
     -   **English Rules**: \`user_id\` == \`uid\`, \`prod_code\` == \`sku\`.
-    -   **Chinese Rules (Important)**:
-        -   Suffixes: "ID", "No", "Code", "Key", "编号", "代码", "码", "标识".
-        -   Synonyms: "商品" == "产品" (Product), "客户" == "用户" (User/Customer), "日期" == "时间" (Date/Time).
-3.  **Cardinality & Direction**:
-    -   Detect **Fact Tables** (Transaction data, e.g., "Orders", "Logs") vs **Dimension Tables** (Entity lists, e.g., "Users", "Products").
-    -   Relationship Direction: ALWAYS from **Fact Table (Source/FK)** -> to -> **Dimension Table (Target/PK)**.
+    -   **Chinese Rules**: "商品" == "产品", "客户" == "用户", "日期" == "时间".
+3.  **Cardinality**: Fact Table (Source) -> Dimension Table (Target).
 
 ---
 
-### 🚫 NEGATIVE RULES (DO NOT MATCH)
-1.  **Do NOT** link common types that are not keys (e.g., "status" to "status", "gender" to "gender", "created_at" to "updated_at").
-2.  **Do NOT** suggest relationships if confidence is below 0.5.
-3.  **Do NOT** link a table to itself.
+### 💡 PART 2: STARTER PROMPTS
+Generate 4 short, engaging, and diverse questions (max 60 chars) that a user might ask about this data.
+-   Focus on: Aggregation ("Total Sales"), Trends ("Monthly Growth"), Comparisons ("Top Products"), or Anomalies.
+-   Use the actual column names or business terms inferred from the schema.
+-   Examples:
+    -   "Show me the total sales by region"
+    -   "What are the top 5 selling products?"
+    -   "Compare revenue between 2023 and 2024"
 
 ---
 
 ### 📤 OUTPUT FORMAT (JSON ONLY)
-Return a strictly valid JSON Array.
+Return a strictly valid JSON Object.
 
-Example:
-[
-  {
-    "sourceTable": "t_orders",
-    "sourceColumn": "cust_id",
-    "targetTable": "t_customers",
-    "targetColumn": "id",
-    "confidence": 0.95,
-    "reason": "Strong Match: Column names 'cust_id' and 'id' align semantically, and sample values overlap."
-  }
-]
+Structure:
+{
+  "relationships": [
+    {
+      "sourceTable": "t_orders",
+      "sourceColumn": "cust_id",
+      "targetTable": "t_customers",
+      "targetColumn": "id",
+      "confidence": 0.95,
+      "reason": "Strong Match: Column names align semantically."
+    }
+  ],
+  "suggestedPrompts": [
+    "Analyze sales trend by month",
+    "Who are the top 10 customers?",
+    "Calculate average order value",
+    "Show distribution of product categories"
+  ]
+}
 `
+
 
 const RelationSuggestionSchema = z.object({
   sourceTable: z.string(),
@@ -249,7 +260,11 @@ const RelationSuggestionSchema = z.object({
   reason: z.string(),
 })
 
-const RelationSuggestionListSchema = z.array(RelationSuggestionSchema)
+const ContextAnalysisResultSchema = z.object({
+  relationships: z.array(RelationSuggestionSchema),
+  suggestedPrompts: z.array(z.string().max(60)),
+})
+
 
 function serializeSchemas(schemas: TableSchema[]): string {
   return schemas
@@ -354,15 +369,14 @@ ${contextSection}
 }
 
 /**
- * Analyze multiple table schemas to deduce potential Foreign Key relationships.
- * This is run immediately after file ingestion to populate the "Relationship Manager" UI.
+ * Analyze multiple table schemas to deduce relationships and starter prompts.
  */
-export async function inferRelationships(
+export async function analyzeContext(
   schemas: TableSchema[]
-): Promise<RelationSuggestion[]> {
+): Promise<ContextAnalysisResult> {
   if (isDev()) {
     console.log(
-      'inferRelationships pre request - schemas:',
+      'analyzeContext pre request - schemas:',
       JSON.stringify(schemas)
     )
   }
@@ -370,50 +384,39 @@ export async function inferRelationships(
   const schemaContext = serializeSchemas(schemas)
 
   const userPrompt = `### 📂 DATABASE SCHEMA
-The following table schemas are available. Please suggest potential foreign key relationships between them.
+The following table schemas are available. Please analyze them.
 
 ${schemaContext}
 
-### 🤖 YOUR RESPONSE (JSON ARRAY)
+### 🤖 YOUR RESPONSE (JSON)
 `
 
   const body: ChatCompletionCreateParamsNonStreaming = {
-    model: getModelToUse(), // Or another suitable model
+    model: getModelToUse(),
     messages: [
-      { role: 'system', content: RELATION_INFERENCE_SYSTEM_PROMPT },
+      { role: 'system', content: CONTEXT_ANALYSIS_SYSTEM_PROMPT },
       { role: 'user', content: userPrompt },
     ],
-    response_format: { type: 'json_object' }, // The API will return an object with a single key for the array
+    response_format: { type: 'json_object' },
   }
-  if (isDev()) {
-    console.log('pre request - body', body)
-  }
+  
   const response = await getOpenAI().chat.completions.create(body)
 
   const resultJson = response.choices[0].message.content
   if (!resultJson) {
-    throw new Error('AI returned an empty response for relationship inference.')
-  }
-  if (isDev()) {
-    console.log('generateAnalysis post request - resultJson:', resultJson)
+    throw new Error('AI returned an empty response for context analysis.')
   }
 
   try {
-    // The API might return an object like { "relationships": [...] } or directly the array.
-    // Let's assume it might wrap it in an object for safety if response_format is json_object
     const rawResult = JSON.parse(resultJson)
-    const relationships = Array.isArray(rawResult)
-      ? rawResult
-      : rawResult.relationships
-
-    return RelationSuggestionListSchema.parse(relationships)
+    return ContextAnalysisResultSchema.parse(rawResult)
   } catch (error) {
     console.error(
-      'Failed to parse or validate AI response for relationship inference:',
+      'Failed to parse or validate AI response for context analysis:',
       error
     )
     throw new Error(
-      `AI returned invalid JSON or structure for relationships. Raw response: ${resultJson}`
+      `AI returned invalid JSON or structure for context analysis. Raw response: ${resultJson}`
     )
   }
 }

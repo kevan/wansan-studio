@@ -8,12 +8,12 @@ export interface ReportData {
   sql?: string
   reasoning?: string
   suggestions?: string[]
-  chartType?: 'bar' | 'line' | 'pie' | 'area'
+  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table'
   chartTitle?: string
   tableData?: Array<Record<string, any>>
   vizConfig?: {
-    x_axis: string
-    y_axis: string
+    x_axis?: string | null
+    y_axis?: string | null
     series_name?: string
   }
 }

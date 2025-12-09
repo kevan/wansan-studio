@@ -73,9 +73,20 @@ const mockIPC = {
       },
     }
   },
-  inferRelationships: async (schemas: any[]) => {
-    console.log(`Mock inferRelationships, Schemas: ${JSON.stringify(schemas)}`)
-    return { success: true, data: [] }
+  analyzeContext: async (schemas: any[]): Promise<IPCResponse> => {
+    console.log(`Mock analyzeContext, Schemas: ${JSON.stringify(schemas)}`)
+    return {
+      success: true,
+      data: {
+        relationships: [],
+        suggestedPrompts: [
+          'Mock Prompt 1',
+          'Mock Prompt 2',
+          'Mock Prompt 3',
+          'Mock Prompt 4',
+        ],
+      },
+    }
   },
   getAIConfig: async () => {
     return { success: true, data: {} }
@@ -127,7 +138,7 @@ declare global {
         error: string,
         schemas: any[]
       ) => Promise<IPCResponse>
-      inferRelationships: (schemas: any[]) => Promise<IPCResponse>
+      analyzeContext: (schemas: any[]) => Promise<IPCResponse>
       getAIConfig: () => Promise<IPCResponse>
       setAIConfig: (config: any) => Promise<IPCResponse>
       clearAIConfig: () => Promise<IPCResponse>
@@ -266,12 +277,12 @@ export const useClearAIConfig = () => {
 }
 
 // 关系推断 Hook
-export const useInferRelationships = () => {
+export const useContextAnalysis = () => {
   return useMutation({
     mutationFn: async (schemas: any[]) => {
-      const response = await getIpc().invoke('infer-relationships', schemas)
+      const response = await getIpc().analyzeContext(schemas)
       if (!response.success) {
-        throw new Error(response.error || 'Failed to infer relationships')
+        throw new Error(response.error || 'Failed to analyze context')
       }
       return response.data
     },

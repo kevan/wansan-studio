@@ -1,10 +1,18 @@
 import React from 'react'
-import { Sparkles, BarChart3, PieChart, TrendingUp } from 'lucide-react'
+import { Sparkles, BarChart3, PieChart, TrendingUp, Lightbulb } from 'lucide-react'
 import { cn } from '../../utils/cn'
+import { useFileStore } from '../../stores/useFileStore'
 
 interface EmptyStateProps {
   onSelectPrompt: (text: string) => void
 }
+
+const STYLES = [
+  { icon: BarChart3, color: 'text-blue-500', bg: 'bg-blue-50' },
+  { icon: PieChart, color: 'text-purple-500', bg: 'bg-purple-50' },
+  { icon: TrendingUp, color: 'text-green-500', bg: 'bg-green-50' },
+  { icon: Lightbulb, color: 'text-yellow-500', bg: 'bg-yellow-50' },
+]
 
 const STARTER_PROMPTS = [
   {
@@ -38,6 +46,20 @@ const STARTER_PROMPTS = [
 ]
 
 export function EmptyState({ onSelectPrompt }: EmptyStateProps) {
+  const suggestedPrompts = useFileStore(state => state.suggestedPrompts)
+
+  const promptsToShow =
+    suggestedPrompts && suggestedPrompts.length > 0
+      ? suggestedPrompts.map((prompt, idx) => {
+          const style = STYLES[idx % STYLES.length]
+          return {
+            ...style,
+            title: 'AI Suggestion',
+            prompt,
+          }
+        })
+      : STARTER_PROMPTS
+
   return (
     <div className="flex flex-col items-center justify-center h-full max-w-4xl mx-auto px-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Icon & Title */}
@@ -55,7 +77,7 @@ export function EmptyState({ onSelectPrompt }: EmptyStateProps) {
 
       {/* Prompts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">
-        {STARTER_PROMPTS.map((item, idx) => (
+        {promptsToShow.map((item, idx) => (
           <button
             key={idx}
             onClick={() => onSelectPrompt(item.prompt)}
