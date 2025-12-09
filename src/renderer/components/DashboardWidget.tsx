@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { A4Header, A4Summary, A4Chart, A4DataTable } from './A4Canvas'
+import { BigNumberDisplay } from './BigNumberDisplay'
 import { cn } from '../utils/cn'
 import { Lightbulb } from 'lucide-react'
 
@@ -92,10 +93,30 @@ export function DashboardWidget({
                 className="h-full w-full"
               />
             )}
+
+          {/* Big Number Mode for Dashboard */}
+          {chartType === 'table' &&
+            tableData &&
+            tableData.length === 1 &&
+            Object.keys(tableData[0]).length > 0 && (
+              <div className="h-full w-full flex items-center justify-center">
+                <BigNumberDisplay
+                  value={Object.values(tableData[0])[0]}
+                  label={Object.keys(tableData[0])[0]}
+                  variant={variant}
+                />
+              </div>
+            )}
+
+          {/* Fallback to Data Table (Hide if Big Number is shown) */}
           {(chartType === 'table' ||
             !vizConfig?.x_axis ||
             !vizConfig?.y_axis) &&
-            tableData && (
+            tableData &&
+            !(
+              chartType === 'table' &&
+              tableData.length === 1
+            ) /* Hide table if showing big number */ && (
               <div className="h-full w-full overflow-auto">
                 <A4DataTable data={tableData} maxRows={100} />
               </div>
@@ -129,14 +150,34 @@ export function DashboardWidget({
           </div>
         )}
 
-        {tableData && tableData.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold text-zinc-800 mb-2">
-              Data Detail
-            </h4>
-            <A4DataTable data={tableData} maxRows={10} className="text-xs" />
-          </div>
-        )}
+        {/* Big Number Mode */}
+        {chartType === 'table' &&
+          tableData &&
+          tableData.length === 1 &&
+          Object.keys(tableData[0]).length > 0 && (
+            <div className="h-full w-full flex items-center justify-center">
+              <BigNumberDisplay
+                value={Object.values(tableData[0])[0]}
+                label={Object.keys(tableData[0])[0]}
+                variant={variant}
+              />
+            </div>
+          )}
+
+        {/* Data Table */}
+        {tableData &&
+          tableData.length > 0 &&
+          !(
+            chartType === 'table' &&
+            tableData.length === 1
+          ) /* Hide table if showing big number */ && (
+            <div>
+              <h4 className="text-sm font-semibold text-zinc-800 mb-2">
+                Data Detail
+              </h4>
+              <A4DataTable data={tableData} maxRows={10} className="text-xs" />
+            </div>
+          )}
       </div>
     </div>
   )

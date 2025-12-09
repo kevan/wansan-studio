@@ -42,7 +42,7 @@ export function ReportCard({
     >
       {/* Logic Section (Collapsible) */}
       {(reportData.sql || reportData.reasoning) && (
-        <div className="border-b border-zinc-100 bg-zinc-50/30">
+        <div className="border-b border-zinc-100 bg-zinc-50/50">
           <button
             onClick={() => setIsLogicOpen(!isLogicOpen)}
             className="flex items-center gap-2 px-4 py-2 w-full text-xs font-medium text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 transition-colors"
@@ -56,19 +56,19 @@ export function ReportCard({
             View Analysis Logic
           </button>
           {isLogicOpen && (
-            <div className="px-4 py-3 bg-zinc-50 space-y-3 animate-in slide-in-from-top-1 border-t border-zinc-100">
+            <div className="px-4 py-3 bg-zinc-50/50 space-y-3 animate-in slide-in-from-top-1 border-t border-zinc-100">
               {reportData.reasoning && (
-                <div className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">
+                <div className="text-sm text-zinc-600 leading-relaxed py-3 whitespace-pre-wrap border-b border-zinc-100 last:border-0">
                   {reportData.reasoning}
                 </div>
               )}
               {reportData.sql && (
-                <div className="bg-zinc-100 rounded-md p-3 overflow-x-auto border border-zinc-200">
-                  <div className="flex items-center gap-2 text-zinc-500 text-xs mb-2 border-b border-zinc-200 pb-2">
+                <div className="bg-white rounded-md p-3 overflow-x-auto border border-zinc-200 shadow-sm">
+                  <div className="flex items-center gap-2 text-zinc-500 text-xs mb-2 border-b border-zinc-100 pb-2">
                     <Terminal className="w-3.5 h-3.5" />
                     <span>Generated SQL</span>
                   </div>
-                  <pre className="text-xs text-zinc-800 font-mono">
+                  <pre className="text-xs text-zinc-700 font-mono">
                     <code>{reportData.sql}</code>
                   </pre>
                 </div>
