@@ -1,12 +1,25 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import { useWorkbenchStore } from '../../stores/useWorkbenchStore'
 import { DashboardWidget } from '../DashboardWidget'
-import { X } from 'lucide-react'
+import { X, GripHorizontal } from 'lucide-react'
+import { Responsive, WidthProvider } from 'react-grid-layout'
+import 'react-grid-layout/css/styles.css'
+import 'react-resizable/css/styles.css'
+
+const ResponsiveGridLayout = WidthProvider(Responsive)
 
 export function ReportCanvas() {
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const removeReport = useWorkbenchStore(state => state.removeReport)
   const updateReportTitle = useWorkbenchStore(state => state.updateReportTitle)
+  const updateLayout = useWorkbenchStore(state => state.updateLayout)
+
+  const handleLayoutChange = useCallback(
+    (layout: any[]) => {
+      updateLayout(layout)
+    },
+    [updateLayout]
+  )
 
   if (pinnedReports.length === 0) {
     return (
@@ -36,35 +49,55 @@ export function ReportCanvas() {
 
   return (
     <div className="h-full w-full bg-zinc-50/50 p-6 overflow-y-auto">
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 pb-10">
+      <ResponsiveGridLayout
+        className="layout"
+        layouts={{ lg: pinnedReports.map(r => r.layout) }}
+        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+        cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+        rowHeight={60}
+        draggableHandle=".drag-handle"
+        onLayoutChange={handleLayoutChange}
+        margin={[16, 16]}
+      >
         {pinnedReports.map(report => (
           <div
             key={report.id}
-            className="group relative bg-white border border-zinc-200 shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-all h-[500px] flex flex-col"
+            data-grid={report.layout}
+            className="group relative bg-white border border-zinc-200 shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-all flex flex-col"
           >
+            {/* Drag Handle */}
+            <div className="absolute top-0 left-0 right-0 h-6 flex items-center justify-center cursor-grab active:cursor-grabbing drag-handle z-20 hover:bg-zinc-50 transition-colors opacity-0 group-hover:opacity-100">
+              <GripHorizontal className="w-4 h-4 text-zinc-300" />
+            </div>
+
             {/* Controls */}
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 flex gap-2">
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-30 flex gap-2">
               <button
-                onClick={() => removeReport(report.id)}
-                className="p-1.5 bg-white text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md border border-zinc-200 shadow-sm transition-colors"
+                onClick={e => {
+                  e.stopPropagation() // Prevent drag start if clicking button
+                  removeReport(report.id)
+                }}
+                onMouseDown={e => e.stopPropagation()}
+                className="p-1.5 bg-white text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md border border-zinc-200 shadow-sm transition-colors cursor-pointer"
                 title="Remove from Dashboard"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 pt-4">
               <DashboardWidget
                 {...report.reportData}
                 variant="dashboard"
                 onTitleChange={newTitle =>
                   updateReportTitle(report.id, newTitle)
                 }
+                className="h-full"
               />
             </div>
           </div>
         ))}
-      </div>
+      </ResponsiveGridLayout>
     </div>
   )
 }
