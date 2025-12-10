@@ -4,7 +4,7 @@ import fs from 'fs-extra'
 import * as path from 'path'
 import duckdb from 'duckdb'
 import { ingestExcelFile } from '../ingestion'
-import { generateAnalysis, inferRelationships } from '../ai-bridge'
+import { generateAnalysis, analyzeContext } from '../ai-bridge'
 import { executeSQL } from '../executor'
 import * as dotenv from 'dotenv'
 
@@ -66,7 +66,7 @@ describe('Engine Robustness & Integration', () => {
     XLSX.utils.book_append_sheet(
       wbOrders,
       XLSX.utils.aoa_to_sheet(ordersData),
-      'Orders'
+      'Orders',
     )
     XLSX.writeFile(wbOrders, ORDERS_FILE_PATH)
 
@@ -80,7 +80,7 @@ describe('Engine Robustness & Integration', () => {
     XLSX.utils.book_append_sheet(
       wbCustomers,
       XLSX.utils.aoa_to_sheet(custData),
-      'Customers'
+      'Customers',
     )
     XLSX.writeFile(wbCustomers, CUSTOMERS_FILE_PATH)
   })
@@ -100,11 +100,13 @@ describe('Engine Robustness & Integration', () => {
 
     const rows = await new Promise<any[]>((resolve, reject) => {
       db.all(
-        `SELECT "Category" FROM "${schema.tableName}" WHERE "Sub-Category" = 'Laptop'`,
+        `SELECT "Category"
+         FROM "${schema.tableName}"
+         WHERE "Sub-Category" = 'Laptop'`,
         (err, rows) => {
           if (err) reject(err)
           else resolve(rows)
-        }
+        },
       )
     })
     expect(rows[0].Category).toBe('Electronics')
@@ -157,28 +159,28 @@ describe('Engine Robustness & Integration', () => {
     ordersSchema = await ingestExcelFile(
       await fs.readFile(ORDERS_FILE_PATH),
       db,
-      'orders.xlsx'
+      'orders.xlsx',
     )
     customersSchema = await ingestExcelFile(
       await fs.readFile(CUSTOMERS_FILE_PATH),
       db,
-      'customers.xlsx'
+      'customers.xlsx',
     )
 
     // AI Inference
-    const suggestions = await inferRelationships([
+    const { relationships, suggestedPrompts } = await analyzeContext([
       ordersSchema,
       customersSchema,
     ])
-    console.log('Relation Suggestions:', JSON.stringify(suggestions, null, 2))
+    console.log('Relation Suggestions:', JSON.stringify(relationships, null, 2))
 
-    expect(suggestions.length).toBeGreaterThan(0)
+    expect(relationships.length).toBeGreaterThan(0)
 
     // Look for customer_id -> id relationship
-    const rel = suggestions.find(
+    const rel = relationships.find(
       s =>
         (s.sourceColumn === 'customer_id' && s.targetColumn === 'id') ||
-        (s.sourceColumn === 'id' && s.targetColumn === 'customer_id')
+        (s.sourceColumn === 'id' && s.targetColumn === 'customer_id'),
     )
     expect(rel).toBeDefined()
     // Use toBeGreaterThanOrEqual(0.5) to be slightly more lenient but still strict
@@ -193,7 +195,7 @@ describe('Engine Robustness & Integration', () => {
     const aiResult = await generateAnalysis(
       userQuery,
       [ordersSchema, customersSchema],
-      []
+      [],
     )
     console.log('Multi-Table SQL:', aiResult.sql)
 
