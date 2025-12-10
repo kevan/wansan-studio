@@ -31,16 +31,22 @@ export interface ReportWidget {
   }
 }
 
+export type LayoutScenario = 'default' | 'print' | 'large' | 'ppt' | 'email'
+
 interface WorkbenchState {
   pinnedReports: ReportWidget[]
+  layoutScenario: LayoutScenario
   pinReport: (messageId: string, reportData: ReportData) => void
   removeReport: (reportId: string) => void
   updateReportTitle: (reportId: string, newTitle: string) => void
   updateLayout: (layouts: any[]) => void
+  setLayoutScenario: (scenario: LayoutScenario) => void
 }
 
 export const useWorkbenchStore = create<WorkbenchState>(set => ({
   pinnedReports: [],
+  layoutScenario: 'default',
+  setLayoutScenario: scenario => set({ layoutScenario: scenario }),
   pinReport: (messageId, reportData) =>
     set(state => {
       // Check if already pinned to avoid duplicates for the same message
