@@ -71,17 +71,14 @@ async function getSampleValues(
   tableName: string,
   columnName: string
 ): Promise<any[]> {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     db.all(
-      `SELECT "${columnName}"::VARCHAR as val FROM "${tableName}" WHERE "${columnName}" IS NOT NULL LIMIT 3`,
+      `SELECT DISTINCT "${columnName}" FROM "${tableName}" WHERE "${columnName}" IS NOT NULL LIMIT 3`,
       (err, res) => {
-        if (err) {
-          console.error(`[Ingestion] Failed to sample ${columnName}:`, err)
-          return resolve(['Error'])
-        }
+        if (err) return reject(err)
         const samples = res.map(row => {
-          const val = row.val
-          return typeof val === 'bigint' ? val.toString() : String(val)
+          const val = row[columnName]
+          return typeof val === 'bigint' ? val.toString() : val
         })
         resolve(samples)
       }
@@ -162,16 +159,8 @@ export async function ingestExcelFile(
     })
 
     const columns: ColumnSchema[] = []
-    console.log(`[Ingestion] Table ${tableName} created. Fetching samples...`)
     for (const col of columnsResult) {
-      let sampleValues: string[] = []
-      try {
-        sampleValues = await getSampleValues(db, tableName, col.name)
-        console.log(`Samples for ${col.name}:`, sampleValues)
-      } catch (err) {
-        console.error(`[Ingestion] Failed to sample ${col.name}:`, err)
-        sampleValues = ['Error']
-      }
+      const sampleValues = await getSampleValues(db, tableName, col.name)
       columns.push({
         name: col.name,
         safeName: col.name, // Already safe due to normalization
@@ -179,10 +168,6 @@ export async function ingestExcelFile(
         sampleValues,
       })
     }
-    console.log(
-      `[Ingestion] Final Columns with Samples:`,
-      JSON.stringify(columns, null, 2)
-    )
 
     return { tableName, description: fileName, columns }
   } finally {
