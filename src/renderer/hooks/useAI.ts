@@ -51,8 +51,13 @@ export function useAI() {
     schemas: TableSchema[],
     relations: RelationSuggestion[],
     addMessage: (msg: ChatMessage) => void,
+    updateMessage: (
+      id: string,
+      updater: (message: ChatMessage) => ChatMessage
+    ) => void,
     context?: { lastSql: string; lastQuery: string }
   ) => {
+    let assistantId: string | null = null
     try {
       // 1. Add User Message
       addMessage({
@@ -62,7 +67,18 @@ export function useAI() {
         timestamp: new Date(),
       })
 
-      // 2. Ask AI
+      assistantId = `assistant-${Date.now()}`
+
+      // 2. Add placeholder assistant message (thinking)
+      addMessage({
+        id: assistantId,
+        type: 'assistant',
+        content: '',
+        timestamp: new Date(),
+        status: 'thinking',
+      })
+
+      // PHASE 1: Ask AI (generate plan)
       setLoadingType('thinking')
       const aiResponse = await askAIMutation.mutateAsync({
         query,
@@ -71,21 +87,15 @@ export function useAI() {
         context,
       })
 
-      if (aiResponse.status === 'error') {
+      if (aiResponse.status === 'error' || !aiResponse.sql) {
         throw new Error(aiResponse.error || 'AI returned an error')
       }
 
-      const sql =
-        aiResponse.sql ||
-        (() => {
-          throw new Error('AI could not generate a valid query.')
-        })()
-
+      const sql = aiResponse.sql
       const title = aiResponse.title
       const summary = aiResponse.summary
       const reasoning = aiResponse.reasoning
       const suggestions = aiResponse.suggestions
-      const data = aiResponse.data ?? []
       const vizType = aiResponse.visualization?.type
       const vizConfig = aiResponse.visualization?.config
       const refinementHint =
@@ -100,14 +110,34 @@ export function useAI() {
             }
           : undefined
 
+      updateMessage(assistantId, message => ({
+        ...message,
+        status: 'planning',
+        planSql: sql,
+        planReasoning: reasoning,
+        contextRef,
+      }))
+
+      // PHASE 2: Execute SQL locally
+      setLoadingType('crunching')
+      updateMessage(assistantId, message => ({
+        ...message,
+        status: 'executing',
+      }))
+      const execution = await window.electronAPI.runSQL(sql)
+      if (!execution.success) {
+        throw new Error(execution.error || 'SQL execution failed')
+      }
+      const data = execution.data ?? []
+      const columns = data.length > 0 ? Object.keys(data[0]) : []
+
       setLoadingType(null)
 
       // 4. Add Assistant Message with Report
-      addMessage({
-        id: `assistant-${Date.now()}`,
-        type: 'assistant',
-        content: '', // Content is now inside the ReportCard (reasoning)
-        timestamp: new Date(),
+      updateMessage(assistantId, message => ({
+        ...message,
+        status: undefined,
+        content: '',
         contextRef,
         reportData: {
           title: title,
@@ -118,10 +148,11 @@ export function useAI() {
           chartType: vizType,
           chartTitle: title,
           tableData: data,
+          columns,
           vizConfig: vizConfig as any,
           insights: [], // Could be populated if AI returned insights list
         },
-      })
+      }))
     } catch (error) {
       setLoadingType(null)
       const errorMessage =
@@ -134,12 +165,21 @@ export function useAI() {
         duration: 5000,
       })
 
-      addMessage({
-        id: `error-${Date.now()}`,
-        type: 'assistant',
-        content: `Error: ${errorMessage}`,
-        timestamp: new Date(),
-      })
+      if (assistantId) {
+        updateMessage(assistantId, message => ({
+          ...message,
+          status: 'error',
+          content: `Error: ${errorMessage}`,
+        }))
+      } else {
+        addMessage({
+          id: `error-${Date.now()}`,
+          type: 'assistant',
+          content: `Error: ${errorMessage}`,
+          timestamp: new Date(),
+          status: 'error',
+        })
+      }
     }
   }
 

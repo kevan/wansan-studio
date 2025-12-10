@@ -3,13 +3,16 @@ import { LoadingState, LoadingType } from './LoadingStates'
 import { ReportCard } from './chat/ReportCard'
 import { EmptyState } from './chat/empty-state'
 import { InputBar } from './chat/input-bar'
-import { User, Bot, Sparkles, GitBranch } from 'lucide-react'
+import { User, Bot, Sparkles, GitBranch, Brain, Zap } from 'lucide-react'
 
 export interface ChatMessage {
   id: string
   type: 'user' | 'assistant'
   content: string
   timestamp: Date
+  status?: 'thinking' | 'planning' | 'executing' | 'error'
+  planSql?: string
+  planReasoning?: string
   contextRef?: {
     query: string
     sqlSummary: string
@@ -25,6 +28,7 @@ export interface ChatMessage {
     chartType?: 'bar' | 'line' | 'pie' | 'area' | 'scatter' | 'kpi' | 'table'
     chartTitle?: string
     tableData?: Array<Record<string, any>>
+    columns?: string[]
     vizConfig?: {
       x_axis?: string | null
       y_axis?: string | string[] | null
@@ -116,6 +120,31 @@ export function ChatInterface({
                         <span>Based on: "{message.contextRef.query}"</span>
                       </div>
                     )}
+                    {message.status && (
+                      <div className="mb-3 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-sm text-indigo-800 animate-pulse">
+                        <div className="flex items-center gap-2 font-medium">
+                          {message.status === 'planning' ||
+                          message.status === 'thinking' ? (
+                            <Brain className="h-4 w-4" />
+                          ) : (
+                            <Zap className="h-4 w-4" />
+                          )}
+                          {message.status === 'thinking' && 'Generating analysis...'}
+                          {message.status === 'planning' && 'SQL generated. Executing...'}
+                          {message.status === 'executing' && 'Executing SQL...'}
+                          {message.status === 'error' && 'Execution failed'}
+                        </div>
+                        {message.planSql && (
+                          <pre className="mt-2 max-h-32 overflow-y-auto rounded-md bg-white/80 p-2 text-xs text-zinc-800 border border-indigo-100">
+                            <code>
+                              {message.planSql.length > 400
+                                ? `${message.planSql.slice(0, 400)}...`
+                                : message.planSql}
+                            </code>
+                          </pre>
+                        )}
+                      </div>
+                    )}
                     {message.content && (
                       <div className="mb-4 text-zinc-800 leading-relaxed">
                         {message.content}
@@ -159,27 +188,6 @@ export function ChatInterface({
               </div>
             </div>
           ))
-        )}
-
-        {/* 加载状态 */}
-        {loading && (
-          <div className="flex gap-4 w-full max-w-5xl mx-auto animate-in fade-in">
-            <div className="flex-shrink-0 mt-1">
-              <div className="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center ring-1 ring-orange-100">
-                <Bot className="w-5 h-5" />
-              </div>
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm font-semibold text-zinc-900">
-                  Wansan AI
-                </span>
-              </div>
-              <div className="max-w-md">
-                <LoadingState type={loading} />
-              </div>
-            </div>
-          </div>
         )}
 
         {/* Dummy div for auto-scrolling */}

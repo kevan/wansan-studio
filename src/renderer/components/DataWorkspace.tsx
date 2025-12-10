@@ -1,7 +1,6 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useFileStore } from '../stores/useFileStore'
-import { ChatInterface, ChatMessage } from './ChatInterface'
-import { useAI } from '../hooks/useAI'
+import { ChatInterface } from './ChatInterface'
 import { TableSchema, RelationSuggestion } from '../../shared/types'
 import { useChatStore } from '../stores/useChatStore'
 
@@ -11,14 +10,27 @@ export function DataWorkspace() {
     relations,
     activeFileId,
   } = useFileStore()
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const { handleQuery, loading } = useAI()
-  const replyToId = useChatStore(state => state.replyToId)
-  const setReplyTo = useChatStore(state => state.setReplyTo)
+  const messages = useChatStore(state => state.messages)
+  const sendMessage = useChatStore(state => state.sendMessage)
 
   const readyFiles = files.filter(f => f.status === 'ready')
   const currentFile =
     readyFiles.find(f => f.id === activeFileId) || readyFiles[0]
+  const updateMessage = (
+    id: string,
+    updater: (message: ChatMessage) => ChatMessage
+  ) => {
+    setMessages(prev =>
+      prev.map(m => {
+        if (m.id !== id) return m
+        const updated = updater(m)
+        return {
+          ...m,
+          ...updated,
+        }
+      })
+    )
+  }
 
   // Map store files to TableSchema for AI
   const schemas: TableSchema[] = readyFiles.map(f => ({
@@ -46,50 +58,7 @@ export function DataWorkspace() {
     .filter((r): r is RelationSuggestion => r !== null)
 
   const onQuerySubmit = (query: string) => {
-    // Find context (manual reply first, otherwise last AI reply)
-    let context:
-      | {
-          lastSql: string
-          lastQuery: string
-        }
-      | undefined
-
-    const manualContextMsg =
-      replyToId && messages.find(m => m.id === replyToId)
-    const autoContextMsg =
-      !manualContextMsg &&
-      [...messages].reverse().find(
-        m => m.type === 'assistant' && m.reportData?.sql
-      )
-
-    const selectedContext = manualContextMsg || autoContextMsg
-    if (selectedContext?.type === 'assistant' && selectedContext.reportData?.sql) {
-      const selectedIndex = messages.findIndex(m => m.id === selectedContext.id)
-      const precedingUser = [...messages]
-        .slice(0, selectedIndex)
-        .reverse()
-        .find(m => m.type === 'user')
-
-      context = {
-        lastSql: selectedContext.reportData.sql,
-        lastQuery: precedingUser?.content || '',
-      }
-    }
-
-    handleQuery(
-      query,
-      schemas,
-      apiRelations,
-      msg => {
-        setMessages(prev => [...prev, msg])
-      },
-      context
-    )
-
-    // Clear manual reply lock after dispatch
-    if (replyToId) {
-      setReplyTo(null)
-    }
+    sendMessage(query, schemas, apiRelations)
   }
 
   // Get current columns for autocomplete
@@ -104,7 +73,13 @@ export function DataWorkspace() {
           columns={currentColumns}
           messages={messages}
           onQuerySubmit={onQuerySubmit}
-          loading={loading}
+          loading={
+            messages.some(m => m.status === 'thinking')
+              ? 'thinking'
+              : messages.some(m => m.status === 'planning' || m.status === 'executing')
+                ? 'crunching'
+                : null
+          }
           className="h-full"
         />
       </div>

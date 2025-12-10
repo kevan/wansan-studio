@@ -44,7 +44,7 @@ class WansanApp {
     this.databaseService = databaseService
 
     // 创建 AI Service 实例
-    this.aiService = new AIService(databaseService)
+    this.aiService = new AIService()
 
     // 创建主窗口
     this.createMainWindow()

@@ -129,12 +129,20 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isPresentationMode, togglePresentation])
 
+  const handleHeaderDoubleClick = useCallback(() => {
+    window.electronAPI?.windowControl?.('toggle-maximize')
+  }, [])
+
   return (
     <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
       <ToastContainer />
       {/* Global Window Header */}
-      <header className="h-12 border-b border-zinc-200 flex items-center justify-between px-4 shrink-0 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur draggable z-50">
-        <div className="flex items-center gap-4 pl-16 non-draggable flex-1">
+      <header
+        className="h-12 border-b border-zinc-200 flex items-center justify-between px-4 shrink-0 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur draggable z-50"
+        onDoubleClick={handleHeaderDoubleClick}
+      >
+        {/* LEFT ZONE */}
+        <div className="flex items-center gap-4 pl-16 non-draggable shrink-0">
           <button
             className={`h-8 w-8 rounded-md border border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200 transition-colors ${isLeftCollapsed ? 'text-zinc-400' : ''}`}
             onClick={toggleLeft}
@@ -152,7 +160,13 @@ function App() {
             />
           </div>
         </div>
-        <div className="flex items-center gap-2 non-draggable">
+        {/* MIDDLE DRAG SPACER */}
+        <div
+          className="flex-1 h-full draggable"
+          onDoubleClick={handleHeaderDoubleClick}
+        />
+        {/* RIGHT ZONE */}
+        <div className="flex items-center gap-2 non-draggable shrink-0">
           <button
             className={`h-8 gap-2 px-3 rounded-md border border-transparent text-xs font-medium flex items-center transition-colors ${
               isRightCollapsed

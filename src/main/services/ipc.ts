@@ -107,7 +107,7 @@ export function setupIPC(
       context?: { lastSql: string; lastQuery: string }
     ) => {
       try {
-        const result = await aiService.getAnalysis(
+        const result = await aiService.generatePlan(
           userQuery,
           schemas,
           relations,

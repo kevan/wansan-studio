@@ -9,7 +9,6 @@ import type {
   ContextAnalysisResult,
 } from '../../shared/types'
 import { isDev } from '../utils/env'
-import { DatabaseService } from '../database/duckdb'
 
 interface AIConfig {
   apiKey?: string
@@ -36,7 +35,7 @@ export class AIService {
   private openai: OpenAI | null = null
   private model = 'gpt-4-turbo-preview'
 
-  constructor(private dbService: DatabaseService) {
+  constructor() {
     this.loadConfig()
   }
 
@@ -76,9 +75,9 @@ export class AIService {
   }
 
   /**
-   * Generates a full analysis.
+   * Generates an analysis plan (SQL + viz config) without executing it.
    */
-  async getAnalysis(
+  async generatePlan(
     userQuery: string,
     schemas: TableSchema[],
     relations: RelationSuggestion[],
@@ -98,33 +97,19 @@ export class AIService {
       return { status: 'error', error: aiResult.error }
     }
 
-    try {
-      const resultRows = await this.dbService.query(aiResult.sql)
-      const columns = resultRows.length > 0 ? Object.keys(resultRows[0]) : []
-
-      return {
-        status: 'success',
-        sql: aiResult.sql,
-        title: aiResult.title,
-        summary: aiResult.summary,
-        reasoning: aiResult.reasoning,
-        suggestions: aiResult.suggestions,
-        data: resultRows,
-        columns,
-        visualization: aiResult.viz_type
-          ? {
-              type: aiResult.viz_type as any,
-              config: aiResult.viz_config as any,
-            }
-          : undefined,
-      }
-    } catch (dbError: any) {
-      console.error('SQL Execution Failed', dbError)
-      return {
-        status: 'error',
-        error: `Execution Error: ${dbError.message}`,
-        sql: aiResult.sql,
-      }
+    return {
+      status: 'success',
+      sql: aiResult.sql,
+      title: aiResult.title,
+      summary: aiResult.summary,
+      reasoning: aiResult.reasoning,
+      suggestions: aiResult.suggestions,
+      visualization: aiResult.viz_type
+        ? {
+            type: aiResult.viz_type as any,
+            config: aiResult.viz_config as any,
+          }
+        : undefined,
     }
   }
 
