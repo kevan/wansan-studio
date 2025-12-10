@@ -22,8 +22,11 @@ import {
 import { ReportCanvas } from './components/canvas/ReportCanvas'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { cn } from '@/utils/cn'
+import { Input } from '@/components/ui/input'
+import { useFileStore } from './stores/useFileStore'
 
 function App() {
+  const { projectName, setProjectName } = useFileStore()
   const [showShowcase, setShowShowcase] = useState(false)
   const [showStyleTest, setShowStyleTest] = useState(false)
   const [isChatCollapsed, setIsChatCollapsed] = useState(false)
@@ -131,7 +134,7 @@ function App() {
       <ToastContainer />
       {/* Global Window Header */}
       <header className="h-12 border-b border-zinc-200 flex items-center justify-between px-4 shrink-0 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur draggable z-50">
-        <div className="flex items-center gap-4 pl-20 non-draggable">
+        <div className="flex items-center gap-4 pl-16 non-draggable flex-1">
           <button
             className={`h-8 w-8 rounded-md border border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200 transition-colors ${isLeftCollapsed ? 'text-zinc-400' : ''}`}
             onClick={toggleLeft}
@@ -140,9 +143,14 @@ function App() {
             <PanelLeft className="h-4 w-4 mx-auto" />
           </button>
           <div className="h-4 w-px bg-zinc-300 dark:bg-zinc-700" />
-          <span className="text-sm font-semibold tracking-tight text-zinc-700">
-            Project Wansan
-          </span>
+          <div className="flex items-center gap-2 group">
+            <Database className="h-4 w-4 text-indigo-500" />
+            <Input
+              value={projectName}
+              onChange={e => setProjectName(e.target.value)}
+              className="h-8 w-[220px] border-transparent hover:border-zinc-200 bg-transparent text-sm font-semibold px-2 focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
+            />
+          </div>
         </div>
         <div className="flex items-center gap-2 non-draggable">
           <button

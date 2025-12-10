@@ -78,96 +78,83 @@ export function SchemaConfirm({ onConfirm, onCancel }: SchemaConfirmProps) {
   const currentFile = readyFiles.find(f => f.id === currentFileId)
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden bg-white">
-      {/* 顶部标题区 */}
-      <div className="flex-none px-4 sm:px-6 pt-6 pb-3 border-b border-zinc-200 bg-white z-10">
-        <h2 className="text-xl font-semibold text-zinc-900">确认数据结构</h2>
-        <p className="text-sm text-zinc-500 mt-1">
-          检查字段格式，并标记关联键以便多表 Join 分析
-        </p>
-      </div>
+    <div className="flex flex-col h-full w-full bg-white overflow-hidden">
+      {/* Tabs 切换多个文件 */}
+      {readyFiles.length > 1 && (
+        <div className="flex-none flex gap-0 border-b border-zinc-200 bg-zinc-50/50 px-4">
+          {readyFiles.map(file => (
+            <button
+              key={file.id}
+              onClick={() => setActiveFile(file.id)}
+              className={`px-4 py-2 text-xs font-medium border-r border-zinc-200 transition-colors hover:bg-white ${
+                file.id === currentFileId
+                  ? 'bg-white text-indigo-600 border-t-2 border-t-indigo-500 relative -mb-px'
+                  : 'text-zinc-500'
+              }`}
+            >
+              {file.name}
+              {file.columns.some(c => c.isKey) && (
+                <Key className="inline-block ml-1 w-3 h-3" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 可滚动内容 */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="px-4 sm:px-6 py-4">
-          {/* Tabs 切换多个文件 */}
-          {readyFiles.length > 1 && (
-            <div className="flex gap-1 mb-4 border-b border-zinc-200">
-              {readyFiles.map(file => (
-                <button
-                  key={file.id}
-                  onClick={() => setActiveFile(file.id)}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                    file.id === currentFileId
-                      ? 'border-indigo-600 text-indigo-600'
-                      : 'border-transparent text-zinc-500 hover:text-zinc-700'
-                  }`}
-                >
-                  {file.name}
-                  {file.columns.some(c => c.isKey) && (
-                    <Key className="inline-block ml-1 w-3 h-3" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* 当前文件的 Schema 表格 */}
-          {currentFile && (
-            <div className="flex-1 min-h-0">
-              <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden shadow-sm">
-                {/* 文件信息头 */}
-                <div className="px-4 py-3 bg-zinc-50 border-b border-zinc-200 flex items-center justify-between">
-                  <div>
-                    <span className="font-medium text-zinc-900">
-                      {currentFile.name}
-                    </span>
-                    <span className="ml-2 text-sm text-zinc-500">
-                      {currentFile.rowCount?.toLocaleString()} 行 ·{' '}
-                      {currentFile.columns.length} 列
-                    </span>
-                  </div>
-                  <span className="text-xs text-zinc-400">
-                    表名: {currentFile.tableName}
-                  </span>
-                </div>
-
-                {/* 列表格 */}
-                <table className="w-full">
-                  <thead className="sticky top-0 z-20 bg-white border-b border-zinc-200">
-                    <tr className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                      <th className="px-4 py-3">Field Name</th>
-                      <th className="px-4 py-3 w-28">Format</th>
-                      <th className="px-4 py-3">Preview</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-100">
-                    {currentFile.columns.map(col => (
-                      <ColumnRow
-                        key={col.name}
-                        column={col}
-                        onToggleKey={() =>
-                          toggleKeyColumn(currentFile.id, col.name)
-                        }
-                        isLinked={relations.some(
-                          r =>
-                            (r.fileAId === currentFile.id &&
-                              r.columnA === col.name) ||
-                            (r.fileBId === currentFile.id &&
-                              r.columnB === col.name)
-                        )}
-                      />
-                    ))}
-                  </tbody>
-                </table>
+      <div className="flex-1 overflow-y-auto min-h-0 relative bg-white">
+        {/* 当前文件的 Schema 表格 */}
+        {currentFile && (
+          <div className="flex flex-col min-h-0">
+            <div className="sticky top-0 z-30 bg-zinc-50/95 backdrop-blur border-b px-6 py-2 flex items-center justify-between text-xs text-zinc-600">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-zinc-900">
+                  {currentFile.name}
+                </span>
+                <span className="text-xs text-zinc-500">
+                  {currentFile.rowCount?.toLocaleString()} 行 ·{' '}
+                  {currentFile.columns.length} 列
+                </span>
               </div>
+              <span className="text-xs text-zinc-400">
+                表名: {currentFile.tableName}
+              </span>
             </div>
-          )}
-        </div>
+
+            {/* 列表格 */}
+            <table className="w-full text-left border-collapse">
+              <thead className="sticky top-[40px] z-30 bg-white shadow-sm">
+                <tr className="text-xs font-semibold text-zinc-500 uppercase tracking-wider bg-white">
+                  <th className="px-6 py-3 w-1/3 border-b">Field Name</th>
+                  <th className="px-6 py-3 w-1/4 border-b">Format</th>
+                  <th className="px-6 py-3 border-b">Preview</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {currentFile.columns.map(col => (
+                  <ColumnRow
+                    key={col.name}
+                    column={col}
+                    onToggleKey={() =>
+                      toggleKeyColumn(currentFile.id, col.name)
+                    }
+                    isLinked={relations.some(
+                      r =>
+                        (r.fileAId === currentFile.id &&
+                          r.columnA === col.name) ||
+                        (r.fileBId === currentFile.id &&
+                          r.columnB === col.name)
+                    )}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* 底部操作按钮 - 固定在底部 */}
-      <div className="flex-none p-4 px-6 bg-white/95 backdrop-blur border-t border-zinc-200 flex items-center justify-between z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div className="flex-none p-4 px-6 bg-white/95 backdrop-blur border-t border-zinc-200 flex items-center justify-between z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="text-sm text-zinc-500 font-medium">
           {readyFiles.length} 个数据源已就绪
           {relations.length > 0 && (

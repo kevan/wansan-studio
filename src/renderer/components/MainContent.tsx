@@ -98,13 +98,11 @@ export function MainContent({
         <WelcomeScreen />
       ) : showSchemaConfirm ? (
         // Schema 确认页
-        <div className="flex-1 overflow-y-auto relative">
-          <div className="p-6">
-            <SchemaConfirm
-              onConfirm={handleConfirmSchema}
-              onCancel={handleCancelSchema}
-            />
-          </div>
+        <div className="flex-1 overflow-hidden relative">
+          <SchemaConfirm
+            onConfirm={handleConfirmSchema}
+            onCancel={handleCancelSchema}
+          />
         </div>
       ) : (
         // 数据工作区

@@ -10,23 +10,13 @@ interface SidebarProps {
 }
 
 export function Sidebar(_props: SidebarProps) {
-  const { projectName, setProjectName, files, addFile, updateFile } =
-    useFileStore()
-  const [isEditingName, setIsEditingName] = useState(false)
-  const [editName, setEditName] = useState(projectName)
+  const { files, addFile, updateFile } = useFileStore()
   const [isImporting, setIsImporting] = useState(false)
   const parseFileMutation = useParseFile()
   const { checkAutoLink } = useAutoLink()
 
   // Enable automatic file synchronization checks
   useFileSync()
-
-  const handleNameSubmit = () => {
-    if (editName.trim()) {
-      setProjectName(editName.trim())
-    }
-    setIsEditingName(false)
-  }
 
   // 处理多文件导入
   const handleImportClick = async () => {
@@ -157,31 +147,7 @@ export function Sidebar(_props: SidebarProps) {
       {/*<div className="drag-region h-8 flex-shrink-0" />*/}
 
       {/* 顶部: 项目名 + 导入按钮 */}
-      <div className="px-4 pb-4 border-b border-zinc-200">
-        {/* 项目名称 - 可编辑 */}
-        {isEditingName ? (
-          <input
-            type="text"
-            value={editName}
-            onChange={e => setEditName(e.target.value)}
-            onBlur={handleNameSubmit}
-            onKeyDown={e => e.key === 'Enter' && handleNameSubmit()}
-            className="w-full text-base font-semibold text-zinc-900 bg-white border border-zinc-300 rounded px-2 py-1 mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 no-drag"
-            autoFocus
-          />
-        ) : (
-          <h1
-            className="text-base font-semibold text-zinc-900 mb-3 cursor-pointer hover:text-indigo-600 transition-colors no-drag"
-            onClick={() => {
-              setEditName(projectName)
-              setIsEditingName(true)
-            }}
-            title="点击重命名项目"
-          >
-            {projectName}
-          </h1>
-        )}
-
+      <div className="px-4 pb-4 pt-4 border-b border-zinc-200">
         {/* Import Data 按钮 */}
         <button
           onClick={handleImportClick}
