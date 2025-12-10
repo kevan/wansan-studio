@@ -21,6 +21,29 @@ export class FileService {
     }
   }
 
+  private async enrichSchemaWithSamples(tableName: string, schema: any) {
+    if (!schema.columns) return schema
+
+    for (const col of schema.columns) {
+      try {
+        const query = `
+          SELECT "${col.name}"::VARCHAR as val 
+          FROM "${tableName}" 
+          WHERE "${col.name}" IS NOT NULL 
+          GROUP BY "${col.name}" 
+          LIMIT 3
+        `
+        const rows = await this.databaseService.query(query)
+        col.sampleValues = rows.map((r: any) => r.val)
+      } catch (error) {
+        console.warn(`Failed to sample ${col.name}`, error)
+        col.sampleValues = []
+      }
+    }
+
+    return schema
+  }
+
   private async parseExcelFile(filePath: string) {
     try {
       const fileBuffer = await fs.readFile(filePath)
@@ -32,10 +55,12 @@ export class FileService {
       )
 
       // Post-ingestion queries to get additional info
-      const schema = await this.databaseService.getSchema(tableName)
+      let schema = await this.databaseService.getSchema(tableName)
       if (description) {
         schema.description = description
       }
+
+      schema = await this.enrichSchemaWithSamples(tableName, schema)
 
       const preview = await this.databaseService.query(
         `SELECT * FROM "${tableName}" LIMIT 5`
@@ -70,8 +95,10 @@ export class FileService {
       await this.databaseService.query(sql)
 
       // Get schema and preview data
-      const schema = await this.databaseService.getSchema(tableName)
+      let schema = await this.databaseService.getSchema(tableName)
       schema.description = fileName
+
+      schema = await this.enrichSchemaWithSamples(tableName, schema)
 
       const preview = await this.databaseService.query(
         `SELECT * FROM "${tableName}" LIMIT 5`
