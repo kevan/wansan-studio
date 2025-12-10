@@ -47,7 +47,10 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
         })
         
         // @ts-ignore
-        const result = await window.electronAPI.saveImage(dataUrl)
+        const result = await window.electronAPI.saveImage(
+          dataUrl,
+          `${report.reportData.title || 'report'}.png`
+        )
         
         if (result.success) {
           addToast({

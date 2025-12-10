@@ -156,6 +156,7 @@ declare global {
       ) => Promise<IPCResponse<ReloadResult>>
       exportPDF: (data: any) => Promise<IPCResponse>
       exportReport: (payload: any) => Promise<IPCResponse>
+      saveImage: (dataUrl: string, name?: string) => Promise<IPCResponse>
       windowControl: (
         action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
       ) => void

@@ -224,7 +224,7 @@ export function ReportCanvas() {
           }}
         >
           <div
-            id="report-canvas-container"
+            id="report-canvas-paper"
             className={cn(
               'origin-top transition-all duration-300',
               currentPreset.containerClass,

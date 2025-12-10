@@ -228,9 +228,10 @@ export function setupIPC(
   )
 
   // 保存图片
-  ipcMain.handle('save-image', async (_event, dataUrl: string) => {
+  ipcMain.handle('save-image', async (_event, dataUrl: string, name?: string) => {
     try {
       const { filePath } = await dialog.showSaveDialog({
+        defaultPath: name || 'image.png',
         filters: [{ name: 'Images', extensions: ['png'] }],
       })
 
@@ -279,6 +280,8 @@ export function setupIPC(
         type: 'pdf' | 'html' | 'png'
         title: string
         layoutOptions?: { isA4?: boolean; landscape?: boolean }
+        clip?: { x: number; y: number; width: number; height: number }
+        dpr?: number
       }
     ) => {
       const win = BrowserWindow.fromWebContents(event.sender)
@@ -293,26 +296,7 @@ export function setupIPC(
 
       try {
         if (type === 'pdf') {
-          const pdf = await win.webContents.printToPDF({
-            printBackground: true,
-            pageSize: isA4 ? 'A4' : 'Tabloid',
-            landscape,
-            margins: isA4
-              ? { top: 0, bottom: 0, left: 0, right: 0 }
-              : undefined,
-          })
-
-          const { filePath, canceled } = await dialog.showSaveDialog({
-            defaultPath: `${safeTitle}.pdf`,
-            filters: [{ name: 'PDF', extensions: ['pdf'] }],
-          })
-
-          if (!filePath || canceled) {
-            return { success: false, error: 'Cancelled' }
-          }
-
-          await fs.writeFile(filePath, pdf)
-          return { success: true, path: filePath }
+          return { success: false, error: 'PDF export handled client-side' }
         }
 
         if (type === 'png') {

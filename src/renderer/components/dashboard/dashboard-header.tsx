@@ -24,10 +24,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { CanvasLayout, useWorkbenchStore } from '@/stores/useWorkbenchStore'
+import { toPng } from 'html-to-image'
+import { jsPDF } from 'jspdf'
 
 export function DashboardHeader() {
   const { canvasConfig, setCanvasConfig, setLayoutScenario } =
     useWorkbenchStore()
+  const layoutScenario = useWorkbenchStore(state => state.layoutScenario)
 
   const updateConfig = (key: keyof typeof canvasConfig, value: unknown) => {
     setCanvasConfig({ [key]: value } as Partial<typeof canvasConfig>)
@@ -38,20 +41,79 @@ export function DashboardHeader() {
     setLayoutScenario(value === 'a4' ? 'print' : 'default')
   }
 
-  const handleExport = (type: 'pdf' | 'html' | 'png') => {
+  const handleExport = async (type: 'pdf' | 'html' | 'png') => {
     const { layout, title } = canvasConfig
-    if (!window.electronAPI?.exportReport) {
-      console.warn('exportReport not available in this environment')
+    if (type === 'png') {
+      const node = document.getElementById('report-canvas-paper')
+      if (!node) {
+        console.warn('report-canvas-paper not found for export')
+        return
+      }
+      try {
+        const dataUrl = await toPng(node, {
+          quality: 0.95,
+          backgroundColor: '#ffffff',
+          pixelRatio: 2,
+          filter: el =>
+            !el.classList?.contains('card-controls') &&
+            !el.classList?.contains('hide-on-export'),
+        })
+        const fileName = `${canvasConfig.title || 'Report'}.png`
+        await window.electronAPI?.saveImage(dataUrl, fileName)
+      } catch (err) {
+        console.error('Image export failed', err)
+      }
       return
     }
-    window.electronAPI.exportReport({
-      type,
-      title,
-      layoutOptions: {
-        isA4: layout === 'a4',
-        landscape: false,
-      },
-    })
+
+    if (window.electronAPI?.exportReport) {
+      if (type === 'pdf') {
+        const node = document.getElementById('report-canvas-paper')
+        if (!node) {
+          console.warn('report-canvas-paper not found for PDF export')
+          return
+        }
+
+      try {
+        const dataUrl = await toPng(node, {
+          quality: 1,
+          pixelRatio: 2,
+          backgroundColor: '#ffffff',
+          filter: el =>
+            !el.classList?.contains('card-controls') &&
+            !el.classList?.contains('hide-on-export'),
+        })
+
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+            format: 'a4',
+          })
+
+          const imgProps = pdf.getImageProperties(dataUrl)
+          const pdfWidth = pdf.internal.pageSize.getWidth()
+          const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
+
+          pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight)
+          const fileName = `${canvasConfig.title || 'Report'}.pdf`
+          pdf.save(fileName)
+        } catch (err) {
+          console.error('PDF export failed', err)
+        }
+        return
+      }
+
+      window.electronAPI.exportReport({
+        type,
+        title,
+        layoutOptions: {
+          isA4: layout === 'a4',
+          landscape: false,
+        },
+      })
+    } else {
+      console.warn('exportReport not available in this environment')
+    }
   }
 
   return (
