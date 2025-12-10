@@ -1,16 +1,15 @@
 import Store from 'electron-store'
-import {
-  generateAnalysis,
-  analyzeContext,
-  setAIConfig,
-  isAIConfigured,
-} from '../engine/ai-bridge'
+import { OpenAI } from 'openai'
+import type { ClientOptions } from 'openai'
+import { generateAnalysis, analyzeContext } from '../engine/ai-bridge'
 import type {
   TableSchema,
-  AnalysisResult,
+  AIAnalysisResult,
   RelationSuggestion,
   ContextAnalysisResult,
 } from '../../shared/types'
+import { isDev } from '../utils/env'
+import { DatabaseService } from '../database/duckdb'
 
 interface AIConfig {
   apiKey?: string
@@ -34,7 +33,10 @@ const schema = {
 const store = new Store({ schema })
 
 export class AIService {
-  constructor() {
+  private openai: OpenAI | null = null
+  private model = 'gpt-4-turbo-preview'
+
+  constructor(private dbService: DatabaseService) {
     this.loadConfig()
   }
 
@@ -49,16 +51,28 @@ export class AIService {
     const effectiveModel =
       storedConfig.model || process.env.OPENAI_MODEL || 'gpt-4-turbo-preview'
 
-    // 将生效的配置传递给 ai-bridge
-    setAIConfig({
-      apiKey: effectiveApiKey,
-      baseURL: effectiveBaseURL,
-      model: effectiveModel,
-    })
+    this.model = effectiveModel
 
-    if (!isAIConfigured()) {
+    if (effectiveApiKey) {
+      const options: ClientOptions = {
+        apiKey: effectiveApiKey,
+        baseURL: effectiveBaseURL,
+      }
+      if (isDev()) {
+        options.logLevel = 'debug'
+      }
+      this.openai = new OpenAI(options)
+    } else {
+      this.openai = null
       console.warn('AI Service: Not configured (missing API Key).')
     }
+  }
+
+  private requireOpenAI(): OpenAI {
+    if (!this.openai) {
+      throw new Error('AI not configured')
+    }
+    return this.openai
   }
 
   /**
@@ -69,8 +83,49 @@ export class AIService {
     schemas: TableSchema[],
     relations: RelationSuggestion[],
     context?: { lastSql: string; lastQuery: string }
-  ): Promise<AnalysisResult> {
-    return generateAnalysis(userQuery, schemas, relations, context)
+  ): Promise<AIAnalysisResult> {
+    const client = this.requireOpenAI()
+    const aiResult = await generateAnalysis(
+      client,
+      userQuery,
+      schemas,
+      relations,
+      context,
+      this.model
+    )
+
+    if (aiResult.error) {
+      return { status: 'error', error: aiResult.error }
+    }
+
+    try {
+      const resultRows = await this.dbService.query(aiResult.sql)
+      const columns = resultRows.length > 0 ? Object.keys(resultRows[0]) : []
+
+      return {
+        status: 'success',
+        sql: aiResult.sql,
+        title: aiResult.title,
+        summary: aiResult.summary,
+        reasoning: aiResult.reasoning,
+        suggestions: aiResult.suggestions,
+        data: resultRows,
+        columns,
+        visualization: aiResult.viz_type
+          ? {
+              type: aiResult.viz_type as any,
+              config: aiResult.viz_config as any,
+            }
+          : undefined,
+      }
+    } catch (dbError: any) {
+      console.error('SQL Execution Failed', dbError)
+      return {
+        status: 'error',
+        error: `Execution Error: ${dbError.message}`,
+        sql: aiResult.sql,
+      }
+    }
   }
 
   /**
@@ -85,7 +140,8 @@ export class AIService {
     // We already imported generateAnalysis, so let's import fixSQL too
     // Note: Need to update imports at the top of the file
     const { fixSQL } = await import('../engine/ai-bridge')
-    return fixSQL(originalSql, error, schemas)
+    const client = this.requireOpenAI()
+    return fixSQL(client, originalSql, error, schemas, this.model)
   }
 
   /**
@@ -94,7 +150,8 @@ export class AIService {
   async getContextAnalysis(
     schemas: TableSchema[]
   ): Promise<ContextAnalysisResult> {
-    return analyzeContext(schemas)
+    const client = this.requireOpenAI()
+    return analyzeContext(client, schemas, this.model)
   }
 
   /**
@@ -126,7 +183,7 @@ export class AIService {
   }
 
   hasApiKey(): boolean {
-    return isAIConfigured()
+    return !!this.openai
   }
 
   /**

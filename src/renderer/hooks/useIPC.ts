@@ -48,12 +48,18 @@ const mockIPC = {
     return {
       success: true,
       data: {
+        status: 'success',
         sql: 'SELECT 1',
+        data: [],
+        columns: [],
         title: 'Mock Report',
         summary: 'Mock Summary',
-        viz_type: 'table',
-        viz_config: { x_axis: '', y_axis: '' },
         reasoning: 'Mock Reason',
+        suggestions: [],
+        visualization: {
+          type: 'table',
+          config: { x_axis: '', y_axis: '' },
+        },
       },
     }
   },
@@ -64,12 +70,18 @@ const mockIPC = {
     return {
       success: true,
       data: {
+        status: 'success',
         sql: 'SELECT 1',
+        data: [],
+        columns: [],
         title: 'Mock Report',
         summary: 'Mock Summary',
-        viz_type: 'table',
-        viz_config: { x_axis: '', y_axis: '' },
         reasoning: 'Mock Reason',
+        suggestions: [],
+        visualization: {
+          type: 'table',
+          config: { x_axis: '', y_axis: '' },
+        },
       },
     }
   },

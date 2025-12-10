@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { useRunSQL, useFixSQL } from './useIPC'
 import { ChatMessage } from '../components/ChatInterface'
 import {
   TableSchema,
-  AnalysisResult,
+  AIAnalysisResult,
   RelationSuggestion,
 } from '../../shared/types'
 import { LoadingType } from '../components/LoadingStates'
@@ -40,18 +39,13 @@ export function useAI() {
       if (!response.success || !response.data) {
         throw new Error(response.error || 'AI request failed')
       }
-      return response.data as AnalysisResult
+      return response.data as AIAnalysisResult
     },
     onMutate: () => setLoadingType('thinking'),
     onError: () => setLoadingType(null),
   })
 
   // IPC mutation to run SQL
-  const runSQLMutation = useRunSQL()
-
-  // IPC mutation to fix SQL
-  const fixSQLMutation = useFixSQL()
-
   const handleQuery = async (
     query: string,
     schemas: TableSchema[],
@@ -77,63 +71,23 @@ export function useAI() {
         context,
       })
 
-      // Check for calculation errors or "impossible" requests
-      if (aiResponse.error) {
-        throw new Error(aiResponse.error)
+      if (aiResponse.status === 'error') {
+        throw new Error(aiResponse.error || 'AI returned an error')
       }
 
-      // Use "let" so we can update them if retry happens
-      let {
-        sql,
-        title,
-        summary,
-        viz_type,
-        viz_config,
-        reasoning,
-        suggestions,
-      } = aiResponse
+      const sql =
+        aiResponse.sql ||
+        (() => {
+          throw new Error('AI could not generate a valid query.')
+        })()
 
-      // Ensure SQL is present before proceeding
-      if (!sql) {
-        throw new Error('AI could not generate a valid query.')
-      }
-
-      // 3. Run SQL with Auto-Retry (Self-Healing)
-      setLoadingType('crunching')
-
-      let data: any[] = []
-      let attempts = 0
-      const maxRetries = 1
-
-      while (attempts <= maxRetries) {
-        try {
-          data = await runSQLMutation.mutateAsync(sql)
-          break // Success, exit loop
-        } catch (error) {
-          attempts++
-          if (attempts > maxRetries) {
-            throw error // Give up
-          }
-
-          console.warn(
-            `[SQL Error] Attempt ${attempts} failed. Auto-fixing...`,
-            error
-          )
-          setLoadingType('fixing')
-
-          // Call AI to fix the SQL
-          const fixResult = await fixSQLMutation.mutateAsync({
-            sql,
-            error: error instanceof Error ? error.message : String(error),
-            schemas,
-          })
-
-          // Apply fix
-          sql = fixResult.sql
-          reasoning += `\n\n[Auto-Fix] SQL was corrected: ${fixResult.reasoning}`
-          setLoadingType('crunching') // Switch back to crunching for the next try
-        }
-      }
+      const title = aiResponse.title
+      const summary = aiResponse.summary
+      const reasoning = aiResponse.reasoning
+      const suggestions = aiResponse.suggestions
+      const data = aiResponse.data ?? []
+      const vizType = aiResponse.visualization?.type
+      const vizConfig = aiResponse.visualization?.config
 
       setLoadingType(null)
 
@@ -149,10 +103,10 @@ export function useAI() {
           sql: sql,
           reasoning: reasoning,
           suggestions: suggestions,
-          chartType: viz_type as any, // 'bar' | 'line' | 'pie' | 'table'
+          chartType: vizType,
           chartTitle: title,
           tableData: data,
-          vizConfig: viz_config,
+          vizConfig: vizConfig as any,
           insights: [], // Could be populated if AI returned insights list
         },
       })
@@ -180,6 +134,6 @@ export function useAI() {
   return {
     handleQuery,
     loading: loadingType,
-    error: askAIMutation.error || runSQLMutation.error,
+    error: askAIMutation.error,
   }
 }

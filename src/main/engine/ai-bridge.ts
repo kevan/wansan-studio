@@ -1,87 +1,32 @@
 import { OpenAI } from 'openai'
 import { z } from 'zod'
-import {
-  AnalysisResult,
-  RelationSuggestion,
-  TableSchema,
-  ContextAnalysisResult,
-} from '../../shared/types'
-import { ClientOptions } from 'openai/client'
+import { RelationSuggestion, TableSchema, ContextAnalysisResult } from '../../shared/types'
 import { isDev } from '../utils/env'
 import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources'
 
-let openaiInstance: OpenAI | null = null
-let currentApiKey: string | undefined = undefined
-let currentBaseURL: string | undefined = undefined
-let currentModel: string | undefined = undefined
-
-function getOpenAI(apiKey?: string, baseURL?: string): OpenAI {
-  const keyToUse = apiKey || currentApiKey || process.env.OPENAI_API_KEY
-  const urlToUse = baseURL || currentBaseURL || process.env.OPENAI_BASE_URL
-
-  if (!keyToUse) {
-    throw new Error('OpenAI API key is not configured.')
-  }
-
-  // Re-initialize if key or url changed, or instance is null
-  if (
-    !openaiInstance ||
-    keyToUse !== currentApiKey ||
-    urlToUse !== currentBaseURL
-  ) {
-    let opts: ClientOptions = {
-      apiKey: keyToUse,
-      baseURL: urlToUse,
-    }
-    if (isDev()) {
-      opts.logLevel = 'debug'
-    }
-
-    openaiInstance = new OpenAI(opts)
-    currentApiKey = keyToUse
-    currentBaseURL = urlToUse
-  }
-  return openaiInstance
-}
-
-export function setAIConfig(config: {
-  apiKey?: string
-  baseURL?: string
-  model?: string
-}) {
-  console.log('setAIConfig', config)
-  if (config.apiKey !== undefined) currentApiKey = config.apiKey
-  if (config.baseURL !== undefined) currentBaseURL = config.baseURL
-  if (config.model !== undefined) currentModel = config.model
-
-  openaiInstance = null // Force re-initialization
-}
-
-export function isAIConfigured(): boolean {
-  return !!(currentApiKey || process.env.OPENAI_API_KEY)
-}
-
-export function getModelToUse() {
+function getModelToUse(preferredModel?: string) {
   const envModel = process.env.OPENAI_MODEL
   if (isDev()) {
     console.log('[AI Bridge] getModelToUse debug:', {
-      currentModel,
+      preferredModel,
       envModel,
       allEnvKeys: Object.keys(process.env).filter(k => k.startsWith('OPENAI')),
     })
   }
-  return currentModel || envModel || 'gpt-4-turbo-preview'
+  return preferredModel || envModel || 'gpt-4-turbo-preview'
 }
 
-const AnalysisResultSchema = z.object({
-  sql: z.string().optional(),
+const AIGenerationSchema = z.object({
+  sql: z.string(),
   title: z.string().optional(),
   summary: z.string().optional(),
-  viz_type: z.enum(['bar', 'line', 'pie', 'table']).optional(),
+  viz_type: z.enum(['bar', 'line', 'pie', 'table', 'scatter', 'kpi']).optional(),
   viz_config: z
     .object({
       x_axis: z.string().nullable().optional(),
-      y_axis: z.string().nullable().optional(),
+      y_axis: z.union([z.string(), z.array(z.string())])
+        .nullable()
+        .optional(),
       series_name: z.string().optional(),
     })
     .optional(),
@@ -89,6 +34,7 @@ const AnalysisResultSchema = z.object({
   suggestions: z.array(z.string()).optional(),
   error: z.string().optional(),
 })
+type AIGenerationOutput = z.infer<typeof AIGenerationSchema>
 
 const SYSTEM_PROMPT = `
 ### SYSTEM PROMPT
@@ -133,12 +79,18 @@ Your mission is to translate natural language questions into executable **DuckDB
 ---
 
 ### 📊 VISUALIZATION RULES
-1.  **AUTO-DETECT CHART**: Based on the query result, recommend the best ECharts type:
-    -   Time Series -> \`'line'\`
-    -   Categorical Comparison -> \`'bar'\`
-    -   Part-to-Whole -> \`'pie'\`
-    -   Detailed List -> \`'table'\`
-2.  **CONFIG**: Provide \`x_axis\` and \`y_axis\` mapping.
+1.  **AUTO-DETECT CHART**: Based on the query result, choose the best type:
+    -   **Time Series / Trends** -> \`'line'\`
+    -   **Categorical Comparison** -> \`'bar'\`
+    -   **Part-to-Whole** -> \`'pie'\`
+    -   **Correlation (2 Metrics)** -> \`'scatter'\` (e.g., Price vs. Sales)
+    -   **Single Number / Big Stat** -> \`'kpi'\` (e.g., Total Revenue)
+    -   **Detailed List / Text** -> \`'table'\`
+
+2.  **CONFIG**:
+    -   \`x_axis\`: The dimension column.
+    -   \`y_axis\`: The metric column(s). Can be a string or an array of strings for multi-series.
+    -   \`series_name\`: Label for the data.
 
 ---
 
@@ -150,10 +102,10 @@ Return a **raw JSON object**. Do not wrap in markdown code blocks.
   "sql": "String (The executable DuckDB SQL)",
   "title": "String (A short, professional report title)",
   "summary": "String (A 1-sentence business insight summary of what this query checks)",
-  "viz_type": "bar" | "line" | "pie" | "table",
+  "viz_type": "bar" | "line" | "pie" | "scatter" | "table" | "kpi",
   "viz_config": {
     "x_axis": "column_name_for_x",
-    "y_axis": "column_name_for_y",
+    "y_axis": "column_name_for_y" or ["col1", "col2"],
     "series_name": "Label for the data"
   },
   "reasoning": "String (Briefly explain which columns you used and why)",
@@ -206,7 +158,7 @@ Your goal is to analyze the provided table schemas to:
 
 ### 🧠 PART 1: RELATIONSHIP INFERENCE (PRIORITY ORDER)
 1.  **Value Overlap (High Confidence)**: 
-    -   Look at the \`sampleValues\` provided in the schema.
+    -   **CRITICAL**: Look at the "Samples" provided in the schema columns.
     -   If Column A in Table 1 has values ["A01", "A02"] and Column B in Table 2 has ["A01", "A02"], they are likely related.
 2.  **Semantic Name Matching (Medium Confidence)**:
     -   **English Rules**: \`user_id\` == \`uid\`, \`prod_code\` == \`sku\`.
@@ -270,7 +222,30 @@ function serializeSchemas(schemas: TableSchema[]): string {
   return schemas
     .map(table => {
       const columnsStr = table.columns
-        .map(col => `- "${col.name}" (${col.type})`)
+        .map(col => {
+          let hint = ''
+          const lower = col.name.toLowerCase()
+          const isPrimaryKey = col.isPrimaryKey === true || col.isKey === true
+
+          if (lower.includes('id') || lower.includes('code') || isPrimaryKey)
+            hint += ' [ID/Key]'
+          if (
+            lower.includes('price') ||
+            lower.includes('amount') ||
+            lower.includes('销售') ||
+            lower.includes('money')
+          )
+            hint += ' [Money/Metric]'
+          if (lower.includes('date') || lower.includes('time') || lower.includes('日期'))
+            hint += ' [Time]'
+
+          const samples =
+            col.sampleValues && col.sampleValues.length > 0
+              ? ` (Samples: ${col.sampleValues.slice(0, 3).join(', ')})`
+              : ''
+
+          return `- "${col.name}" (${col.type})${hint}${samples}`
+        })
         .join('\n')
       const descStr = table.description
         ? ` (Source: "${table.description}")`
@@ -281,11 +256,13 @@ function serializeSchemas(schemas: TableSchema[]): string {
 }
 
 export async function generateAnalysis(
+  openai: OpenAI,
   userQuery: string,
   schemas: TableSchema[],
   relations: RelationSuggestion[],
-  context?: { lastSql: string; lastQuery: string }
-): Promise<AnalysisResult> {
+  context?: { lastSql: string; lastQuery: string },
+  model?: string
+): Promise<AIGenerationOutput> {
   if (isDev()) {
     console.log(
       'generateAnalysis pre request - schemas:',
@@ -334,7 +311,7 @@ ${contextSection}
 "${userQuery}"
 
 ### 🤖 YOUR RESPONSE (JSON)`
-  const modelToUse = getModelToUse()
+  const modelToUse = getModelToUse(model)
 
   const body: ChatCompletionCreateParamsNonStreaming = {
     model: modelToUse,
@@ -347,7 +324,7 @@ ${contextSection}
   if (isDev()) {
     console.log('pre request - body', body)
   }
-  const response = await getOpenAI().chat.completions.create(body)
+  const response = await openai.chat.completions.create(body)
 
   const resultJson = response.choices[0].message.content
   if (!resultJson) {
@@ -359,7 +336,7 @@ ${contextSection}
 
   try {
     const parsedResult = JSON.parse(resultJson)
-    return AnalysisResultSchema.parse(parsedResult)
+    return AIGenerationSchema.parse(parsedResult)
   } catch (error) {
     console.error('Failed to parse or validate AI response:', error)
     throw new Error(
@@ -372,7 +349,9 @@ ${contextSection}
  * Analyze multiple table schemas to deduce relationships and starter prompts.
  */
 export async function analyzeContext(
-  schemas: TableSchema[]
+  openai: OpenAI,
+  schemas: TableSchema[],
+  model?: string
 ): Promise<ContextAnalysisResult> {
   if (isDev()) {
     console.log(
@@ -392,7 +371,7 @@ ${schemaContext}
 `
 
   const body: ChatCompletionCreateParamsNonStreaming = {
-    model: getModelToUse(),
+    model: getModelToUse(model),
     messages: [
       { role: 'system', content: CONTEXT_ANALYSIS_SYSTEM_PROMPT },
       { role: 'user', content: userPrompt },
@@ -400,7 +379,7 @@ ${schemaContext}
     response_format: { type: 'json_object' },
   }
   
-  const response = await getOpenAI().chat.completions.create(body)
+  const response = await openai.chat.completions.create(body)
 
   const resultJson = response.choices[0].message.content
   if (!resultJson) {
@@ -427,9 +406,11 @@ const FixSQLResultSchema = z.object({
 })
 
 export async function fixSQL(
+  openai: OpenAI,
   originalSql: string,
   errorMessage: string,
-  schemas: TableSchema[]
+  schemas: TableSchema[],
+  model?: string
 ): Promise<{ sql: string; reasoning: string }> {
   const schemaContext = serializeSchemas(schemas)
 
@@ -451,7 +432,7 @@ ${errorMessage}
 Fix the SQL. Ensure all table/column names are double-quoted and match the schema exactly.`
 
   const body: ChatCompletionCreateParamsNonStreaming = {
-    model: getModelToUse(),
+    model: getModelToUse(model),
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
@@ -459,7 +440,7 @@ Fix the SQL. Ensure all table/column names are double-quoted and match the schem
     response_format: { type: 'json_object' },
   }
 
-  const response = await getOpenAI().chat.completions.create(body)
+  const response = await openai.chat.completions.create(body)
   const resultJson = response.choices[0].message.content
 
   if (!resultJson) throw new Error('AI returned empty response for SQL fix')

@@ -10,12 +10,12 @@ export interface ReportData {
   sql?: string
   reasoning?: string
   suggestions?: string[]
-  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table'
+  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi'
   chartTitle?: string
   tableData?: Array<Record<string, any>>
   vizConfig?: {
     x_axis?: string | null
-    y_axis?: string | null
+    y_axis?: string | string[] | null
     series_name?: string
   }
 }
@@ -98,6 +98,7 @@ export const useWorkbenchStore = create<WorkbenchState>(set => ({
         case 'bar':
         case 'line':
         case 'area':
+        case 'scatter':
           if ((reportData.tableData?.length || 0) > 20) {
             w = 12
             h = 6
@@ -105,6 +106,10 @@ export const useWorkbenchStore = create<WorkbenchState>(set => ({
             w = 6
             h = 5
           }
+          break
+        case 'kpi':
+          w = 3
+          h = 2
           break
         default:
           w = 6

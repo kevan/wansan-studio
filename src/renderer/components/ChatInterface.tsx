@@ -18,12 +18,12 @@ export interface ChatMessage {
     sql?: string
     reasoning?: string
     suggestions?: string[]
-    chartType?: 'bar' | 'line' | 'pie' | 'area'
+    chartType?: 'bar' | 'line' | 'pie' | 'area' | 'scatter' | 'kpi' | 'table'
     chartTitle?: string
     tableData?: Array<Record<string, any>>
     vizConfig?: {
       x_axis?: string | null
-      y_axis?: string | null
+      y_axis?: string | string[] | null
       series_name?: string
     }
   }

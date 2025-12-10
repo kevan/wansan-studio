@@ -85,12 +85,22 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
         {...props}
       >
         {/* Drag Handle */}
-        <div className="absolute top-0 left-0 right-0 h-6 flex items-center justify-center cursor-grab active:cursor-grabbing drag-handle z-20 hover:bg-zinc-50 transition-colors opacity-0 group-hover:opacity-100 card-controls">
+        <div
+          className={cn(
+            'absolute top-0 left-0 right-0 h-6 flex items-center justify-center cursor-grab active:cursor-grabbing drag-handle z-20 hover:bg-zinc-50 transition-colors card-controls',
+            isDashboard ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          )}
+        >
           <GripHorizontal className="w-4 h-4 text-zinc-300" />
         </div>
 
         {/* Controls */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-30 flex gap-2 card-controls">
+        <div
+          className={cn(
+            'absolute top-2 right-2 transition-opacity z-30 flex gap-2 card-controls',
+            isDashboard ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          )}
+        >
           <div className="relative">
             <button
                onClick={(e) => {

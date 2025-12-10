@@ -9,12 +9,12 @@ interface DashboardWidgetProps {
   subtitle?: string
   summary?: string
   insights?: string[]
-  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table'
+  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi'
   chartTitle?: string
   tableData?: Array<Record<string, any>>
   vizConfig?: {
     x_axis?: string | null
-    y_axis?: string | null
+    y_axis?: string | string[] | null
     series_name?: string
   }
   className?: string
@@ -83,6 +83,7 @@ export function DashboardWidget({
         {/* Chart takes priority space */}
         <div className="flex-1 min-h-0 w-full mb-0">
           {chartType !== 'table' &&
+            chartType !== 'kpi' &&
             vizConfig?.x_axis &&
             vizConfig?.y_axis && (
               <A4Chart
@@ -95,7 +96,7 @@ export function DashboardWidget({
             )}
 
           {/* Big Number Mode for Dashboard */}
-          {chartType === 'table' &&
+          {(chartType === 'table' || chartType === 'kpi') &&
             tableData &&
             tableData.length === 1 &&
             Object.keys(tableData[0]).length > 0 && (
@@ -110,14 +111,42 @@ export function DashboardWidget({
 
           {/* Fallback to Data Table (Hide if Big Number is shown) */}
           {(chartType === 'table' ||
+            chartType === 'kpi' ||
             !vizConfig?.x_axis ||
             !vizConfig?.y_axis) &&
             tableData &&
             !(
-              chartType === 'table' &&
+              (chartType === 'table' || chartType === 'kpi') &&
               tableData.length === 1
             ) /* Hide table if showing big number */ && (
-              <div className="h-full w-full overflow-auto">
+              <div className="h-full w-full overflow-auto space-y-4">
+                {chartType === 'kpi' && tableData.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {tableData.slice(0, 4).map((row, idx) => {
+                      const entries = Object.entries(row)
+                      const first = entries[0] || ['Value', '—']
+                      const second = entries[1]
+                      return (
+                        <div
+                          key={idx}
+                          className="rounded-lg border border-zinc-200 bg-white p-3 shadow-sm"
+                        >
+                          <div className="text-xs text-zinc-500 mb-1">
+                            {first[0]}
+                          </div>
+                          <div className="text-xl font-semibold text-zinc-900">
+                            {first[1] as any}
+                          </div>
+                          {second && (
+                            <div className="text-xs text-zinc-500 mt-1">
+                              {second[0]}: {second[1] as any}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
                 <A4DataTable data={tableData} maxRows={100} />
               </div>
             )}
@@ -138,7 +167,10 @@ export function DashboardWidget({
           </div>
         )}
 
-        {chartType !== 'table' && vizConfig?.x_axis && vizConfig?.y_axis && (
+        {chartType !== 'table' &&
+          chartType !== 'kpi' &&
+          vizConfig?.x_axis &&
+          vizConfig?.y_axis && (
           <div className="h-[250px] w-full px-4 pb-4 pt-2">
             <A4Chart
               type={chartType}
@@ -151,7 +183,7 @@ export function DashboardWidget({
         )}
 
         {/* Big Number Mode */}
-        {chartType === 'table' &&
+        {(chartType === 'table' || chartType === 'kpi') &&
           tableData &&
           tableData.length === 1 &&
           Object.keys(tableData[0]).length > 0 && (
@@ -168,7 +200,7 @@ export function DashboardWidget({
         {tableData &&
           tableData.length > 0 &&
           !(
-            chartType === 'table' &&
+            (chartType === 'table' || chartType === 'kpi') &&
             tableData.length === 1
           ) /* Hide table if showing big number */ && (
             <div>

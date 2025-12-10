@@ -195,12 +195,12 @@ import ReactECharts from 'echarts-for-react'
 
 // 图表组件
 interface A4ChartProps {
-  type?: 'bar' | 'line' | 'pie' | 'area' | 'table' // Added 'table' to be safe, though handled in parent
+  type?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi' // Added 'table' to be safe, though handled in parent
   title?: string
   data?: Array<Record<string, any>>
   config?: {
     x_axis?: string | null
-    y_axis?: string | null
+    y_axis?: string | string[] | null
     series_name?: string
   }
   className?: string
@@ -254,23 +254,42 @@ export function A4Chart({
     !config ||
     !config.x_axis ||
     !config.y_axis ||
-    type === 'table'
+    type === 'table' ||
+    type === 'kpi'
   ) {
     return null
   }
 
   const { x_axis, y_axis, series_name } = config
+  const yAxes = Array.isArray(y_axis) ? y_axis : [y_axis]
 
   const getOption = () => {
     // Double check for TS safety, though covered by the if above
     if (!x_axis || !y_axis) return {}
 
     const xData = data.map(item => item[x_axis])
-    const yData = data.map(item => item[y_axis])
+
+    const baseSeries =
+      type === 'scatter'
+        ? yAxes.map(key => ({
+            name: series_name || key,
+            type: 'scatter',
+            data: data.map(item => [item[x_axis], item[key]]),
+            emphasis: { focus: 'series' },
+          }))
+        : yAxes.map(key => ({
+            name: series_name || key,
+            type: type === 'area' ? 'line' : type,
+            data: data.map(item => item[key]),
+            areaStyle: type === 'area' ? {} : undefined,
+            itemStyle: {
+              color: '#4F46E5', // Indigo-600
+            },
+          }))
 
     const baseOption = {
       tooltip: {
-        trigger: 'axis',
+        trigger: type === 'pie' ? 'item' : 'axis',
       },
       grid: {
         left: '3%',
@@ -278,24 +297,18 @@ export function A4Chart({
         bottom: '3%',
         containLabel: true,
       },
-      xAxis: {
-        type: 'category',
-        data: xData,
-        axisLabel: { interval: 0, rotate: 30 }, // Avoid overlap
-      },
+      xAxis:
+        type === 'scatter'
+          ? { type: 'value' }
+          : {
+              type: 'category',
+              data: xData,
+              axisLabel: { interval: 0, rotate: 30 }, // Avoid overlap
+            },
       yAxis: {
         type: 'value',
       },
-      series: [
-        {
-          name: series_name || y_axis,
-          type: type,
-          data: yData,
-          itemStyle: {
-            color: '#4F46E5', // Indigo-600
-          },
-        },
-      ],
+      series: baseSeries,
     }
 
     if (type === 'pie') {
@@ -303,11 +316,11 @@ export function A4Chart({
         tooltip: { trigger: 'item' },
         series: [
           {
-            name: series_name || y_axis,
+            name: series_name || yAxes[0],
             type: 'pie',
             radius: '50%',
             data: data.map(item => ({
-              value: item[y_axis],
+              value: item[yAxes[0]],
               name: item[x_axis],
             })),
             emphasis: {
@@ -417,12 +430,12 @@ interface A4ReportLayoutProps {
   subtitle?: string
   summary?: string
   insights?: string[]
-  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table'
+  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi'
   chartTitle?: string
   tableData?: Array<Record<string, any>>
   vizConfig?: {
     x_axis?: string | null
-    y_axis?: string | null
+    y_axis?: string | string[] | null
     series_name?: string
   }
   logo?: string

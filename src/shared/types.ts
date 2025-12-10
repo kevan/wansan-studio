@@ -13,6 +13,7 @@ export interface ColumnSchema {
   sampleValues: any[] // Top 3 non-null values for AI context
   nullable?: boolean // From UI state, indicates if column can have nulls
   isKey?: boolean // From UI state, indicates if column is a join key
+  isPrimaryKey?: boolean // Optional metadata when a column is a primary key
   alias?: string // User defined alias for the column
   userType?: ColumnType // User defined type override
 }
@@ -23,19 +24,28 @@ export interface TableSchema {
   columns: ColumnSchema[]
 }
 
-export interface AnalysisResult {
-  sql?: string
+export interface AIAnalysisResult {
+  status: 'success' | 'error'
+  data?: any[] // Raw rows from DuckDB
+  columns?: string[] // Column headers
+  sql?: string // The Executed SQL
+
+  // AI Context
   title?: string
   summary?: string
-  viz_type?: 'bar' | 'line' | 'pie' | 'table'
-  viz_config?: {
-    x_axis?: string | null
-    y_axis?: string | null
-    series_name?: string
-  }
   reasoning?: string
   suggestions?: string[]
   error?: string
+
+  // Visualization
+  visualization?: {
+    type: 'bar' | 'line' | 'pie' | 'scatter' | 'table' | 'kpi'
+    config: {
+      x_axis?: string | null
+      y_axis?: string | string[] | null
+      series_name?: string
+    }
+  }
 }
 
 // [UPDATE] Add this new interface

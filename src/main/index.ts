@@ -39,11 +39,12 @@ class WansanApp {
     await app.whenReady()
 
     // 初始化数据库服务
-    this.databaseService = new DatabaseService()
-    await this.databaseService.initialize()
+    const databaseService = new DatabaseService()
+    await databaseService.initialize()
+    this.databaseService = databaseService
 
     // 创建 AI Service 实例
-    this.aiService = new AIService()
+    this.aiService = new AIService(databaseService)
 
     // 创建主窗口
     this.createMainWindow()
