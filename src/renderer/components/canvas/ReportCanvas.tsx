@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useEffect } from 'react'
+import { Database, Sparkles } from 'lucide-react'
 import { LayoutScenario, useWorkbenchStore } from '../../stores/useWorkbenchStore'
 import { ReportCard } from './ReportCard'
 import { Responsive, WidthProvider } from 'react-grid-layout'
@@ -20,6 +21,7 @@ export function ReportCanvas() {
   const { layout, zoom } = canvasConfig
   const zoomScale = zoom / 100
   const isA4 = layout === 'a4'
+  const generatedDate = useMemo(() => new Date().toLocaleDateString(), [])
 
   // Keep legacy layout preset logic aligned with new layout toggle
   useEffect(() => {
@@ -226,7 +228,7 @@ export function ReportCanvas() {
           <div
             id="report-canvas-paper"
             className={cn(
-              'origin-top transition-all duration-300',
+              'origin-top transition-all duration-300 flex flex-col',
               currentPreset.containerClass,
               isA4
                 ? 'w-[210mm] min-h-[297mm] bg-white shadow-lg rounded-lg border border-zinc-200'
@@ -239,7 +241,25 @@ export function ReportCanvas() {
               height: currentPreset.canvasSize?.height ?? 'auto',
             }}
           >
-            {canvasContent}
+            <div className="flex-1 p-8">
+              {canvasContent}
+            </div>
+            {isA4 && (
+              <div className="mt-auto flex-none h-16 border-t mx-8 mb-4 flex items-center justify-between text-xs text-zinc-400">
+                <div className="flex items-center gap-1.5">
+                  <div className="bg-black text-white p-1 rounded">
+                    <Database className="h-3 w-3" />
+                  </div>
+                  <span className="font-semibold text-zinc-600">Project Wansan</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-3 w-3 text-indigo-400" />
+                  <span>AI-Powered Local BI</span>
+                  <span className="mx-2 text-zinc-300">|</span>
+                  <span>{generatedDate}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
