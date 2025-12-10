@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { A4Header, A4Summary, A4Chart, A4DataTable } from './A4Canvas'
+import { A4Header, A4Summary, A4Chart } from './A4Canvas'
 import { BigNumberDisplay } from './BigNumberDisplay'
 import { cn } from '../utils/cn'
 import { Lightbulb } from 'lucide-react'
+import { ReportTable } from './report/report-table'
 
 interface DashboardWidgetProps {
   title: string
@@ -36,6 +37,21 @@ export function DashboardWidget({
   onTitleChange,
 }: DashboardWidgetProps) {
   const [showSummary, setShowSummary] = useState(false)
+  const tableColumns =
+    tableData && tableData.length > 0 ? Object.keys(tableData[0]) : []
+  const showBigNumber =
+    (chartType === 'table' || chartType === 'kpi') &&
+    tableData &&
+    tableData.length === 1 &&
+    Object.keys(tableData[0]).length > 0
+  const shouldShowTable =
+    tableData &&
+    tableData.length > 0 &&
+    !showBigNumber &&
+    (chartType === 'table' ||
+      chartType === 'kpi' ||
+      !vizConfig?.x_axis ||
+      !vizConfig?.y_axis)
 
   // Dashboard Layout (Chart focused)
   if (variant === 'dashboard') {
@@ -96,60 +112,53 @@ export function DashboardWidget({
             )}
 
           {/* Big Number Mode for Dashboard */}
-          {(chartType === 'table' || chartType === 'kpi') &&
-            tableData &&
-            tableData.length === 1 &&
-            Object.keys(tableData[0]).length > 0 && (
-              <div className="h-full w-full flex items-center justify-center">
-                <BigNumberDisplay
-                  value={Object.values(tableData[0])[0]}
-                  label={Object.keys(tableData[0])[0]}
-                  variant={variant}
+          {showBigNumber && (
+            <div className="h-full w-full flex items-center justify-center">
+              <BigNumberDisplay
+                value={Object.values(tableData[0])[0]}
+                label={Object.keys(tableData[0])[0]}
+                variant={variant}
                 />
               </div>
             )}
 
           {/* Fallback to Data Table (Hide if Big Number is shown) */}
-          {(chartType === 'table' ||
-            chartType === 'kpi' ||
-            !vizConfig?.x_axis ||
-            !vizConfig?.y_axis) &&
-            tableData &&
-            !(
-              (chartType === 'table' || chartType === 'kpi') &&
-              tableData.length === 1
-            ) /* Hide table if showing big number */ && (
-              <div className="h-full w-full overflow-auto space-y-4">
-                {chartType === 'kpi' && tableData.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {tableData.slice(0, 4).map((row, idx) => {
-                      const entries = Object.entries(row)
-                      const first = entries[0] || ['Value', '—']
-                      const second = entries[1]
-                      return (
-                        <div
-                          key={idx}
-                          className="rounded-lg border border-zinc-200 bg-white p-3 shadow-sm"
-                        >
-                          <div className="text-xs text-zinc-500 mb-1">
-                            {first[0]}
-                          </div>
-                          <div className="text-xl font-semibold text-zinc-900">
-                            {first[1] as any}
-                          </div>
-                          {second && (
-                            <div className="text-xs text-zinc-500 mt-1">
-                              {second[0]}: {second[1] as any}
-                            </div>
-                          )}
+          {shouldShowTable && (
+            <div className="h-full w-full overflow-auto space-y-4">
+              {chartType === 'kpi' && tableData.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {tableData.slice(0, 4).map((row, idx) => {
+                    const entries = Object.entries(row)
+                    const first = entries[0] || ['Value', '—']
+                    const second = entries[1]
+                    return (
+                      <div
+                        key={idx}
+                        className="rounded-lg border border-zinc-200 bg-white p-3 shadow-sm"
+                      >
+                        <div className="text-xs text-zinc-500 mb-1">
+                          {first[0]}
                         </div>
-                      )
-                    })}
-                  </div>
-                )}
-                <A4DataTable data={tableData} maxRows={100} />
-              </div>
-            )}
+                        <div className="text-xl font-semibold text-zinc-900">
+                          {first[1] as any}
+                        </div>
+                        {second && (
+                          <div className="text-xs text-zinc-500 mt-1">
+                            {second[0]}: {second[1] as any}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+              <ReportTable
+                data={tableData}
+                columns={tableColumns}
+                variant="dashboard"
+              />
+            </div>
+          )}
         </div>
       </div>
     )
@@ -183,33 +192,29 @@ export function DashboardWidget({
         )}
 
         {/* Big Number Mode */}
-        {(chartType === 'table' || chartType === 'kpi') &&
-          tableData &&
-          tableData.length === 1 &&
-          Object.keys(tableData[0]).length > 0 && (
-            <div className="h-full w-full flex items-center justify-center">
-              <BigNumberDisplay
-                value={Object.values(tableData[0])[0]}
-                label={Object.keys(tableData[0])[0]}
-                variant={variant}
+        {showBigNumber && (
+          <div className="h-full w-full flex items-center justify-center">
+            <BigNumberDisplay
+              value={Object.values(tableData[0])[0]}
+              label={Object.keys(tableData[0])[0]}
+              variant={variant}
               />
             </div>
           )}
 
         {/* Data Table */}
-        {tableData &&
-          tableData.length > 0 &&
-          !(
-            (chartType === 'table' || chartType === 'kpi') &&
-            tableData.length === 1
-          ) /* Hide table if showing big number */ && (
-            <div>
-              <h4 className="text-sm font-semibold text-zinc-800 mb-2">
-                Data Detail
-              </h4>
-              <A4DataTable data={tableData} maxRows={10} className="text-xs" />
-            </div>
-          )}
+        {shouldShowTable && (
+          <div>
+            <h4 className="text-sm font-semibold text-zinc-800 mb-2">
+              Data Detail
+            </h4>
+            <ReportTable
+              data={tableData}
+              columns={tableColumns}
+              variant="chat"
+            />
+          </div>
+        )}
       </div>
     </div>
   )
