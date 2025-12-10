@@ -117,13 +117,13 @@ export function DashboardHeader() {
   }
 
   return (
-    <div className="h-14 flex items-center justify-between px-6 border-b bg-white/80 backdrop-blur-sm z-10 sticky top-0">
+    <div className="h-12 flex items-center justify-between px-4 border-b bg-white/80 backdrop-blur-sm z-10 sticky top-0">
       {/* LEFT: Editable Title */}
       <div className="flex items-center gap-2 flex-1">
         <Input
           value={canvasConfig.title}
           onChange={e => updateConfig('title', e.target.value)}
-          className="max-w-[300px] border-transparent hover:border-input bg-transparent text-lg font-semibold h-9 px-2 focus-visible:ring-0"
+          className="max-w-[300px] border-transparent hover:border-input bg-transparent text-sm font-semibold h-8 px-2 focus-visible:ring-0"
         />
       </div>
 

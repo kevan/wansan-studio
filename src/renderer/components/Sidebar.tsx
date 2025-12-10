@@ -229,13 +229,6 @@ export function Sidebar(_props: SidebarProps) {
 
       {/* 数据树 */}
       <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-        {/* 数据源标题 */}
-        <div className="px-4 pt-4 pb-2 flex-shrink-0">
-          <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wide">
-            Data Sources {files.length > 0 && `(${files.length})`}
-          </h3>
-        </div>
-
         {/* DataTreeManager - 填满剩余空间 */}
         <div className="flex-1 overflow-hidden px-2 min-h-0">
           <DataTreeManager className="no-drag" />

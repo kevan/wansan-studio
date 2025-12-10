@@ -62,9 +62,9 @@ class WansanApp {
 
   private createMainWindow() {
     this.mainWindow = new BrowserWindow({
-      width: 1200,
+      width: 1280,
       height: 800,
-      minWidth: 800,
+      minWidth: 1024,
       minHeight: 600,
       webPreferences: {
         nodeIntegration: false,

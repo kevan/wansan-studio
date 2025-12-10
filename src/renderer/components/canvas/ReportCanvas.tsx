@@ -231,7 +231,7 @@ export function ReportCanvas() {
               'origin-top transition-all duration-300 flex flex-col',
               currentPreset.containerClass,
               isA4
-                ? 'w-[210mm] min-h-[297mm] bg-white shadow-lg rounded-lg border border-zinc-200'
+                ? 'w-[210mm] min-h-[297mm] bg-white shadow-md rounded-lg border border-zinc-200'
                 : 'w-full bg-transparent shadow-none'
             )}
             style={{

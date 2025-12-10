@@ -194,10 +194,6 @@ function App() {
           className={`border-r border-zinc-200 bg-zinc-50 dark:bg-zinc-900/50 transition-all duration-300 ${isLeftCollapsed ? 'min-w-0 border-none' : ''}`}
         >
           <div className="h-full flex flex-col bg-zinc-50 dark:bg-zinc-900/50">
-            <div className="flex items-center gap-2 px-4 py-3 text-zinc-500">
-              <Database className="h-4 w-4" />
-              <span className="text-xs font-bold uppercase">Data Sources</span>
-            </div>
             <div className="flex-1 overflow-y-auto">
               <Sidebar onImportData={handleImportData} />
             </div>
