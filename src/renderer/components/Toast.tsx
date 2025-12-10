@@ -15,7 +15,7 @@ function ToastItem({ toast }: { toast: ToastType }) {
   return (
     <div
       className={`
-        pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 
+        pointer-events-auto w-full max-w-sm overflow-hidden rounded-xl bg-white/95 dark:bg-zinc-900/95 border border-zinc-200/50 dark:border-zinc-800 shadow-xl backdrop-blur-md
         transform transition-all duration-300 ease-in-out
         animate-card-enter mb-3
       `}
@@ -25,15 +25,19 @@ function ToastItem({ toast }: { toast: ToastType }) {
         <div className="flex items-start">
           <div className="flex-shrink-0">{icons[toast.type]}</div>
           <div className="ml-3 w-0 flex-1 pt-0.5">
-            <p className="text-sm font-medium text-gray-900">{toast.title}</p>
+            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              {toast.title}
+            </p>
             {toast.description && (
-              <p className="mt-1 text-sm text-gray-500">{toast.description}</p>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                {toast.description}
+              </p>
             )}
           </div>
           <div className="ml-4 flex flex-shrink-0">
             <button
               type="button"
-              className="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              className="inline-flex rounded-lg bg-transparent text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               onClick={() => dismissToast(toast.id)}
             >
               <span className="sr-only">Close</span>
@@ -52,9 +56,9 @@ export function ToastContainer() {
   return (
     <div
       aria-live="assertive"
-      className="pointer-events-none fixed inset-0 flex items-end px-4 py-6 sm:items-start sm:p-6 z-50 flex-col-reverse sm:flex-col justify-end sm:justify-end"
+      className="pointer-events-none fixed inset-0 flex flex-col items-center justify-start px-4 py-6 sm:p-6 z-[99999]"
     >
-      <div className="flex w-full flex-col items-center space-y-4 sm:items-end">
+      <div className="flex w-full flex-col items-center space-y-4">
         {toasts.map(toast => (
           <ToastItem key={toast.id} toast={toast} />
         ))}

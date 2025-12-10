@@ -154,7 +154,7 @@ export function Sidebar(_props: SidebarProps) {
   return (
     <aside className="wansan-sidebar">
       {/* macOS 拖动区域 */}
-      <div className="drag-region h-8 flex-shrink-0" />
+      {/*<div className="drag-region h-8 flex-shrink-0" />*/}
 
       {/* 顶部: 项目名 + 导入按钮 */}
       <div className="px-4 pb-4 border-b border-zinc-200">
