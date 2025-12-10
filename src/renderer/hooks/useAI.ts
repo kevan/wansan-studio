@@ -88,6 +88,17 @@ export function useAI() {
       const data = aiResponse.data ?? []
       const vizType = aiResponse.visualization?.type
       const vizConfig = aiResponse.visualization?.config
+      const refinementHint =
+        (aiResponse.reasoning || '')
+          .toLowerCase()
+          .includes('modified previous sql') || !!context
+      const contextRef =
+        refinementHint && context
+          ? {
+              query: context.lastQuery,
+              sqlSummary: context.lastSql,
+            }
+          : undefined
 
       setLoadingType(null)
 
@@ -97,6 +108,7 @@ export function useAI() {
         type: 'assistant',
         content: '', // Content is now inside the ReportCard (reasoning)
         timestamp: new Date(),
+        contextRef,
         reportData: {
           title: title,
           summary: summary,

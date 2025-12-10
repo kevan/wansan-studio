@@ -3,6 +3,7 @@ import { useFileStore } from '../stores/useFileStore'
 import { ChatInterface, ChatMessage } from './ChatInterface'
 import { useAI } from '../hooks/useAI'
 import { TableSchema, RelationSuggestion } from '../../shared/types'
+import { useChatStore } from '../stores/useChatStore'
 
 export function DataWorkspace() {
   const {
@@ -12,6 +13,8 @@ export function DataWorkspace() {
   } = useFileStore()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const { handleQuery, loading } = useAI()
+  const replyToId = useChatStore(state => state.replyToId)
+  const setReplyTo = useChatStore(state => state.setReplyTo)
 
   const readyFiles = files.filter(f => f.status === 'ready')
   const currentFile =
@@ -43,24 +46,33 @@ export function DataWorkspace() {
     .filter((r): r is RelationSuggestion => r !== null)
 
   const onQuerySubmit = (query: string) => {
-    // Find context (last SQL and last User Query)
-    let context: { lastSql: string; lastQuery: string } | undefined = undefined
-
-    // Reverse iterate to find the last successful AI response
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i]
-      if (msg.type === 'assistant' && msg.reportData?.sql) {
-        // Found last SQL, now find the user query that triggered it (usually the one before)
-        // We assume the structure is User -> Assistant
-        // But we need to be careful if there are error messages
-        const prevMsg = messages[i - 1]
-        if (prevMsg && prevMsg.type === 'user') {
-          context = {
-            lastSql: msg.reportData.sql,
-            lastQuery: prevMsg.content,
-          }
-          break // Found the pair, stop
+    // Find context (manual reply first, otherwise last AI reply)
+    let context:
+      | {
+          lastSql: string
+          lastQuery: string
         }
+      | undefined
+
+    const manualContextMsg =
+      replyToId && messages.find(m => m.id === replyToId)
+    const autoContextMsg =
+      !manualContextMsg &&
+      [...messages].reverse().find(
+        m => m.type === 'assistant' && m.reportData?.sql
+      )
+
+    const selectedContext = manualContextMsg || autoContextMsg
+    if (selectedContext?.type === 'assistant' && selectedContext.reportData?.sql) {
+      const selectedIndex = messages.findIndex(m => m.id === selectedContext.id)
+      const precedingUser = [...messages]
+        .slice(0, selectedIndex)
+        .reverse()
+        .find(m => m.type === 'user')
+
+      context = {
+        lastSql: selectedContext.reportData.sql,
+        lastQuery: precedingUser?.content || '',
       }
     }
 
@@ -73,6 +85,11 @@ export function DataWorkspace() {
       },
       context
     )
+
+    // Clear manual reply lock after dispatch
+    if (replyToId) {
+      setReplyTo(null)
+    }
   }
 
   // Get current columns for autocomplete

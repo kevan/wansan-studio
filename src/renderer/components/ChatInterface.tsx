@@ -3,13 +3,17 @@ import { LoadingState, LoadingType } from './LoadingStates'
 import { ReportCard } from './chat/ReportCard'
 import { EmptyState } from './chat/empty-state'
 import { InputBar } from './chat/input-bar'
-import { User, Bot, Sparkles } from 'lucide-react'
+import { User, Bot, Sparkles, GitBranch } from 'lucide-react'
 
 export interface ChatMessage {
   id: string
   type: 'user' | 'assistant'
   content: string
   timestamp: Date
+  contextRef?: {
+    query: string
+    sqlSummary: string
+  }
   reportData?: {
     title: string
     subtitle?: string
@@ -106,6 +110,12 @@ export function ChatInterface({
                   </div>
                 ) : (
                   <div className="w-full">
+                    {message.contextRef && (
+                      <div className="flex items-center gap-1.5 mb-2 text-xs text-indigo-500/80 bg-indigo-50/50 w-fit px-2 py-0.5 rounded-full border border-indigo-100/50">
+                        <GitBranch className="h-3 w-3" />
+                        <span>Based on: "{message.contextRef.query}"</span>
+                      </div>
+                    )}
                     {message.content && (
                       <div className="mb-4 text-zinc-800 leading-relaxed">
                         {message.content}
@@ -183,6 +193,7 @@ export function ChatInterface({
           loading={!!loading}
           tableName={tableName}
           columns={columns}
+          messages={messages}
           placeholder={
             tableName
               ? `关于 ${tableName}，你想知道什么？`

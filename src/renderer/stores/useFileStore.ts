@@ -75,7 +75,6 @@ export interface ProjectState {
   // 关联操作
   addRelation: (relation: Omit<Relation, 'id'>) => void
   removeRelation: (id: string) => void
-  detectRelations: () => void
 
   setSuggestedPrompts: (prompts: string[]) => void
 
@@ -129,9 +128,6 @@ export const useFileStore = create<ProjectState>((set, get) => ({
       activeFileId: id,
       showSchemaConfirm: true,
     }))
-
-    // 尝试自动检测关联
-    setTimeout(() => get().detectRelations(), 100)
 
     return id
   },
@@ -192,66 +188,6 @@ export const useFileStore = create<ProjectState>((set, get) => ({
     set(state => ({
       relations: state.relations.filter(r => r.id !== id),
     }))
-  },
-
-  // 自动检测可能的关联关系
-  detectRelations: () => {
-    const { files, relations } = get()
-    if (files.length < 2) return
-
-    const newRelations: Omit<Relation, 'id'>[] = []
-
-    // 遍历所有文件对
-    for (let i = 0; i < files.length; i++) {
-      for (let j = i + 1; j < files.length; j++) {
-        const fileA = files[i]
-        const fileB = files[j]
-
-        // 查找可能匹配的列名
-        for (const colA of fileA.columns) {
-          for (const colB of fileB.columns) {
-            // 简单匹配规则：列名相同或包含 id/ID
-            const nameA = colA.name.toLowerCase()
-            const nameB = colB.name.toLowerCase()
-
-            const isMatch =
-              nameA === nameB ||
-              (nameA.includes('id') &&
-                nameB.includes('id') &&
-                nameA.replace('_id', '').replace('id', '') ===
-                  nameB.replace('_id', '').replace('id', ''))
-
-            if (isMatch) {
-              // 检查是否已存在此关联
-              const exists = relations.some(
-                r =>
-                  (r.fileAId === fileA.id &&
-                    r.columnA === colA.name &&
-                    r.fileBId === fileB.id &&
-                    r.columnB === colB.name) ||
-                  (r.fileAId === fileB.id &&
-                    r.columnA === colB.name &&
-                    r.fileBId === fileA.id &&
-                    r.columnB === colA.name)
-              )
-
-              if (!exists) {
-                newRelations.push({
-                  fileAId: fileA.id,
-                  columnA: colA.name,
-                  fileBId: fileB.id,
-                  columnB: colB.name,
-                  autoDetected: true,
-                })
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // 添加新检测到的关联
-    newRelations.forEach(r => get().addRelation(r))
   },
 
   setSuggestedPrompts: prompts => set({ suggestedPrompts: prompts }),

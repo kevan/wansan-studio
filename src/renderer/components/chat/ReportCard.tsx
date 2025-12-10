@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { DashboardWidget } from '../DashboardWidget'
 import { ReportData, useWorkbenchStore } from '../../stores/useWorkbenchStore'
+import { useChatStore } from '../../stores/useChatStore'
 import { cn } from '../../utils/cn'
 
 interface ReportCardProps {
@@ -24,6 +25,7 @@ export function ReportCard({
   const [isLogicOpen, setIsLogicOpen] = useState(false)
   const pinReport = useWorkbenchStore(state => state.pinReport)
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
+  const setReplyTo = useChatStore(state => state.setReplyTo)
 
   const isPinned = pinnedReports.some(r => r.sourceMessageId === messageId)
 
@@ -83,20 +85,30 @@ export function ReportCard({
         <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
           Analysis Report
         </span>
-        <button
-          onClick={handlePin}
-          disabled={isPinned}
-          className={cn(
-            'p-1.5 rounded-md transition-colors flex items-center gap-1.5 text-xs font-medium',
-            isPinned
-              ? 'text-orange-600 bg-orange-50 cursor-default'
-              : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
-          )}
-          title={isPinned ? 'Pinned to Canvas' : 'Pin to Canvas'}
-        >
-          <Pin className="w-3.5 h-3.5" />
-          {isPinned ? 'Pinned' : 'Pin'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setReplyTo(messageId)}
+            className="p-1.5 rounded-md transition-colors flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
+            title="Refine this analysis"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-zinc-500" />
+            Refine
+          </button>
+          <button
+            onClick={handlePin}
+            disabled={isPinned}
+            className={cn(
+              'p-1.5 rounded-md transition-colors flex items-center gap-1.5 text-xs font-medium',
+              isPinned
+                ? 'text-orange-600 bg-orange-50 cursor-default'
+                : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
+            )}
+            title={isPinned ? 'Pinned to Canvas' : 'Pin to Canvas'}
+          >
+            <Pin className="w-3.5 h-3.5" />
+            {isPinned ? 'Pinned' : 'Pin'}
+          </button>
+        </div>
       </div>
 
       {/* Content */}

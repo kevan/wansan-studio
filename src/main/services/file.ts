@@ -4,6 +4,35 @@ import { DatabaseService } from '../database/duckdb'
 import { ingestExcelFile, getUniqueTableName } from '../engine/ingestion'
 import { ReloadResult, ColumnSchema, ColumnType } from '../../shared/types'
 
+// Intelligent Time Anchor Detection
+function findTimeAnchor(columns: ColumnSchema[]): string | null {
+  // Priority 1: True Date/Timestamp Types (Inferred by DuckDB)
+  const typeMatch = columns.find(col => {
+    const type = (col.type || '').toUpperCase()
+    return type.includes('DATE') || type.includes('TIMESTAMP')
+  })
+  if (typeMatch) return typeMatch.name
+
+  // Priority 2: Semantic Naming (Fall back for Strings)
+  const keywords = [
+    'date',
+    'time',
+    'year',
+    'month',
+    'day',
+    '日期',
+    '时间',
+    '年份',
+    'created_at',
+    'updated_at',
+  ]
+  const nameMatch = columns.find(col =>
+    keywords.some(kw => (col.name || '').toLowerCase().includes(kw))
+  )
+
+  return nameMatch ? nameMatch.name : null
+}
+
 export class FileService {
   constructor(private databaseService: DatabaseService) {}
 
@@ -24,15 +53,20 @@ export class FileService {
   private async enrichSchemaWithSamples(tableName: string, schema: any) {
     if (!schema.columns) return schema
 
+    const timeAnchor = findTimeAnchor(schema.columns)
+    const sourceTable = timeAnchor
+      ? `(SELECT * FROM "${tableName}" ORDER BY "${timeAnchor}" DESC LIMIT 1000)`
+      : `"${tableName}"`
+
     for (const col of schema.columns) {
       try {
         const query = `
-          SELECT "${col.name}"::VARCHAR as val 
-          FROM "${tableName}" 
+          SELECT DISTINCT "${col.name}"::VARCHAR as val 
+          FROM ${sourceTable} 
           WHERE "${col.name}" IS NOT NULL 
-          GROUP BY "${col.name}" 
           LIMIT 3
         `
+
         const rows = await this.databaseService.query(query)
         col.sampleValues = rows.map((r: any) => r.val)
       } catch (error) {

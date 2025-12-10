@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
-import { Database, ArrowUp } from 'lucide-react'
+import { Database, ArrowUp, X, CornerDownRight } from 'lucide-react'
 import { cn } from '../../utils/cn'
+import { useChatStore } from '../../stores/useChatStore'
+import type { ChatMessage } from '../ChatInterface'
 
 interface InputBarProps {
   onSubmit: (value: string) => void
@@ -9,6 +11,7 @@ interface InputBarProps {
   placeholder?: string
   tableName?: string
   columns?: string[]
+  messages: ChatMessage[]
 }
 
 export function InputBar({
@@ -17,6 +20,7 @@ export function InputBar({
   placeholder = 'Ask data...',
   tableName,
   columns = [],
+  messages,
 }: InputBarProps) {
   const [value, setValue] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -24,6 +28,15 @@ export function InputBar({
   const [suggestionIndex, setSuggestionIndex] = useState(0)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const replyToId = useChatStore(state => state.replyToId)
+  const setReplyTo = useChatStore(state => state.setReplyTo)
+
+  const replyMessage = messages.find(m => m.id === replyToId)
+  const replyPreview =
+    replyMessage?.content ||
+    replyMessage?.reportData?.title ||
+    replyMessage?.reportData?.summary ||
+    (replyMessage ? 'Chart Analysis' : '')
 
   // Filter columns based on text after '@'
   const getSearchTerm = () => {
@@ -129,6 +142,26 @@ export function InputBar({
 
   return (
     <div className="relative w-full flex justify-center" ref={containerRef}>
+      {/* Replying banner */}
+      {replyToId && replyMessage && (
+        <div className="absolute -top-14 w-[80%] max-w-3xl bg-zinc-50 border border-b-0 rounded-t-2xl px-3 py-2 text-xs flex items-center justify-between z-[55] shadow-sm">
+          <div className="flex items-center gap-2 text-zinc-600 min-w-0">
+            <CornerDownRight className="h-3 w-3" />
+            <span className="font-medium text-zinc-700">Refining Analysis:</span>
+            <span className="truncate max-w-[240px] italic">
+              {replyPreview}
+            </span>
+          </div>
+          <button
+            onClick={() => setReplyTo(null)}
+            className="hover:bg-zinc-200 p-1 rounded transition-colors"
+            aria-label="Cancel reply"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
       {/* Suggestions Popover */}
       {showSuggestions && (
         <div className="absolute bottom-full left-[10%] mb-2 w-64 bg-white rounded-lg shadow-xl border border-zinc-200 overflow-hidden z-[60] animate-in fade-in zoom-in-95 duration-100">
@@ -160,7 +193,7 @@ export function InputBar({
       <div
         className={cn(
           'w-[80%] max-w-3xl mb-6 rounded-3xl border border-zinc-200 shadow-xl bg-white z-50 flex items-end gap-2 transition-all duration-200 outline-none',
-          // 'focus-within:ring-1 focus-within:ring-zinc-300 focus-within:border-zinc-300'
+          replyToId && replyMessage && 'rounded-t-none border-t-0 mt-12'
         )}
       >
         <div className="flex-1 min-w-0 py-4 pl-6">
