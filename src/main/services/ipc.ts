@@ -1,4 +1,4 @@
-import { ipcMain, dialog } from 'electron'
+import { ipcMain, dialog, BrowserWindow } from 'electron'
 import { DatabaseService } from '../database/duckdb'
 import { FileService } from './file'
 import { AIService } from './ai'
@@ -270,6 +270,81 @@ export function setupIPC(
       }
     }
   })
+
+  ipcMain.handle(
+    'export-report',
+    async (
+      event,
+      payload: {
+        type: 'pdf' | 'html' | 'png'
+        title: string
+        layoutOptions?: { isA4?: boolean; landscape?: boolean }
+      }
+    ) => {
+      const win = BrowserWindow.fromWebContents(event.sender)
+      if (!win) {
+        return { success: false, error: 'No browser window available' }
+      }
+
+      const { type, title, layoutOptions } = payload || {}
+      const safeTitle = title?.trim() || 'report'
+      const isA4 = layoutOptions?.isA4 ?? true
+      const landscape = layoutOptions?.landscape ?? !isA4
+
+      try {
+        if (type === 'pdf') {
+          const pdf = await win.webContents.printToPDF({
+            printBackground: true,
+            pageSize: isA4 ? 'A4' : 'Tabloid',
+            landscape,
+            margins: isA4
+              ? { top: 0, bottom: 0, left: 0, right: 0 }
+              : undefined,
+          })
+
+          const { filePath, canceled } = await dialog.showSaveDialog({
+            defaultPath: `${safeTitle}.pdf`,
+            filters: [{ name: 'PDF', extensions: ['pdf'] }],
+          })
+
+          if (!filePath || canceled) {
+            return { success: false, error: 'Cancelled' }
+          }
+
+          await fs.writeFile(filePath, pdf)
+          return { success: true, path: filePath }
+        }
+
+        if (type === 'png') {
+          const image = await win.webContents.capturePage()
+          const png = image.toPNG()
+          const { filePath, canceled } = await dialog.showSaveDialog({
+            defaultPath: `${safeTitle}.png`,
+            filters: [{ name: 'Images', extensions: ['png'] }],
+          })
+
+          if (!filePath || canceled) {
+            return { success: false, error: 'Cancelled' }
+          }
+
+          await fs.writeFile(filePath, png)
+          return { success: true, path: filePath }
+        }
+
+        if (type === 'html') {
+          return { success: false, error: 'HTML export is not implemented yet' }
+        }
+
+        return { success: false, error: 'Unknown export type' }
+      } catch (error) {
+        console.error('Export report error:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      }
+    }
+  )
 
   console.log('IPC handlers registered and updated successfully')
 }

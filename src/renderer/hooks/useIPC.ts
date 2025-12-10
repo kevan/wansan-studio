@@ -111,6 +111,13 @@ const mockIPC = {
     console.log(`Mock exportPDF: ${data}`)
     return { success: true }
   },
+  exportReport: async (payload: any) => {
+    console.log('Mock exportReport', payload)
+    return { success: true }
+  },
+  windowControl: (action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize') => {
+    console.log('Mock windowControl', action)
+  },
   platform: 'darwin', // Mock platform
   version: { electron: 'mock', chrome: 'mock', node: 'mock' }, // Mock versions
 }
@@ -148,6 +155,10 @@ declare global {
         tableName: string
       ) => Promise<IPCResponse<ReloadResult>>
       exportPDF: (data: any) => Promise<IPCResponse>
+      exportReport: (payload: any) => Promise<IPCResponse>
+      windowControl: (
+        action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
+      ) => void
       platform: string
       version: NodeJS.ProcessVersions
     }

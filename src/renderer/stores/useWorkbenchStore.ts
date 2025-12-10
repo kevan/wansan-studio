@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 
+export type CanvasLayout = 'a4' | 'screen'
+
 export interface ReportData {
   title: string
   subtitle?: string
@@ -36,17 +38,32 @@ export type LayoutScenario = 'default' | 'print' | 'large' | 'ppt' | 'email'
 interface WorkbenchState {
   pinnedReports: ReportWidget[]
   layoutScenario: LayoutScenario
+  canvasConfig: {
+    layout: CanvasLayout
+    zoom: number
+    title: string
+  }
   pinReport: (messageId: string, reportData: ReportData) => void
   removeReport: (reportId: string) => void
   updateReportTitle: (reportId: string, newTitle: string) => void
   updateLayout: (layouts: any[]) => void
   setLayoutScenario: (scenario: LayoutScenario) => void
+  setCanvasConfig: (updates: Partial<WorkbenchState['canvasConfig']>) => void
 }
 
 export const useWorkbenchStore = create<WorkbenchState>(set => ({
   pinnedReports: [],
   layoutScenario: 'default',
+  canvasConfig: {
+    layout: 'a4',
+    zoom: 100,
+    title: 'Untitled Analysis',
+  },
   setLayoutScenario: scenario => set({ layoutScenario: scenario }),
+  setCanvasConfig: updates =>
+    set(state => ({
+      canvasConfig: { ...state.canvasConfig, ...updates },
+    })),
   pinReport: (messageId, reportData) =>
     set(state => {
       // Check if already pinned to avoid duplicates for the same message

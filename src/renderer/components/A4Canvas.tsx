@@ -204,6 +204,7 @@ interface A4ChartProps {
     series_name?: string
   }
   className?: string
+  style?: React.CSSProperties
 }
 
 export function A4Chart({
@@ -212,6 +213,7 @@ export function A4Chart({
   data = [],
   config,
   className = '',
+  style,
 }: A4ChartProps) {
   const chartRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -324,13 +326,18 @@ export function A4Chart({
   }
 
   return (
-    <div className={className} ref={containerRef} style={{ height: '100%', width: '100%' }}>
+    <div
+      className={className}
+      ref={containerRef}
+      style={{ height: '100%', width: '100%', ...style }}
+    >
       <ReactECharts
         option={getOption()}
-        style={{ height: '100%', width: '100%' }}
+        style={{ height: '100%', width: '100%', ...style }}
         opts={{ renderer: 'canvas' }}
         ref={chartRef}
         onChartReady={resizeChart}
+        autoResize
       />
     </div>
   )

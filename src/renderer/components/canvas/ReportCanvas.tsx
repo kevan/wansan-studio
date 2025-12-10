@@ -1,10 +1,8 @@
-import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react'
+import React, { useCallback, useMemo, useEffect } from 'react'
 import { LayoutScenario, useWorkbenchStore } from '../../stores/useWorkbenchStore'
 import { ReportCard } from './ReportCard'
-import { Printer, FileCode, Maximize2, Minimize2 } from 'lucide-react'
 import { Responsive, WidthProvider } from 'react-grid-layout'
-import { exportDashboardToHtml } from '../../utils/export-html'
-import { useToastStore } from '../../stores/useToastStore'
+import { cn } from '@/utils/cn'
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
 
@@ -17,10 +15,19 @@ export function ReportCanvas() {
   const updateLayout = useWorkbenchStore(state => state.updateLayout)
   const layoutScenario = useWorkbenchStore(state => state.layoutScenario)
   const setLayoutScenario = useWorkbenchStore(state => state.setLayoutScenario)
-  const addToast = useToastStore(state => state.addToast)
-  const [scale, setScale] = useState(1)
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const canvasConfig = useWorkbenchStore(state => state.canvasConfig)
+
+  const { layout, zoom } = canvasConfig
+  const zoomScale = zoom / 100
+  const isA4 = layout === 'a4'
+
+  // Keep legacy layout preset logic aligned with new layout toggle
+  useEffect(() => {
+    const targetScenario: LayoutScenario = isA4 ? 'print' : 'default'
+    if (layoutScenario !== targetScenario) {
+      setLayoutScenario(targetScenario)
+    }
+  }, [isA4, layoutScenario, setLayoutScenario])
 
   const layoutPresets: Record<
     LayoutScenario,
@@ -133,25 +140,11 @@ export function ReportCanvas() {
     [normalizedLayouts]
   )
 
-  React.useEffect(() => {
-    requestAnimationFrame(() => {
-      window.dispatchEvent(new Event('dashboard:layout-changed'))
-    })
-  }, [pinnedReports.length, scale])
-
-  React.useEffect(() => {
-    requestAnimationFrame(() => {
-      window.dispatchEvent(new Event('dashboard:layout-changed'))
-    })
-  }, [layoutScenario])
-
   useEffect(() => {
-    const onFullChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
-    document.addEventListener('fullscreenchange', onFullChange)
-    return () => document.removeEventListener('fullscreenchange', onFullChange)
-  }, [])
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('dashboard:layout-changed'))
+    })
+  }, [pinnedReports.length, zoom, layoutScenario])
 
   const handleLayoutChange = useCallback(
     (layout: any[]) => {
@@ -170,50 +163,12 @@ export function ReportCanvas() {
     })
   }, [])
 
-  const handlePrint = () => {
-    window.print()
-  }
-
-  const handleExportHtml = async () => {
-    try {
-      await exportDashboardToHtml(pinnedReports)
-      addToast({
-        title: 'Export Success',
-        description: 'Dashboard exported to HTML successfully.',
-        type: 'success'
-      })
-    } catch (error) {
-      console.error('Export HTML failed', error)
-      addToast({
-        title: 'Export Failed',
-        description: 'Failed to export dashboard to HTML.',
-        type: 'error'
-      })
-    }
-  }
-
-  const handleScaleChange = (value: number) => {
-    setScale(value)
-    requestAnimationFrame(() => {
-      window.dispatchEvent(new Event('dashboard:layout-changed'))
-    })
-  }
-
-  const toggleFullscreen = () => {
-    const el = containerRef.current || document.documentElement
-    if (!document.fullscreenElement) {
-      el.requestFullscreen?.()
-    } else {
-      document.exitFullscreen?.()
-    }
-  }
-
-  if (pinnedReports.length === 0) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center h-full text-zinc-400 bg-zinc-50/50">
-        <div className="p-4 rounded-full bg-zinc-100 mb-4">
+  const canvasContent =
+    pinnedReports.length === 0 ? (
+      <div className="flex h-full min-h-[400px] flex-col items-center justify-center text-zinc-400">
+        <div className="mb-4 rounded-full bg-zinc-100 p-4">
           <svg
-            className="w-8 h-8 text-zinc-300"
+            className="h-8 w-8 text-zinc-300"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -227,117 +182,65 @@ export function ReportCanvas() {
           </svg>
         </div>
         <h3 className="text-sm font-medium text-zinc-900">Canvas Empty</h3>
-        <p className="text-xs text-zinc-500 mt-1">
+        <p className="mt-1 text-xs text-zinc-500">
           Pin charts from the chat to build your dashboard.
         </p>
       </div>
+    ) : (
+      <ResponsiveGridLayout
+        className="layout"
+        layouts={responsiveLayouts}
+        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+        cols={currentPreset.cols}
+        rowHeight={currentPreset.rowHeight}
+        draggableHandle=".drag-handle"
+        onLayoutChange={handleLayoutChange}
+        onResizeStop={handleResizeStop}
+        onDragStop={handleResizeStop}
+        margin={currentPreset.margin}
+      >
+        {pinnedReports.map(report => (
+          <div key={report.id} data-grid={layoutMap.get(report.id) ?? report.layout}>
+            <ReportCard
+              report={report}
+              onRemove={() => removeReport(report.id)}
+              onTitleChange={newTitle => updateReportTitle(report.id, newTitle)}
+              className="h-full w-full"
+            />
+          </div>
+        ))}
+      </ResponsiveGridLayout>
     )
-  }
 
   return (
-    <div className="h-full w-full flex flex-col bg-zinc-50/50">
-      {/* Header with Print Button */}
-      <div className="h-12 border-b border-zinc-200 bg-white px-4 flex items-center justify-between flex-shrink-0 no-print">
-        <h2 className="text-sm font-semibold text-zinc-700">Report Canvas</h2>
-        <div className="flex items-center gap-2">
-            <label className="text-xs text-zinc-500 flex items-center gap-2">
-              <span>Layout</span>
-              <select
-                value={layoutScenario}
-                onChange={e => setLayoutScenario(e.target.value as LayoutScenario)}
-                className="text-xs border border-zinc-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-zinc-300"
-              >
-                <option value="default">Default</option>
-                <option value="print">Print (A4)</option>
-                <option value="large">Large Screen (16:9)</option>
-                <option value="ppt">PPT</option>
-                <option value="email">Email</option>
-              </select>
-            </label>
-            <label className="text-xs text-zinc-500 flex items-center gap-2">
-              <span>Zoom</span>
-              <select
-                value={scale}
-                onChange={e => handleScaleChange(Number(e.target.value))}
-                className="text-xs border border-zinc-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-zinc-300"
-              >
-                <option value={1}>100%</option>
-                <option value={0.75}>75%</option>
-                <option value={0.5}>50%</option>
-              </select>
-            </label>
-            <button
-              onClick={toggleFullscreen}
-              className="flex items-center gap-2 px-2 py-1.5 text-xs font-medium text-zinc-600 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 transition-colors"
-              title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-            >
-              {isFullscreen ? (
-                <Minimize2 className="w-3.5 h-3.5" />
-              ) : (
-                <Maximize2 className="w-3.5 h-3.5" />
-              )}
-            </button>
-            <button
-            onClick={handleExportHtml}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-zinc-600 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 transition-colors"
-            >
-            <FileCode className="w-3.5 h-3.5" />
-            Export HTML
-            </button>
-            <button
-            onClick={handlePrint}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-zinc-600 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 transition-colors"
-            >
-            <Printer className="w-3.5 h-3.5" />
-            Export PDF
-            </button>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-6 flex justify-center">
+    <div className="h-full w-full overflow-auto bg-zinc-100/60 dark:bg-zinc-900">
+      <div className="mx-auto flex justify-center p-6">
         <div
-          ref={containerRef}
-          className={`origin-top ${currentPreset.containerClass}`}
+          className="flex w-full justify-center"
           style={{
-            ...currentPreset.style,
-            width:
-              currentPreset.canvasSize?.width ?? '100%',
-            height: currentPreset.canvasSize?.height ?? 'auto',
-            transform: `scale(${scale})`,
+            transform: `scale(${zoomScale})`,
             transformOrigin: 'top center',
-            // Preserve layout space while scaling visually
-            minWidth: `calc(${currentPreset.canvasSize?.width ?? '100%'} / ${scale})`,
-            maxWidth: `calc(${currentPreset.canvasSize?.width ?? '100%'} / ${scale})`,
+            transition: 'transform 0.2s ease-out',
           }}
         >
-          <ResponsiveGridLayout
-            className="layout"
-            layouts={responsiveLayouts}
-            breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-            cols={currentPreset.cols}
-            rowHeight={currentPreset.rowHeight}
-            draggableHandle=".drag-handle"
-            onLayoutChange={handleLayoutChange}
-            onResizeStop={handleResizeStop}
-            onDragStop={handleResizeStop}
-            margin={currentPreset.margin}
+          <div
+            id="report-canvas-container"
+            className={cn(
+              'origin-top transition-all duration-300',
+              currentPreset.containerClass,
+              isA4
+                ? 'w-[210mm] min-h-[297mm] bg-white shadow-lg rounded-lg border border-zinc-200'
+                : 'w-full bg-transparent shadow-none'
+            )}
+            style={{
+              ...currentPreset.style,
+              width: isA4 ? '210mm' : currentPreset.canvasSize?.width ?? '100%',
+              minHeight: isA4 ? '297mm' : '100%',
+              height: currentPreset.canvasSize?.height ?? 'auto',
+            }}
           >
-            {pinnedReports.map(report => (
-              <div
-                key={report.id}
-                data-grid={layoutMap.get(report.id) ?? report.layout}
-              >
-                <ReportCard
-                  report={report}
-                  onRemove={() => removeReport(report.id)}
-                  onTitleChange={newTitle =>
-                    updateReportTitle(report.id, newTitle)
-                  }
-                  className="h-full w-full"
-                />
-              </div>
-            ))}
-          </ResponsiveGridLayout>
+            {canvasContent}
+          </div>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { MainContent } from './components/MainContent'
 import { DevConsole } from './components/DevConsole'
@@ -20,6 +20,8 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import { ReportCanvas } from './components/canvas/ReportCanvas'
+import { DashboardHeader } from '@/components/dashboard/dashboard-header'
+import { cn } from '@/utils/cn'
 
 function App() {
   const [showShowcase, setShowShowcase] = useState(false)
@@ -101,6 +103,7 @@ function App() {
       right.resize?.(45)
       setIsLeftCollapsed(false)
       setIsChatCollapsed(false)
+      window.electronAPI?.windowControl?.('exit-fullscreen')
       setIsPresentationMode(false)
     } else {
       left.collapse?.()
@@ -108,9 +111,20 @@ function App() {
       right.expand?.()
       setIsLeftCollapsed(true)
       setIsChatCollapsed(true)
+      window.electronAPI?.windowControl?.('enter-fullscreen')
       setIsPresentationMode(true)
     }
   }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isPresentationMode) {
+        togglePresentation()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isPresentationMode, togglePresentation])
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
@@ -227,8 +241,25 @@ function App() {
           className={`bg-zinc-100/60 dark:bg-zinc-900 transition-all duration-300 ${isRightCollapsed ? 'min-w-0' : ''}`}
         >
           <div className="h-full w-full flex flex-col bg-zinc-100/60 dark:bg-zinc-900">
-            <div className="flex-1 w-full p-4 overflow-hidden">
-              <div className="h-full w-full bg-white dark:bg-black rounded-lg border border-zinc-200 shadow-sm">
+            {!isPresentationMode && (
+              <div className="draggable shrink-0 border-b bg-white/50 backdrop-blur">
+                <div className="non-draggable">
+                  <DashboardHeader />
+                </div>
+              </div>
+            )}
+            <div
+              className={cn(
+                'flex-1 w-full overflow-hidden transition-all',
+                isPresentationMode ? 'p-0' : 'p-4'
+              )}
+            >
+              <div
+                className={cn(
+                  'h-full w-full bg-white dark:bg-black transition-all',
+                  !isPresentationMode && 'rounded-lg border border-zinc-200 shadow-sm'
+                )}
+              >
                 <ReportCanvas />
               </div>
             </div>

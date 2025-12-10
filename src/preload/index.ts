@@ -41,10 +41,17 @@ const electronAPI = {
   exportPDF: (data: any) => ipcRenderer.invoke('export-pdf', data),
   saveImage: (dataUrl: string) => ipcRenderer.invoke('save-image', dataUrl),
   saveFile: (content: string, extension: string, name: string) => ipcRenderer.invoke('save-file', content, extension, name),
+  exportReport: (payload: {
+    type: 'pdf' | 'html' | 'png'
+    title: string
+    layoutOptions: { isA4: boolean; landscape?: boolean }
+  }) => ipcRenderer.invoke('export-report', payload),
 
   // 系统信息
   platform: process.platform,
   version: process.versions,
+  windowControl: (action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize') =>
+    ipcRenderer.send('window-control', action),
 }
 
 // 将 API 暴露给渲染进程

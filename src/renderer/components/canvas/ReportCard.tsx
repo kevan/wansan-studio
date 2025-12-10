@@ -3,6 +3,7 @@ import { DashboardWidget } from '../DashboardWidget'
 import { X, GripHorizontal, Download, MoreVertical, FileImage } from 'lucide-react'
 import { toPng } from 'html-to-image'
 import { useToastStore } from '../../stores/useToastStore'
+import { cn } from '@/utils/cn'
 
 interface ReportCardProps {
   report: any
@@ -10,16 +11,21 @@ interface ReportCardProps {
   onTitleChange: (newTitle: string) => void
   style?: React.CSSProperties
   className?: string
+  variant?: 'dashboard' | 'chat'
   onMouseDown?: React.MouseEventHandler
   onMouseUp?: React.MouseEventHandler
   onTouchEnd?: React.TouchEventHandler
 }
 
 export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
-  ({ report, onRemove, onTitleChange, style, className, ...props }, ref) => {
+  (
+    { report, onRemove, onTitleChange, style, className, variant = 'dashboard', ...props },
+    ref
+  ) => {
     const cardRef = useRef<HTMLDivElement>(null)
     const [showMenu, setShowMenu] = useState(false)
     const addToast = useToastStore(state => state.addToast)
+    const isDashboard = variant === 'dashboard'
 
     // Merge refs
     React.useImperativeHandle(ref, () => cardRef.current!)
@@ -66,7 +72,13 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
       <div
         ref={cardRef}
         style={style}
-        className={`${className} group relative bg-white border border-zinc-200 shadow-md rounded-lg overflow-hidden hover:shadow-lg transition-all flex flex-col no-break`}
+        className={cn(
+          'group relative flex flex-col overflow-hidden transition-all no-break',
+          isDashboard
+            ? 'h-full w-full bg-white border border-zinc-200 shadow-md rounded-lg hover:shadow-lg'
+            : 'w-full max-w-3xl bg-white border border-zinc-200 shadow-md rounded-lg hover:shadow-lg',
+          className
+        )}
         {...props}
       >
         {/* Drag Handle */}
@@ -127,12 +139,12 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
           </button>
         </div>
 
-        <div className="flex-1 min-h-0 pt-4">
+        <div className="flex-1 min-h-0 w-full flex flex-col pt-4">
           <DashboardWidget
             {...report.reportData}
             variant="dashboard"
             onTitleChange={onTitleChange}
-            className="h-full"
+            className="flex-1 min-h-0 w-full"
           />
         </div>
       </div>

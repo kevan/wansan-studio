@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { isDev } from './utils/env'
 
@@ -94,6 +94,26 @@ class WansanApp {
     // 窗口关闭事件
     this.mainWindow.on('closed', () => {
       this.mainWindow = null
+    })
+
+    ipcMain.on('window-control', (event, action) => {
+      const win = BrowserWindow.fromWebContents(event.sender)
+      if (!win) return
+
+      switch (action) {
+        case 'enter-fullscreen':
+          win.setFullScreen(true)
+          break
+        case 'exit-fullscreen':
+          win.setFullScreen(false)
+          break
+        case 'toggle-maximize':
+          if (win.isMaximized()) win.unmaximize()
+          else win.maximize()
+          break
+        default:
+          break
+      }
     })
   }
 
