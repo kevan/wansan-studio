@@ -3,7 +3,7 @@ import { Sidebar } from './components/Sidebar'
 import { MainContent } from './components/MainContent'
 import { DevConsole } from './components/DevConsole'
 import { isDev } from './utils/env'
-import { ToastContainer } from './components/Toast'
+import { Toaster } from './components/ui/toaster'
 import {
   Panel,
   PanelResizeHandle,
@@ -135,7 +135,7 @@ function App() {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
-      <ToastContainer />
+      <Toaster />
       {/* Global Window Header */}
       <header
         className="h-12 border-b border-zinc-200 flex items-center justify-between px-4 shrink-0 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur draggable z-50"

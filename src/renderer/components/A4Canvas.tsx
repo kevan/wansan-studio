@@ -349,7 +349,7 @@ export function A4Chart({
         ref={chartRef}
         onChartReady={resizeChart}
         notMerge
-        autoResize
+        autoResize={false}
         className="relative"
       />
       {!isRenderable && (
