@@ -71,7 +71,7 @@ const initialWorkbenchState: Pick<
   layoutScenario: 'default',
   canvasConfig: {
     layout: 'a4',
-    zoom: 100,
+    zoom: 80,
     title: 'Untitled Analysis',
   },
   pageCount: 1,

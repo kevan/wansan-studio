@@ -38,6 +38,7 @@ export function ReportCard({
 
   const handlePin = () => {
     if (!isPinned) {
+      window.dispatchEvent(new Event('wansan:open-dashboard'))
       pinReport(messageId, reportData, message.timestamp)
     }
   }

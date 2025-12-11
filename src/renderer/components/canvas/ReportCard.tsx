@@ -155,10 +155,11 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
           </div>
 
           <button
-            onClick={e => {
-              e.stopPropagation()
-              onRemove()
-            }}
+          onClick={e => {
+            e.stopPropagation()
+            window.dispatchEvent(new Event('wansan:open-dashboard'))
+            onRemove()
+          }}
             onMouseDown={e => e.stopPropagation()}
             className="p-1.5 bg-white text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md border border-zinc-200 shadow-sm transition-colors cursor-pointer"
             title="Remove from Dashboard"

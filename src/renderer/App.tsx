@@ -152,6 +152,33 @@ function App() {
   }, [isRightCollapsed, rightPanelSize])
 
   useEffect(() => {
+    const handleOpenDashboard = () => {
+      const right = rightPanelRef.current
+      if (right) {
+        right.expand?.()
+        right.resize?.(rightPanelSize || 45)
+      }
+      setIsRightCollapsed(false)
+    }
+    window.addEventListener('wansan:open-dashboard', handleOpenDashboard)
+    return () => window.removeEventListener('wansan:open-dashboard', handleOpenDashboard)
+  }, [rightPanelSize])
+
+  useEffect(() => {
+    const maybeOpenOnMaximize = () => {
+      const isMaximized =
+        window.innerWidth >= (window.screen.availWidth ?? window.innerWidth) - 2 &&
+        window.innerHeight >= (window.screen.availHeight ?? window.innerHeight) - 2
+      if (isMaximized && isRightCollapsed) {
+        window.dispatchEvent(new Event('wansan:open-dashboard'))
+      }
+    }
+    maybeOpenOnMaximize()
+    window.addEventListener('resize', maybeOpenOnMaximize)
+    return () => window.removeEventListener('resize', maybeOpenOnMaximize)
+  }, [isRightCollapsed])
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isPresentationMode) {
         togglePresentation()
@@ -248,9 +275,9 @@ function App() {
         {/* 左侧 Sidebar */}
         <Panel
           ref={leftPanelRef}
-          defaultSize={20}
+          defaultSize={15}
           minSize={15}
-          maxSize={30}
+          maxSize={20}
           collapsible
           collapsedSize={0}
           onCollapse={() => setIsLeftCollapsed(true)}
