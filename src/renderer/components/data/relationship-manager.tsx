@@ -113,8 +113,8 @@ export function RelationshipManager() {
           ) : (
             <div className="space-y-2">
               {relations.map(rel => {
-                const sourceFile = readyFiles.find(f => f.id === rel.fileAId)
-                const targetFile = readyFiles.find(f => f.id === rel.fileBId)
+                const getFileNameById = (id: string) =>
+                  readyFiles.find(f => f.id === id)?.name || 'Unknown'
 
                 return (
                   <div
@@ -123,12 +123,12 @@ export function RelationshipManager() {
                   >
                     <div className="flex items-center gap-2 text-sm text-zinc-700">
                       <span className="font-semibold">
-                        {sourceFile?.tableName || sourceFile?.name || 'Unknown'}
+                        {getFileNameById(rel.fileAId)}
                       </span>
                       <span className="text-xs text-zinc-400">({rel.columnA})</span>
                       <Link2 className="w-4 h-4 text-indigo-500" />
                       <span className="font-semibold">
-                        {targetFile?.tableName || targetFile?.name || 'Unknown'}
+                        {getFileNameById(rel.fileBId)}
                       </span>
                       <span className="text-xs text-zinc-400">({rel.columnB})</span>
                     </div>

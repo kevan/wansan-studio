@@ -12,7 +12,7 @@ export interface Toast {
 
 interface ToastState {
   toasts: Toast[]
-  addToast: (toast: Omit<Toast, 'id'>) => void
+  addToast: (toast: Omit<Toast, 'id'>) => string
   dismissToast: (id: string) => void
 }
 
@@ -31,6 +31,7 @@ export const useToastStore = create<ToastState>(set => ({
         }))
       }, toast.duration || 3000)
     }
+    return id
   },
   dismissToast: id =>
     set(state => ({ toasts: state.toasts.filter(t => t.id !== id) })),

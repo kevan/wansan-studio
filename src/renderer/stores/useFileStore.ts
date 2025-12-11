@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import type { ColumnSchema, FileNode, SyncStatus } from '../../shared/types'
 
 // Re-export shared types for other components to use
@@ -107,168 +108,217 @@ const initialState = {
   selectedNode: null,
 }
 
-export const useFileStore = create<ProjectState>((set, get) => ({
-  ...initialState,
+const sanitizeValue = (value: any) =>
+  typeof value === 'bigint' ? Number(value) : value
 
-  setProjectName: name => set({ projectName: name }),
+const sanitizeFile = (file: FileNode): FileNode => ({
+  ...file,
+  columns: file.columns.map(col => ({
+    ...col,
+    sampleValues: (col.sampleValues || []).map(sanitizeValue),
+  })),
+  rowCount: sanitizeValue(file.rowCount),
+  size: sanitizeValue(file.size),
+  lastModified: sanitizeValue(file.lastModified),
+  createdAt: sanitizeValue(file.createdAt),
+})
 
-  addFile: file => {
-    const id = generateId()
-    const now = Date.now()
-    const newFile: FileNode = {
-      ...file,
-      id,
-      createdAt: now,
-      lastModified: now, // Initial assumption, will be corrected by watcher if needed
-      status: file.status || 'ready', // Default to ready if not provided (e.g. direct load), or use provided (e.g. uploading)
-    }
-    set(state => ({
-      files: [...state.files, newFile],
-      activeFileId: id,
-      activeView: 'schema',
-    }))
+export const useFileStore = create<ProjectState>()(
+  persist(
+    (set, get) => ({
+      ...initialState,
 
-    return id
-  },
+      setProjectName: name => set({ projectName: name }),
 
-  updateFile: (id, updates) => {
-    set(state => ({
-      files: state.files.map(f => (f.id === id ? { ...f, ...updates } : f)),
-    }))
-  },
+      addFile: file => {
+        const existing = get().files.find(f => f.path === file.path)
+        if (existing) {
+          throw new Error(`File "${file.name}" is already imported.`)
+        }
 
-  removeFile: id => {
-    set(state => {
-      const remainingFiles = state.files.filter(f => f.id !== id)
-      const remainingRelations = state.relations.filter(
-        r => r.fileAId !== id && r.fileBId !== id
-      )
-      const activeFileId = state.activeFileId === id ? remainingFiles[0]?.id ?? null : state.activeFileId
-      const activeView =
-        state.activeView === 'schema' && !activeFileId ? 'chat' : state.activeView
+        const id = generateId()
+        const now = Date.now()
+        const newFile: FileNode = {
+          ...file,
+          id,
+          createdAt: now,
+          lastModified: now, // Initial assumption, will be corrected by watcher if needed
+          status: file.status || 'ready', // Default to ready if not provided (e.g. direct load), or use provided (e.g. uploading)
+        }
+        set(state => ({
+          files: [...state.files, newFile],
+          activeFileId: id,
+          activeView: 'schema',
+        }))
 
-      return {
-        files: remainingFiles,
-        relations: remainingRelations,
-        activeFileId,
-        activeView,
-      }
-    })
-  },
+        return id
+      },
 
-  setActiveFile: id => set({ activeFileId: id }),
-  setView: (mode, fileId) =>
-    set(state => ({
-      activeView: mode,
-      activeFileId:
-        mode === 'schema'
-          ? fileId ?? state.activeFileId ?? state.files[0]?.id ?? null
-          : fileId ?? state.activeFileId,
-    })),
+      updateFile: (id, updates) => {
+        set(state => ({
+          files: state.files.map(f => (f.id === id ? { ...f, ...updates } : f)),
+        }))
+      },
 
-  setSelectedNode: node => set({ selectedNode: node }),
+      removeFile: id => {
+        set(state => {
+          const remainingFiles = state.files.filter(f => f.id !== id)
+          const remainingRelations = state.relations.filter(
+            r => r.fileAId !== id && r.fileBId !== id
+          )
+          const activeFileId = state.activeFileId === id ? remainingFiles[0]?.id ?? null : state.activeFileId
+          const activeView =
+            state.activeView === 'schema' && !activeFileId ? 'chat' : state.activeView
 
-  updateColumn: (fileId, columnName, updates) => {
-    set(state => ({
-      files: state.files.map(f =>
-        f.id === fileId
-          ? {
-              ...f,
-              columns: f.columns.map(c =>
-                c.name === columnName ? { ...c, ...updates } : c
-              ),
-            }
-          : f
-      ),
-    }))
-  },
-
-  toggleKeyColumn: (fileId, columnName) => {
-    const file = get().files.find(f => f.id === fileId)
-    if (!file) return
-
-    const column = file.columns.find(c => c.name === columnName)
-    if (!column) return
-
-    get().updateColumn(fileId, columnName, { isKey: !column.isKey })
-  },
-
-  addRelation: relation => {
-    const id = generateId()
-    set(state => ({
-      relations: [...state.relations, { ...relation, id }],
-    }))
-  },
-
-  removeRelation: id => {
-    set(state => ({
-      relations: state.relations.filter(r => r.id !== id),
-    }))
-  },
-
-  setSuggestedPrompts: prompts => set({ suggestedPrompts: prompts }),
-
-  markAsStale: ids =>
-    set(state => ({
-      files: state.files.map(f =>
-        ids.includes(f.id) ? { ...f, status: 'out-of-sync' } : f
-      ),
-    })),
-
-  reloadFile: (fileId, { lastModified, newColumns }) => {
-    let droppedRelationsCount = 0
-    set(state => {
-      const file = state.files.find(f => f.id === fileId)
-      if (!file) return state
-
-      const oldColumns = file.columns
-
-      const mergedColumns = newColumns.map(newCol => {
-        const oldCol = oldColumns.find(c => c.name === newCol.name)
-
-        if (oldCol) {
           return {
-            ...newCol,
-            userType: oldCol.userType,
-            alias: oldCol.alias,
-            isKey: oldCol.isKey,
-            // If the user changed the type in UI, it's stored in 'type' currently.
-            // We should preserve 'type' as well if we consider it user-defined.
-            // But if the underlying type changed (e.g. string -> int), keeping 'type' might be wrong.
-            // However, 'userType' is the new explicit override.
-            // Existing logic uses 'type'. Let's preserve 'type' if it matches 'userType' or just preserve it?
-            // "Preserve user configurations (semantic types)"
-            type: oldCol.type,
+            files: remainingFiles,
+            relations: remainingRelations,
+            activeFileId,
+            activeView,
           }
-        } else {
-          return newCol
+        })
+      },
+
+      setActiveFile: id => set({ activeFileId: id }),
+      setView: (mode, fileId) =>
+        set(state => ({
+          activeView: mode,
+          activeFileId:
+            mode === 'schema'
+              ? fileId ?? state.activeFileId ?? state.files[0]?.id ?? null
+              : fileId ?? state.activeFileId,
+        })),
+
+      setSelectedNode: node => set({ selectedNode: node }),
+
+      updateColumn: (fileId, columnName, updates) => {
+        set(state => ({
+          files: state.files.map(f =>
+            f.id === fileId
+              ? {
+                  ...f,
+                  columns: f.columns.map(c =>
+                    c.name === columnName ? { ...c, ...updates } : c
+                  ),
+                }
+              : f
+          ),
+        }))
+      },
+
+      toggleKeyColumn: (fileId, columnName) => {
+        const file = get().files.find(f => f.id === fileId)
+        if (!file) return
+
+        const column = file.columns.find(c => c.name === columnName)
+        if (!column) return
+
+        get().updateColumn(fileId, columnName, { isKey: !column.isKey })
+      },
+
+      addRelation: relation => {
+        const exists = get().relations.some(
+          r =>
+            (r.fileAId === relation.fileAId &&
+              r.columnA === relation.columnA &&
+              r.fileBId === relation.fileBId &&
+              r.columnB === relation.columnB) ||
+            (r.fileAId === relation.fileBId &&
+              r.columnA === relation.columnB &&
+              r.fileBId === relation.fileAId &&
+              r.columnB === relation.columnA)
+        )
+        if (exists) {
+          console.warn('Relationship already exists.')
+          return
         }
-      })
+        const id = generateId()
+        set(state => ({
+          relations: [...state.relations, { ...relation, id }],
+        }))
+      },
 
-      const activeRelations = state.relations.filter(r => {
-        let valid = true
-        if (r.fileAId === fileId) {
-          if (!mergedColumns.some(c => c.name === r.columnA)) valid = false
-        }
-        if (r.fileBId === fileId) {
-          if (!mergedColumns.some(c => c.name === r.columnB)) valid = false
-        }
-        return valid
-      })
+      removeRelation: id => {
+        set(state => ({
+          relations: state.relations.filter(r => r.id !== id),
+        }))
+      },
 
-      droppedRelationsCount = state.relations.length - activeRelations.length
+      setSuggestedPrompts: prompts => set({ suggestedPrompts: prompts }),
 
-      return {
-        files: state.files.map(f =>
-          f.id === fileId
-            ? { ...f, columns: mergedColumns, status: 'ready', lastModified }
-            : f
-        ),
-        relations: activeRelations,
-      }
-    })
-    return droppedRelationsCount
-  },
+      markAsStale: ids =>
+        set(state => ({
+          files: state.files.map(f =>
+            ids.includes(f.id) ? { ...f, status: 'out-of-sync' } : f
+          ),
+        })),
 
-  reset: () => set(initialState),
-}))
+      reloadFile: (fileId, { lastModified, newColumns }) => {
+        let droppedRelationsCount = 0
+        set(state => {
+          const file = state.files.find(f => f.id === fileId)
+          if (!file) return state
+
+          const oldColumns = file.columns
+
+          const mergedColumns = newColumns.map(newCol => {
+            const oldCol = oldColumns.find(c => c.name === newCol.name)
+
+            if (oldCol) {
+              return {
+                ...newCol,
+                userType: oldCol.userType,
+                alias: oldCol.alias,
+                isKey: oldCol.isKey,
+                // If the user changed the type in UI, it's stored in 'type' currently.
+                // We should preserve 'type' as well if we consider it user-defined.
+                // But if the underlying type changed (e.g. string -> int), keeping 'type' might be wrong.
+                // However, 'userType' is the new explicit override.
+                // Existing logic uses 'type'. Let's preserve 'type' if it matches 'userType' or just preserve it?
+                // "Preserve user configurations (semantic types)"
+                type: oldCol.type,
+              }
+            } else {
+              return newCol
+            }
+          })
+
+          const activeRelations = state.relations.filter(r => {
+            let valid = true
+            if (r.fileAId === fileId) {
+              if (!mergedColumns.some(c => c.name === r.columnA)) valid = false
+            }
+            if (r.fileBId === fileId) {
+              if (!mergedColumns.some(c => c.name === r.columnB)) valid = false
+            }
+            return valid
+          })
+
+          droppedRelationsCount = state.relations.length - activeRelations.length
+
+          return {
+            files: state.files.map(f =>
+              f.id === fileId
+                ? { ...f, columns: mergedColumns, status: 'ready', lastModified }
+                : f
+            ),
+            relations: activeRelations,
+          }
+        })
+        return droppedRelationsCount
+      },
+
+      reset: () => set(initialState),
+    }),
+    {
+      name: 'wansan-files',
+      storage: createJSONStorage(() => localStorage),
+      partialize: state => ({
+        projectName: state.projectName,
+        files: state.files.map(sanitizeFile),
+        relations: state.relations,
+        activeView: state.activeView,
+      }),
+    }
+  )
+)

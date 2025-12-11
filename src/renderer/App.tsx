@@ -24,8 +24,10 @@ import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { cn } from '@/utils/cn'
 import { Input } from '@/components/ui/input'
 import { useFileStore } from './stores/useFileStore'
+import { useDataRehydrate } from '@/hooks/use-data-rehydrate'
 
 function App() {
+  useDataRehydrate()
   const { projectName, setProjectName } = useFileStore()
   const [showShowcase, setShowShowcase] = useState(false)
   const [showStyleTest, setShowStyleTest] = useState(false)

@@ -52,7 +52,7 @@ export function buildTreeData(
 
     return {
       id: `file:${file.id}`,
-      name: file.tableName || file.name, // Prefer tableName (e.g. t_orders)
+      name: file.name || file.tableName, // Prefer original filename for display
       type: 'file',
       fileId: file.id,
       children: columnNodes,
@@ -66,8 +66,8 @@ export function buildTreeData(
     const fileB = files.find(f => f.id === rel.fileBId)
 
     // Fallback names if file not found (shouldn't happen)
-    const tableA = fileA?.tableName || rel.fileAId
-    const tableB = fileB?.tableName || rel.fileBId
+    const tableA = fileA?.name || fileA?.tableName || rel.fileAId
+    const tableB = fileB?.name || fileB?.tableName || rel.fileBId
 
     return {
       id: `rel:${rel.id}`,
