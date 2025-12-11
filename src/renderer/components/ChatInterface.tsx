@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react'
 import { LoadingState, LoadingType } from './LoadingStates'
 import { ReportCard } from './chat/ReportCard'
 import { EmptyState } from './chat/empty-state'
-import { InputBar } from './chat/input-bar'
+import { MagicInput } from './chat/magic-input'
 import { User, Bot, Sparkles, GitBranch, Brain, Zap } from 'lucide-react'
 
 export interface ChatMessage {
@@ -67,11 +67,13 @@ export function ChatInterface({
   }
 
   return (
-    <div className={`flex flex-col h-full min-h-0 ${className}`}>
+    <div className={`flex flex-col h-full min-h-0 relative ${className}`}>
       {/* 聊天消息区域 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 pb-28 space-y-6">
         {messages.length === 0 ? (
-          <EmptyState onSelectPrompt={handleQuerySubmit} />
+          <div className="flex-1 flex flex-col items-center justify-center pb-32">
+            <EmptyState onSelectPrompt={handleQuerySubmit} />
+          </div>
         ) : (
           messages.map(message => (
             <div
@@ -197,14 +199,13 @@ export function ChatInterface({
       </div>
 
       {/* 输入区域 */}
-      <div className="p-4 z-10 relative flex-none border-t bg-white">
-        <InputBar
+      <div className="p-4 pb-6 z-20 relative flex-none bg-transparent">
+        <MagicInput
           onSubmit={handleQuerySubmit}
           loading={!!loading}
-          tableName={tableName}
-          columns={columns}
           messages={messages}
-          placeholder={'说说你想要的数据...'}
+          className="pointer-events-auto"
+          placeholder={'说说你想要什么数据...'}
         />
       </div>
     </div>

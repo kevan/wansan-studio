@@ -10,6 +10,22 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 let rehydrateSet: ((partial: Partial<ChatStore>) => void) | null = null
 
+const resolveMentions = (text: string) => {
+  const files = useFileStore.getState().files
+  if (!files.length) return text
+
+  return text.replace(/@(?:"([^"]+)"|'([^']+)'|([^\s]+))/g, (match, g1, g2, g3) => {
+    const name = g1 || g2 || g3
+    if (!name) return match
+    const file = files.find(f => f.name === name)
+    if (file) {
+      const tableName = file.tableName || file.name || match
+      return `"${tableName}"`
+    }
+    return match
+  })
+}
+
 interface ChatStore {
   messages: ChatMessage[]
   history: ChatMessage[]
@@ -142,12 +158,12 @@ export const useChatStore = create<ChatStore>()(
           const userMsgId = generateId()
           const botMsgId = generateId()
 
-          const userMsg: ChatMessage = {
-            id: userMsgId,
-            type: 'user',
-            content: text,
-            timestamp: new Date(),
-          }
+        const userMsg: ChatMessage = {
+          id: userMsgId,
+          type: 'user',
+          content: text,
+          timestamp: new Date(),
+        }
 
           const ghostMsg: ChatMessage = {
             id: botMsgId,
@@ -165,13 +181,14 @@ export const useChatStore = create<ChatStore>()(
             replyToId: null,
           })
 
-          try {
-            const planResponse = await window.electronAPI.askAI(
-              text,
-              resolvedSchemas,
-              resolvedRelations,
-              context
-            )
+        try {
+          const resolvedPrompt = resolveMentions(text)
+          const planResponse = await window.electronAPI.askAI(
+            resolvedPrompt,
+            resolvedSchemas,
+            resolvedRelations,
+            context
+          )
             if (!planResponse.success || !planResponse.data) {
               throw new Error(planResponse.error || 'AI request failed')
             }

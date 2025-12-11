@@ -13,7 +13,8 @@ import {
 import {
   ChevronRight,
   PanelLeft,
-  PanelRight,
+  PanelRightClose,
+  PanelRightOpen,
   LayoutDashboard,
   Database,
   MonitorPlay,
@@ -26,6 +27,22 @@ import { Input } from '@/components/ui/input'
 import { useFileStore } from './stores/useFileStore'
 import { useDataRehydrate } from '@/hooks/use-data-rehydrate'
 
+const LAYOUT_STORAGE_KEY = 'wansan-layout'
+
+const loadLayoutPrefs = () => {
+  try {
+    const raw = localStorage.getItem(LAYOUT_STORAGE_KEY)
+    if (!raw) return { rightCollapsed: true, rightSize: 45 }
+    const parsed = JSON.parse(raw) as { rightCollapsed?: boolean; rightSize?: number }
+    return {
+      rightCollapsed: parsed.rightCollapsed ?? true,
+      rightSize: parsed.rightSize ?? 45,
+    }
+  } catch {
+    return { rightCollapsed: true, rightSize: 45 }
+  }
+}
+
 function App() {
   useDataRehydrate()
   const { projectName, setProjectName } = useFileStore()
@@ -33,7 +50,9 @@ function App() {
   const [showStyleTest, setShowStyleTest] = useState(false)
   const [isChatCollapsed, setIsChatCollapsed] = useState(false)
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
-  const [isRightCollapsed, setIsRightCollapsed] = useState(false)
+  const initialLayout = loadLayoutPrefs()
+  const [isRightCollapsed, setIsRightCollapsed] = useState(initialLayout.rightCollapsed)
+  const [rightPanelSize, setRightPanelSize] = useState(initialLayout.rightSize)
   const [isPresentationMode, setIsPresentationMode] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const chatPanelRef = useRef<ImperativePanelHandle>(null)
@@ -88,13 +107,14 @@ function App() {
     if (!rightPanelRef.current) return
     if (isRightCollapsed) {
       rightPanelRef.current.expand?.()
-      rightPanelRef.current.resize?.(45)
+      rightPanelRef.current.resize?.(rightPanelSize || 45)
       setIsRightCollapsed(false)
     } else {
       rightPanelRef.current.collapse?.()
       setIsRightCollapsed(true)
     }
   }
+
 
   const togglePresentation = () => {
     const left = leftPanelRef.current
@@ -120,6 +140,16 @@ function App() {
       setIsPresentationMode(true)
     }
   }
+
+  useEffect(() => {
+    localStorage.setItem(
+      LAYOUT_STORAGE_KEY,
+      JSON.stringify({
+        rightCollapsed: isRightCollapsed,
+        rightSize: rightPanelSize || 45,
+      })
+    )
+  }, [isRightCollapsed, rightPanelSize])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -169,36 +199,46 @@ function App() {
         />
         {/* RIGHT ZONE */}
         <div className="flex items-center gap-2 non-draggable shrink-0">
+          {!isRightCollapsed && (
+            <button
+              className={`h-8 gap-2 px-3 rounded-md border border-transparent text-xs font-medium flex items-center transition-colors ${
+                isPresentationMode
+                  ? 'bg-zinc-800 text-white'
+                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
+              }`}
+              onClick={togglePresentation}
+              title={isPresentationMode ? 'Exit Presentation' : 'Enter Presentation Mode'}
+            >
+              {isPresentationMode ? (
+                <RotateCcw className="h-3.5 w-3.5" />
+              ) : (
+                <MonitorPlay className="h-3.5 w-3.5" />
+              )}
+              <span className="hidden sm:inline">
+                {isPresentationMode ? 'Exit' : 'Present'}
+              </span>
+            </button>
+          )}
+
+          {!isRightCollapsed && <div className="h-4 w-[1px] bg-zinc-200" />}
+
           <button
-            className={`h-8 gap-2 px-3 rounded-md border border-transparent text-xs font-medium flex items-center transition-colors ${
+            className={cn(
+              'h-8 gap-2 px-3 rounded-md border text-xs font-medium flex items-center transition-colors',
               isRightCollapsed
-                ? 'bg-zinc-100 text-zinc-700'
-                : 'text-zinc-600 hover:text-zinc-900 hover:border-zinc-200'
-            }`}
+                ? 'bg-black text-white border-black hover:bg-zinc-800'
+                : 'border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200'
+            )}
             onClick={toggleRight}
-            title={isRightCollapsed ? 'Open Dashboard' : 'Focus Chat'}
+            title={isRightCollapsed ? 'Show Dashboard' : 'Hide Dashboard'}
           >
-            <span className="hidden sm:inline">
-              {isRightCollapsed ? 'Open Dashboard' : 'Focus Chat'}
-            </span>
-            <PanelRight className="h-4 w-4" />
-          </button>
-          <button
-            className={`h-8 gap-2 px-3 rounded-md border border-dashed text-xs font-medium flex items-center transition-colors ${
-              isPresentationMode
-                ? 'bg-zinc-800 text-white border-zinc-700'
-                : 'text-zinc-600 hover:text-zinc-900 hover:border-zinc-200'
-            }`}
-            onClick={togglePresentation}
-            title={isPresentationMode ? 'Exit Presentation' : 'Enter Presentation Mode'}
-          >
-            {isPresentationMode ? (
-              <RotateCcw className="h-3.5 w-3.5" />
+            {isRightCollapsed ? (
+              <PanelRightOpen className="h-3.5 w-3.5" />
             ) : (
-              <MonitorPlay className="h-3.5 w-3.5" />
+              <PanelRightClose className="h-3.5 w-3.5" />
             )}
             <span className="hidden sm:inline">
-              {isPresentationMode ? 'Exit' : 'Present'}
+              {isRightCollapsed ? 'Show Dashboard' : 'Hide Dashboard'}
             </span>
           </button>
         </div>
@@ -251,13 +291,18 @@ function App() {
 
         {/* 右侧 Report Canvas */}
         <Panel
-          defaultSize={45}
-          minSize={30}
+          defaultSize={isRightCollapsed ? 0 : rightPanelSize}
+          minSize={0}
           ref={rightPanelRef}
           collapsible
           collapsedSize={0}
           onCollapse={() => setIsRightCollapsed(true)}
           onExpand={() => setIsRightCollapsed(false)}
+          onResize={size => {
+            if (size > 1) {
+              setRightPanelSize(size)
+            }
+          }}
           className={`bg-zinc-100/60 dark:bg-zinc-900 transition-all duration-300 ${isRightCollapsed ? 'min-w-0' : ''}`}
         >
           <div className="h-full w-full flex flex-col bg-zinc-100/60 dark:bg-zinc-900">
