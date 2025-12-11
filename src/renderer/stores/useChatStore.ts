@@ -40,6 +40,12 @@ interface ChatStore {
     id: string,
     updates: Partial<AIAnalysisResult['visualization']>
   ) => void
+  updateMessageData: (
+    messageId: string,
+    newSql: string,
+    newData: any[],
+    newCols: string[]
+  ) => void
   sendMessage: (
     text: string,
     schemas?: TableSchema[],
@@ -93,6 +99,22 @@ export const useChatStore = create<ChatStore>()(
                   ...msg.reportData,
                   chartType: updates.type ?? msg.reportData.chartType,
                   vizConfig: nextVizConfig,
+                },
+              }
+            })
+            return { messages: nextMessages, history: nextMessages }
+          }),
+        updateMessageData: (id, newSql, newData, newCols) =>
+          set(state => {
+            const nextMessages = state.messages.map(msg => {
+              if (msg.id !== id || !msg.reportData) return msg
+              return {
+                ...msg,
+                reportData: {
+                  ...msg.reportData,
+                  sql: newSql,
+                  tableData: newData,
+                  columns: newCols,
                 },
               }
             })

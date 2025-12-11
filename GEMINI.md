@@ -1,227 +1,76 @@
-# Gemini Code Assistant Context
-
-This document provides instructional context about the Wansan Studio project for the Gemini Code Assistant.
+# Wansan Studio (万三) - Developer Context
 
 ## Project Overview
+**Wansan Studio** is a local-first, privacy-focused Business Intelligence (BI) desktop application. It empowers users (SME owners, finance, operations) to generate visualizations and reports from Excel/CSV data using natural language, without uploading their sensitive data to the cloud.
 
-Wansan Studio is a "local-first" business intelligence desktop application. It allows users to import data from files like Excel and CSV, and then use a natural language interface to generate reports and visualizations. The core architecture is built on Electron, ensuring that all data processing happens locally on the user's machine for privacy and security.
+*   **Core Philosophy:** "Data into Wealth, Privately."
+*   **Key Mechanism:** Data is loaded into a local **DuckDB** instance. The AI (OpenAI) is *only* sent the table **schema** to generate SQL queries. The SQL is executed locally, and results are rendered via **ECharts**.
 
-### Core Technologies
+## Tech Stack
 
-*   **Application Framework**: [Electron](https://www.electronjs.org/)
-*   **Frontend**: [React](https://react.dev/) with [TypeScript](https://www.typescriptlang.org/) and [Vite](https://vitejs.dev/) for building.
-*   **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-*   **Data Engine**: [DuckDB](https://duckdb.org/) (run in the main process for fast, local analytical queries).
-*   **State Management**: [Zustand](https://zustand-demo.pmnd.rs/) and [TanStack Query](https://tanstack.com/query/latest) for server state management.
+### Core
+*   **Runtime:** Electron (Main + Renderer architecture)
+*   **Language:** TypeScript
+*   **Build Tool:** Vite (Renderer) + tsup (Main)
 
-### Architecture
+### Frontend (Renderer)
+*   **Framework:** React 19
+*   **State Management:** Zustand + TanStack Query v5
+*   **Routing:** TanStack Router
+*   **UI System:** Tailwind CSS v4 + ShadcnUI (Radix Primitives) + Lucide Icons
+*   **Visualization:** ECharts (echarts-for-react)
+*   **Data Grid:** TanStack Table v8
 
-The application follows a standard Electron architecture with three main parts:
+### Backend (Main Process)
+*   **Database:** DuckDB (Node.js bindings) - Embedded OLAP database
+*   **File I/O:** fs-extra
+*   **IPC:** Secure context bridge pattern
 
-1.  **Main Process (`src/main`)**: The Node.js backend of the application. It manages the application lifecycle, creates browser windows, handles native OS integrations, and runs the DuckDB database service.
-2.  **Renderer Process (`src/renderer`)**: The React-based user interface. This is the web content that runs inside an Electron `BrowserWindow`. It communicates with the Main process via a secure preload script.
-3.  **Preload Script (`src/preload`)**: A script that runs in a privileged context, acting as a secure bridge between the Renderer (web content) and the Main (Node.js) process. It exposes specific APIs from the Main process to the UI using `contextBridge`.
+## Architecture & Data Flow
 
-## Building and Running
-
-The project uses `npm` for package management and scripts.
-
-### Development
-
-To run the application in a development environment with hot-reloading:
-
-```bash
-npm run dev
+```mermaid
+graph TD
+    User[User Input] -->|Chat| Renderer
+    Renderer -->|IPC: Ask AI| Main
+    Main -->|Schema Only| OpenAI
+    OpenAI -->|SQL + Config| Main
+    Main -->|Execute SQL| DuckDB[(Local DuckDB)]
+    DuckDB -->|Result Rows| Main
+    Main -->|Data + Config| Renderer
+    Renderer -->|Render| ECharts
 ```
 
-This command concurrently starts the Vite development server for the renderer process and runs the Electron application.
+### Key Directories
+*   `src/main/`: Electron main process (DB logic, file handling, window management).
+*   `src/renderer/`: React frontend application.
+    *   `components/`: Reusable UI components.
+    *   `stores/`: Zustand stores (`useChatStore`, `useWorkbenchStore`).
+    *   `hooks/`: Custom hooks (`useAI`, `useIPC`).
+*   `src/preload/`: Context bridge scripts.
+*   `src/shared/`: Types and utilities shared between processes.
 
-### Building for Production
+## Development Workflow
 
-To build the application's source code:
+### Scripts
+*   **Start Dev Server:** `npm run dev` (Starts Vite and Electron concurrently)
+*   **Build Production:** `npm run build`
+*   **Package App:** `npm run dist` (Uses electron-builder)
+*   **Lint:** `npm run lint`
+*   **Format:** `npm run format` (Prettier)
 
-```bash
-npm run build
-```
+### Conventions
+*   **Styling:** Use Tailwind CSS utility classes. Avoid CSS files unless global.
+*   **State:** Use `zustand` for global app state (user prefs, file list), `TanStack Query` for async data (SQL results).
+*   **Async/IPC:** All main process communication goes through `window.electron` API defined in `preload/index.ts`.
+*   **I18n:** Support English (`en`) and Chinese (`zh`) via `i18next`.
 
-This transpiles the TypeScript code for both the main and renderer processes into JavaScript and places it in the `dist` directory.
+## Privacy Rules (CRITICAL)
+1.  **NEVER** send row data (values) to the LLM. Only send column names (schema) and types.
+2.  **NEVER** log raw SQL results to external services.
+3.  **Local Execution:** All data processing happens in the embedded DuckDB instance.
 
-### Packaging for Distribution
-
-To package the application into a distributable format (e.g., `.dmg` for macOS, `.exe` for Windows):
-
-```bash
-# For macOS
-npm run dist:mac
-
-# For Windows
-npm run dist:win
-
-# Generic distribution
-npm run dist
-```
-
-These commands first run the `build` script and then use `electron-builder` to create the final application package.
-
-## Development Conventions
-
-### Code Style and Formatting
-
-*   **Linting**: The project uses ESLint to enforce code quality. To run the linter:
-    ```bash
-    npm run lint
-    ```
-*   **Formatting**: [Prettier](https://prettier.io/) is used for automatic code formatting. To format the entire codebase:
-    ```bash
-    npm run format
-    ```
-*   **Type Checking**: To run the TypeScript compiler and check for type errors without emitting files:
-    ```bash
-    npm run type-check
-    ```
-
-### Communication: Main <> Renderer
-
-Communication between the main and renderer processes is handled via Electron's Inter-Process Communication (IPC).
-
-*   **Setup**: The main process defines which channels to listen on in `src/main/services/ipc.ts`.
-*   **Exposure**: A secure API is exposed to the renderer process via `window.electronAPI` in `src/preload/index.ts`.
-*   **Usage**: The renderer process uses the exposed API, likely through the `src/renderer/hooks/useIPC.ts` hook, to call main process functions and receive data.
-
-### Path Aliases
-
-The project uses path aliases in `tsconfig.json` and `vite.config.ts` for cleaner import statements:
-
-*   `@/`: Maps to `src/renderer/`
-*   `@shared/`: Maps to `src/shared/`
-*   `@types/`: Maps to `src/types/`
-
-## Session Summary: AI API 增强与测试框架迁移 (2025-12-07)
-
-本次会话中，我们对 Wansan Studio 进行了多项关键改进和现代化升级：
-
-### 📈 AI API 增强 (Bring Your Own Key - BYOK)
-
-*   **灵活配置**: 实现了对第三方 OpenAI 兼容 API 的完整支持，用户现在可以配置自定义的 `API Key`、`Base URL` 和 `Model`。
-    *   **核心文件**: `src/main/engine/ai-bridge.ts`, `src/main/services/ai.ts`
-    *   **实现细节**:
-        *   `ai-bridge.ts` 中的 `getOpenAI` 函数现在支持动态的 `apiKey` 和 `baseURL`。
-        *   引入了 `setAIConfig` 函数来集中管理 `apiKey`、`baseURL` 和 `model` 的更新。
-        *   `generateAnalysis` 和 `inferRelationships` 函数现在使用可配置的 `currentModel`。
-*   **配置持久化**: 通过集成 `electron-store`，AI 配置（`apiKey`, `baseURL`, `model`）现在可以跨应用会话持久化。
-    *   **核心文件**: `src/main/services/ai.ts`
-    *   **实现细节**: `AIService` 负责从 `electron-store` 加载、保存和应用 AI 配置。
-*   **环境变量支持**: `OPENAI_BASE_URL` 和 `OPENAI_MODEL` 已添加到 `.env.example`，并且应用会优先使用用户配置或环境变量中的值。
-*   **IPC 暴露**: 新增了 `get-ai-config` 和 `set-ai-config` IPC 通道，以便前端 UI 能够获取和更新 AI 配置。
-    *   **核心文件**: `src/main/services/ipc.ts`, `src/preload/index.ts`, `src/renderer/hooks/useIPC.ts`
-
-### 🧪 单元测试框架迁移与增强
-
-*   **引入 Vitest**: 将测试框架从一次性脚本迁移到现代的 [Vitest](https://vitest.dev/)。
-    *   **核心文件**: `package.json`, `vitest.config.ts`
-    *   **实现细节**:
-        *   安装 `vitest` 并创建 `vitest.config.ts`，配置了 Node.js 测试环境、别名解析和更长的测试超时时间（30秒）。
-        *   `package.json` 中的 `test` 脚本已更新为 `vitest --run`，确保测试在完成后退出，而非进入监听模式。
-*   **鲁棒性测试重构**:
-    *   将 `scripts/test-robustness.ts` 的逻辑重构为标准的 Vitest 测试套件 `src/main/engine/__tests__/robustness.test.ts`。
-    *   **修复了 ESM 兼容性问题**: 解决了 `duckdb` 和 `fs-extra` 在 ESM 模块导入中的 `SyntaxError` 和 `TypeError`，确保后端核心功能在 ESM 环境下正常运行。
-    *   **端到端 AI 验证**: 移除了 AI Key 缺失时的 Mock 逻辑，强制进行真实的 AI 调用，验证 AI 生成的 SQL 在 DuckDB 中的执行。
-    *   **增强数据验证**: 在测试中引入了更精细的数据断言，利用 AI 返回的 `viz_config` 动态验证 SQL 聚合结果的正确性。
-*   **多表关联测试**: 新增了对多表关联功能（`inferRelationships` 和多表 `generateAnalysis`）的测试。
-    *   **核心文件**: `src/main/engine/__tests__/robustness.test.ts`
-    *   **实现细节**: 模拟了 `orders.xlsx` 和 `customers.xlsx` 两个文件的导入，断言 `inferRelationships` 能正确识别 `customer_id` 到 `id` 的关联，并验证 AI 生成的多表 JOIN 查询结果的准确性。
-
-### 现代化与兼容性改进
-
-*   **ESM 迁移**: 将整个项目的主进程构建环境迁移到 ESM 模块系统。
-    *   **核心文件**: `package.json` (`"type": "module"`), `.eslintrc.js` (重命名为 `.eslintrc.cjs`), `tsconfig.main.json`
-    *   **实现细节**: 调整了 TypeScript 编译配置 (`module: NodeNext`, `moduleResolution: NodeNext`)。
-*   **构建工具升级**: 将主进程的构建工具从 `tsc` 切换到 `tsup`，以更好地处理 ESM 模块的打包和兼容性问题，并自动处理 `__dirname` 和 `__filename` 的 shim。
-    *   **核心文件**: `package.json` (`build:main` 脚本), `tsup.config.ts`
-
-## 会话摘要：语义化表格命名 (2025-12-07)
-
-本次会话的主要目标是改进 Wansan Studio 的表格命名机制，使其从随机命名变为基于文件名的语义化命名，从而提升 LLM 对数据上下文的理解。
-
-### 核心改进点：
-
-*   **`TableSchema` 更新**: 在 `src/shared/types.ts` 中的 `TableSchema` 接口中添加了可选字段 `description`，用于存储原始的用户友好型文件名。
-    *   **涉及文件**: `src/shared/types.ts`
-*   **摄取逻辑 (Ingestion Logic) 更新**:
-    *   在 `src/main/engine/ingestion.ts` 中新增了 `getUniqueTableName` 辅助函数。该函数负责：
-        *   将文件名（不含扩展名）进行 SQL 安全处理，包括添加 `t_` 前缀，将空格和特殊字符替换为下划线，并支持中文字符。
-        *   通过查询 DuckDB 数据库确保生成的表名唯一性，并在冲突时追加数字后缀（如 `_1`）。
-    *   更新了 `ingestExcelFile` 和 `parseCSVFile` 函数 (在 `src/main/services/file.ts` 中调用)，使其能够接受原始文件名作为参数，并利用 `getUniqueTableName` 生成语义化表名，同时将原始文件名作为 `description` 字段存储。
-    *   **涉及文件**: `src/main/engine/ingestion.ts`, `src/main/services/file.ts`
-*   **AI 桥接 (AI Bridge) 更新**:
-    *   修改了 `src/main/engine/ai-bridge.ts` 中的 `serializeSchemas` 函数。在向 LLM 传递表格 Schema 上下文时，现在会包含 `(Source: "文件名")` 这样的描述，以增强 AI 对数据来源的理解。
-    *   **涉及文件**: `src/main/engine/ai-bridge.ts`
-
-### 验证:
-
-*   **单元测试**: 更新了 `src/main/engine/__tests__/robustness.test.ts` 中的 `ingestExcelFile` 调用，使其符合新的函数签名。
-*   **测试结果**: 运行 `npm test src/main/engine/__tests__/robustness.test.ts` 后，所有测试均通过，确认了语义化命名和上下文传递的正确性，以及 AI 功能的持续稳定。
-*   **类型检查**: 运行 `npm run type-check`，确认没有新的 TypeScript 类型错误引入。
-
-### 成果:
-
-现在，Wansan Studio 在数据摄取过程中能够从文件名派生出更具业务意义的表格名称，并将这些名称及其原始文件名作为重要上下文传递给 AI 模型，从而显著提升了 AI 理解用户查询和生成准确 SQL 的能力。
-
-## 会话摘要: 数据树管理器与自动关联逻辑 (2025-12-08)
-
-本次会话重点实现了左侧边栏的数据管理核心功能，包括高性能树形视图、上下文菜单操作，以及基于 AI 的表关系自动推断。
-
-### 🌳 数据树管理器 (Tree Data Manager)
-
-*   **架构设计**: 采用 `react-arborist` 实现了高性能的虚拟化树形组件，支持大量文件和列的流畅渲染。
-*   **数据转换**: 实现了 `tree-utils.ts` 中的 `buildTreeData` 函数，将 Zustand Store 的扁平化数据动态转换为层级结构（File -> Column）。
-    *   **ID 策略**: `file:ID`, `col:fileID:colName`, `rel:ID`。
-    *   **视觉增强**: 为不同数据类型（文本、数字、日期、布尔）和外键（FK Badge）实现了特定的图标和徽章。
-*   **交互实现**:
-    *   **双向同步**: 树节点选择与 `useFileStore` 的全局选中状态（`activeFileId`, `selectedNode`）实时同步。
-    *   **右键菜单**: 集成 `shadcn/ui` 的 `ContextMenu` 组件，实现了预览文件、删除文件、重命名列别名（预留）、修改列类型等操作。
-*   **核心文件**: `src/renderer/components/data-tree/` (`index.tsx`, `TreeNode.tsx`, `tree-utils.ts`)
-
-### 🤖 自动关系推断 (Auto-Link Logic)
-
-*   **智能检测**: 实现了 `useAutoLink` Hook，当用户导入多个文件（Count >= 2）时，自动调用 AI 引擎分析表结构。
-    *   **阈值控制**: 仅自动建立置信度 > 0.8 的关系，确保准确性。
-    *   **非阻塞体验**: AI 分析在后台异步运行，并通过 Toast 系统通知用户进度和结果。
-*   **状态管理优化**:
-    *   **Zustand 集成**: 解决了 React Closure 导致的 State Stale 问题，通过 `useFileStore.getState()` 直接获取最新的文件列表，确保在批量导入后能准确触发分析。
-    *   **逻辑复用**: 将自动关联逻辑统一集成到 `Sidebar` (导入按钮) 和 `WelcomeScreen` (拖拽/点击上传) 两个入口，保证体验一致性。
-*   **核心文件**: `src/renderer/hooks/useAutoLink.ts`, `src/renderer/components/Sidebar.tsx`, `src/renderer/components/WelcomeScreen.tsx`
-
-### 🏗️ 基础设施升级
-
-*   **Toast 通知系统**: 创建了轻量级的 Toast Store 和组件，用于展示 AI 分析状态（Analyzing/Success/Error）。
-*   **测试增强**: 为渲染层组件（Renderer）配置了 Vitest 支持，并为 `tree-utils` 编写了单元测试。
-*   **类型定义**: 扩展了 `ColumnType` 以支持 `INTEGER` 和 `TIMESTAMP`，完善了 TypeScript 类型安全。
-
-## 会话摘要：数据同步与 Schema 演进处理 (2025-12-08)
-
-本次会话实现了完整的数据同步闭环，确保 DuckDB 中的数据与用户本地文件保持一致，并处理了文件重载时的 Schema 变更问题。
-
-### 🔄 数据同步闭环 (Data Sync Loop)
-
-*   **被动检测**: 实现了 `useFileSync` Hook，监听窗口 `focus` 事件。当应用获得焦点时，调用主进程 `checkFilesConsistency` 对比文件 `mtime`。
-*   **状态管理**: `FileNode` 新增 `status` ('synced' | 'out-of-sync') 和 `lastModified` 字段。
-*   **UI 反馈**: 当检测到文件变更时，左侧文件树节点会显示黄色圆点（`AlertCircle`），提示用户数据已过时。
-
-### ♻️ 手动重载与 Schema 演进 (Reload & Schema Evolution)
-
-*   **重载机制**:
-    *   **UI**: 文件树右键菜单新增 "Reload Data" 选项。
-    *   **后端**: `FileService.reIngestFile` 复用摄取逻辑，支持覆盖现有 DuckDB 表，并返回新的 Schema 和时间戳。
-*   **Schema 调和策略 (Merge Strategy)**:
-    *   在 `useFileStore.reloadFile` 中实现了智能合并算法。
-    *   **保留配置**: 如果新旧 Schema 中列名一致，自动继承用户的语义配置（`userType`, `alias`, `isKey`）。
-    *   **新增/删除**: 新增列使用默认配置；删除列自动清理相关的表关联关系。
-    *   **用户反馈**: 如果重载导致关联关系断裂，通过 Toast 显示警告而非简单的成功提示。
-
-### 涉及核心文件
-
-*   `src/renderer/hooks/useFileSync.ts`: 焦点检测逻辑。
-*   `src/renderer/stores/useFileStore.ts`: `reloadFile` 合并算法。
-*   `src/main/services/file.ts`: `reIngestFile` 实现。
-*   `src/renderer/components/data-tree/TreeNode.tsx`: UI 状态指示与菜单动作。
+## Current Status (MVP)
+*   Supports Excel/CSV upload.
+*   Chat interface for "Text-to-SQL".
+*   Basic Dashboard/Report generation.
+*   PDF Export.

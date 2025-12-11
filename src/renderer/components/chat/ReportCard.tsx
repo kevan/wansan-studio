@@ -6,12 +6,14 @@ import {
   Terminal,
   Sparkles,
   RefreshCw,
+  Code,
 } from 'lucide-react'
 import { DashboardWidget } from '../DashboardWidget'
 import { ReportData, useWorkbenchStore } from '../../stores/useWorkbenchStore'
 import { useChatStore } from '../../stores/useChatStore'
 import { cn } from '../../utils/cn'
 import { VizControls } from '../report/viz-controls'
+import { SqlEditorModal } from '../report/sql-editor-modal'
 import type { ChatMessage } from '../ChatInterface'
 import { useTranslation } from 'react-i18next'
 
@@ -29,10 +31,12 @@ export function ReportCard({
   className,
 }: ReportCardProps) {
   const [isLogicOpen, setIsLogicOpen] = useState(false)
+  const [isEditorOpen, setIsEditorOpen] = useState(false)
   const pinReport = useWorkbenchStore(state => state.pinReport)
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const setReplyTo = useChatStore(state => state.setReplyTo)
   const updateReportConfig = useChatStore(state => state.updateReportConfig)
+  const updateMessageData = useChatStore(state => state.updateMessageData)
   const rerunAnalysis = useChatStore(state => state.rerunAnalysis)
   const { t } = useTranslation('common')
 
@@ -42,6 +46,16 @@ export function ReportCard({
     if (!isPinned) {
       window.dispatchEvent(new Event('wansan:open-dashboard'))
       pinReport(messageId, reportData, message.timestamp)
+    }
+  }
+
+  const handleRunSql = async (newSql: string) => {
+    const result = await window.electronAPI.runSQL(newSql)
+    if (result.success && result.data) {
+      const columns = result.data.length > 0 ? Object.keys(result.data[0]) : []
+      updateMessageData(messageId, newSql, result.data, columns)
+    } else {
+      throw new Error(result.error || 'Execution failed')
     }
   }
 
@@ -104,6 +118,14 @@ export function ReportCard({
             onChange={updates => updateReportConfig(messageId, updates)}
           />
           <button
+            onClick={() => setIsEditorOpen(true)}
+            className="p-1.5 rounded-md transition-colors flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
+            title="Edit SQL"
+          >
+            <Code className="h-3.5 w-3.5 text-zinc-500" />
+            Code
+          </button>
+          <button
             onClick={() => rerunAnalysis(message)}
             className="p-1.5 rounded-md transition-colors flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
             title={t('rerun_with_latest')}
@@ -144,6 +166,13 @@ export function ReportCard({
           timestamp={message.timestamp}
         />
       </div>
+
+      <SqlEditorModal
+        isOpen={isEditorOpen}
+        onClose={() => setIsEditorOpen(false)}
+        initialSql={reportData.sql || ''}
+        onRun={handleRunSql}
+      />
     </div>
   )
 }

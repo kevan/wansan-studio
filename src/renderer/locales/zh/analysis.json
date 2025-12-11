@@ -1,1 +1,8 @@
-{}
+{
+  "sql_editor": {
+    "title": "编辑 SQL 查询",
+    "run": "运行查询",
+    "reset": "重置为原始",
+    "copy_success": "SQL 已复制！"
+  }
+}

@@ -368,7 +368,7 @@ function App() {
       {/* 开发模式调试控制台 */}
       {isDev && (
         <DevConsole
-          defaultOpen={true}
+          defaultOpen={false}
         />
       )}
     </div>

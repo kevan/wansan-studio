@@ -1,6 +1,8 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { isDev } from './utils/env'
+import Store from 'electron-store'
+import debounce from 'lodash.debounce'
 
 import { setupIPC } from './services/ipc'
 import { DatabaseService } from './database/duckdb'
@@ -62,9 +64,15 @@ class WansanApp {
   }
 
   private createMainWindow() {
+    const store = new Store()
+    const defaultBounds = { width: 1280, height: 800 }
+    const bounds = store.get('windowBounds', defaultBounds) as any
+
     this.mainWindow = new BrowserWindow({
-      width: 1280,
-      height: 800,
+      width: bounds.width,
+      height: bounds.height,
+      x: bounds.x,
+      y: bounds.y,
       minWidth: 1024,
       minHeight: 600,
       webPreferences: {
@@ -75,6 +83,18 @@ class WansanApp {
       titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
       show: false, // 先隐藏，加载完成后再显示
     })
+
+    const saveState = debounce(() => {
+      if (!this.mainWindow) return
+      try {
+        store.set('windowBounds', this.mainWindow.getBounds())
+      } catch (e) {
+        console.error('Failed to save window bounds', e)
+      }
+    }, 1000)
+
+    this.mainWindow.on('resize', saveState)
+    this.mainWindow.on('move', saveState)
 
     // 加载应用
     if (isDev()) {
