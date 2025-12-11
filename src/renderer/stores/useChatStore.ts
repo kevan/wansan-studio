@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { ChatMessage } from '../components/ChatInterface'
-import type { TableSchema, RelationSuggestion } from '../../shared/types'
+import type { TableSchema, RelationSuggestion, AIAnalysisResult } from '../../shared/types'
 
 const generateId = () => crypto.randomUUID()
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -12,6 +12,10 @@ interface ChatStore {
   updateMessage: (
     id: string,
     updater: (message: ChatMessage) => ChatMessage
+  ) => void
+  updateReportConfig: (
+    id: string,
+    updates: Partial<AIAnalysisResult['visualization']>
   ) => void
   sendMessage: (
     text: string,
@@ -29,6 +33,25 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       messages: state.messages.map(msg =>
         msg.id === id ? updater({ ...msg }) : msg
       ),
+    })),
+  updateReportConfig: (id, updates) =>
+    set(state => ({
+      messages: state.messages.map(msg => {
+        if (msg.id !== id || !msg.reportData) return msg
+        const nextVizConfig =
+          updates.config !== undefined
+            ? { ...msg.reportData.vizConfig, ...updates.config }
+            : msg.reportData.vizConfig
+
+        return {
+          ...msg,
+          reportData: {
+            ...msg.reportData,
+            chartType: updates.type ?? msg.reportData.chartType,
+            vizConfig: nextVizConfig,
+          },
+        }
+      }),
     })),
   sendMessage: async (text, schemas, relations) => {
     const { messages, replyToId } = get()

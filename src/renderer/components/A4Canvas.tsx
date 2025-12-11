@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Edit2 } from 'lucide-react'
 
 interface A4CanvasProps {
@@ -338,6 +338,8 @@ export function A4Chart({
     return baseOption
   }
 
+  const option = useMemo(() => getOption(), [data, type, config])
+
   return (
     <div
       className={className}
@@ -345,11 +347,13 @@ export function A4Chart({
       style={{ height: '100%', width: '100%', ...style }}
     >
       <ReactECharts
-        option={getOption()}
+        key={type}
+        option={option}
         style={{ height: '100%', width: '100%', ...style }}
         opts={{ renderer: 'canvas' }}
         ref={chartRef}
         onChartReady={resizeChart}
+        notMerge
         autoResize
       />
     </div>

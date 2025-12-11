@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { Layout } from 'react-grid-layout'
 import { GRID_ROW_HEIGHT, PAGE_GAP_PX, PAGE_HEIGHT_PX } from '@/components/dashboard-v3/page-layer'
+import type { AIAnalysisResult } from '@shared/types'
 
 export type CanvasLayout = 'a4' | 'screen'
 
@@ -44,6 +45,10 @@ interface WorkbenchState {
   pinReport: (messageId: string, reportData: ReportData) => void
   removeReport: (reportId: string) => void
   updateReportTitle: (reportId: string, newTitle: string) => void
+  updateReportConfig: (
+    id: string,
+    updates: Partial<AIAnalysisResult['visualization']>
+  ) => void
   updateLayout: (layouts: Layout[]) => void
   setLayoutScenario: (scenario: LayoutScenario) => void
   setCanvasConfig: (updates: Partial<WorkbenchState['canvasConfig']>) => void
@@ -167,6 +172,25 @@ export const useWorkbenchStore = create<WorkbenchState>(set => ({
           ? { ...r, reportData: { ...r.reportData, title: newTitle } }
           : r
       ),
+    })),
+  updateReportConfig: (id, updates) =>
+    set(state => ({
+      pinnedReports: state.pinnedReports.map(report => {
+        if (report.id !== id) return report
+        const nextVizConfig =
+          updates.config !== undefined
+            ? { ...report.reportData.vizConfig, ...updates.config }
+            : report.reportData.vizConfig
+
+        return {
+          ...report,
+          reportData: {
+            ...report.reportData,
+            chartType: updates.type ?? report.reportData.chartType,
+            vizConfig: nextVizConfig,
+          },
+        }
+      }),
     })),
   updateLayout: layouts =>
     set(state => {

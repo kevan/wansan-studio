@@ -10,6 +10,7 @@ import { DashboardWidget } from '../DashboardWidget'
 import { ReportData, useWorkbenchStore } from '../../stores/useWorkbenchStore'
 import { useChatStore } from '../../stores/useChatStore'
 import { cn } from '../../utils/cn'
+import { VizControls } from '../report/viz-controls'
 
 interface ReportCardProps {
   messageId: string
@@ -26,6 +27,7 @@ export function ReportCard({
   const pinReport = useWorkbenchStore(state => state.pinReport)
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const setReplyTo = useChatStore(state => state.setReplyTo)
+  const updateReportConfig = useChatStore(state => state.updateReportConfig)
 
   const isPinned = pinnedReports.some(r => r.sourceMessageId === messageId)
 
@@ -86,6 +88,13 @@ export function ReportCard({
           Analysis Report
         </span>
         <div className="flex items-center gap-2">
+          <VizControls
+            vizType={reportData.chartType}
+            vizConfig={reportData.vizConfig}
+            columns={reportData.columns}
+            data={reportData.tableData}
+            onChange={updates => updateReportConfig(messageId, updates)}
+          />
           <button
             onClick={() => setReplyTo(messageId)}
             className="p-1.5 rounded-md transition-colors flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"

@@ -12,25 +12,9 @@ export function DataWorkspace() {
   } = useFileStore()
   const messages = useChatStore(state => state.messages)
   const sendMessage = useChatStore(state => state.sendMessage)
-
   const readyFiles = files.filter(f => f.status === 'ready')
   const currentFile =
     readyFiles.find(f => f.id === activeFileId) || readyFiles[0]
-  const updateMessage = (
-    id: string,
-    updater: (message: ChatMessage) => ChatMessage
-  ) => {
-    setMessages(prev =>
-      prev.map(m => {
-        if (m.id !== id) return m
-        const updated = updater(m)
-        return {
-          ...m,
-          ...updated,
-        }
-      })
-    )
-  }
 
   // Map store files to TableSchema for AI
   const schemas: TableSchema[] = readyFiles.map(f => ({

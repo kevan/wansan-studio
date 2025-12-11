@@ -1,9 +1,11 @@
 import React, { forwardRef, useRef, useState } from 'react'
 import { DashboardWidget } from '../DashboardWidget'
-import { X, GripHorizontal, Download, MoreVertical, FileImage } from 'lucide-react'
+import { X, GripHorizontal, MoreVertical, FileImage } from 'lucide-react'
 import { toPng } from 'html-to-image'
 import { useToastStore } from '../../stores/useToastStore'
 import { cn } from '@/utils/cn'
+import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
+import { VizControls } from '@/components/report/viz-controls'
 
 interface ReportCardProps {
   report: any
@@ -25,6 +27,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
     const cardRef = useRef<HTMLDivElement>(null)
     const [showMenu, setShowMenu] = useState(false)
     const addToast = useToastStore(state => state.addToast)
+    const updateReportConfig = useWorkbenchStore(state => state.updateReportConfig)
     const isDashboard = variant === 'dashboard'
 
     // Merge refs
@@ -100,6 +103,13 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
               <GripHorizontal className="w-4 h-4" />
             </button>
           )}
+          <VizControls
+            vizType={report.reportData?.chartType}
+            vizConfig={report.reportData?.vizConfig}
+            columns={report.reportData?.columns}
+            data={report.reportData?.tableData}
+            onChange={updates => updateReportConfig(report.id, updates)}
+          />
           <div className="relative">
             <button
                onClick={(e) => {
