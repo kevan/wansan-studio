@@ -217,7 +217,7 @@ function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
           {isLinked && (
             <span className="inline-flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
               <Link2 className="w-3 h-3" />
-              已关联
+              {/*已关联*/}
             </span>
           )}
         </div>

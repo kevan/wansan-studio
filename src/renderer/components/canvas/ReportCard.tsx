@@ -84,16 +84,6 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
         )}
         {...props}
       >
-        {/* Drag Handle */}
-        <div
-          className={cn(
-            'absolute top-0 left-0 right-0 h-6 flex items-center justify-center cursor-grab active:cursor-grabbing drag-handle z-20 hover:bg-zinc-50 transition-colors card-controls',
-            isDashboard ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-          )}
-        >
-          <GripHorizontal className="w-4 h-4 text-zinc-300" />
-        </div>
-
         {/* Controls */}
         <div
           className={cn(
@@ -101,6 +91,15 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
             isDashboard ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           )}
         >
+          {isDashboard && (
+            <button
+              type="button"
+              className="drag-handle flex h-8 w-8 items-center justify-center rounded-md border border-dashed border-zinc-200 bg-white/90 text-zinc-400 shadow-sm opacity-0 transition hover:text-zinc-600 group-hover:opacity-100 cursor-grab active:cursor-grabbing"
+              title="Drag to rearrange"
+            >
+              <GripHorizontal className="w-4 h-4" />
+            </button>
+          )}
           <div className="relative">
             <button
                onClick={(e) => {

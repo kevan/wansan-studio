@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import type { Layout } from 'react-grid-layout'
+import { GRID_ROW_HEIGHT, PAGE_GAP_PX, PAGE_HEIGHT_PX } from '@/components/dashboard-v3/page-layer'
 
 export type CanvasLayout = 'a4' | 'screen'
 
@@ -25,13 +27,7 @@ export interface ReportWidget {
   id: string
   sourceMessageId: string
   reportData: ReportData
-  layout: {
-    i: string
-    x: number
-    y: number
-    w: number
-    h: number
-  }
+  layout: Layout
 }
 
 export type LayoutScenario = 'default' | 'print' | 'large' | 'ppt' | 'email'
@@ -44,12 +40,15 @@ interface WorkbenchState {
     zoom: number
     title: string
   }
+  pageCount: number
   pinReport: (messageId: string, reportData: ReportData) => void
   removeReport: (reportId: string) => void
   updateReportTitle: (reportId: string, newTitle: string) => void
-  updateLayout: (layouts: any[]) => void
+  updateLayout: (layouts: Layout[]) => void
   setLayoutScenario: (scenario: LayoutScenario) => void
   setCanvasConfig: (updates: Partial<WorkbenchState['canvasConfig']>) => void
+  setPageCount: (count: number) => void
+  incrementPageCount: () => void
 }
 
 export const useWorkbenchStore = create<WorkbenchState>(set => ({
@@ -60,11 +59,28 @@ export const useWorkbenchStore = create<WorkbenchState>(set => ({
     zoom: 100,
     title: 'Untitled Analysis',
   },
+  pageCount: 1,
   setLayoutScenario: scenario => set({ layoutScenario: scenario }),
   setCanvasConfig: updates =>
     set(state => ({
       canvasConfig: { ...state.canvasConfig, ...updates },
+      pageCount:
+        updates.layout === 'a4' && state.canvasConfig.layout !== 'a4'
+          ? (() => {
+              const maxGridY = state.pinnedReports.reduce((max, item) => {
+                const y = Number.isFinite(item.layout?.y) ? (item.layout.y as number) : 0
+                const h = Number.isFinite(item.layout?.h) ? (item.layout.h as number) : 0
+                return Math.max(max, y + h)
+              }, 0)
+              const contentPx = maxGridY * GRID_ROW_HEIGHT
+              const blockPx = PAGE_HEIGHT_PX + PAGE_GAP_PX
+              const needed = blockPx > 0 ? Math.ceil(contentPx / blockPx) : 1
+              return Math.max(state.pageCount, needed || 1)
+            })()
+          : state.pageCount,
     })),
+  setPageCount: count => set({ pageCount: Math.max(1, count) }),
+  incrementPageCount: () => set(state => ({ pageCount: state.pageCount + 1 })),
   pinReport: (messageId, reportData) =>
     set(state => {
       // Check if already pinned to avoid duplicates for the same message
@@ -80,21 +96,21 @@ export const useWorkbenchStore = create<WorkbenchState>(set => ({
       }
 
       let w = 6
-      let h = 5
+      let h = 10
 
       switch (reportData.chartType) {
         case 'table':
           if (isBigNumberData(reportData.tableData)) {
             w = 3
-            h = 2
+            h = 4
           } else {
-            w = 6
-            h = 6
+            w = 12
+            h = 12
           }
           break
         case 'pie':
           w = 4
-          h = 4
+          h = 8
           break
         case 'bar':
         case 'line':
@@ -102,24 +118,29 @@ export const useWorkbenchStore = create<WorkbenchState>(set => ({
         case 'scatter':
           if ((reportData.tableData?.length || 0) > 20) {
             w = 12
-            h = 6
+            h = 12
           } else {
             w = 6
-            h = 5
+            h = 10
           }
           break
         case 'kpi':
           w = 3
-          h = 2
+          h = 6
           break
         default:
           w = 6
-          h = 5
+          h = 10
       }
 
       // Respect 12-column grid and keep positive dimensions
       w = Math.min(12, Math.max(1, w))
       h = Math.max(1, h)
+
+      const maxY = state.pinnedReports.reduce(
+        (max, item) => Math.max(max, (item.layout?.y ?? 0) + (item.layout?.h ?? 0)),
+        0
+      )
 
       return {
         pinnedReports: [
@@ -131,7 +152,7 @@ export const useWorkbenchStore = create<WorkbenchState>(set => ({
             layout: {
               i: id,
               x: 0,
-              y: Infinity, // Put at bottom
+              y: maxY, // Put at bottom just after last item
               w,
               h,
             },
@@ -156,13 +177,7 @@ export const useWorkbenchStore = create<WorkbenchState>(set => ({
           if (newLayout) {
             return {
               ...r,
-              layout: {
-                ...r.layout,
-                x: newLayout.x,
-                y: newLayout.y,
-                w: newLayout.w,
-                h: newLayout.h,
-              },
+              layout: { ...r.layout, ...newLayout },
             }
           }
           return r

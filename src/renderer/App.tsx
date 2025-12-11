@@ -19,7 +19,7 @@ import {
   MonitorPlay,
   RotateCcw,
 } from 'lucide-react'
-import { ReportCanvas } from './components/canvas/ReportCanvas'
+import { DashboardCanvasV3 } from './components/dashboard-v3'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { cn } from '@/utils/cn'
 import { Input } from '@/components/ui/input'
@@ -278,7 +278,7 @@ function App() {
                   !isPresentationMode && 'rounded-lg border border-zinc-200 shadow-sm'
                 )}
               >
-                <ReportCanvas />
+                <DashboardCanvasV3 />
               </div>
             </div>
           </div>

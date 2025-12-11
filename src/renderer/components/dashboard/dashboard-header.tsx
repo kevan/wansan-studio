@@ -1,13 +1,14 @@
 import {
   Download,
   ChevronDown,
-  FileCode,
   FileImage,
   FileText,
   Monitor,
   Printer,
   ZoomIn,
   ZoomOut,
+  Plus,
+  Minus,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -26,11 +27,15 @@ import { Separator } from '@/components/ui/separator'
 import { CanvasLayout, useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
+import { PAGE_GAP_PX, PAGE_HEIGHT_PX } from '@/components/dashboard-v3/page-layer'
 
 export function DashboardHeader() {
   const { canvasConfig, setCanvasConfig, setLayoutScenario } =
     useWorkbenchStore()
+  const pageCount = useWorkbenchStore(state => state.pageCount)
+  const setPageCount = useWorkbenchStore(state => state.setPageCount)
   const layoutScenario = useWorkbenchStore(state => state.layoutScenario)
+  const isA4 = canvasConfig.layout === 'a4'
 
   const updateConfig = (key: keyof typeof canvasConfig, value: unknown) => {
     setCanvasConfig({ [key]: value } as Partial<typeof canvasConfig>)
@@ -41,78 +46,77 @@ export function DashboardHeader() {
     setLayoutScenario(value === 'a4' ? 'print' : 'default')
   }
 
-  const handleExport = async (type: 'pdf' | 'html' | 'png') => {
-    const { layout, title } = canvasConfig
-    if (type === 'png') {
-      const node = document.getElementById('report-canvas-paper')
-      if (!node) {
-        console.warn('report-canvas-paper not found for export')
-        return
-      }
-      try {
-        const dataUrl = await toPng(node, {
-          quality: 0.95,
-          backgroundColor: '#ffffff',
-          pixelRatio: 2,
-          filter: el =>
-            !el.classList?.contains('card-controls') &&
-            !el.classList?.contains('hide-on-export'),
-        })
-        const fileName = `${canvasConfig.title || 'Report'}.png`
-        await window.electronAPI?.saveImage(dataUrl, fileName)
-      } catch (err) {
-        console.error('Image export failed', err)
-      }
+  const handleExport = async (type: 'pdf' | 'png') => {
+    const node = document.getElementById('dashboard-export-root')
+    if (!node) {
+      console.warn('dashboard-export-root not found for export')
       return
     }
 
-    if (window.electronAPI?.exportReport) {
-      if (type === 'pdf') {
-        const node = document.getElementById('report-canvas-paper')
-        if (!node) {
-          console.warn('report-canvas-paper not found for PDF export')
-          return
-        }
+    const originalZoom = canvasConfig.zoom
+    setCanvasConfig({ zoom: 100 })
+    await new Promise(resolve => setTimeout(resolve, 300))
 
-      try {
-        const dataUrl = await toPng(node, {
-          quality: 1,
-          pixelRatio: 2,
-          backgroundColor: '#ffffff',
-          filter: el =>
-            !el.classList?.contains('card-controls') &&
-            !el.classList?.contains('hide-on-export'),
-        })
+    try {
+      const dataUrl = await toPng(node, {
+        pixelRatio: 2,
+        backgroundColor: '#f4f4f5',
+        filter: el =>
+          !el.classList?.contains('card-controls') &&
+          !el.classList?.contains('hide-on-export'),
+      })
 
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-            format: 'a4',
-          })
+      const fileName = `${canvasConfig.title || 'Report'}.${type === 'png' ? 'png' : 'pdf'}`
 
-          const imgProps = pdf.getImageProperties(dataUrl)
-          const pdfWidth = pdf.internal.pageSize.getWidth()
-          const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
-
-          pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight)
-          const fileName = `${canvasConfig.title || 'Report'}.pdf`
-          pdf.save(fileName)
-        } catch (err) {
-          console.error('PDF export failed', err)
-        }
+      if (type === 'png') {
+        await window.electronAPI?.saveImage(dataUrl, fileName)
         return
       }
 
-      window.electronAPI.exportReport({
-        type,
-        title,
-        layoutOptions: {
-          isA4: layout === 'a4',
-          landscape: false,
-        },
+      const img = new Image()
+      const imageLoad = new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve()
+        img.onerror = err => reject(err)
       })
-    } else {
-      console.warn('exportReport not available in this environment')
+      img.src = dataUrl
+      await imageLoad
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      })
+
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+
+      const ratio = img.width / (node.offsetWidth || 1)
+      const sliceHeight = PAGE_HEIGHT_PX * ratio
+      const gapHeight = PAGE_GAP_PX * ratio
+
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = sliceHeight
+      const ctx = canvas.getContext('2d')
+
+      if (!ctx) {
+        throw new Error('Failed to get 2d context for slicing')
+      }
+
+      for (let i = 0; i < pageCount; i++) {
+        if (i > 0) pdf.addPage()
+        const srcY = i * (sliceHeight + gapHeight)
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(img, 0, srcY, img.width, sliceHeight, 0, 0, canvas.width, canvas.height)
+        const sliceData = canvas.toDataURL('image/png')
+        pdf.addImage(sliceData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+      }
+
+      pdf.save(fileName)
+    } catch (err) {
+      console.error('Export failed', err)
+    } finally {
+      setCanvasConfig({ zoom: originalZoom })
     }
   }
 
@@ -157,6 +161,33 @@ export function DashboardHeader() {
         </div>
 
         <Separator orientation="vertical" className="h-6 mx-1" />
+
+        {isA4 && (
+          <div className="flex items-center bg-zinc-100 rounded-md p-0.5 border mr-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-sm"
+              disabled={pageCount <= 1}
+              onClick={() => setPageCount(Math.max(1, pageCount - 1))}
+              title="Remove Last Page"
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </Button>
+            <span className="text-xs px-2 font-medium tabular-nums text-zinc-600">
+              {pageCount} Pgs
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-sm"
+              onClick={() => setPageCount(pageCount + 1)}
+              title="Add New Page"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
 
         {/* Layout Switcher */}
         <DropdownMenu>
@@ -204,9 +235,6 @@ export function DashboardHeader() {
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => handleExport('pdf')}>
               <FileText className="mr-2 h-4 w-4" /> PDF Document
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => handleExport('html')}>
-              <FileCode className="mr-2 h-4 w-4" /> HTML Dashboard
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => handleExport('png')}>
               <FileImage className="mr-2 h-4 w-4" /> Image (PNG)
