@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react'
-import { LoadingType } from './LoadingStates'
+import type { LoadingType } from '../../shared/types'
 import { ReportCard } from './chat/ReportCard'
 import { EmptyState } from './chat/empty-state'
 import { MagicInput } from './chat/magic-input'

@@ -5,8 +5,8 @@ import {
   TableSchema,
   AIAnalysisResult,
   RelationSuggestion,
+  LoadingType,
 } from '../../shared/types'
-import { LoadingType } from '../components/LoadingStates'
 import { useToastStore } from '../stores/useToastStore'
 
 // Hook to handle AI interactions

@@ -63,6 +63,8 @@ export interface ContextAnalysisResult {
   suggestedPrompts: string[]
 }
 
+export type LoadingType = 'cleaning' | 'thinking' | 'crunching' | 'fixing'
+
 export type SyncStatus =
   | 'uploading'
   | 'processing'

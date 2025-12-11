@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { isDev } from '../utils/env'
+import i18n from '../i18n'
 
 interface LogEntry {
   id: number
@@ -22,6 +23,7 @@ export function DevConsole({
   const [isMinimized, setIsMinimized] = useState(false)
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [activeTab, setActiveTab] = useState<'console' | 'tools'>('console')
+  const [language, setLanguage] = useState(i18n.language || 'en')
   const logIdRef = useRef(0)
   const logsEndRef = useRef<HTMLDivElement>(null)
 
@@ -74,6 +76,26 @@ export function DevConsole({
   }, [logs])
 
   const clearLogs = useCallback(() => setLogs([]), [])
+  const resetApp = useCallback(() => {
+    if (typeof (window as any).resetApp === 'function') {
+      ;(window as any).resetApp()
+    } else {
+      console.warn('resetApp is not available in this environment')
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleLanguageChange = (lng: string) => setLanguage(lng)
+    i18n.on('languageChanged', handleLanguageChange)
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange)
+    }
+  }, [])
+
+  const handleLanguageSwitch = async (lng: string) => {
+    if (lng === language) return
+    await i18n.changeLanguage(lng)
+  }
 
   const getLogColor = (type: LogEntry['type']) => {
     switch (type) {
@@ -185,7 +207,7 @@ export function DevConsole({
           </div>
         ) : (
           <div className="h-full p-4">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mb-3">
               <button
                 onClick={() => console.log('Test log')}
                 className="px-3 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm"
@@ -204,6 +226,25 @@ export function DevConsole({
               >
                 ❌ Test Error
               </button>
+            </div>
+            <div className="flex flex-wrap gap-2 items-center">
+              <button
+                onClick={resetApp}
+                className="px-3 py-2 bg-red-700 hover:bg-red-600 rounded text-sm"
+              >
+                ♻️ Reset App State
+              </button>
+              <div className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm">
+                <span className="text-gray-400">Language</span>
+                <select
+                  value={language}
+                  onChange={e => handleLanguageSwitch(e.target.value)}
+                  className="bg-gray-700 text-white text-sm px-2 py-1 rounded focus:outline-none"
+                >
+                  <option value="en">English</option>
+                  <option value="zh">中文</option>
+                </select>
+              </div>
             </div>
           </div>
         )}
