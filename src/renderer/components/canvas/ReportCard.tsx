@@ -172,6 +172,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
             {...report.reportData}
             variant="dashboard"
             onTitleChange={onTitleChange}
+            timestamp={report.reportData.timestamp}
             className="flex-1 min-h-0 w-full"
           />
         </div>

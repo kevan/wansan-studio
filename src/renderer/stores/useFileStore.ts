@@ -318,6 +318,7 @@ export const useFileStore = create<ProjectState>()(
         files: state.files.map(sanitizeFile),
         relations: state.relations,
         activeView: state.activeView,
+        suggestedPrompts: state.suggestedPrompts,
       }),
     }
   )

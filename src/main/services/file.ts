@@ -36,6 +36,34 @@ function findTimeAnchor(columns: ColumnSchema[]): string | null {
 export class FileService {
   constructor(private databaseService: DatabaseService) {}
 
+  private async ingestCSVWithFallback(
+    filePath: string,
+    tableName: string
+  ): Promise<void> {
+    const normalizedPath = filePath.replace(/\\/g, '/')
+    const createWithAuto = `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${normalizedPath}', SAMPLE_SIZE=-1)`
+    try {
+      await this.databaseService.query(createWithAuto)
+      return
+    } catch (error) {
+      console.warn('read_csv_auto failed, retrying with manual options', error)
+      // Clear any partial table before retrying
+      await this.databaseService.query(`DROP TABLE IF EXISTS "${tableName}"`)
+      const createWithDefaults = `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv('${normalizedPath}', HEADER=TRUE, DELIM=',')`
+      try {
+        await this.databaseService.query(createWithDefaults)
+        return
+      } catch (fallbackError) {
+        console.error('CSV ingestion failed after fallback', fallbackError)
+        throw new Error(
+          `Failed to parse CSV file: ${
+            fallbackError instanceof Error ? fallbackError.message : 'Unknown error'
+          }`
+        )
+      }
+    }
+  }
+
   async parseFile(filePath: string) {
     const ext = extname(filePath).toLowerCase()
 
@@ -124,9 +152,7 @@ export class FileService {
         this.databaseService.getDb(),
         fileName
       )
-      const sql = `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${filePath.replace(/\\/g, '/')}')`
-
-      await this.databaseService.query(sql)
+      await this.ingestCSVWithFallback(filePath, tableName)
 
       // Get schema and preview data
       let schema = await this.databaseService.getSchema(tableName)
@@ -175,8 +201,7 @@ export class FileService {
       columns = result.columns
     } else if (ext === '.csv') {
       await this.databaseService.query(`DROP TABLE IF EXISTS "${tableName}"`)
-      const sql = `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${filePath.replace(/\\/g, '/')}')`
-      await this.databaseService.query(sql)
+      await this.ingestCSVWithFallback(filePath, tableName)
 
       // We need to fetch the schema manually for CSV as we did in parseCSVFile
       // Ideally parseCSVFile logic should be extracted but for now duplication is small

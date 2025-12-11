@@ -6,6 +6,7 @@ import { DataTreeManager } from './data-tree'
 import { useAutoLink } from '../hooks/useAutoLink'
 import { useFileSync } from '../hooks/useFileSync'
 import { Button } from './ui/button'
+import { useToastStore } from '../stores/useToastStore'
 
 interface SidebarProps {
   onImportData?: () => void
@@ -16,6 +17,7 @@ export function Sidebar(_props: SidebarProps) {
   const [isImporting, setIsImporting] = useState(false)
   const parseFileMutation = useParseFile()
   const { checkAutoLink } = useAutoLink()
+  const addToast = useToastStore(state => state.addToast)
 
   // Enable automatic file synchronization checks
   useFileSync()
@@ -39,16 +41,17 @@ export function Sidebar(_props: SidebarProps) {
           const fileName = filePath.split('/').pop() || 'unknown'
           console.log('handleImportClick: Processing file', fileName)
 
-          // 添加文件到 store
-          const fileId = addFile({
-            name: fileName,
-            path: filePath,
-            tableName: '',
-            status: 'uploading',
-            columns: [],
-          })
-
+          let fileId: string | null = null
           try {
+            // 添加文件到 store
+            fileId = addFile({
+              name: fileName,
+              path: filePath,
+              tableName: '',
+              status: 'uploading',
+              columns: [],
+            })
+
             updateFile(fileId, { status: 'processing' })
             const parseResult = await parseFileMutation.mutateAsync(filePath)
             console.log(
@@ -118,10 +121,37 @@ export function Sidebar(_props: SidebarProps) {
               fileName,
               error
             )
-            updateFile(fileId, {
-              status: 'error',
-              error: error instanceof Error ? error.message : '解析失败',
-            })
+            const message =
+              error instanceof Error ? error.message : '解析失败'
+
+            if (
+              error instanceof Error &&
+              error.message.toLowerCase().includes('already imported')
+            ) {
+              addToast({
+                title: 'Duplicate file skipped',
+                description: `${fileName} 已经导入，无需重复添加。`,
+                type: 'warning',
+                duration: 4000,
+              })
+            } else {
+              addToast({
+                title: 'Import failed',
+                description: `${fileName}: ${message}`,
+                type: 'error',
+                duration: 4000,
+              })
+            }
+
+            // If file was created before error, mark it as failed
+            if (fileId) {
+              updateFile(fileId, {
+                status: 'error',
+                error: message,
+              })
+            }
+
+            continue
           }
         }
 

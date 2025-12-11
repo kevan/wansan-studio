@@ -1,6 +1,6 @@
 import { OpenAI } from 'openai'
 import { z } from 'zod'
-import { RelationSuggestion, TableSchema, ContextAnalysisResult } from '../../shared/types'
+import { ContextAnalysisResult, RelationSuggestion, TableSchema } from '../../shared/types'
 import { isDev } from '../utils/env'
 import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources'
 
@@ -261,12 +261,12 @@ export async function generateAnalysis(
   schemas: TableSchema[],
   relations: RelationSuggestion[],
   context?: { lastSql: string; lastQuery: string },
-  model?: string
+  model?: string,
 ): Promise<AIGenerationOutput> {
   if (isDev()) {
     console.log(
       'generateAnalysis pre request - schemas:',
-      JSON.stringify(schemas)
+      JSON.stringify(schemas),
     )
     console.log('generateAnalysis context:', context)
   }
@@ -276,11 +276,11 @@ export async function generateAnalysis(
   const relationsContext =
     relations.length > 0
       ? relations
-          .map(
-            r =>
-              `- Table "${r.sourceTable}" can act as Fact Table, joining to Dimension Table "${r.targetTable}" via: ON "${r.sourceTable}"."${r.sourceColumn}" = "${r.targetTable}"."${r.targetColumn}"`
-          )
-          .join('\n')
+        .map(
+          r =>
+            `- Table "${r.sourceTable}" can act as Fact Table, joining to Dimension Table "${r.targetTable}" via: ON "${r.sourceTable}"."${r.sourceColumn}" = "${r.targetTable}"."${r.targetColumn}"`,
+        )
+        .join('\n')
       : 'No specific relationships defined. Infer joins if necessary based on column names.'
 
   let contextSection = ''
@@ -322,7 +322,7 @@ ${contextSection}
     response_format: { type: 'json_object' },
   }
   if (isDev()) {
-    console.log('pre request - body', body)
+    console.log('generateAnalysis pre request - body', body)
   }
   const response = await openai.chat.completions.create(body)
 
@@ -340,7 +340,7 @@ ${contextSection}
   } catch (error) {
     console.error('Failed to parse or validate AI response:', error)
     throw new Error(
-      `AI returned invalid JSON or structure. Raw response: ${resultJson}`
+      `AI returned invalid JSON or structure. Raw response: ${resultJson}`,
     )
   }
 }
@@ -351,12 +351,12 @@ ${contextSection}
 export async function analyzeContext(
   openai: OpenAI,
   schemas: TableSchema[],
-  model?: string
+  model?: string,
 ): Promise<ContextAnalysisResult> {
   if (isDev()) {
     console.log(
       'analyzeContext pre request - schemas:',
-      JSON.stringify(schemas)
+      JSON.stringify(schemas),
     )
   }
 
@@ -378,12 +378,18 @@ ${schemaContext}
     ],
     response_format: { type: 'json_object' },
   }
-  
+  if (isDev()) {
+    console.log('analyzeContext pre request - body', body)
+  }
+
   const response = await openai.chat.completions.create(body)
 
   const resultJson = response.choices[0].message.content
   if (!resultJson) {
     throw new Error('AI returned an empty response for context analysis.')
+  }
+  if (isDev()) {
+    console.log('analyzeContext post request - resultJson:', resultJson)
   }
 
   try {
@@ -392,10 +398,10 @@ ${schemaContext}
   } catch (error) {
     console.error(
       'Failed to parse or validate AI response for context analysis:',
-      error
+      error,
     )
     throw new Error(
-      `AI returned invalid JSON or structure for context analysis. Raw response: ${resultJson}`
+      `AI returned invalid JSON or structure for context analysis. Raw response: ${resultJson}`,
     )
   }
 }
@@ -410,7 +416,7 @@ export async function fixSQL(
   originalSql: string,
   errorMessage: string,
   schemas: TableSchema[],
-  model?: string
+  model?: string,
 ): Promise<{ sql: string; reasoning: string }> {
   const schemaContext = serializeSchemas(schemas)
 
@@ -439,12 +445,17 @@ Fix the SQL. Ensure all table/column names are double-quoted and match the schem
     ],
     response_format: { type: 'json_object' },
   }
+  if (isDev()) {
+    console.log('fixSQL pre request - body', body)
+  }
 
   const response = await openai.chat.completions.create(body)
   const resultJson = response.choices[0].message.content
 
   if (!resultJson) throw new Error('AI returned empty response for SQL fix')
-
+  if (isDev()) {
+    console.log('fixSQL post request - resultJson:', resultJson)
+  }
   try {
     return FixSQLResultSchema.parse(JSON.parse(resultJson))
   } catch (e) {

@@ -18,6 +18,7 @@ interface DashboardWidgetProps {
     y_axis?: string | string[] | null
     series_name?: string
   }
+  timestamp?: Date
   className?: string
   variant?: 'chat' | 'dashboard'
   onTitleChange?: (newTitle: string) => void
@@ -35,6 +36,7 @@ export function DashboardWidget({
   className,
   variant = 'chat',
   onTitleChange,
+  timestamp,
 }: DashboardWidgetProps) {
   const [showSummary, setShowSummary] = useState(false)
   const tableColumns =
@@ -89,6 +91,16 @@ export function DashboardWidget({
                       Summary
                     </div>
                     <div className="max-h-60 overflow-y-auto">{summary}</div>
+                    {timestamp && (
+                      <div className="mt-3 pt-2 border-t border-zinc-100 text-xs text-zinc-400">
+                        <div className="font-medium text-zinc-500 mb-0.5">
+                          生成时间
+                        </div>
+                        <div className="font-mono">
+                          {timestamp.toLocaleString('zh-CN')}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -167,7 +179,12 @@ export function DashboardWidget({
   // Default Chat Layout (Linear, scrollable)
   return (
     <div className={cn('flex flex-col h-full p-6 bg-white', className)}>
-      <A4Header title={title} subtitle={subtitle} className="mb-4 pb-2" />
+      <A4Header
+        title={title}
+        subtitle={subtitle}
+        className="mb-4 pb-2"
+        timestamp={timestamp}
+      />
 
       <div className="flex-1 min-h-0 overflow-y-auto space-y-6 pr-2">
         {summary && (

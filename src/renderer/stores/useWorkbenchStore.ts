@@ -23,6 +23,7 @@ export interface ReportData {
     y_axis?: string | string[] | null
     series_name?: string
   }
+  timestamp?: Date
 }
 
 export interface ReportWidget {
@@ -44,7 +45,7 @@ interface WorkbenchState {
   }
   pageCount: number
   editingReportId: string | null
-  pinReport: (messageId: string, reportData: ReportData) => void
+  pinReport: (messageId: string, reportData: ReportData, timestamp?: Date) => void
   removeReport: (reportId: string) => void
   updateReportTitle: (reportId: string, newTitle: string) => void
   updateReportConfig: (
@@ -57,169 +58,184 @@ interface WorkbenchState {
   setPageCount: (count: number) => void
   incrementPageCount: () => void
   setEditingReportId: (id: string | null) => void
+  reset: () => void
+}
+
+let workbenchRehydrateSet: ((partial: Partial<WorkbenchState>) => void) | null = null
+
+const initialWorkbenchState: Pick<
+  WorkbenchState,
+  'pinnedReports' | 'layoutScenario' | 'canvasConfig' | 'pageCount' | 'editingReportId'
+> = {
+  pinnedReports: [],
+  layoutScenario: 'default',
+  canvasConfig: {
+    layout: 'a4',
+    zoom: 100,
+    title: 'Untitled Analysis',
+  },
+  pageCount: 1,
+  editingReportId: null,
 }
 
 export const useWorkbenchStore = create<WorkbenchState>()(
   persist(
-    set => ({
-      pinnedReports: [],
-      layoutScenario: 'default',
-      canvasConfig: {
-        layout: 'a4',
-        zoom: 100,
-        title: 'Untitled Analysis',
-      },
-      pageCount: 1,
-      editingReportId: null,
-      setLayoutScenario: scenario => set({ layoutScenario: scenario }),
-      setCanvasConfig: updates =>
-        set(state => ({
-          canvasConfig: { ...state.canvasConfig, ...updates },
-          pageCount:
-            updates.layout === 'a4' && state.canvasConfig.layout !== 'a4'
-              ? (() => {
-                  const maxGridY = state.pinnedReports.reduce((max, item) => {
-                    const y = Number.isFinite(item.layout?.y) ? (item.layout.y as number) : 0
-                    const h = Number.isFinite(item.layout?.h) ? (item.layout.h as number) : 0
-                    return Math.max(max, y + h)
-                  }, 0)
-                  const contentPx = maxGridY * GRID_ROW_HEIGHT
-                  const blockPx = PAGE_HEIGHT_PX + PAGE_GAP_PX
-                  const needed = blockPx > 0 ? Math.ceil(contentPx / blockPx) : 1
-                  return Math.max(state.pageCount, needed || 1)
-                })()
-              : state.pageCount,
-        })),
-      setPageCount: count => set({ pageCount: Math.max(1, count) }),
-      incrementPageCount: () => set(state => ({ pageCount: state.pageCount + 1 })),
-      pinReport: (messageId, reportData) =>
-        set(state => {
-          // Check if already pinned to avoid duplicates for the same message
-          if (state.pinnedReports.some(r => r.sourceMessageId === messageId)) {
-            return state
-          }
+    set => {
+      workbenchRehydrateSet = set
 
-          const id = crypto.randomUUID()
-          const isBigNumberData = (data?: Array<Record<string, any>>) => {
-            if (!data || data.length !== 1) return false
-            const keys = Object.keys(data[0] || {})
-            return keys.length <= 1
-          }
+      return {
+        ...initialWorkbenchState,
+        setLayoutScenario: scenario => set({ layoutScenario: scenario }),
+        setCanvasConfig: updates =>
+          set(state => ({
+            canvasConfig: { ...state.canvasConfig, ...updates },
+            pageCount:
+              updates.layout === 'a4' && state.canvasConfig.layout !== 'a4'
+                ? (() => {
+                    const maxGridY = state.pinnedReports.reduce((max, item) => {
+                      const y = Number.isFinite(item.layout?.y) ? (item.layout.y as number) : 0
+                      const h = Number.isFinite(item.layout?.h) ? (item.layout.h as number) : 0
+                      return Math.max(max, y + h)
+                    }, 0)
+                    const contentPx = maxGridY * GRID_ROW_HEIGHT
+                    const blockPx = PAGE_HEIGHT_PX + PAGE_GAP_PX
+                    const needed = blockPx > 0 ? Math.ceil(contentPx / blockPx) : 1
+                    return Math.max(state.pageCount, needed || 1)
+                  })()
+                : state.pageCount,
+          })),
+        setPageCount: count => set({ pageCount: Math.max(1, count) }),
+        incrementPageCount: () => set(state => ({ pageCount: state.pageCount + 1 })),
+        pinReport: (messageId, reportData, timestamp) =>
+          set(state => {
+            // Check if already pinned to avoid duplicates for the same message
+            if (state.pinnedReports.some(r => r.sourceMessageId === messageId)) {
+              return state
+            }
 
-          let w = 6
-          let h = 10
+            const id = crypto.randomUUID()
+            const isBigNumberData = (data?: Array<Record<string, any>>) => {
+              if (!data || data.length !== 1) return false
+              const keys = Object.keys(data[0] || {})
+              return keys.length <= 1
+            }
 
-          switch (reportData.chartType) {
-            case 'table':
-              if (isBigNumberData(reportData.tableData)) {
+            let w = 6
+            let h = 10
+
+            switch (reportData.chartType) {
+              case 'table':
+                if (isBigNumberData(reportData.tableData)) {
+                  w = 3
+                  h = 4
+                } else {
+                  w = 12
+                  h = 12
+                }
+                break
+              case 'pie':
+                w = 4
+                h = 8
+                break
+              case 'bar':
+              case 'line':
+              case 'area':
+              case 'scatter':
+                if ((reportData.tableData?.length || 0) > 20) {
+                  w = 12
+                  h = 12
+                } else {
+                  w = 6
+                  h = 10
+                }
+                break
+              case 'kpi':
                 w = 3
-                h = 4
-              } else {
-                w = 12
-                h = 12
-              }
-              break
-            case 'pie':
-              w = 4
-              h = 8
-              break
-            case 'bar':
-            case 'line':
-            case 'area':
-            case 'scatter':
-              if ((reportData.tableData?.length || 0) > 20) {
-                w = 12
-                h = 12
-              } else {
+                h = 6
+                break
+              default:
                 w = 6
                 h = 10
-              }
-              break
-            case 'kpi':
-              w = 3
-              h = 6
-              break
-            default:
-              w = 6
-              h = 10
-          }
+            }
 
-          // Respect 12-column grid and keep positive dimensions
-          w = Math.min(12, Math.max(1, w))
-          h = Math.max(1, h)
+            // Respect 12-column grid and keep positive dimensions
+            w = Math.min(12, Math.max(1, w))
+            h = Math.max(1, h)
 
-          const maxY = state.pinnedReports.reduce(
-            (max, item) => Math.max(max, (item.layout?.y ?? 0) + (item.layout?.h ?? 0)),
-            0
-          )
-
-          return {
-            pinnedReports: [
-              ...state.pinnedReports,
-              {
-                id,
-                sourceMessageId: messageId,
-                reportData,
-                layout: {
-                  i: id,
-                  x: 0,
-                  y: maxY, // Put at bottom just after last item
-                  w,
-                  h,
-                },
-              },
-            ],
-          }
-        }),
-      updateReportTitle: (reportId, newTitle) =>
-        set(state => ({
-          pinnedReports: state.pinnedReports.map(r =>
-            r.id === reportId
-              ? { ...r, reportData: { ...r.reportData, title: newTitle } }
-              : r
-          ),
-        })),
-      updateReportConfig: (id, updates) =>
-        set(state => ({
-          pinnedReports: state.pinnedReports.map(report => {
-            if (report.id !== id) return report
-            const nextVizConfig =
-              updates.config !== undefined
-                ? { ...report.reportData.vizConfig, ...updates.config }
-                : report.reportData.vizConfig
+            const maxY = state.pinnedReports.reduce(
+              (max, item) => Math.max(max, (item.layout?.y ?? 0) + (item.layout?.h ?? 0)),
+              0
+            )
 
             return {
-              ...report,
-              reportData: {
-                ...report.reportData,
-                chartType: updates.type ?? report.reportData.chartType,
-                vizConfig: nextVizConfig,
-              },
+              pinnedReports: [
+                ...state.pinnedReports,
+                {
+                  id,
+                  sourceMessageId: messageId,
+                  reportData: { ...reportData, timestamp: timestamp ?? reportData.timestamp },
+                  layout: {
+                    i: id,
+                    x: 0,
+                    y: maxY, // Put at bottom just after last item
+                    w,
+                    h,
+                  },
+                },
+              ],
             }
           }),
-        })),
-      setEditingReportId: id => set({ editingReportId: id }),
-      updateLayout: layouts =>
-        set(state => {
-          const layoutMap = new Map(layouts.map(l => [l.i, l]))
-          return {
-            pinnedReports: state.pinnedReports.map(r => {
-              const newLayout = layoutMap.get(r.id)
-              if (newLayout) {
-                return {
-                  ...r,
-                  layout: { ...r.layout, ...newLayout },
-                }
+        updateReportTitle: (reportId, newTitle) =>
+          set(state => ({
+            pinnedReports: state.pinnedReports.map(r =>
+              r.id === reportId
+                ? { ...r, reportData: { ...r.reportData, title: newTitle } }
+                : r
+            ),
+          })),
+        updateReportConfig: (id, updates) =>
+          set(state => ({
+            pinnedReports: state.pinnedReports.map(report => {
+              if (report.id !== id) return report
+              const nextVizConfig =
+                updates.config !== undefined
+                  ? { ...report.reportData.vizConfig, ...updates.config }
+                  : report.reportData.vizConfig
+
+              return {
+                ...report,
+                reportData: {
+                  ...report.reportData,
+                  chartType: updates.type ?? report.reportData.chartType,
+                  vizConfig: nextVizConfig,
+                },
               }
-              return r
             }),
-          }
-        }),
-      removeReport: reportId =>
-        set(state => ({
-          pinnedReports: state.pinnedReports.filter(r => r.id !== reportId),
-        })),
-    }),
+          })),
+        setEditingReportId: id => set({ editingReportId: id }),
+        updateLayout: layouts =>
+          set(state => {
+            const layoutMap = new Map(layouts.map(l => [l.i, l]))
+            return {
+              pinnedReports: state.pinnedReports.map(r => {
+                const newLayout = layoutMap.get(r.id)
+                if (newLayout) {
+                  return {
+                    ...r,
+                    layout: { ...r.layout, ...newLayout },
+                  }
+                }
+                return r
+              }),
+            }
+          }),
+        removeReport: reportId =>
+          set(state => ({
+            pinnedReports: state.pinnedReports.filter(r => r.id !== reportId),
+          })),
+        reset: () => set({ ...initialWorkbenchState }),
+      }
+    },
     {
       name: 'wansan-workbench',
       storage: createJSONStorage(() => localStorage),
@@ -228,6 +244,20 @@ export const useWorkbenchStore = create<WorkbenchState>()(
         canvasConfig: state.canvasConfig,
         pageCount: state.pageCount,
       }),
+      onRehydrateStorage: () => state => {
+        if (!state) return
+        workbenchRehydrateSet?.({
+          pinnedReports: state.pinnedReports.map(report => ({
+            ...report,
+            reportData: {
+              ...report.reportData,
+              timestamp: report.reportData.timestamp
+                ? new Date(report.reportData.timestamp)
+                : undefined,
+            },
+          })),
+        })
+      },
     }
   )
 )

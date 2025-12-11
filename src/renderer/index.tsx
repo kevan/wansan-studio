@@ -5,6 +5,9 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './utils/queryClient'
 import App from './App'
 import './styles/globals.css'
+import { useFileStore } from './stores/useFileStore'
+import { useChatStore } from './stores/useChatStore'
+import { useWorkbenchStore } from './stores/useWorkbenchStore'
 
 // 确保 DOM 元素存在
 const container = document.getElementById('root')
@@ -25,3 +28,21 @@ root.render(
     </QueryClientProvider>
   </React.StrictMode>
 )
+
+if (import.meta.env.DEV) {
+  ;(window as any).resetApp = () => {
+    console.log('💥 NUKING APP STATE...')
+
+    localStorage.removeItem('wansan-files')
+    localStorage.removeItem('wansan-chat')
+    localStorage.removeItem('wansan-workbench')
+
+    useFileStore.getState().reset()
+    useChatStore.getState().reset()
+    useWorkbenchStore.getState().reset()
+
+    window.location.reload()
+  }
+
+  console.log("🔧 DevTools: Run 'resetApp()' to clear all state.")
+}

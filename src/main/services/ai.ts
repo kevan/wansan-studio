@@ -57,9 +57,9 @@ export class AIService {
         apiKey: effectiveApiKey,
         baseURL: effectiveBaseURL,
       }
-      if (isDev()) {
-        options.logLevel = 'debug'
-      }
+      // if (isDev()) {
+      //   options.logLevel = 'debug'
+      // }
       this.openai = new OpenAI(options)
     } else {
       this.openai = null

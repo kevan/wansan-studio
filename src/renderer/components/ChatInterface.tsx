@@ -17,6 +17,7 @@ export interface ChatMessage {
     query: string
     sqlSummary: string
   }
+  originalQuery?: string
   reportData?: {
     title: string
     subtitle?: string
@@ -66,7 +67,7 @@ export function ChatInterface({
   }
 
   return (
-    <div className={`flex flex-col h-full ${className}`}>
+    <div className={`flex flex-col h-full min-h-0 ${className}`}>
       {/* 聊天消息区域 */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {messages.length === 0 ? (
@@ -101,7 +102,7 @@ export function ChatInterface({
                     {message.type === 'user' ? 'You' : 'Wansan AI'}
                   </span>
                   <span className="text-xs text-zinc-400">
-                    {message.timestamp.toLocaleTimeString([], {
+                    {new Date(message.timestamp).toLocaleTimeString([], {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
@@ -154,6 +155,7 @@ export function ChatInterface({
                       <div className="w-full mt-2 space-y-4">
                         <ReportCard
                           messageId={message.id}
+                          message={message}
                           reportData={message.reportData}
                           className="w-full shadow-sm hover:shadow-md transition-shadow"
                         />
@@ -195,18 +197,14 @@ export function ChatInterface({
       </div>
 
       {/* 输入区域 */}
-      <div className="p-4 z-10 relative">
+      <div className="p-4 z-10 relative flex-none border-t bg-white">
         <InputBar
           onSubmit={handleQuerySubmit}
           loading={!!loading}
           tableName={tableName}
           columns={columns}
           messages={messages}
-          placeholder={
-            tableName
-              ? `关于 ${tableName}，你想知道什么？`
-              : '请先选择或上传数据文件...'
-          }
+          placeholder={'说说你想要的数据...'}
         />
       </div>
     </div>

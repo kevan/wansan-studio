@@ -45,9 +45,9 @@ export function ChatStream() {
   const currentColumns = currentFile?.columns.map(c => c.name) || []
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-zinc-50">
+    <div className="flex-1 flex flex-col overflow-hidden bg-zinc-50 min-h-0">
       {/* 聊天主界面 */}
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-hidden relative min-h-0">
         <ChatInterface
           tableName={currentFile?.tableName}
           columns={currentColumns}

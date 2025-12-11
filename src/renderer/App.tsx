@@ -271,7 +271,7 @@ function App() {
             <div
               className={cn(
                 'flex-1 w-full overflow-hidden transition-all',
-                isPresentationMode ? 'p-0' : 'p-4'
+                isPresentationMode ? 'p-0' : 'p-1'
               )}
             >
               <div

@@ -16,16 +16,27 @@ export function useDataRehydrate() {
     () => useFileStore.persist?.hasHydrated?.() ?? false
   )
   const hasRunRef = useRef(false)
+  const initialFilesRef = useRef<typeof files>([])
 
   useEffect(() => {
+    if (useFileStore.persist?.hasHydrated?.()) {
+      initialFilesRef.current = useFileStore.getState().files
+    }
     const unsub = useFileStore.persist?.onFinishHydration?.(() => {
+      initialFilesRef.current = useFileStore.getState().files
       setHydrated(true)
     })
     return () => unsub?.()
   }, [])
 
   useEffect(() => {
-    if (!hydrated || hasRunRef.current || files.length === 0) return
+    if (!hydrated || hasRunRef.current) return
+
+    const filesToRestore = initialFilesRef.current.filter(
+      f => f.status === 'ready' && f.tableName
+    )
+    if (filesToRestore.length === 0) return
+
     hasRunRef.current = true
     let cancelled = false
 
@@ -40,11 +51,7 @@ export function useDataRehydrate() {
       let failCount = 0
 
       await Promise.all(
-        files.map(async file => {
-          if (file.status === 'missing') {
-            failCount++
-            return
-          }
+        filesToRestore.map(async file => {
           try {
             const result = await reIngestFile({
               filePath: file.path,
@@ -63,6 +70,11 @@ export function useDataRehydrate() {
                 error instanceof Error
                   ? error.message
                   : 'File missing or unreadable during restore',
+            })
+            console.error('Auto rehydrate failed:', {
+              file: file.path,
+              tableName: file.tableName,
+              error,
             })
             addToast({
               title: 'Restore failed',

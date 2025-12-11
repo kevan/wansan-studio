@@ -5,21 +5,25 @@ import {
   ChevronDown,
   Terminal,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react'
 import { DashboardWidget } from '../DashboardWidget'
 import { ReportData, useWorkbenchStore } from '../../stores/useWorkbenchStore'
 import { useChatStore } from '../../stores/useChatStore'
 import { cn } from '../../utils/cn'
 import { VizControls } from '../report/viz-controls'
+import type { ChatMessage } from '../ChatInterface'
 
 interface ReportCardProps {
   messageId: string
+  message: ChatMessage
   reportData: ReportData
   className?: string
 }
 
 export function ReportCard({
   messageId,
+  message,
   reportData,
   className,
 }: ReportCardProps) {
@@ -28,12 +32,13 @@ export function ReportCard({
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const setReplyTo = useChatStore(state => state.setReplyTo)
   const updateReportConfig = useChatStore(state => state.updateReportConfig)
+  const rerunAnalysis = useChatStore(state => state.rerunAnalysis)
 
   const isPinned = pinnedReports.some(r => r.sourceMessageId === messageId)
 
   const handlePin = () => {
     if (!isPinned) {
-      pinReport(messageId, reportData)
+      pinReport(messageId, reportData, message.timestamp)
     }
   }
 
@@ -96,6 +101,14 @@ export function ReportCard({
             onChange={updates => updateReportConfig(messageId, updates)}
           />
           <button
+            onClick={() => rerunAnalysis(message)}
+            className="p-1.5 rounded-md transition-colors flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
+            title="Rerun with latest data"
+          >
+            <RefreshCw className="h-3.5 w-3.5 text-zinc-500" />
+            Rerun
+          </button>
+          <button
             onClick={() => setReplyTo(messageId)}
             className="p-1.5 rounded-md transition-colors flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
             title="Refine this analysis"
@@ -122,7 +135,11 @@ export function ReportCard({
 
       {/* Content */}
       <div className="flex-1 min-h-0">
-        <DashboardWidget {...reportData} variant="chat" />
+        <DashboardWidget
+          {...reportData}
+          variant="chat"
+          timestamp={message.timestamp}
+        />
       </div>
     </div>
   )

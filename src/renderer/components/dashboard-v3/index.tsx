@@ -33,7 +33,7 @@ export function DashboardCanvasV3() {
   const gridWidth = isA4 ? PAGE_WIDTH_PX : 1200
 
   return (
-    <div className="flex h-full w-full flex-1 justify-center overflow-auto bg-zinc-100/60 p-8 dark:bg-zinc-900">
+    <div className="flex h-full w-full flex-1 justify-center overflow-auto bg-zinc-100/60 p-6 dark:bg-zinc-900">
       <div className="flex min-h-min flex-col items-center">
         <div
           id="dashboard-export-root"

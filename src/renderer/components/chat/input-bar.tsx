@@ -17,7 +17,7 @@ interface InputBarProps {
 export function InputBar({
   onSubmit,
   loading,
-  placeholder = 'Ask data...',
+  placeholder = '询问关于数据的一切...',
   tableName,
   columns = [],
   messages,
