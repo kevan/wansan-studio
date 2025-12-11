@@ -262,6 +262,7 @@ export async function generateAnalysis(
   relations: RelationSuggestion[],
   context?: { lastSql: string; lastQuery: string },
   model?: string,
+  language: 'en' | 'zh' = 'en',
 ): Promise<AIGenerationOutput> {
   if (isDev()) {
     console.log(
@@ -313,10 +314,20 @@ ${contextSection}
 ### 🤖 YOUR RESPONSE (JSON)`
   const modelToUse = getModelToUse(model)
 
+  const languageNote =
+    language === 'zh'
+      ? 'Chinese (Simplified)'
+      : 'English'
+
   const body: ChatCompletionCreateParamsNonStreaming = {
     model: modelToUse,
     messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
+      {
+        role: 'system',
+        content: `${SYSTEM_PROMPT}
+
+OUTPUT RULE: The "summary", "title", "reasoning", and "suggestions" fields MUST be in ${languageNote}.`,
+      },
       { role: 'user', content: userPrompt },
     ],
     response_format: { type: 'json_object' },

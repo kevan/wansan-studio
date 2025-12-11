@@ -10,15 +10,11 @@ interface LogEntry {
 
 interface DevConsoleProps {
   defaultOpen?: boolean
-  onShowcase?: () => void
-  onStyleTest?: () => void
 }
 
 // 生产环境不渲染
 export function DevConsole({
   defaultOpen = false,
-  onShowcase,
-  onStyleTest,
 }: DevConsoleProps) {
   if (!isDev) return null
 
@@ -190,18 +186,6 @@ export function DevConsole({
         ) : (
           <div className="h-full p-4">
             <div className="flex flex-wrap gap-2">
-              <button
-                onClick={onShowcase}
-                className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded text-sm"
-              >
-                🎨 组件展示
-              </button>
-              <button
-                onClick={onStyleTest}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm"
-              >
-                🎨 样式测试
-              </button>
               <button
                 onClick={() => console.log('Test log')}
                 className="px-3 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm"

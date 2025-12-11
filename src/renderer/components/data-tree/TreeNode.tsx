@@ -33,6 +33,7 @@ import {
 import { useFileStore } from '../../stores/useFileStore'
 import { useToastStore } from '../../stores/useToastStore'
 import { useReIngestFile } from '../../hooks/useIPC'
+import { useTranslation } from 'react-i18next'
 
 interface TreeNodeProps {
   node: NodeApi<TreeNodeData>
@@ -53,6 +54,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
   } = useFileStore()
   const { addToast } = useToastStore()
   const reIngest = useReIngestFile()
+  const { t } = useTranslation('common')
 
   // --- Icon Logic ---
   const getIcon = () => {
@@ -110,7 +112,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
   const handleRemoveFile = () => {
     if (data.fileId) {
       removeFile(data.fileId)
-      addToast({ title: 'File Removed', type: 'success', duration: 2000 })
+      addToast({ title: t('file_removed'), type: 'success', duration: 2000 })
     }
   }
 
@@ -125,7 +127,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
     if (data.relationId) {
       removeRelation(data.relationId)
       addToast({
-        title: 'Relationship Removed',
+        title: t('relationship_removed'),
         type: 'success',
         duration: 2000,
       })
@@ -138,7 +140,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
     if (data.fileId && data.columnName) {
       updateColumn(data.fileId, data.columnName, { type: newType })
       addToast({
-        title: `Type changed to ${newType}`,
+        title: t('type_changed', { type: newType }),
         type: 'success',
         duration: 2000,
       })
@@ -148,8 +150,8 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
   const handleRenameAlias = () => {
     // Placeholder for rename logic
     addToast({
-      title: 'Rename Feature',
-      description: 'Coming soon...',
+      title: t('rename_feature'),
+      description: t('coming_soon'),
       type: 'info',
       duration: 2000,
     })
@@ -163,7 +165,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
     // Dismiss any existing persistent toast? We don't have IDs easily.
     // Just add new ones.
     const toastId = addToast({
-      title: 'Reloading...',
+      title: t('reloading'),
       type: 'info',
       duration: 0,
     })
@@ -181,22 +183,22 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
       const droppedCount = useFileStore.getState().reloadFile(file.id, result)
 
       addToast({
-        title: 'Reloaded successfully',
+        title: t('reload_success'),
         type: 'success',
         duration: 2000,
       })
 
       if (droppedCount > 0) {
         addToast({
-          title: 'Warning',
-          description: `Reload complete, but ${droppedCount} relationship(s) were removed due to missing columns.`,
+          title: t('warning'),
+          description: t('reload_warning', { count: droppedCount }),
           type: 'warning',
           duration: 5000,
         })
       }
     } catch (e) {
       addToast({
-        title: 'Reload failed',
+        title: t('reload_failed'),
         description: String(e),
         type: 'error',
         duration: 3000,

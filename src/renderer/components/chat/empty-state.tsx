@@ -2,6 +2,7 @@ import React from 'react'
 import { Sparkles, BarChart3, PieChart, TrendingUp, Lightbulb } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { useFileStore } from '../../stores/useFileStore'
+import { useTranslation } from 'react-i18next'
 
 interface EmptyStateProps {
   onSelectPrompt: (text: string) => void
@@ -17,29 +18,29 @@ const STYLES = [
 const STARTER_PROMPTS = [
   {
     icon: BarChart3,
-    title: '销售概览',
-    prompt: '请为我展示过去12个月的销售趋势，按月统计，并计算增长率。',
+    title: 'starter_sales_title',
+    prompt: 'starter_sales_prompt',
     color: 'text-blue-500',
     bg: 'bg-blue-50',
   },
   {
     icon: PieChart,
-    title: '客户细分',
-    prompt: '分析客户的分布情况，按地区和消费层级进行分组统计。',
+    title: 'starter_customer_title',
+    prompt: 'starter_customer_prompt',
     color: 'text-purple-500',
     bg: 'bg-purple-50',
   },
   {
     icon: TrendingUp,
-    title: '关键指标',
-    prompt: '计算本季度的总营收、平均客单价以及利润率。',
+    title: 'starter_metric_title',
+    prompt: 'starter_metric_prompt',
     color: 'text-green-500',
     bg: 'bg-green-50',
   },
   {
     icon: Sparkles,
-    title: '异常检测',
-    prompt: '帮我找出上个月销售数据中的异常值，并分析可能的原因。',
+    title: 'starter_anomaly_title',
+    prompt: 'starter_anomaly_prompt',
     color: 'text-orange-500',
     bg: 'bg-orange-50',
   },
@@ -47,6 +48,7 @@ const STARTER_PROMPTS = [
 
 export function EmptyState({ onSelectPrompt }: EmptyStateProps) {
   const suggestedPrompts = useFileStore(state => state.suggestedPrompts)
+  const { t } = useTranslation('chat')
 
   const promptsToShow =
     suggestedPrompts && suggestedPrompts.length > 0
@@ -68,10 +70,10 @@ export function EmptyState({ onSelectPrompt }: EmptyStateProps) {
           <Sparkles className="w-8 h-8 text-orange-500" />
         </div>
         <h2 className="text-2xl font-semibold text-zinc-900 mb-2">
-          准备好分析数据了吗？
+          {t('empty_title')}
         </h2>
         <p className="text-zinc-500 max-w-md mx-auto">
-          我可以帮你生成报表、分析趋势、挖掘洞察。试试下面的快捷指令，或者直接告诉我你想了解什么。
+          {t('empty_subtitle')}
         </p>
       </div>
 
@@ -94,10 +96,10 @@ export function EmptyState({ onSelectPrompt }: EmptyStateProps) {
             </div>
             <div>
               <h3 className="font-medium text-zinc-900 mb-1 group-hover:text-orange-600 transition-colors">
-                {item.title}
+                {t(item.title)}
               </h3>
               <p className="text-sm text-zinc-500 line-clamp-2">
-                {item.prompt}
+                {t(item.prompt)}
               </p>
             </div>
           </button>

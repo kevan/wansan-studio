@@ -15,6 +15,7 @@ import { useFileStore } from '../../stores/useFileStore'
 import { useChatStore } from '../../stores/useChatStore'
 import { useToastStore } from '../../stores/useToastStore'
 import type { ChatMessage } from '../ChatInterface'
+import { useTranslation } from 'react-i18next'
 
 interface MagicInputProps {
   onSubmit: (value: string) => void
@@ -54,6 +55,7 @@ export function MagicInput({
   const resetChat = useChatStore(state => state.reset)
   const addToast = useToastStore(state => state.addToast)
   const files = useFileStore(state => state.files)
+  const { t } = useTranslation('chat')
 
   const readyTables = useMemo(() => files.filter(f => f.status === 'ready'), [files])
 
@@ -62,7 +64,7 @@ export function MagicInput({
     replyMessage?.content ||
     replyMessage?.reportData?.title ||
     replyMessage?.reportData?.summary ||
-    (replyMessage ? 'Chart Analysis' : '')
+    (replyMessage ? t('reply_fallback') : '')
 
   const filteredTables = useMemo(() => {
     if (!mention.active) return []
@@ -78,15 +80,15 @@ export function MagicInput({
       case 'clear':
         resetChat()
         addToast({
-          title: 'Chat cleared',
+          title: t('chat_cleared'),
           type: 'info',
           duration: 2500,
         })
         return
       case 'export':
         addToast({
-          title: 'Export triggered',
-          description: 'Preparing Markdown export...',
+          title: t('export_triggered'),
+          description: t('export_desc'),
           type: 'info',
           duration: 3000,
         })
@@ -98,13 +100,13 @@ export function MagicInput({
         if (lastAssistant) {
           rerunAnalysis(lastAssistant)
           addToast({
-            title: 'Rerunning last analysis',
+            title: t('rerun_last'),
             type: 'info',
             duration: 2500,
           })
         } else {
           addToast({
-            title: 'No analysis to rerun',
+            title: t('no_rerun'),
             type: 'warning',
             duration: 2500,
           })
@@ -113,8 +115,8 @@ export function MagicInput({
       }
       default:
         addToast({
-          title: 'Unknown command',
-          description: `Try /clear, /export, or /rerun.`,
+          title: t('unknown_command'),
+          description: t('unknown_command_desc'),
           type: 'warning',
           duration: 3000,
         })
@@ -305,7 +307,7 @@ export function MagicInput({
                     }}
                   >
                     <Download className="w-4 h-4 text-zinc-500" />
-                    Export Markdown
+                    {t('export_markdown')}
                   </button>
                 </>
               )}
@@ -331,10 +333,10 @@ export function MagicInput({
               disabled={loading}
             />
             <div className="flex items-center justify-between text-[11px] text-zinc-400 mt-1">
-              <span>Press Enter to send • Shift+Enter for newline • @ to insert tables</span>
-              {/*<span className="font-mono text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded">*/}
-              {/*  {readyTables.length} tables*/}
-              {/*</span>*/}
+              <span>{t('input_hint')}</span>
+              <span className="font-mono text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded">
+                {t('table_count', { count: readyTables.length })}
+              </span>
             </div>
           </div>
 

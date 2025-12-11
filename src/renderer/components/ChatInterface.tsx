@@ -1,9 +1,10 @@
 import React, { useRef, useEffect } from 'react'
-import { LoadingState, LoadingType } from './LoadingStates'
+import { LoadingType } from './LoadingStates'
 import { ReportCard } from './chat/ReportCard'
 import { EmptyState } from './chat/empty-state'
 import { MagicInput } from './chat/magic-input'
 import { User, Bot, Sparkles, GitBranch, Brain, Zap } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export interface ChatMessage {
   id: string
@@ -56,6 +57,7 @@ export function ChatInterface({
   className = '',
 }: ChatInterfaceProps) {
   const dummyDivRef = useRef<HTMLDivElement>(null)
+  const { t } = useTranslation('chat')
 
   // Auto-scroll to bottom when messages or loading state changes
   useEffect(() => {
@@ -101,7 +103,7 @@ export function ChatInterface({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm font-semibold text-zinc-900">
-                    {message.type === 'user' ? 'You' : 'Wansan AI'}
+                    {message.type === 'user' ? t('you') : t('assistant')}
                   </span>
                   <span className="text-xs text-zinc-400">
                     {new Date(message.timestamp).toLocaleTimeString([], {
@@ -120,7 +122,9 @@ export function ChatInterface({
                     {message.contextRef && (
                       <div className="flex items-center gap-1.5 mb-2 text-xs text-indigo-500/80 bg-indigo-50/50 w-fit px-2 py-0.5 rounded-full border border-indigo-100/50">
                         <GitBranch className="h-3 w-3" />
-                        <span>Based on: "{message.contextRef.query}"</span>
+                        <span>
+                          {t('based_on')} "{message.contextRef.query}"
+                        </span>
                       </div>
                     )}
                     {message.status && (
@@ -132,10 +136,10 @@ export function ChatInterface({
                           ) : (
                             <Zap className="h-4 w-4" />
                           )}
-                          {message.status === 'thinking' && 'Generating analysis...'}
-                          {message.status === 'planning' && 'SQL generated. Executing...'}
-                          {message.status === 'executing' && 'Executing SQL...'}
-                          {message.status === 'error' && 'Execution failed'}
+                          {message.status === 'thinking' && t('status_thinking')}
+                          {message.status === 'planning' && t('status_planning')}
+                          {message.status === 'executing' && t('status_executing')}
+                          {message.status === 'error' && t('status_error')}
                         </div>
                         {message.planSql && (
                           <pre className="mt-2 max-h-32 overflow-y-auto rounded-md bg-white/80 p-2 text-xs text-zinc-800 border border-indigo-100">
@@ -168,7 +172,7 @@ export function ChatInterface({
                             <div className="flex flex-wrap items-center gap-2 animate-in fade-in slide-in-from-top-1">
                               <div className="flex items-center gap-1.5 text-xs font-medium text-purple-600 mr-1">
                                 <Sparkles className="w-3.5 h-3.5" />
-                                Suggested:
+                                {t('suggested')}
                               </div>
                               {message.reportData.suggestions.map(
                                 (suggestion, idx) => (
@@ -205,7 +209,7 @@ export function ChatInterface({
           loading={!!loading}
           messages={messages}
           className="pointer-events-auto"
-          placeholder={'说说你想要什么数据...'}
+          placeholder={t('placeholder_default')}
         />
       </div>
     </div>

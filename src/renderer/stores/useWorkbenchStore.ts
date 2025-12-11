@@ -5,6 +5,14 @@ import { GRID_ROW_HEIGHT, PAGE_GAP_PX, PAGE_HEIGHT_PX } from '@/components/dashb
 import type { AIAnalysisResult } from '@shared/types'
 
 export type CanvasLayout = 'a4' | 'screen'
+export type Language = 'en' | 'zh'
+
+const getDefaultLanguage = (): Language => {
+  if (typeof navigator !== 'undefined') {
+    return navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en'
+  }
+  return 'en'
+}
 
 export interface ReportData {
   title: string
@@ -45,6 +53,7 @@ interface WorkbenchState {
   }
   pageCount: number
   editingReportId: string | null
+  language: Language
   pinReport: (messageId: string, reportData: ReportData, timestamp?: Date) => void
   removeReport: (reportId: string) => void
   updateReportTitle: (reportId: string, newTitle: string) => void
@@ -58,6 +67,7 @@ interface WorkbenchState {
   setPageCount: (count: number) => void
   incrementPageCount: () => void
   setEditingReportId: (id: string | null) => void
+  setLanguage: (lang: Language) => void
   reset: () => void
 }
 
@@ -65,7 +75,7 @@ let workbenchRehydrateSet: ((partial: Partial<WorkbenchState>) => void) | null =
 
 const initialWorkbenchState: Pick<
   WorkbenchState,
-  'pinnedReports' | 'layoutScenario' | 'canvasConfig' | 'pageCount' | 'editingReportId'
+  'pinnedReports' | 'layoutScenario' | 'canvasConfig' | 'pageCount' | 'editingReportId' | 'language'
 > = {
   pinnedReports: [],
   layoutScenario: 'default',
@@ -76,6 +86,7 @@ const initialWorkbenchState: Pick<
   },
   pageCount: 1,
   editingReportId: null,
+  language: getDefaultLanguage(),
 }
 
 export const useWorkbenchStore = create<WorkbenchState>()(
@@ -106,6 +117,7 @@ export const useWorkbenchStore = create<WorkbenchState>()(
           })),
         setPageCount: count => set({ pageCount: Math.max(1, count) }),
         incrementPageCount: () => set(state => ({ pageCount: state.pageCount + 1 })),
+        setLanguage: lang => set({ language: lang }),
         pinReport: (messageId, reportData, timestamp) =>
           set(state => {
             // Check if already pinned to avoid duplicates for the same message
@@ -243,6 +255,7 @@ export const useWorkbenchStore = create<WorkbenchState>()(
         pinnedReports: state.pinnedReports,
         canvasConfig: state.canvasConfig,
         pageCount: state.pageCount,
+        language: state.language,
       }),
       onRehydrateStorage: () => state => {
         if (!state) return
@@ -256,6 +269,7 @@ export const useWorkbenchStore = create<WorkbenchState>()(
                 : undefined,
             },
           })),
+          language: state.language,
         })
       },
     }

@@ -7,6 +7,7 @@ import { useAutoLink } from '../hooks/useAutoLink'
 import { useFileSync } from '../hooks/useFileSync'
 import { Button } from './ui/button'
 import { useToastStore } from '../stores/useToastStore'
+import { useTranslation } from 'react-i18next'
 
 interface SidebarProps {
   onImportData?: () => void
@@ -18,6 +19,7 @@ export function Sidebar(_props: SidebarProps) {
   const parseFileMutation = useParseFile()
   const { checkAutoLink } = useAutoLink()
   const addToast = useToastStore(state => state.addToast)
+  const { t } = useTranslation('common')
 
   // Enable automatic file synchronization checks
   useFileSync()
@@ -209,7 +211,7 @@ export function Sidebar(_props: SidebarProps) {
           ) : (
             <Plus className="mr-2 h-4 w-4" />
           )}
-          {isImporting ? '导入中...' : 'Import Data'}
+          {isImporting ? t('importing') : t('import_data')}
         </Button>
       </div>
 
@@ -243,7 +245,7 @@ export function Sidebar(_props: SidebarProps) {
               d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
             />
           </svg>
-          Settings
+          {t('settings')}
         </button>
       </div>
     </aside>

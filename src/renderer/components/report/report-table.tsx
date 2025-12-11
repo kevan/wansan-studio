@@ -8,6 +8,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { cn } from '@/utils/cn.ts'
+import { useTranslation } from 'react-i18next'
 
 interface ReportTableProps {
   data: Array<Record<string, any>>
@@ -20,6 +21,7 @@ export function ReportTable({
   columns = [],
   variant,
 }: ReportTableProps) {
+  const { t } = useTranslation('common')
   const columnKeys =
     columns && columns.length > 0
       ? columns
@@ -126,7 +128,7 @@ export function ReportTable({
                   colSpan={columnKeys.length || 1}
                   className="px-4 py-8 text-center text-sm text-zinc-500"
                 >
-                  No data available
+                  {t('no_data')}
                 </td>
               </tr>
             )}
@@ -137,8 +139,10 @@ export function ReportTable({
       {isDashboard && (
         <div className="flex items-center justify-between gap-3 py-3 text-xs text-zinc-600">
           <div>
-            Page {table.getState().pagination.pageIndex + 1} of{' '}
-            {table.getPageCount() || 1}
+            {t('page_of', {
+              page: table.getState().pagination.pageIndex + 1,
+              total: table.getPageCount() || 1,
+            })}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -146,14 +150,14 @@ export function ReportTable({
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
-              Previous
+              {t('prev')}
             </button>
             <button
               className="px-2 py-1 rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
-              Next
+              {t('next')}
             </button>
           </div>
         </div>

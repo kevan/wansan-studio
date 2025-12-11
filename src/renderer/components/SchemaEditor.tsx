@@ -1,5 +1,6 @@
 import { ColumnSchema, useFileStore } from '../stores/useFileStore'
 import { Hash, Type, Calendar, Key, Link2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 // 类型映射配置
 type FormatType = 'number' | 'text' | 'date'
@@ -13,19 +14,19 @@ interface FormatConfig {
 
 const FORMAT_CONFIG: Record<FormatType, FormatConfig> = {
   number: {
-    label: '数字',
+    label: 'format_number',
     icon: Hash,
     bgColor: 'bg-blue-50',
     textColor: 'text-blue-600',
   },
   text: {
-    label: '文本',
+    label: 'format_text',
     icon: Type,
     bgColor: 'bg-zinc-100',
     textColor: 'text-zinc-600',
   },
   date: {
-    label: '日期',
+    label: 'format_date',
     icon: Calendar,
     bgColor: 'bg-green-50',
     textColor: 'text-green-600',
@@ -58,6 +59,7 @@ function mapToFormatType(type: string): FormatType {
 
 export function SchemaEditor() {
   const { files, activeFileId, toggleKeyColumn, relations } = useFileStore()
+  const { t } = useTranslation('common')
   const readyFiles = files.filter(f => f.status === 'ready')
 
   // 如果没有 ready 的文件，不显示
@@ -81,15 +83,17 @@ export function SchemaEditor() {
             <div className="sticky top-0 z-30 bg-zinc-50/95 backdrop-blur border-b px-6 py-2 flex items-center justify-between text-xs text-zinc-600">
               <div className="flex items-center gap-2">
                 <span className="font-medium text-zinc-900">
-                  Edit Schema: {currentFile.name}
+                  {t('edit_schema', { name: currentFile.name })}
                 </span>
                 <span className="text-xs text-zinc-500">
-                  {currentFile.rowCount?.toLocaleString()} 行 ·{' '}
-                  {currentFile.columns.length} 列
+                  {t('row_col_count', {
+                    rows: currentFile.rowCount?.toLocaleString() ?? 0,
+                    cols: currentFile.columns.length,
+                  })}
                 </span>
               </div>
               <span className="text-xs text-zinc-400">
-                表名: {currentFile.tableName}
+                {t('table_name_label', { name: currentFile.tableName })}
               </span>
             </div>
 
@@ -97,9 +101,9 @@ export function SchemaEditor() {
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-[40px] z-30 bg-white shadow-sm">
                 <tr className="text-xs font-semibold text-zinc-500 uppercase tracking-wider bg-white">
-                  <th className="px-6 py-3 w-1/3 border-b">Field Name</th>
-                  <th className="px-6 py-3 w-1/4 border-b">Format</th>
-                  <th className="px-6 py-3 border-b">Preview</th>
+                  <th className="px-6 py-3 w-1/3 border-b">{t('field_name')}</th>
+                  <th className="px-6 py-3 w-1/4 border-b">{t('format')}</th>
+                  <th className="px-6 py-3 border-b">{t('preview')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -139,6 +143,7 @@ function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
   const formatType = mapToFormatType(column.type)
   const config = FORMAT_CONFIG[formatType]
   const IconComponent = config.icon
+  const { t } = useTranslation('common')
 
   return (
     <tr className="hover:bg-zinc-50 transition-colors">
@@ -151,7 +156,7 @@ function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
             className={`mr-1 cursor-pointer transition-colors p-1 rounded hover:bg-zinc-100 flex items-center justify-center ${
               column.isKey ? 'text-indigo-500' : 'text-zinc-300'
             }`}
-            title={column.isKey ? '取消关联键' : '设为关联键'}
+            title={column.isKey ? t('unset_key') : t('set_key')}
           >
             <Key className="w-3 h-3" />
           </button>
@@ -175,7 +180,7 @@ function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
           className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded ${config.bgColor} ${config.textColor}`}
         >
           <IconComponent className="w-3.5 h-3.5" />
-          {config.label}
+          {t(config.label)}
         </span>
       </td>
 
@@ -195,7 +200,7 @@ function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
           </div>
         ) : (
           <span className="text-xs text-muted-foreground text-zinc-400 opacity-30 italic">
-            No preview
+            {t('no_preview')}
           </span>
         )}
       </td>

@@ -4,6 +4,7 @@ import { BigNumberDisplay } from './BigNumberDisplay'
 import { cn } from '../utils/cn'
 import { Lightbulb } from 'lucide-react'
 import { ReportTable } from './report/report-table'
+import { useTranslation } from 'react-i18next'
 
 interface DashboardWidgetProps {
   title: string
@@ -39,6 +40,7 @@ export function DashboardWidget({
   timestamp,
 }: DashboardWidgetProps) {
   const [showSummary, setShowSummary] = useState(false)
+  const { t } = useTranslation('common')
   const tableColumns =
     tableData && tableData.length > 0 ? Object.keys(tableData[0]) : []
   const showBigNumber =
@@ -78,7 +80,7 @@ export function DashboardWidget({
                   )}
                   onMouseEnter={() => setShowSummary(true)}
                   onMouseLeave={() => setShowSummary(false)}
-                  title="Show Summary"
+                  title={t('summary')}
                 >
                   <Lightbulb className="w-5 h-5" />
                 </button>
@@ -88,16 +90,16 @@ export function DashboardWidget({
                   <div className="absolute right-0 top-full mt-2 w-72 p-4 bg-white rounded-lg shadow-xl border border-zinc-200 z-50 text-sm text-zinc-600 animate-in fade-in slide-in-from-top-1">
                     <div className="font-medium text-zinc-900 mb-2 flex items-center gap-2">
                       <Lightbulb className="w-4 h-4 text-yellow-500" />
-                      Summary
+                      {t('summary')}
                     </div>
                     <div className="max-h-60 overflow-y-auto">{summary}</div>
                     {timestamp && (
                       <div className="mt-3 pt-2 border-t border-zinc-100 text-xs text-zinc-400">
                         <div className="font-medium text-zinc-500 mb-0.5">
-                          生成时间
+                          {t('generated_time')}
                         </div>
                         <div className="font-mono">
-                          {timestamp.toLocaleString('zh-CN')}
+                          {timestamp.toLocaleString()}
                         </div>
                       </div>
                     )}

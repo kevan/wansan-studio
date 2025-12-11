@@ -8,6 +8,7 @@ import { ReportTable } from './report-table'
 import { BigNumberDisplay } from '../BigNumberDisplay'
 import { cn } from '@/utils/cn'
 import type { ReportData } from '@/stores/useWorkbenchStore'
+import { useTranslation } from 'react-i18next'
 
 export function ChartFullView() {
   const editingReportId = useWorkbenchStore(state => state.editingReportId)
@@ -15,6 +16,7 @@ export function ChartFullView() {
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const updateReportConfig = useWorkbenchStore(state => state.updateReportConfig)
   const updateReportTitle = useWorkbenchStore(state => state.updateReportTitle)
+  const { t } = useTranslation('common')
 
   const report = useMemo(
     () => pinnedReports.find(r => r.id === editingReportId),
@@ -94,29 +96,29 @@ export function ChartFullView() {
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
       <div className="relative flex h-[80vh] w-[80vw] max-w-6xl rounded-xl border border-zinc-200 bg-white shadow-2xl overflow-hidden">
         <div className="flex flex-1 flex-col">
-          <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3">
-            <input
-              className="w-full max-w-lg border-none text-lg font-semibold text-zinc-900 outline-none focus:ring-0"
-              value={localTitle}
-              onChange={e => setLocalTitle(e.target.value)}
-            />
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setEditingReportId(null)}
-                className="inline-flex items-center gap-2 rounded-md border border-zinc-200 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100"
-              >
-                <X className="h-4 w-4" />
-                Close
-              </button>
-              <button
-                onClick={handleSave}
-                className="inline-flex items-center gap-2 rounded-md bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-600"
-              >
-                <Save className="h-4 w-4" />
-                Save
-              </button>
+            <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3">
+              <input
+                className="w-full max-w-lg border-none text-lg font-semibold text-zinc-900 outline-none focus:ring-0"
+                value={localTitle}
+                onChange={e => setLocalTitle(e.target.value)}
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setEditingReportId(null)}
+                  className="inline-flex items-center gap-2 rounded-md border border-zinc-200 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100"
+                >
+                  <X className="h-4 w-4" />
+                  {t('close')}
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="inline-flex items-center gap-2 rounded-md bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-600"
+                >
+                  <Save className="h-4 w-4" />
+                  {t('save')}
+                </button>
+              </div>
             </div>
-          </div>
 
           <div className="flex flex-1 overflow-hidden">
             <div className="flex-1 p-5">
@@ -147,7 +149,7 @@ export function ChartFullView() {
 
                 {!data.length && (
                   <div className="flex h-full items-center justify-center text-sm text-zinc-500">
-                    No data to display
+                    {t('no_data')}
                   </div>
                 )}
               </div>

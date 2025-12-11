@@ -4,6 +4,7 @@ import type { ChatMessage } from '../components/ChatInterface'
 import type { TableSchema, RelationSuggestion, AIAnalysisResult } from '../../shared/types'
 import { useFileStore } from './useFileStore'
 import { useToastStore } from './useToastStore'
+import { useWorkbenchStore } from './useWorkbenchStore'
 
 const generateId = () => crypto.randomUUID()
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -42,7 +43,8 @@ interface ChatStore {
   sendMessage: (
     text: string,
     schemas?: TableSchema[],
-    relations?: RelationSuggestion[]
+    relations?: RelationSuggestion[],
+    languageOverride?: 'en' | 'zh'
   ) => Promise<void>
   rerunAnalysis: (originalMessage: ChatMessage) => Promise<void>
   reset: () => void
@@ -96,14 +98,15 @@ export const useChatStore = create<ChatStore>()(
             })
             return { messages: nextMessages, history: nextMessages }
           }),
-        sendMessage: async (text, schemas, relations) => {
-          const { messages, replyToId } = get()
-          const fileState = useFileStore.getState()
-          const readyFiles = fileState.files.filter(f => f.status === 'ready')
-          const resolvedSchemas =
-            schemas ??
-            readyFiles.map(f => ({
-              tableName: f.tableName || `table_${f.id}`,
+      sendMessage: async (text, schemas, relations, languageOverride) => {
+        const { messages, replyToId } = get()
+        const fileState = useFileStore.getState()
+        const language = languageOverride || useWorkbenchStore.getState().language || 'en'
+        const readyFiles = fileState.files.filter(f => f.status === 'ready')
+        const resolvedSchemas =
+          schemas ??
+          readyFiles.map(f => ({
+            tableName: f.tableName || `table_${f.id}`,
               columns: f.columns,
             }))
           const resolvedRelations =
@@ -187,7 +190,8 @@ export const useChatStore = create<ChatStore>()(
             resolvedPrompt,
             resolvedSchemas,
             resolvedRelations,
-            context
+            context,
+            language
           )
             if (!planResponse.success || !planResponse.data) {
               throw new Error(planResponse.error || 'AI request failed')

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import type { AIAnalysisResult } from '@shared/types'
 import { cn } from '@/utils/cn'
+import { useTranslation } from 'react-i18next'
 
 type VizType = NonNullable<AIAnalysisResult['visualization']>['type']
 
@@ -28,11 +29,11 @@ interface VizControlsProps {
 }
 
 const chartTypeOptions: Array<{ value: VizType; label: string; icon: React.ComponentType<any> }> = [
-  { value: 'bar', label: 'Bar', icon: BarChart3 },
-  { value: 'line', label: 'Line', icon: LineChart },
-  { value: 'pie', label: 'Pie', icon: PieChart },
-  { value: 'table', label: 'Table', icon: Table2 },
-  { value: 'kpi', label: 'Number', icon: Gauge },
+  { value: 'bar', label: 'chart_bar', icon: BarChart3 },
+  { value: 'line', label: 'chart_line', icon: LineChart },
+  { value: 'pie', label: 'chart_pie', icon: PieChart },
+  { value: 'table', label: 'chart_table', icon: Table2 },
+  { value: 'kpi', label: 'chart_kpi', icon: Gauge },
 ]
 
 export function VizControls({
@@ -45,6 +46,7 @@ export function VizControls({
 }: VizControlsProps) {
   const [open, setOpen] = useState(false)
   const popoverRef = useRef<HTMLDivElement>(null)
+  const { t } = useTranslation('common')
 
   const availableColumns = useMemo(() => {
     if (columns && columns.length > 0) return columns
@@ -133,7 +135,7 @@ export function VizControls({
           'p-1.5 bg-white text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 rounded-md border border-zinc-200 shadow-sm transition-colors cursor-pointer',
           disabled && 'cursor-not-allowed opacity-60'
         )}
-        title="Edit visualization"
+        title={t('edit_viz')}
       >
         <Settings2 className="w-4 h-4" />
       </button>
@@ -145,13 +147,13 @@ export function VizControls({
           onClick={e => e.stopPropagation()}
         >
           <div className="px-4 py-2 border-b border-zinc-100 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            Visualization
+            {t('visualization')}
           </div>
 
           <div className="p-4 space-y-4">
             <div>
               <div className="text-xs font-medium text-zinc-500 mb-2">
-                Chart Type
+                {t('chart_type')}
               </div>
               <div className="grid grid-cols-5 gap-2">
                 {chartTypeOptions.map(option => {
@@ -170,7 +172,7 @@ export function VizControls({
                       )}
                     >
                       <Icon className="w-4 h-4" />
-                      {option.label}
+                      {t(option.label)}
                     </button>
                   )
                 })}
@@ -180,27 +182,27 @@ export function VizControls({
             {showAxisControls && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs text-zinc-500">
-                  <span className="font-medium text-zinc-600">Axes</span>
+                  <span className="font-medium text-zinc-600">{t('axes')}</span>
                   <button
                     type="button"
                     onClick={handleSwapAxes}
                     className="inline-flex items-center gap-1 rounded-md border border-zinc-200 px-2 py-1 text-[11px] font-medium text-zinc-600 hover:bg-zinc-50 transition-colors"
                   >
                     <ArrowUpDown className="w-3 h-3" />
-                    Swap
+                    {t('swap')}
                   </button>
                 </div>
 
                 <div className="space-y-1">
                   <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-                    X-Axis
+                    {t('x_axis')}
                   </div>
                   <select
                     value={vizConfig?.x_axis ?? ''}
                     onChange={e => handleXAxisChange(e.target.value)}
                     className="w-full rounded-md border border-zinc-200 px-2 py-2 text-sm text-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   >
-                    <option value="">Select column</option>
+                    <option value="">{t('select_column')}</option>
                     {availableColumns.map(col => (
                       <option key={col} value={col}>
                         {col}
@@ -211,7 +213,7 @@ export function VizControls({
 
                 <div className="space-y-1">
                   <div className="text-[11px] uppercase tracking-wide text-zinc-500">
-                    Y-Axis
+                    {t('y_axis')}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {yAxisOptions.map(col => {
@@ -235,7 +237,7 @@ export function VizControls({
                     })}
                     {yAxisOptions.length === 0 && (
                       <span className="text-xs text-zinc-400">
-                        Select an X-axis first
+                        {t('select_x_first')}
                       </span>
                     )}
                   </div>

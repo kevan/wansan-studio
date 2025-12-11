@@ -81,7 +81,8 @@ export class AIService {
     userQuery: string,
     schemas: TableSchema[],
     relations: RelationSuggestion[],
-    context?: { lastSql: string; lastQuery: string }
+    context?: { lastSql: string; lastQuery: string },
+    language: 'en' | 'zh' = 'en'
   ): Promise<AIAnalysisResult> {
     const client = this.requireOpenAI()
     const aiResult = await generateAnalysis(
@@ -90,7 +91,8 @@ export class AIService {
       schemas,
       relations,
       context,
-      this.model
+      this.model,
+      language
     )
 
     if (aiResult.error) {

@@ -26,6 +26,9 @@ import { cn } from '@/utils/cn'
 import { Input } from '@/components/ui/input'
 import { useFileStore } from './stores/useFileStore'
 import { useDataRehydrate } from '@/hooks/use-data-rehydrate'
+import { useTranslation } from 'react-i18next'
+import i18n from './i18n'
+import { useWorkbenchStore } from './stores/useWorkbenchStore'
 
 const LAYOUT_STORAGE_KEY = 'wansan-layout'
 
@@ -46,22 +49,20 @@ const loadLayoutPrefs = () => {
 function App() {
   useDataRehydrate()
   const { projectName, setProjectName } = useFileStore()
-  const [showShowcase, setShowShowcase] = useState(false)
-  const [showStyleTest, setShowStyleTest] = useState(false)
   const [isChatCollapsed, setIsChatCollapsed] = useState(false)
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
   const initialLayout = loadLayoutPrefs()
   const [isRightCollapsed, setIsRightCollapsed] = useState(initialLayout.rightCollapsed)
   const [rightPanelSize, setRightPanelSize] = useState(initialLayout.rightSize)
   const [isPresentationMode, setIsPresentationMode] = useState(false)
+  const language = useWorkbenchStore(state => state.language)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const chatPanelRef = useRef<ImperativePanelHandle>(null)
   const leftPanelRef = useRef<ImperativePanelHandle>(null)
   const middlePanelRef = useRef<ImperativePanelHandle>(null)
   const rightPanelRef = useRef<ImperativePanelHandle>(null)
+  const { t } = useTranslation('common')
 
-  const handleShowcase = useCallback(() => setShowShowcase(true), [])
-  const handleStyleTest = useCallback(() => setShowStyleTest(true), [])
 
   // 处理导入数据 - 触发文件选择或其他导入方式
   const handleImportData = useCallback(() => {
@@ -152,6 +153,12 @@ function App() {
   }, [isRightCollapsed, rightPanelSize])
 
   useEffect(() => {
+    if (language && i18n.language !== language) {
+      void i18n.changeLanguage(language)
+    }
+  }, [language])
+
+  useEffect(() => {
     const handleOpenDashboard = () => {
       const right = rightPanelRef.current
       if (right) {
@@ -205,7 +212,7 @@ function App() {
           <button
             className={`h-8 w-8 rounded-md border border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200 transition-colors ${isLeftCollapsed ? 'text-zinc-400' : ''}`}
             onClick={toggleLeft}
-            title="Toggle Data Tree"
+            title={t('toggle_data_tree')}
           >
             <PanelLeft className="h-4 w-4 mx-auto" />
           </button>
@@ -234,7 +241,11 @@ function App() {
                   : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
               }`}
               onClick={togglePresentation}
-              title={isPresentationMode ? 'Exit Presentation' : 'Enter Presentation Mode'}
+              title={
+                isPresentationMode
+                  ? t('exit')
+                  : t('present')
+              }
             >
               {isPresentationMode ? (
                 <RotateCcw className="h-3.5 w-3.5" />
@@ -242,7 +253,7 @@ function App() {
                 <MonitorPlay className="h-3.5 w-3.5" />
               )}
               <span className="hidden sm:inline">
-                {isPresentationMode ? 'Exit' : 'Present'}
+                {isPresentationMode ? t('exit') : t('present')}
               </span>
             </button>
           )}
@@ -257,7 +268,7 @@ function App() {
                 : 'border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200'
             )}
             onClick={toggleRight}
-            title={isRightCollapsed ? 'Show Dashboard' : 'Hide Dashboard'}
+            title={isRightCollapsed ? t('show_dashboard') : t('hide_dashboard')}
           >
             {isRightCollapsed ? (
               <PanelRightOpen className="h-3.5 w-3.5" />
@@ -265,7 +276,7 @@ function App() {
               <PanelRightClose className="h-3.5 w-3.5" />
             )}
             <span className="hidden sm:inline">
-              {isRightCollapsed ? 'Show Dashboard' : 'Hide Dashboard'}
+              {isRightCollapsed ? t('show_dashboard') : t('hide_dashboard')}
             </span>
           </button>
         </div>
@@ -305,12 +316,7 @@ function App() {
           className={`bg-white dark:bg-zinc-950 transition-all duration-500 ${isPresentationMode ? 'min-w-0 border-none' : ''}`}
         >
           <main className="wansan-canvas h-full flex flex-col relative bg-white dark:bg-zinc-950 transition-colors">
-            <MainContent
-              showShowcase={showShowcase}
-              showStyleTest={showStyleTest}
-              onCloseShowcase={() => setShowShowcase(false)}
-              onCloseStyleTest={() => setShowStyleTest(false)}
-            />
+            <MainContent />
           </main>
         </Panel>
 
@@ -360,13 +366,11 @@ function App() {
       </PanelGroup>
 
       {/* 开发模式调试控制台 */}
-      {/* {isDev && (
+      {isDev && (
         <DevConsole
           defaultOpen={true}
-          onShowcase={handleShowcase}
-          onStyleTest={handleStyleTest}
         />
-      )} */}
+      )}
     </div>
   )
 }

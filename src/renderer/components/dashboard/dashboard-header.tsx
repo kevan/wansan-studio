@@ -28,6 +28,7 @@ import { CanvasLayout, useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 import { PAGE_GAP_PX, PAGE_HEIGHT_PX } from '@/components/dashboard-v3/page-layer'
+import { useTranslation } from 'react-i18next'
 
 export function DashboardHeader() {
   const { canvasConfig, setCanvasConfig, setLayoutScenario } =
@@ -36,6 +37,7 @@ export function DashboardHeader() {
   const setPageCount = useWorkbenchStore(state => state.setPageCount)
   const layoutScenario = useWorkbenchStore(state => state.layoutScenario)
   const isA4 = canvasConfig.layout === 'a4'
+  const { t } = useTranslation('common')
 
   const updateConfig = (key: keyof typeof canvasConfig, value: unknown) => {
     setCanvasConfig({ [key]: value } as Partial<typeof canvasConfig>)
@@ -128,6 +130,7 @@ export function DashboardHeader() {
           value={canvasConfig.title}
           onChange={e => updateConfig('title', e.target.value)}
           className="max-w-[300px] border-transparent hover:border-input bg-transparent text-sm font-semibold h-8 px-2 focus-visible:ring-0"
+          placeholder={t('edit_schema')}
         />
       </div>
 
@@ -170,19 +173,19 @@ export function DashboardHeader() {
               className="h-7 w-7 rounded-sm"
               disabled={pageCount <= 1}
               onClick={() => setPageCount(Math.max(1, pageCount - 1))}
-              title="Remove Last Page"
+              title={t('remove_page')}
             >
               <Minus className="h-3.5 w-3.5" />
             </Button>
             <span className="text-xs px-2 font-medium tabular-nums text-zinc-600">
-              {pageCount} Pgs
+              {t('pages_count', { count: pageCount })}
             </span>
             <Button
               variant="ghost"
               size="icon"
               className="h-7 w-7 rounded-sm"
               onClick={() => setPageCount(pageCount + 1)}
-              title="Add New Page"
+              title={t('add_page')}
             >
               <Plus className="h-3.5 w-3.5" />
             </Button>
@@ -199,7 +202,7 @@ export function DashboardHeader() {
                 <Monitor className="h-3.5 w-3.5" />
               )}
               <span className="hidden sm:inline">
-                {canvasConfig.layout === 'a4' ? 'Print (A4)' : 'Screen (16:9)'}
+                {canvasConfig.layout === 'a4' ? t('layout_print') : t('layout_screen')}
               </span>
               <ChevronDown className="h-3 w-3 opacity-50" />
             </Button>
@@ -210,10 +213,10 @@ export function DashboardHeader() {
               onValueChange={val => handleLayoutChange(val as CanvasLayout)}
             >
               <DropdownMenuRadioItem value="a4">
-                Print Layout (A4)
+                {t('layout_print')}
               </DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="screen">
-                Screen Layout (Fluid)
+                {t('layout_screen')}
               </DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
@@ -227,17 +230,17 @@ export function DashboardHeader() {
               className="h-8 gap-2 bg-black hover:bg-zinc-800 text-white shadow-sm"
             >
               <Download className="h-3.5 w-3.5" />
-              <span>Export</span>
+              <span>{t('export')}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('export_options')}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => handleExport('pdf')}>
-              <FileText className="mr-2 h-4 w-4" /> PDF Document
+              <FileText className="mr-2 h-4 w-4" /> {t('export_pdf')}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => handleExport('png')}>
-              <FileImage className="mr-2 h-4 w-4" /> Image (PNG)
+              <FileImage className="mr-2 h-4 w-4" /> {t('export_png')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -63,7 +63,13 @@ const mockIPC = {
       },
     }
   },
-  askAI: async (query: string, schemas: any[], relations: any[]) => {
+  askAI: async (
+    query: string,
+    schemas: any[],
+    relations: any[],
+    _context?: { lastSql: string; lastQuery: string },
+    _language?: 'en' | 'zh'
+  ) => {
     console.log(
       `Mock askAI: ${query}, Schemas: ${JSON.stringify(schemas)}, Relations: ${JSON.stringify(relations)}`
     )
@@ -150,7 +156,8 @@ declare global {
         query: string,
         schemas: any[],
         relations: any[],
-        context?: { lastSql: string; lastQuery: string }
+        context?: { lastSql: string; lastQuery: string },
+        language?: 'en' | 'zh'
       ) => Promise<IPCResponse>
       fixSQL: (
         originalSql: string,

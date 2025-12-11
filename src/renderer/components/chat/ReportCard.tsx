@@ -13,6 +13,7 @@ import { useChatStore } from '../../stores/useChatStore'
 import { cn } from '../../utils/cn'
 import { VizControls } from '../report/viz-controls'
 import type { ChatMessage } from '../ChatInterface'
+import { useTranslation } from 'react-i18next'
 
 interface ReportCardProps {
   messageId: string
@@ -33,6 +34,7 @@ export function ReportCard({
   const setReplyTo = useChatStore(state => state.setReplyTo)
   const updateReportConfig = useChatStore(state => state.updateReportConfig)
   const rerunAnalysis = useChatStore(state => state.rerunAnalysis)
+  const { t } = useTranslation('common')
 
   const isPinned = pinnedReports.some(r => r.sourceMessageId === messageId)
 
@@ -63,7 +65,7 @@ export function ReportCard({
               <ChevronRight className="w-3.5 h-3.5" />
             )}
             <Sparkles className="w-3.5 h-3.5 text-purple-500" />
-            View Analysis Logic
+            {t('view_logic')}
           </button>
           {isLogicOpen && (
             <div className="px-4 py-3 bg-zinc-50/50 space-y-3 animate-in slide-in-from-top-1 border-t border-zinc-100">
@@ -76,7 +78,7 @@ export function ReportCard({
                 <div className="bg-white rounded-md p-3 overflow-x-auto border border-zinc-200 shadow-sm">
                   <div className="flex items-center gap-2 text-zinc-500 text-xs mb-2 border-b border-zinc-100 pb-2">
                     <Terminal className="w-3.5 h-3.5" />
-                    <span>Generated SQL</span>
+                    <span>{t('generated_sql')}</span>
                   </div>
                   <pre className="text-xs text-zinc-700 font-mono">
                     <code>{reportData.sql}</code>
@@ -91,7 +93,7 @@ export function ReportCard({
       {/* Toolbar Header */}
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-zinc-100 bg-white">
         <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
-          Analysis Report
+          {t('analysis_report')}
         </span>
         <div className="flex items-center gap-2">
           <VizControls
@@ -104,18 +106,18 @@ export function ReportCard({
           <button
             onClick={() => rerunAnalysis(message)}
             className="p-1.5 rounded-md transition-colors flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
-            title="Rerun with latest data"
+            title={t('rerun_with_latest')}
           >
             <RefreshCw className="h-3.5 w-3.5 text-zinc-500" />
-            Rerun
+            {t('rerun')}
           </button>
           <button
             onClick={() => setReplyTo(messageId)}
             className="p-1.5 rounded-md transition-colors flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
-            title="Refine this analysis"
+            title={t('refine')}
           >
             <Sparkles className="h-3.5 w-3.5 text-zinc-500" />
-            Refine
+            {t('refine')}
           </button>
           <button
             onClick={handlePin}
@@ -126,10 +128,10 @@ export function ReportCard({
                 ? 'text-orange-600 bg-orange-50 cursor-default'
                 : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
             )}
-            title={isPinned ? 'Pinned to Canvas' : 'Pin to Canvas'}
+            title={isPinned ? t('pinned_to_canvas') : t('pin_to_canvas')}
           >
             <Pin className="w-3.5 h-3.5" />
-            {isPinned ? 'Pinned' : 'Pin'}
+            {isPinned ? t('pinned') : t('pin')}
           </button>
         </div>
       </div>

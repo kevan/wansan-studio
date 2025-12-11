@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select'
+import { useTranslation } from 'react-i18next'
 
 interface RelationFormState {
   sourceFileId: string
@@ -19,6 +20,7 @@ interface RelationFormState {
 
 export function RelationshipManager() {
   const { files, relations, addRelation, removeRelation } = useFileStore()
+  const { t } = useTranslation('common')
   const readyFiles = useMemo(
     () => files.filter(file => file.status === 'ready'),
     [files]
@@ -92,7 +94,7 @@ export function RelationshipManager() {
   if (readyFiles.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center text-sm text-zinc-500 bg-white">
-        Import data sources to define relationships.
+        {t('relationship_empty')}
       </div>
     )
   }
@@ -103,12 +105,12 @@ export function RelationshipManager() {
         <section className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-semibold uppercase text-zinc-500 tracking-wide">
-              Existing Links
+              {t('existing_links')}
             </h3>
           </div>
           {relations.length === 0 ? (
             <div className="border border-dashed border-zinc-200 rounded-lg p-4 text-sm text-zinc-500">
-              No relationships yet. Create one below.
+              {t('no_relationships')}
             </div>
           ) : (
             <div className="space-y-2">
@@ -137,7 +139,7 @@ export function RelationshipManager() {
                       className="text-xs text-rose-600 hover:text-rose-700 flex items-center gap-1"
                     >
                       <Trash2 className="w-4 h-4" />
-                      Delete
+                      {t('delete')}
                     </button>
                   </div>
                 )
@@ -148,13 +150,13 @@ export function RelationshipManager() {
 
         <div className="p-6 bg-zinc-50 border-t mt-auto rounded-lg">
           <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4">
-            Add New Link
+            {t('add_new_link')}
           </h3>
 
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs text-zinc-400">Source Table</label>
+                <label className="text-xs text-zinc-400">{t('source_table')}</label>
                 <Select
                   value={form.sourceFileId}
                   onValueChange={value =>
@@ -169,7 +171,7 @@ export function RelationshipManager() {
                     <span className="truncate">
                       {form.sourceFileId
                         ? getFileName(form.sourceFileId)
-                        : 'Select table'}
+                        : t('select_table')}
                     </span>
                   </SelectTrigger>
                   <SelectContent className="z-[100]">
@@ -182,7 +184,7 @@ export function RelationshipManager() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-zinc-400">Join Column</label>
+                <label className="text-xs text-zinc-400">{t('join_column')}</label>
                 <Select
                   value={form.sourceColumn}
                   onValueChange={value =>
@@ -190,7 +192,7 @@ export function RelationshipManager() {
                   }
                 >
                   <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder="Select column" />
+                    <SelectValue placeholder={t('select_column')} />
                   </SelectTrigger>
                   <SelectContent className="z-[100]">
                     {getColumns(form.sourceFileId).map(col => (
@@ -211,7 +213,7 @@ export function RelationshipManager() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs text-zinc-400">Target Table</label>
+                <label className="text-xs text-zinc-400">{t('target_table')}</label>
                 <Select
                   value={form.targetFileId}
                   onValueChange={value =>
@@ -226,7 +228,7 @@ export function RelationshipManager() {
                     <span className="truncate">
                       {form.targetFileId
                         ? getFileName(form.targetFileId)
-                        : 'Select table'}
+                        : t('select_table')}
                     </span>
                   </SelectTrigger>
                   <SelectContent className="z-[100]">
@@ -239,7 +241,7 @@ export function RelationshipManager() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-zinc-400">Join Column</label>
+                <label className="text-xs text-zinc-400">{t('join_column')}</label>
                 <Select
                   value={form.targetColumn}
                   onValueChange={value =>
@@ -247,7 +249,7 @@ export function RelationshipManager() {
                   }
                 >
                   <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder="Select column" />
+                    <SelectValue placeholder={t('select_column')} />
                   </SelectTrigger>
                   <SelectContent className="z-[100]">
                     {getColumns(form.targetFileId).map(col => (
@@ -265,7 +267,7 @@ export function RelationshipManager() {
               disabled={!canSubmit}
               className="w-full mt-4 bg-black hover:bg-zinc-800 text-white"
             >
-              Link Tables
+              {t('link_tables')}
             </Button>
           </div>
         </div>

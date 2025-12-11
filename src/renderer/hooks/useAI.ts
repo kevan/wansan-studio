@@ -21,11 +21,13 @@ export function useAI() {
       schemas,
       relations,
       context,
+      language,
     }: {
       query: string
       schemas: TableSchema[]
       relations: RelationSuggestion[]
       context?: { lastSql: string; lastQuery: string }
+      language?: 'en' | 'zh'
     }) => {
       if (!window.electronAPI || !window.electronAPI.askAI) {
         throw new Error('AI capabilities not available in this environment')
@@ -34,7 +36,8 @@ export function useAI() {
         query,
         schemas,
         relations,
-        context
+        context,
+        language
       )
       if (!response.success || !response.data) {
         throw new Error(response.error || 'AI request failed')
@@ -55,7 +58,8 @@ export function useAI() {
       id: string,
       updater: (message: ChatMessage) => ChatMessage
     ) => void,
-    context?: { lastSql: string; lastQuery: string }
+    context?: { lastSql: string; lastQuery: string },
+    language?: 'en' | 'zh'
   ) => {
     let assistantId: string | null = null
     try {
@@ -85,6 +89,7 @@ export function useAI() {
         schemas,
         relations,
         context,
+        language,
       })
 
       if (aiResponse.status === 'error' || !aiResponse.sql) {

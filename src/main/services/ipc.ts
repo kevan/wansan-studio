@@ -104,14 +104,16 @@ export function setupIPC(
       userQuery: string,
       schemas: TableSchema[],
       relations: RelationSuggestion[],
-      context?: { lastSql: string; lastQuery: string }
+      context?: { lastSql: string; lastQuery: string },
+      language?: 'en' | 'zh'
     ) => {
       try {
         const result = await aiService.generatePlan(
           userQuery,
           schemas,
           relations,
-          context
+          context,
+          language
         )
         return { success: true, data: result }
       } catch (error) {

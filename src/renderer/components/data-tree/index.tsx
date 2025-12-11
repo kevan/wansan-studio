@@ -8,6 +8,7 @@ import { Tree, TreeApi } from 'react-arborist'
 import { useFileStore } from '../../stores/useFileStore'
 import { buildTreeData, TreeNodeData, parseNodeId } from './tree-utils'
 import { TreeNode } from './TreeNode'
+import { useTranslation } from 'react-i18next'
 
 interface DataTreeManagerProps {
   width?: number | 'fill'
@@ -58,6 +59,7 @@ export function DataTreeManager({
     selectedNode,
     setSelectedNode,
   } = useFileStore()
+  const { t } = useTranslation('common')
 
   // 将 Store 数据转换为树数据
   const treeData = useMemo(() => {
@@ -190,9 +192,9 @@ export function DataTreeManager({
               />
             </svg>
           </div>
-          <p className="text-sm font-medium text-zinc-900">暂无数据源</p>
+          <p className="text-sm font-medium text-zinc-900">{t('no_data_sources')}</p>
           <p className="text-xs text-zinc-500 mt-1 max-w-[200px]">
-            请在上方点击 "导入文件" 开始使用
+            {t('import_hint')}
           </p>
         </div>
       ) : null}
