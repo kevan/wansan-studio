@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Edit2 } from 'lucide-react'
+import { cn } from '@/utils/cn'
 
 interface A4CanvasProps {
   children: React.ReactNode
@@ -246,26 +247,23 @@ export function A4Chart({
     return () => observer.disconnect()
   }, [resizeChart])
 
-  // Safety check: If no config, or missing axes (unless it's a special type, but generally we need axes for charts), return null
-  // We explicitly check for x_axis and y_axis. If they are null/undefined, we can't render an EChart.
-  if (
-    !data ||
-    data.length === 0 ||
-    !config ||
-    !config.x_axis ||
-    !config.y_axis ||
-    type === 'table' ||
-    type === 'kpi'
-  ) {
-    return null
-  }
+  const x_axis = config?.x_axis
+  const y_axis = config?.y_axis
+  const { series_name } = config || {}
+  const yAxes = Array.isArray(y_axis)
+    ? y_axis.filter(Boolean)
+    : y_axis
+      ? [y_axis]
+      : []
 
-  const { x_axis, y_axis, series_name } = config
-  const yAxes = Array.isArray(y_axis) ? y_axis : [y_axis]
+  const hasData = Array.isArray(data) && data.length > 0
+  const hasAxes = !!x_axis && yAxes.length > 0
+  const isRenderable = hasData && hasAxes && type !== 'table' && type !== 'kpi'
 
-  const getOption = () => {
-    // Double check for TS safety, though covered by the if above
-    if (!x_axis || !y_axis) return {}
+  const option = useMemo(() => {
+    if (!isRenderable || !x_axis || yAxes.length === 0) {
+      return {}
+    }
 
     const xData = data.map(item => item[x_axis])
 
@@ -336,18 +334,15 @@ export function A4Chart({
     }
 
     return baseOption
-  }
-
-  const option = useMemo(() => getOption(), [data, type, config])
+  }, [data, isRenderable, series_name, type, x_axis, yAxes])
 
   return (
     <div
-      className={className}
+      className={cn('relative', className)}
       ref={containerRef}
       style={{ height: '100%', width: '100%', ...style }}
     >
       <ReactECharts
-        key={type}
         option={option}
         style={{ height: '100%', width: '100%', ...style }}
         opts={{ renderer: 'canvas' }}
@@ -355,7 +350,13 @@ export function A4Chart({
         onChartReady={resizeChart}
         notMerge
         autoResize
+        className="relative"
       />
+      {!isRenderable && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-zinc-500">
+          No chart data
+        </div>
+      )}
     </div>
   )
 }

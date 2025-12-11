@@ -9,6 +9,7 @@ import {
 import { GridLayer } from './grid-layer'
 import { PageLayer } from './page-layer'
 import { LayoutScenario, useWorkbenchStore } from '@/stores/useWorkbenchStore'
+import { ChartFullView } from '@/components/report/chart-full-view'
 
 export function DashboardCanvasV3() {
   const canvasConfig = useWorkbenchStore(state => state.canvasConfig)
@@ -53,6 +54,8 @@ export function DashboardCanvasV3() {
         </div>
 
       </div>
+
+      <ChartFullView />
     </div>
   )
 }

@@ -42,6 +42,7 @@ interface WorkbenchState {
     title: string
   }
   pageCount: number
+  editingReportId: string | null
   pinReport: (messageId: string, reportData: ReportData) => void
   removeReport: (reportId: string) => void
   updateReportTitle: (reportId: string, newTitle: string) => void
@@ -54,6 +55,7 @@ interface WorkbenchState {
   setCanvasConfig: (updates: Partial<WorkbenchState['canvasConfig']>) => void
   setPageCount: (count: number) => void
   incrementPageCount: () => void
+  setEditingReportId: (id: string | null) => void
 }
 
 export const useWorkbenchStore = create<WorkbenchState>(set => ({
@@ -65,6 +67,7 @@ export const useWorkbenchStore = create<WorkbenchState>(set => ({
     title: 'Untitled Analysis',
   },
   pageCount: 1,
+  editingReportId: null,
   setLayoutScenario: scenario => set({ layoutScenario: scenario }),
   setCanvasConfig: updates =>
     set(state => ({
@@ -192,6 +195,7 @@ export const useWorkbenchStore = create<WorkbenchState>(set => ({
         }
       }),
     })),
+  setEditingReportId: id => set({ editingReportId: id }),
   updateLayout: layouts =>
     set(state => {
       const layoutMap = new Map(layouts.map(l => [l.i, l]))

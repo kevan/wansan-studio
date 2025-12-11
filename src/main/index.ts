@@ -87,9 +87,9 @@ class WansanApp {
     this.mainWindow.once('ready-to-show', () => {
       this.mainWindow?.show()
 
-      // if (isDev()) {
-      //   this.mainWindow?.webContents.openDevTools()
-      // }
+      if (isDev()) {
+        this.mainWindow?.webContents.openDevTools()
+      }
     })
 
     // 窗口关闭事件

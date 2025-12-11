@@ -340,6 +340,9 @@ export const useSelectFile = () => {
     mutationFn: async () => {
       const response = await getIpc().invoke('select-file')
       if (!response.success) {
+        if (response.error === 'User cancelled') {
+          return null
+        }
         throw new Error(response.error || 'Failed to select file')
       }
       return response.data
@@ -352,6 +355,9 @@ export const useSelectFiles = () => {
     mutationFn: async () => {
       const response = await getIpc().invoke('select-files')
       if (!response.success) {
+        if (response.error === 'User cancelled') {
+          return []
+        }
         throw new Error(response.error || 'Failed to select files')
       }
       return response.data
