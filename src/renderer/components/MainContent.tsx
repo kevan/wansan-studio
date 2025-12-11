@@ -1,9 +1,11 @@
 import { WelcomeScreen } from './WelcomeScreen'
-import { DataWorkspace } from './DataWorkspace.tsx'
-import { SchemaConfirm } from './SchemaConfirm'
+import { ChatStream } from './ChatStream'
+import { SchemaEditor } from './SchemaEditor'
 import { ComponentShowcase } from './ComponentShowcase'
 import { StyleTest } from './StyleTest'
 import { useFileStore } from '../stores/useFileStore'
+import { RelationshipManager } from './data/relationship-manager'
+import { DataWorkspaceLayout } from './DataWorkspaceLayout'
 
 interface MainContentProps {
   showShowcase?: boolean
@@ -20,21 +22,13 @@ export function MainContent({
 }: MainContentProps) {
   const {
     files,
-    showSchemaConfirm,
-    setShowSchemaConfirm,
-    confirmSchema,
+    activeView,
+    setView,
   } = useFileStore()
 
   const readyFiles = files.filter(f => f.status === 'ready')
   const hasReadyFiles = readyFiles.length > 0
-
-  const handleConfirmSchema = () => {
-    confirmSchema()
-  }
-
-  const handleCancelSchema = () => {
-    setShowSchemaConfirm(false)
-  }
+  const currentView = activeView
 
   // 开发模式下显示组件展示
   if (showShowcase) {
@@ -86,7 +80,9 @@ export function MainContent({
         <div className="flex items-center gap-2 flex-1">
           <div className="h-8 px-2 flex items-center">
             <span className="font-semibold text-sm leading-none">
-              {showSchemaConfirm ? 'Data Import' : 'Analysis Chat'}
+              {currentView === 'chat' && 'Analysis Chat'}
+              {currentView === 'schema' && 'Schema Editor'}
+              {currentView === 'relationships' && 'Relationship Manager'}
             </span>
           </div>
         </div>
@@ -94,19 +90,23 @@ export function MainContent({
 
       {/* 根据状态显示不同界面 */}
       {!hasReadyFiles ? (
-        // 空状态 - 欢迎页面/Drop Zone
         <WelcomeScreen />
-      ) : showSchemaConfirm ? (
-        // Schema 确认页
+      ) : currentView === 'schema' ? (
         <div className="flex-1 overflow-hidden relative">
-          <SchemaConfirm
-            onConfirm={handleConfirmSchema}
-            onCancel={handleCancelSchema}
-          />
+          <DataWorkspaceLayout>
+            <SchemaEditor />
+          </DataWorkspaceLayout>
+        </div>
+      ) : currentView === 'relationships' ? (
+        <div className="flex-1 overflow-hidden relative">
+          <DataWorkspaceLayout>
+            <RelationshipManager />
+          </DataWorkspaceLayout>
         </div>
       ) : (
-        // 数据工作区
-        <DataWorkspace />
+        <DataWorkspaceLayout showAction={false}>
+          <ChatStream />
+        </DataWorkspaceLayout>
       )}
     </div>
   )

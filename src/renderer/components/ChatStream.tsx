@@ -4,12 +4,8 @@ import { ChatInterface } from './ChatInterface'
 import { TableSchema, RelationSuggestion } from '../../shared/types'
 import { useChatStore } from '../stores/useChatStore'
 
-export function DataWorkspace() {
-  const {
-    files,
-    relations,
-    activeFileId,
-  } = useFileStore()
+export function ChatStream() {
+  const { files, relations, activeFileId } = useFileStore()
   const messages = useChatStore(state => state.messages)
   const sendMessage = useChatStore(state => state.sendMessage)
   const readyFiles = files.filter(f => f.status === 'ready')

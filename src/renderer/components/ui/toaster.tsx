@@ -19,7 +19,7 @@ export function Toaster() {
   if (visibleToasts.length === 0) return null
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-[9999] flex flex-col items-end justify-start px-4 py-6 sm:p-6">
+    <div className="pointer-events-none fixed inset-0 z-[9999] flex flex-col items-end justify-end px-4 py-6 sm:p-6">
       <div className="flex w-full flex-col items-end space-y-3">
         {visibleToasts.map(toast => (
           <div

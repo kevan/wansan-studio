@@ -1,16 +1,18 @@
 import { useState } from 'react'
+import { Plus } from 'lucide-react'
 import { useFileStore } from '../stores/useFileStore'
 import { useParseFile } from '../hooks/useIPC'
 import { DataTreeManager } from './data-tree'
 import { useAutoLink } from '../hooks/useAutoLink'
 import { useFileSync } from '../hooks/useFileSync'
+import { Button } from './ui/button'
 
 interface SidebarProps {
   onImportData?: () => void
 }
 
 export function Sidebar(_props: SidebarProps) {
-  const { files, addFile, updateFile } = useFileStore()
+  const { files, addFile, updateFile, setView } = useFileStore()
   const [isImporting, setIsImporting] = useState(false)
   const parseFileMutation = useParseFile()
   const { checkAutoLink } = useAutoLink()
@@ -147,16 +149,16 @@ export function Sidebar(_props: SidebarProps) {
       {/*<div className="drag-region h-8 flex-shrink-0" />*/}
 
       {/* 顶部: 项目名 + 导入按钮 */}
-      <div className="px-4 pb-4 pt-4 border-b border-zinc-200">
+      <div className="px-4 pb-4 pt-4 border-b border-zinc-200 space-y-2">
         {/* Import Data 按钮 */}
-        <button
+        <Button
           onClick={handleImportClick}
           disabled={isImporting}
-          className="wansan-button wansan-button-primary w-full no-drag disabled:opacity-50"
+          className="w-full h-9 bg-black hover:bg-zinc-800 text-white shadow-sm justify-start px-3"
         >
           {isImporting ? (
             <svg
-              className="w-4 h-4 animate-spin"
+              className="w-4 h-4 animate-spin mr-2"
               viewBox="0 0 24 24"
               fill="none"
             >
@@ -175,22 +177,10 @@ export function Sidebar(_props: SidebarProps) {
               />
             </svg>
           ) : (
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
+            <Plus className="mr-2 h-4 w-4" />
           )}
           {isImporting ? '导入中...' : 'Import Data'}
-        </button>
+        </Button>
       </div>
 
       {/* 数据树 */}

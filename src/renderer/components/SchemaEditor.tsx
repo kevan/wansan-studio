@@ -1,11 +1,6 @@
 import { ColumnSchema, useFileStore } from '../stores/useFileStore'
 import { Hash, Type, Calendar, Key, Link2 } from 'lucide-react'
 
-interface SchemaConfirmProps {
-  onConfirm: () => void
-  onCancel: () => void
-}
-
 // 类型映射配置
 type FormatType = 'number' | 'text' | 'date'
 
@@ -61,9 +56,8 @@ function mapToFormatType(type: string): FormatType {
   return 'text'
 }
 
-export function SchemaConfirm({ onConfirm, onCancel }: SchemaConfirmProps) {
-  const { files, activeFileId, setActiveFile, toggleKeyColumn, relations } =
-    useFileStore()
+export function SchemaEditor() {
+  const { files, activeFileId, toggleKeyColumn, relations } = useFileStore()
   const readyFiles = files.filter(f => f.status === 'ready')
 
   // 如果没有 ready 的文件，不显示
@@ -78,38 +72,16 @@ export function SchemaConfirm({ onConfirm, onCancel }: SchemaConfirmProps) {
   const currentFile = readyFiles.find(f => f.id === currentFileId)
 
   return (
-    <div className="flex flex-col h-full w-full bg-white overflow-hidden">
-      {/* Tabs 切换多个文件 */}
-      {readyFiles.length > 1 && (
-        <div className="flex-none flex gap-0 border-b border-zinc-200 bg-zinc-50/50 px-4">
-          {readyFiles.map(file => (
-            <button
-              key={file.id}
-              onClick={() => setActiveFile(file.id)}
-              className={`px-4 py-2 text-xs font-medium border-r border-zinc-200 transition-colors hover:bg-white ${
-                file.id === currentFileId
-                  ? 'bg-white text-indigo-600 border-t-2 border-t-indigo-500 relative -mb-px'
-                  : 'text-zinc-500'
-              }`}
-            >
-              {file.name}
-              {file.columns.some(c => c.isKey) && (
-                <Key className="inline-block ml-1 w-3 h-3" />
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-
+    <div className="flex flex-col h-full w-full bg-white overflow-hidden relative">
       {/* 可滚动内容 */}
-      <div className="flex-1 overflow-y-auto min-h-0 relative bg-white">
+      <div className="flex-1 overflow-y-auto min-h-0 relative bg-white pb-32">
         {/* 当前文件的 Schema 表格 */}
         {currentFile && (
           <div className="flex flex-col min-h-0">
             <div className="sticky top-0 z-30 bg-zinc-50/95 backdrop-blur border-b px-6 py-2 flex items-center justify-between text-xs text-zinc-600">
               <div className="flex items-center gap-2">
                 <span className="font-medium text-zinc-900">
-                  {currentFile.name}
+                  Edit Schema: {currentFile.name}
                 </span>
                 <span className="text-xs text-zinc-500">
                   {currentFile.rowCount?.toLocaleString()} 行 ·{' '}
@@ -151,32 +123,6 @@ export function SchemaConfirm({ onConfirm, onCancel }: SchemaConfirmProps) {
             </table>
           </div>
         )}
-      </div>
-
-      {/* 底部操作按钮 - 固定在底部 */}
-      <div className="flex-none p-4 px-6 bg-white/95 backdrop-blur border-t border-zinc-200 flex items-center justify-between z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <div className="text-sm text-zinc-500 font-medium">
-          {readyFiles.length} 个数据源已就绪
-          {relations.length > 0 && (
-            <span className="ml-2 text-indigo-600">
-              · {relations.length} 个自动检测的关联
-            </span>
-          )}
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={onCancel}
-            className="wansan-button wansan-button-secondary w-20"
-          >
-            取消
-          </button>
-          <button
-            onClick={onConfirm}
-            className="wansan-button wansan-button-primary w-24 bg-black hover:bg-zinc-800"
-          >
-            开始分析
-          </button>
-        </div>
       </div>
     </div>
   )

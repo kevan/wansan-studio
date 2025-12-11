@@ -18,6 +18,8 @@ export interface Relation {
 // 选中节点类型
 export type SelectedNodeType = 'file' | 'column' | 'relation' | null
 
+export type ViewMode = 'chat' | 'schema' | 'relationships'
+
 // 选中节点信息
 export interface SelectedNode {
   id: string
@@ -44,11 +46,11 @@ export interface ProjectState {
   // 当前选中的文件 ID (保留向后兼容)
   activeFileId: string | null
 
+  // 当前活动视图
+  activeView: ViewMode
+
   // 当前选中的树节点 (支持文件、列、关联)
   selectedNode: SelectedNode | null
-
-  // 是否显示 Schema 确认页
-  showSchemaConfirm: boolean
 
   // Actions
   setProjectName: (name: string) => void
@@ -60,6 +62,7 @@ export interface ProjectState {
   updateFile: (id: string, updates: Partial<FileNode>) => void
   removeFile: (id: string) => void
   setActiveFile: (id: string | null) => void
+  setView: (mode: ViewMode, fileId?: string | null) => void
 
   // 树节点选择
   setSelectedNode: (node: SelectedNode | null) => void
@@ -77,10 +80,6 @@ export interface ProjectState {
   removeRelation: (id: string) => void
 
   setSuggestedPrompts: (prompts: string[]) => void
-
-  // Schema 确认
-  setShowSchemaConfirm: (show: boolean) => void
-  confirmSchema: () => void
 
   // Sync Actions
   markAsStale: (ids: string[]) => void
@@ -104,8 +103,8 @@ const initialState = {
   relations: [],
   suggestedPrompts: [],
   activeFileId: null,
+  activeView: 'chat' as ViewMode,
   selectedNode: null,
-  showSchemaConfirm: false,
 }
 
 export const useFileStore = create<ProjectState>((set, get) => ({
@@ -126,7 +125,7 @@ export const useFileStore = create<ProjectState>((set, get) => ({
     set(state => ({
       files: [...state.files, newFile],
       activeFileId: id,
-      showSchemaConfirm: true,
+      activeView: 'schema',
     }))
 
     return id
@@ -139,16 +138,33 @@ export const useFileStore = create<ProjectState>((set, get) => ({
   },
 
   removeFile: id => {
-    set(state => ({
-      files: state.files.filter(f => f.id !== id),
-      relations: state.relations.filter(
+    set(state => {
+      const remainingFiles = state.files.filter(f => f.id !== id)
+      const remainingRelations = state.relations.filter(
         r => r.fileAId !== id && r.fileBId !== id
-      ),
-      activeFileId: state.activeFileId === id ? null : state.activeFileId,
-    }))
+      )
+      const activeFileId = state.activeFileId === id ? remainingFiles[0]?.id ?? null : state.activeFileId
+      const activeView =
+        state.activeView === 'schema' && !activeFileId ? 'chat' : state.activeView
+
+      return {
+        files: remainingFiles,
+        relations: remainingRelations,
+        activeFileId,
+        activeView,
+      }
+    })
   },
 
   setActiveFile: id => set({ activeFileId: id }),
+  setView: (mode, fileId) =>
+    set(state => ({
+      activeView: mode,
+      activeFileId:
+        mode === 'schema'
+          ? fileId ?? state.activeFileId ?? state.files[0]?.id ?? null
+          : fileId ?? state.activeFileId,
+    })),
 
   setSelectedNode: node => set({ selectedNode: node }),
 
@@ -191,10 +207,6 @@ export const useFileStore = create<ProjectState>((set, get) => ({
   },
 
   setSuggestedPrompts: prompts => set({ suggestedPrompts: prompts }),
-
-  setShowSchemaConfirm: show => set({ showSchemaConfirm: show }),
-
-  confirmSchema: () => set({ showSchemaConfirm: false }),
 
   markAsStale: ids =>
     set(state => ({

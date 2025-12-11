@@ -54,6 +54,7 @@ export function DataTreeManager({
     relations,
     activeFileId,
     setActiveFile,
+    setView,
     selectedNode,
     setSelectedNode,
   } = useFileStore()
@@ -99,10 +100,12 @@ export function DataTreeManager({
 
       if (parsed.type === 'file') {
         setActiveFile(parsed.id)
+        setView('schema', parsed.id)
         setSelectedNode({ id: parsed.id, type: 'file' })
       } else if (parsed.type === 'column' && parsed.parentId) {
         // 选中列时，同时也激活对应的文件
         setActiveFile(parsed.parentId)
+        setView('schema', parsed.parentId)
         setSelectedNode({
           id: parsed.id, // columnName
           type: 'column',
@@ -118,12 +121,16 @@ export function DataTreeManager({
         })
         // 关联关系可能不需要激活特定文件，或者可以激活 sourceFile
         // setActiveFile(null) // 或者保持当前不变
+        setView('relationships')
       } else if (parsed.type === 'folder') {
         // 文件夹选择通常只做展开/折叠，不做业务逻辑
         // 但为了视觉一致性，可以记录
+        if (nodeData.id === 'root_relations') {
+          setView('relationships')
+        }
       }
     },
-    [setActiveFile, setSelectedNode]
+    [setActiveFile, setSelectedNode, setView]
   )
 
   // 禁用拖拽移动（暂不实现）
