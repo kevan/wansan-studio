@@ -7,6 +7,8 @@ import enChat from './locales/en/chat.json'
 import zhChat from './locales/zh/chat.json'
 import enAnalysis from './locales/en/analysis.json'
 import zhAnalysis from './locales/zh/analysis.json'
+import enSettings from './locales/en/settings.json'
+import zhSettings from './locales/zh/settings.json'
 
 void i18n
   .use(LanguageDetector)
@@ -17,17 +19,19 @@ void i18n
         common: enCommon,
         chat: enChat,
         analysis: enAnalysis,
+        settings: enSettings,
       },
       zh: {
         common: zhCommon,
         chat: zhChat,
         analysis: zhAnalysis,
+        settings: zhSettings,
       },
     },
     fallbackLng: 'en',
     lng: undefined,
     interpolation: { escapeValue: false },
-    ns: ['common', 'chat', 'analysis'],
+    ns: ['common', 'chat', 'analysis', 'settings'],
     defaultNS: 'common',
   })
 

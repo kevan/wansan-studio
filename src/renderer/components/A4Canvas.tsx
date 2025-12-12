@@ -190,7 +190,7 @@ export function A4Summary({
   )
 }
 
-import ReactECharts from 'echarts-for-react'
+import { ReportChart } from './report/ReportChart'
 
 // ... (previous imports)
 
@@ -216,36 +216,15 @@ export function A4Chart({
   className = '',
   style,
 }: A4ChartProps) {
-  const chartRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
 
-  const resizeChart = useCallback(() => {
-    const instance = chartRef.current?.getEchartsInstance?.()
-    if (instance) {
-      instance.resize()
-    }
-  }, [])
-
   useEffect(() => {
-    resizeChart()
-  }, [resizeChart, data, type, config])
-
-  useEffect(() => {
-    const handler = () => requestAnimationFrame(resizeChart)
-    window.addEventListener('resize', handler)
+    const handler = () => requestAnimationFrame(() => {})
     window.addEventListener('dashboard:layout-changed', handler)
     return () => {
-      window.removeEventListener('resize', handler)
       window.removeEventListener('dashboard:layout-changed', handler)
     }
-  }, [resizeChart])
-
-  useEffect(() => {
-    if (!containerRef.current) return
-    const observer = new ResizeObserver(() => resizeChart())
-    observer.observe(containerRef.current)
-    return () => observer.disconnect()
-  }, [resizeChart])
+  }, [])
 
   const x_axis = config?.x_axis
   const y_axis = config?.y_axis
@@ -342,15 +321,10 @@ export function A4Chart({
       ref={containerRef}
       style={{ height: '100%', width: '100%', ...style }}
     >
-      <ReactECharts
-        option={option}
+      <ReportChart
+        option={option as any}
+        className="relative h-full w-full"
         style={{ height: '100%', width: '100%', ...style }}
-        opts={{ renderer: 'canvas' }}
-        ref={chartRef}
-        onChartReady={resizeChart}
-        notMerge
-        autoResize
-        className="relative"
       />
       {!isRenderable && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-zinc-500">

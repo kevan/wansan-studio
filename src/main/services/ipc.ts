@@ -1,4 +1,4 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron'
+import { ipcMain, dialog, BrowserWindow, shell } from 'electron'
 import { DatabaseService } from '../database/duckdb'
 import { FileService } from './file'
 import { AIService } from './ai'
@@ -17,6 +17,26 @@ export function setupIPC(
   aiService: AIService
 ) {
   const fileService = new FileService(databaseService)
+
+  ipcMain.handle('open-external', async (_event, url: string) => {
+    try {
+      if (typeof url !== 'string' || !url.trim()) {
+        return { success: false, error: 'Invalid URL' }
+      }
+      const parsed = new URL(url)
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return { success: false, error: 'Unsupported URL protocol' }
+      }
+      await shell.openExternal(parsed.toString())
+      return { success: true }
+    } catch (error) {
+      console.error('Open external error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  })
 
   // 文件解析
   ipcMain.handle('parse-file', async (_event, filePath: string) => {

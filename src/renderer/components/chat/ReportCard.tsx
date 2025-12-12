@@ -62,7 +62,7 @@ export function ReportCard({
   return (
     <div
       className={cn(
-        'flex flex-col border border-zinc-200 rounded-lg bg-white shadow-sm transition-all overflow-hidden h-full',
+        'flex flex-col border border-zinc-200 rounded-lg bg-background shadow-sm transition-all overflow-hidden h-full',
         className
       )}
     >
@@ -89,7 +89,7 @@ export function ReportCard({
                 </div>
               )}
               {reportData.sql && (
-                <div className="bg-white rounded-md p-3 overflow-x-auto border border-zinc-200 shadow-sm">
+                <div className="bg-background rounded-md p-3 overflow-x-auto border border-zinc-200 shadow-sm">
                   <div className="flex items-center gap-2 text-zinc-500 text-xs mb-2 border-b border-zinc-100 pb-2">
                     <Terminal className="w-3.5 h-3.5" />
                     <span>{t('generated_sql')}</span>
@@ -105,7 +105,7 @@ export function ReportCard({
       )}
 
       {/* Toolbar Header */}
-      <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-zinc-100 bg-white">
+      <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-zinc-100 bg-background">
         <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
           {t('analysis_report')}
         </span>

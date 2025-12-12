@@ -23,12 +23,12 @@ import {
 import { DashboardCanvasV3 } from './components/dashboard-v3'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { cn } from '@/utils/cn'
-import { Input } from '@/components/ui/input'
-import { useFileStore } from './stores/useFileStore'
 import { useDataRehydrate } from '@/hooks/use-data-rehydrate'
 import { useTranslation } from 'react-i18next'
 import i18n from './i18n'
 import { useWorkbenchStore } from './stores/useWorkbenchStore'
+import { useSettingsStore } from './stores/useSettingsStore'
+import { OnboardingFlow } from './components/onboarding/OnboardingFlow'
 
 const LAYOUT_STORAGE_KEY = 'wansan-layout'
 
@@ -48,15 +48,17 @@ const loadLayoutPrefs = () => {
 
 function App() {
   useDataRehydrate()
-  const { projectName, setProjectName } = useFileStore()
   const [isChatCollapsed, setIsChatCollapsed] = useState(false)
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
   const initialLayout = loadLayoutPrefs()
   const [isRightCollapsed, setIsRightCollapsed] = useState(initialLayout.rightCollapsed)
-  const [rightPanelSize, setRightPanelSize] = useState(initialLayout.rightSize)
-  const [isPresentationMode, setIsPresentationMode] = useState(false)
-  const language = useWorkbenchStore(state => state.language)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+	  const [rightPanelSize, setRightPanelSize] = useState(initialLayout.rightSize)
+	  const [isPresentationMode, setIsPresentationMode] = useState(false)
+	  const language = useWorkbenchStore(state => state.language)
+	  const hasCompletedOnboarding = useSettingsStore(
+	    state => state.hasCompletedOnboarding
+	  )
+	  const fileInputRef = useRef<HTMLInputElement>(null)
   const chatPanelRef = useRef<ImperativePanelHandle>(null)
   const leftPanelRef = useRef<ImperativePanelHandle>(null)
   const middlePanelRef = useRef<ImperativePanelHandle>(null)
@@ -152,11 +154,11 @@ function App() {
     )
   }, [isRightCollapsed, rightPanelSize])
 
-  useEffect(() => {
-    if (language && i18n.language !== language) {
-      void i18n.changeLanguage(language)
-    }
-  }, [language])
+	  useEffect(() => {
+	    if (language && i18n.language !== language) {
+	      void i18n.changeLanguage(language)
+	    }
+	  }, [language])
 
   useEffect(() => {
     const handleOpenDashboard = () => {
@@ -195,13 +197,22 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isPresentationMode, togglePresentation])
 
-  const handleHeaderDoubleClick = useCallback(() => {
-    window.electronAPI?.windowControl?.('toggle-maximize')
-  }, [])
+	  const handleHeaderDoubleClick = useCallback(() => {
+	    window.electronAPI?.windowControl?.('toggle-maximize')
+	  }, [])
 
-  return (
-    <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
-      <Toaster />
+	  if (!hasCompletedOnboarding) {
+	    return (
+	      <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
+	        <Toaster />
+	        <OnboardingFlow />
+	      </div>
+	    )
+	  }
+
+	  return (
+	    <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
+	      <Toaster />
       {/* Global Window Header */}
       <header
         className="h-12 border-b border-zinc-200 flex items-center justify-between px-4 shrink-0 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur draggable z-50"
@@ -217,13 +228,9 @@ function App() {
             <PanelLeft className="h-4 w-4 mx-auto" />
           </button>
           <div className="h-4 w-px bg-zinc-300 dark:bg-zinc-700" />
-          <div className="flex items-center gap-2 group">
+          <div className="flex items-center gap-2">
             <Database className="h-4 w-4 text-indigo-500" />
-            <Input
-              value={projectName}
-              onChange={e => setProjectName(e.target.value)}
-              className="h-8 w-[220px] border-transparent hover:border-zinc-200 bg-transparent text-sm font-semibold px-2 focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
-            />
+            <span className="text-sm font-semibold text-zinc-900">Wansan</span>
           </div>
         </div>
         {/* MIDDLE DRAG SPACER */}

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeImage } from 'electron'
 import { join } from 'path'
 import { isDev } from './utils/env'
 import Store from 'electron-store'
@@ -68,6 +68,27 @@ class WansanApp {
     const defaultBounds = { width: 1280, height: 800 }
     const bounds = store.get('windowBounds', defaultBounds) as any
 
+    const resourcesDir = join(process.cwd(), 'resources')
+    const devWindowIconPath =
+      process.platform === 'win32'
+        ? join(resourcesDir, 'icon.ico')
+        : join(resourcesDir, 'icon.png')
+
+    const setDockIcon = () => {
+      if (!isDev() || process.platform !== 'darwin') return
+      const icnsIcon = nativeImage.createFromPath(join(resourcesDir, 'icon.icns'))
+      const pngFallback = nativeImage.createFromPath(join(resourcesDir, 'icon.png'))
+      const iconToUse = !icnsIcon.isEmpty() ? icnsIcon : pngFallback
+      if (iconToUse.isEmpty()) return
+      try {
+        app.dock.setIcon(icnsIcon)
+      } catch (error) {
+        console.warn('Failed to set dock icon:', error)
+      }
+    }
+
+    setDockIcon()
+
     this.mainWindow = new BrowserWindow({
       width: bounds.width,
       height: bounds.height,
@@ -75,6 +96,9 @@ class WansanApp {
       y: bounds.y,
       minWidth: 1024,
       minHeight: 600,
+      ...(isDev() && process.platform !== 'darwin'
+        ? { icon: devWindowIconPath }
+        : {}),
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
@@ -106,6 +130,7 @@ class WansanApp {
     // 窗口准备好后显示
     this.mainWindow.once('ready-to-show', () => {
       this.mainWindow?.show()
+      setDockIcon()
 
       if (isDev()) {
         this.mainWindow?.webContents.openDevTools()

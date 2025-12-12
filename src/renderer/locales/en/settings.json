@@ -1,0 +1,68 @@
+{
+  "settings": {
+    "title": "Settings",
+    "section_ai": "AI Engine",
+    "section_app": "Preferences"
+  },
+  "title": "Settings",
+  "tabs": {
+    "ai": "AI Model",
+    "general": "General",
+    "data": "Data",
+    "about": "About"
+  },
+  "ai": {
+    "provider_label": "AI Provider",
+    "provider_openai": "OpenAI",
+    "provider_deepseek": "DeepSeek",
+    "provider_moonshot": "Moonshot (Kimi)",
+    "provider_custom": "Custom / Proxy",
+    "api_key_label": "API Key",
+    "base_url_label": "Base URL",
+    "model_label": "Model",
+    "select_provider_placeholder": "Select provider",
+    "select_model_placeholder": "Select model",
+    "custom_model_placeholder": "Enter model name (e.g., llama3)",
+    "get_key_hint_new": "Don't have a key?",
+    "get_key_link_new": "Get one here",
+    "verify_button": "Verify Connection",
+    "verifying": "Verifying...",
+    "verify_connected": "Connected",
+    "verify_api_key_required": "API key is required",
+    "verify_base_url_required": "Base URL is required",
+    "verify_http_error": "HTTP {{status}}",
+    "verify_network_error": "Network error",
+    "verify_connected_to_openai_title": "Connected",
+    "verify_connected_to_openai_desc": "Your API key and Base URL look valid.",
+    "verify_failed_title": "Connection failed",
+    "verify_failed_no_key_desc": "Please enter an API key first."
+  },
+  "general": {
+    "language_label": "Language",
+    "language_zh": "Chinese",
+    "language_en": "English",
+    "select_language_placeholder": "Select language"
+  },
+  "data": {
+    "placeholder": "Data management options will appear here.",
+    "reset_button": "Reset Settings",
+    "reset_title": "Settings reset",
+    "reset_desc": "All settings restored to defaults."
+  },
+  "about": {
+    "version": "Wansan Studio v{{version}}",
+    "tagline": "Local-first BI desktop app."
+  },
+  "onboarding": {
+    "step_label": "Step {{current}} / {{total}}",
+    "welcome_title": "Welcome to Wansan Studio",
+    "welcome_body": "Local-first BI powered by AI. Let’s set up your AI connection to get started.",
+    "ai_setup_title": "AI Setup",
+    "hint_change_later": "You can change these later in Settings.",
+    "finish_title": "All set",
+    "finish_body": "Your workspace is ready. Import data and start asking questions.",
+    "back": "Back",
+    "next": "Next",
+    "start": "Start using Wansan"
+  }
+}

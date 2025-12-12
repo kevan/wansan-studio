@@ -1,0 +1,68 @@
+{
+  "settings": {
+    "title": "设置",
+    "section_ai": "AI 引擎",
+    "section_app": "偏好设置"
+  },
+  "title": "设置",
+  "tabs": {
+    "ai": "AI 模型",
+    "general": "通用",
+    "data": "数据",
+    "about": "关于"
+  },
+  "ai": {
+    "provider_label": "AI 服务商",
+    "provider_openai": "OpenAI",
+    "provider_deepseek": "DeepSeek（深度求索）",
+    "provider_moonshot": "Moonshot（Kimi）",
+    "provider_custom": "自定义 / 代理",
+    "api_key_label": "API 密钥",
+    "base_url_label": "Base URL",
+    "model_label": "模型",
+    "select_provider_placeholder": "选择服务商",
+    "select_model_placeholder": "选择模型",
+    "custom_model_placeholder": "输入模型名称（例如：llama3）",
+    "get_key_hint_new": "还没有密钥？",
+    "get_key_link_new": "去获取",
+    "verify_button": "验证连接",
+    "verifying": "验证中...",
+    "verify_connected": "已连接",
+    "verify_api_key_required": "请填写 API 密钥",
+    "verify_base_url_required": "请填写 Base URL",
+    "verify_http_error": "HTTP {{status}}",
+    "verify_network_error": "网络错误",
+    "verify_connected_to_openai_title": "连接成功",
+    "verify_connected_to_openai_desc": "API 密钥和 Base URL 可用。",
+    "verify_failed_title": "连接失败",
+    "verify_failed_no_key_desc": "请先输入 API 密钥。"
+  },
+  "general": {
+    "language_label": "语言",
+    "language_zh": "中文",
+    "language_en": "English",
+    "select_language_placeholder": "选择语言"
+  },
+  "data": {
+    "placeholder": "数据管理选项将显示在这里。",
+    "reset_button": "重置设置",
+    "reset_title": "设置已重置",
+    "reset_desc": "所有设置已恢复为默认值。"
+  },
+  "about": {
+    "version": "Wansan Studio v{{version}}",
+    "tagline": "本地优先的 BI 桌面应用。"
+  },
+  "onboarding": {
+    "step_label": "第 {{current}} / {{total}} 步",
+    "welcome_title": "欢迎使用 Wansan Studio",
+    "welcome_body": "本地优先的 AI 商业智能工具。先完成 AI 连接配置即可开始使用。",
+    "ai_setup_title": "AI 配置",
+    "hint_change_later": "之后可在设置中修改这些内容。",
+    "finish_title": "配置完成",
+    "finish_body": "工作区已准备就绪，导入数据后即可开始提问分析。",
+    "back": "上一步",
+    "next": "下一步",
+    "start": "开始使用 Wansan"
+  }
+}

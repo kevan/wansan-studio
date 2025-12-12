@@ -9,6 +9,7 @@ import './i18n'
 import { useFileStore } from './stores/useFileStore'
 import { useChatStore } from './stores/useChatStore'
 import { useWorkbenchStore } from './stores/useWorkbenchStore'
+import { SETTINGS_STORAGE_KEY, useSettingsStore } from './stores/useSettingsStore'
 
 // 确保 DOM 元素存在
 const container = document.getElementById('root')
@@ -37,10 +38,12 @@ if (import.meta.env.DEV) {
     localStorage.removeItem('wansan-files')
     localStorage.removeItem('wansan-chat')
     localStorage.removeItem('wansan-workbench')
+    localStorage.removeItem(SETTINGS_STORAGE_KEY)
 
     useFileStore.getState().reset()
     useChatStore.getState().reset()
     useWorkbenchStore.getState().reset()
+    useSettingsStore.getState().resetSettings()
 
     window.location.reload()
   }

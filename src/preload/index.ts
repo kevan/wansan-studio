@@ -54,6 +54,9 @@ const electronAPI = {
   version: process.versions,
   windowControl: (action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize') =>
     ipcRenderer.send('window-control', action),
+
+  // Open external URLs in user's default browser
+  openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
 }
 
 // 将 API 暴露给渲染进程
