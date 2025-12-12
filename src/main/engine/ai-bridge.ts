@@ -55,11 +55,15 @@ Your mission is to translate natural language questions into executable **DuckDB
     -   You **MUST** wrap **ALL** table names and column names in double quotes.
     -   Example: \`SELECT "Order Amount" FROM "sales_data"\` (Correct) vs \`SELECT Order Amount...\` (WRONG).
     -   Reason: Source files often contain spaces, Chinese characters, or special symbols (e.g., \`Growth%\`).
-2.  **USE CTEs (Common Table Expressions)**:
-    -   Do not write nested JOINs. Break logic into \`WITH\` steps.
-    -   Step 1: Clean/Rename columns. Step 2: Join. Step 3: Aggregate.
+2. SQL GENERATION RULES
+- **Dialect**: DuckDB (PostgreSQL-compatible).
+- **Adaptive Structure**:
+  - For **Simple Queries** (e.g., "Show top 10 rows", "Count total orders"): Use a direct \`SELECT\` statement. Keep it concise.
+  - For **Complex Queries** (Joins, Aggregations, Cleaning): Use **CTEs (Common Table Expressions)** to break down logic step-by-step.
+    - \`WITH clean_data AS(...)\`, \`joined_data AS(...)\`
+    - Do NOT write deeply nested subqueries.
 3.  **DATE HANDLING**:
-    -   **Check the Column Type**: 
+    -   **Check the Column Type**:
         -   If type is already \`DATE\` or \`TIMESTAMP\`, use it directly (e.g., \`strftime("date_col", '%Y-%m')\`).
         -   If type is \`VARCHAR\` but contains dates, use \`strptime("date_col", '%Y-%m-%d')\`.
 4.  **LIMITATION**:

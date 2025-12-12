@@ -1,22 +1,41 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
-import { Play, RotateCcw, Copy, X, Check } from 'lucide-react'
+import { Play, RotateCcw, Copy, X, Check, AlignLeft, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../utils/cn'
+import { format } from 'sql-formatter'
 
 interface SqlEditorModalProps {
   isOpen: boolean
   onClose: () => void
   initialSql: string
+  reasoning?: string
   onRun: (sql: string) => Promise<void>
 }
 
-export function SqlEditorModal({ isOpen, onClose, initialSql, onRun }: SqlEditorModalProps) {
+export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }: SqlEditorModalProps) {
   const { t } = useTranslation('analysis')
   const [sql, setSql] = useState(initialSql)
   const [isRunning, setIsRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+
+  // Auto-format SQL when modal opens
+  useEffect(() => {
+    if (initialSql) {
+      try {
+        const formatted = format(initialSql, {
+          language: 'postgresql',
+          tabWidth: 2,
+          keywordCase: 'upper',
+        })
+        setSql(formatted)
+      } catch (e) {
+        // Fallback if format fails
+        setSql(initialSql)
+      }
+    }
+  }, [initialSql])
 
   if (!isOpen) return null
 
@@ -43,16 +62,28 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, onRun }: SqlEditor
     setError(null)
   }
 
+  const handleFormat = () => {
+    try {
+      const formatted = format(sql, {
+        language: 'postgresql',
+        tabWidth: 2,
+        keywordCase: 'upper',
+      })
+      setSql(formatted)
+    } catch (e) {
+      // Ignore formatting errors
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div 
+      <div
         className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 bg-zinc-50">
-          <h3 className="font-semibold text-zinc-800 flex items-center gap-2">
-            <span className="text-zinc-500 bg-zinc-200 px-1.5 py-0.5 rounded text-xs">SQL</span>
-            {t('sql_editor.title')}
+          <h3 className="font-semibold text-zinc-800">
+            Analysis Inspector
           </h3>
           <div className="flex items-center gap-2">
             <button
@@ -64,20 +95,62 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, onRun }: SqlEditor
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 relative">
-          <Editor
-            height="100%"
-            defaultLanguage="sql"
-            value={sql}
-            onChange={(val) => setSql(val || '')}
-            options={{
-              minimap: { enabled: false },
-              scrollBeyondLastLine: false,
-              fontSize: 14,
-              fontFamily: 'JetBrains Mono, monospace',
-              automaticLayout: true,
-            }}
-          />
+        <div className="flex-1 flex flex-col gap-4 overflow-hidden p-1">
+          {reasoning && (
+            <div className="flex-none bg-indigo-50/50 border border-indigo-100 p-4 rounded-lg text-sm text-indigo-900/80">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
+                <h4 className="font-semibold text-xs tracking-wide uppercase text-indigo-400">
+                  AI Reasoning
+                </h4>
+              </div>
+              <p className="leading-relaxed whitespace-pre-wrap font-medium">
+                {reasoning}
+              </p>
+            </div>
+          )}
+
+          <div className="flex-1 border border-zinc-200 rounded-md overflow-hidden flex flex-col shadow-sm">
+            <div className="flex items-center justify-between px-3 py-2 border-b bg-zinc-50">
+              <span className="text-xs font-bold text-zinc-500">SQL EDITOR</span>
+              <button
+                onClick={handleFormat}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 rounded-md transition-colors border border-transparent hover:border-zinc-300"
+                title="Format Code"
+              >
+                <AlignLeft className="h-3 w-3" />
+                Format
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 relative">
+              <Editor
+                height="100%"
+                defaultLanguage="sql"
+                defaultValue={sql}
+                value={sql}
+                onChange={(val) => setSql(val || '')}
+                options={{
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  fontSize: 13,
+                  lineNumbersMinChars: 3,
+                  lineDecorationsWidth: 0,
+                  renderLineHighlight: 'line',
+                  fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, 'Courier New', monospace",
+                  padding: { top: 16, bottom: 16 },
+                  overviewRulerLanes: 0,
+                  hideCursorInOverviewRuler: true,
+                  scrollbar: {
+                    vertical: 'visible',
+                    horizontal: 'auto',
+                    useShadows: false,
+                    verticalScrollbarSize: 10,
+                  },
+                  automaticLayout: true,
+                }}
+              />
+            </div>
+          </div>
         </div>
 
         {error && (
