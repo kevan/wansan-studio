@@ -29,5 +29,6 @@
   "starter_metric_title": "Key Metrics",
   "starter_metric_prompt": "Calculate this quarter's total revenue, average order value, and profit margin.",
   "starter_anomaly_title": "Anomaly Detection",
-  "starter_anomaly_prompt": "Find anomalies in last month's sales data and analyze possible causes."
+  "starter_anomaly_prompt": "Find anomalies in last month's sales data and analyze possible causes.",
+  "ai_suggestion_title": "AI suggestion"
 }

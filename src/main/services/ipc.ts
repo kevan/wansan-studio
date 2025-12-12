@@ -151,9 +151,9 @@ export function setupIPC(
   // AI 分析上下文 (关系 + 提示词)
   ipcMain.handle(
     'analyze-context',
-    async (_event, schemas: TableSchema[]) => {
+    async (_event, schemas: TableSchema[], language?: 'en' | 'zh') => {
       try {
-        const result = await aiService.getContextAnalysis(schemas)
+        const result = await aiService.getContextAnalysis(schemas, language)
         return { success: true, data: result }
       } catch (error) {
         console.error('Analyze context error:', error)

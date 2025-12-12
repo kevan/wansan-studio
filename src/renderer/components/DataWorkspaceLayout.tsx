@@ -1,6 +1,7 @@
 import { ReactNode } from 'react'
 import { Button } from './ui/button'
 import { useFileStore } from '../stores/useFileStore'
+import { useTranslation } from 'react-i18next'
 
 interface DataWorkspaceLayoutProps {
   children: ReactNode
@@ -12,6 +13,7 @@ export function DataWorkspaceLayout({
   showAction = true,
 }: DataWorkspaceLayoutProps) {
   const { setView } = useFileStore()
+  const { t } = useTranslation('common')
 
   return (
     <div className="flex flex-col h-full min-h-0 relative">
@@ -25,7 +27,7 @@ export function DataWorkspaceLayout({
             className="rounded-full shadow-xl px-8 bg-black hover:bg-zinc-800 hover:scale-105 transition-all"
             onClick={() => setView('chat')}
           >
-            ✨ Start Analysis
+            ✨ {t('start_analysis')}
           </Button>
         </div>
       )}

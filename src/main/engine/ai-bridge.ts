@@ -363,6 +363,7 @@ export async function analyzeContext(
   openai: OpenAI,
   schemas: TableSchema[],
   model?: string,
+  language: 'en' | 'zh' = 'en',
 ): Promise<ContextAnalysisResult> {
   if (isDev()) {
     console.log(
@@ -372,6 +373,11 @@ export async function analyzeContext(
   }
 
   const schemaContext = serializeSchemas(schemas)
+
+  const languageNote =
+    language === 'zh'
+      ? 'Chinese (Simplified)'
+      : 'English'
 
   const userPrompt = `### 📂 DATABASE SCHEMA
 The following table schemas are available. Please analyze them.
@@ -384,7 +390,12 @@ ${schemaContext}
   const body: ChatCompletionCreateParamsNonStreaming = {
     model: getModelToUse(model),
     messages: [
-      { role: 'system', content: CONTEXT_ANALYSIS_SYSTEM_PROMPT },
+      {
+        role: 'system',
+        content: `${CONTEXT_ANALYSIS_SYSTEM_PROMPT}
+
+OUTPUT RULE: The "suggestedPrompts" MUST be written in ${languageNote}.`,
+      },
       { role: 'user', content: userPrompt },
     ],
     response_format: { type: 'json_object' },

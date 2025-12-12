@@ -70,3 +70,7 @@ toast.success(`Data analyzed: ${highConf.length} links found.`);
 *   Read `suggestedPrompts` from store.
 *   If array is not empty, map them to the cards.
 *   If empty (e.g., first run or API fail), fall back to hardcoded generic prompts.
+
+## 6. Localization
+
+Pass the current UI language (`'en' | 'zh'`) into the context analysis call so the returned `suggestedPrompts` surface in the correct language.

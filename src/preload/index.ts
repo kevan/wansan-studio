@@ -26,8 +26,8 @@ const electronAPI = {
   ) => ipcRenderer.invoke('ask-ai', query, schemas, relations, context, language),
   fixSQL: (originalSql: string, error: string, schemas: any[]) =>
     ipcRenderer.invoke('ask-ai-fix', originalSql, error, schemas),
-  analyzeContext: (schemas: any[]) =>
-    ipcRenderer.invoke('analyze-context', schemas),
+  analyzeContext: (schemas: any[], language?: 'en' | 'zh') =>
+    ipcRenderer.invoke('analyze-context', schemas, language),
   getAIConfig: () => ipcRenderer.invoke('get-ai-config'),
   setAIConfig: (config: any) => ipcRenderer.invoke('set-ai-config', config),
   clearAIConfig: () => ipcRenderer.invoke('clear-ai-config'),

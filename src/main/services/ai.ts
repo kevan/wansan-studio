@@ -135,10 +135,11 @@ export class AIService {
    * Analyzes multiple table schemas for relationships and starter prompts.
    */
   async getContextAnalysis(
-    schemas: TableSchema[]
+    schemas: TableSchema[],
+    language?: 'en' | 'zh'
   ): Promise<ContextAnalysisResult> {
     const client = this.requireOpenAI()
-    return analyzeContext(client, schemas, this.model)
+    return analyzeContext(client, schemas, this.model, language)
   }
 
   /**

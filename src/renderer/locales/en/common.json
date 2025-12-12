@@ -90,5 +90,8 @@
   "reload_success": "Reloaded successfully",
   "warning": "Warning",
   "reload_warning": "Reload complete, but {{count}} relationship(s) were removed due to missing columns.",
-  "reload_failed": "Reload failed"
+  "reload_failed": "Reload failed",
+  "start_analysis": "Start Analysis",
+  "data_sources_root": "Data Sources",
+  "relationships_root": "Relationships"
 }

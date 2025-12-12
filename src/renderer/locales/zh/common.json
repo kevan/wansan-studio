@@ -90,5 +90,8 @@
   "reload_success": "重新导入成功",
   "warning": "提醒",
   "reload_warning": "已重新导入，但有 {{count}} 个关联因字段缺失被移除。",
-  "reload_failed": "重新导入失败"
+  "reload_failed": "重新导入失败",
+  "start_analysis": "开始分析",
+  "data_sources_root": "数据源",
+  "relationships_root": "关联关系"
 }

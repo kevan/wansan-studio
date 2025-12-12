@@ -22,6 +22,7 @@ const STARTER_PROMPTS = [
     prompt: 'starter_sales_prompt',
     color: 'text-blue-500',
     bg: 'bg-blue-50',
+    isAi: false,
   },
   {
     icon: PieChart,
@@ -29,6 +30,7 @@ const STARTER_PROMPTS = [
     prompt: 'starter_customer_prompt',
     color: 'text-purple-500',
     bg: 'bg-purple-50',
+    isAi: false,
   },
   {
     icon: TrendingUp,
@@ -36,6 +38,7 @@ const STARTER_PROMPTS = [
     prompt: 'starter_metric_prompt',
     color: 'text-green-500',
     bg: 'bg-green-50',
+    isAi: false,
   },
   {
     icon: Sparkles,
@@ -43,6 +46,7 @@ const STARTER_PROMPTS = [
     prompt: 'starter_anomaly_prompt',
     color: 'text-orange-500',
     bg: 'bg-orange-50',
+    isAi: false,
   },
 ]
 
@@ -56,8 +60,9 @@ export function EmptyState({ onSelectPrompt }: EmptyStateProps) {
           const style = STYLES[idx % STYLES.length]
           return {
             ...style,
-            title: 'AI Suggestion',
+            title: 'ai_suggestion_title',
             prompt,
+            isAi: true,
           }
         })
       : STARTER_PROMPTS
@@ -99,7 +104,7 @@ export function EmptyState({ onSelectPrompt }: EmptyStateProps) {
                 {t(item.title)}
               </h3>
               <p className="text-sm text-zinc-500 line-clamp-2">
-                {t(item.prompt)}
+                {item.isAi ? item.prompt : t(item.prompt)}
               </p>
             </div>
           </button>

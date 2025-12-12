@@ -3,6 +3,7 @@ import { FileAsset, useFileStore } from '../stores/useFileStore'
 import { useContextAnalysis } from './useIPC'
 import { useToastStore } from '../stores/useToastStore'
 import type { RelationSuggestion } from '../../shared/types'
+import { useWorkbenchStore } from '../stores/useWorkbenchStore'
 
 export function useAutoLink() {
   // Use hooks for mutations and toasts
@@ -21,6 +22,7 @@ export function useAutoLink() {
       const relationsToUse = store.relations
       const addRelation = store.addRelation
       const setSuggestedPrompts = store.setSuggestedPrompts
+      const language = useWorkbenchStore.getState().language
 
       console.log('checkAutoLink called. Files count:', filesToUse.length)
 
@@ -51,7 +53,10 @@ export function useAutoLink() {
         })
 
         // 5. Call AI Service
-        const result = await analysisMutation.mutateAsync(schemas)
+        const result = await analysisMutation.mutateAsync({
+          schemas,
+          language,
+        })
         console.log('AI Analysis Result:', result)
 
         const { relationships, suggestedPrompts } = result

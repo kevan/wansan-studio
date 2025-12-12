@@ -1,4 +1,5 @@
 import { FileNode, Relation, SyncStatus } from '../../stores/useFileStore'
+import i18n from '../../i18n'
 
 export interface TreeNodeData {
   id: string
@@ -28,7 +29,7 @@ export const NODE_TYPES = {
  */
 export function buildTreeData(
   files: FileNode[],
-  relations: Relation[]
+  relations: Relation[],
 ): TreeNodeData[] {
   // 1. Build File Nodes (Data Sources)
   const fileNodes: TreeNodeData[] = files.map(file => {
@@ -81,13 +82,13 @@ export function buildTreeData(
   const rootNodes: TreeNodeData[] = [
     {
       id: 'root_files',
-      name: 'Data Sources',
+      name: i18n.t('common:data_sources_root'),
       type: 'folder',
       children: fileNodes,
     },
     {
       id: 'root_relations',
-      name: 'Relationships',
+      name: i18n.t('common:relationships_root'),
       type: 'folder',
       children: relationNodes,
     },

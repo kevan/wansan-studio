@@ -29,5 +29,6 @@
   "starter_metric_title": "关键指标",
   "starter_metric_prompt": "计算本季度的总营收、平均客单价以及利润率。",
   "starter_anomaly_title": "异常检测",
-  "starter_anomaly_prompt": "帮我找出上个月销售数据中的异常值，并分析可能的原因。"
+  "starter_anomaly_prompt": "帮我找出上个月销售数据中的异常值，并分析可能的原因。",
+  "ai_suggestion_title": "AI 推荐"
 }

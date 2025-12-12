@@ -91,8 +91,8 @@ const mockIPC = {
       },
     }
   },
-  analyzeContext: async (schemas: any[]): Promise<IPCResponse> => {
-    console.log(`Mock analyzeContext, Schemas: ${JSON.stringify(schemas)}`)
+  analyzeContext: async (schemas: any[], language?: 'en' | 'zh'): Promise<IPCResponse> => {
+    console.log(`Mock analyzeContext, Schemas: ${JSON.stringify(schemas)}, Language: ${language}`)
     return {
       success: true,
       data: {
@@ -164,7 +164,7 @@ declare global {
         error: string,
         schemas: any[]
       ) => Promise<IPCResponse>
-      analyzeContext: (schemas: any[]) => Promise<IPCResponse>
+      analyzeContext: (schemas: any[], language?: 'en' | 'zh') => Promise<IPCResponse>
       getAIConfig: () => Promise<IPCResponse>
       setAIConfig: (config: any) => Promise<IPCResponse>
       clearAIConfig: () => Promise<IPCResponse>
@@ -310,8 +310,13 @@ export const useClearAIConfig = () => {
 // 关系推断 Hook
 export const useContextAnalysis = () => {
   return useMutation({
-    mutationFn: async (schemas: any[]) => {
-      const response = await getIpc().analyzeContext(schemas)
+    mutationFn: async (
+      params: any[] | { schemas: any[]; language?: 'en' | 'zh' }
+    ) => {
+      const { schemas, language } = Array.isArray(params)
+        ? { schemas: params, language: undefined }
+        : params
+      const response = await getIpc().analyzeContext(schemas, language)
       if (!response.success) {
         throw new Error(response.error || 'Failed to analyze context')
       }
