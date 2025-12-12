@@ -47,19 +47,19 @@ You MUST follow this strict **Dual-Mode Protocol**. Do not write code unless ask
 Please acknowledge that you expect these files to understand the current architecture:
 
 *   **Core**: `PRD_Project_Wansan.md`, `SNAPSHOT_UI_V1.md`.
-*   **AI Engine**: `SPEC_AI_V2.md`, `SPEC_AI_FLOW_V2.md`.
+*   **AI Engine**: `ENGINEERING_PREREQUISITES.md`, `SPEC_AI_V2.md`, `SPEC_AI_FLOW_V2.md`.
 *   **Dashboard**: `SPEC_DASHBOARD_V3_FINAL.md`.
-*   **Interaction**: `SPEC_DATA_GRID.md`, `SPEC_FULLSCREEN_EDIT.md`.
+*   **Interaction**: `SPEC_DATA_GRID.md`, `SPEC_VIZ_EDIT.md`, `SPEC_FULLSCREEN_EDIT.md`.
 *   **Persistence**: `SPEC_SESSION_RECOVERY.md`.
+*   **Settings & Onboarding**: `SPEC_SETTINGS.md`.
 *   **Others**: `SPEC_I18N.md`, `SPEC_SQL_LAB.md`.
 
 ---
 
 ## 4. 🗺️ Next Immediate Goals (Phase 4 & 5)
 
-1.  **Settings & Onboarding**: Implement BYOK (Bring Your Own Key) flow and "Sample Data" loader.
-2.  **SQL Lab**: Provide a Monaco Editor for users to debug AI SQL.
-3.  **Viz Customization**: Finish the Chart Type Switcher logic.
+1.  **SQL Lab**: Provide a Monaco Editor for users to debug AI SQL.
+2.  **Viz Customization**: Finish the Chart Type Switcher logic.
 
 **Please acknowledge receipt of this protocol. I am ready to upload the Specs.Always respond in Chinese-simplified.**
 ```
