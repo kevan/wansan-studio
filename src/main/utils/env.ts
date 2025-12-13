@@ -1,5 +1,7 @@
-export const isDev = () => process.env.NODE_ENV === 'development'
-export const isProd = () => process.env.NODE_ENV === 'production'
+import { app } from 'electron'
+
+export const isDev = () => !app.isPackaged
+export const isProd = () => app.isPackaged
 
 // export const getAppPath = () => {
 //   return isDev() ? process.cwd() : process.resourcesPath

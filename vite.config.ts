@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
   root: './src/renderer',
   base: './',
@@ -28,6 +28,6 @@ export default defineConfig({
     }
   },
   define: {
-    __IS_DEV__: JSON.stringify(process.env.NODE_ENV === 'development')
+    __IS_DEV__: JSON.stringify(mode === 'development')
   }
-})
+}))

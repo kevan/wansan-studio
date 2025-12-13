@@ -111,7 +111,7 @@ export function OnboardingFlow() {
               />
               {providerConfig.getKeyUrl ? (
                 <div className="text-xs text-zinc-500">
-                  {t('ai.get_key_hint')}{' '}
+                  {t('ai.get_key_hint_new')}{' '}
                   <a
                     href={providerConfig.getKeyUrl}
                     onClick={e => {
@@ -126,7 +126,7 @@ export function OnboardingFlow() {
                     rel="noreferrer"
                     className="text-primary hover:underline"
                   >
-                    {t('ai.get_key_link')} ↗
+                    {t('ai.get_key_link_new')} ↗
                   </a>
                 </div>
               ) : null}
