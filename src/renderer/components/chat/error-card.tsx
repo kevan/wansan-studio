@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { AlertCircle, RefreshCw, Code, Sparkles } from 'lucide-react'
+import { AlertCircle, RefreshCw, Code, Sparkles, Settings, KeyRound } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { Button } from '../ui/button'
 import type { ChatMessage } from '../ChatInterface'
@@ -7,6 +7,7 @@ import { useChatStore } from '../../stores/useChatStore'
 import { useToastStore } from '../../stores/useToastStore'
 import { SqlEditorModal } from '../report/sql-editor-modal'
 import { useTranslation } from 'react-i18next'
+// import { useSettingsStore } from '../../stores/useSettingsStore' // Or trigger UI event
 
 interface ErrorCardProps {
   message: ChatMessage
@@ -23,6 +24,36 @@ export function ErrorCard({ message }: ErrorCardProps) {
   const hasSql = !!message.reportData?.sql
   const originalQuery = message.originalQuery
   const originalSql = message.reportData?.sql
+
+  // [NEW] Handle Missing Key Case
+  if (message.error === 'ERR_NO_API_KEY') {
+    return (
+      <div className="border border-zinc-200 bg-white rounded-lg p-8 w-full flex flex-col items-center text-center shadow-sm">
+         {/* Icon - Keep Accent Here */}
+         <div className="bg-indigo-50 p-3 rounded-full mb-4">
+            <KeyRound className="h-6 w-6 text-indigo-600" />
+         </div>
+         
+         {/* Title - Primary Text */}
+         <h3 className="font-bold text-lg text-zinc-900 mb-2">{t('error_api_key_required_title')}</h3>
+         
+         {/* Description - Secondary Text */}
+         <p className="text-zinc-500 mb-6 leading-relaxed max-w-sm">
+            {t('error_api_key_required_description')}
+         </p>
+         
+         {/* Button - PRIMARY BLACK */}
+         <Button 
+            className="gap-2 bg-black hover:bg-zinc-800 text-white px-6 h-10 rounded-md shadow-md"
+            onClick={() => document.dispatchEvent(new CustomEvent('open-settings'))}
+         >
+            <Settings className="h-4 w-4" />
+            {t('error_go_to_settings')}
+         </Button>
+      </div>
+    )
+  }
+
 
   const handleAutoFix = async () => {
     if (!originalSql || !originalQuery) {

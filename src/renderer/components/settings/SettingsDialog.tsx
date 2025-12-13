@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, useEffect } from 'react'
 import { Loader2, CheckCircle2, XCircle, Bot, AlertCircle } from 'lucide-react'
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -27,6 +27,18 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
 
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>('idle')
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null)
+  const [isOpen, setIsOpen] = useState(false)
+
+  useEffect(() => {
+    const handleOpenSettings = () => {
+      setIsOpen(true)
+    }
+    document.addEventListener('open-settings', handleOpenSettings)
+
+    return () => {
+      document.removeEventListener('open-settings', handleOpenSettings)
+    }
+  }, [])
 
   const providerConfig = AI_PROVIDERS[settings.provider]
   const modelOptions = useMemo(() => providerConfig.models, [providerConfig.models])
@@ -133,7 +145,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
   }
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
       <DialogContent className="max-w-[700px] max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>

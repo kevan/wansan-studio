@@ -1,10 +1,11 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { ChatMessage } from '../components/ChatInterface'
-import type { TableSchema, RelationSuggestion, AIAnalysisResult } from '../../shared/types'
+import type { TableSchema, RelationSuggestion, AIAnalysisResult } from '@shared/types.ts'
 import { useFileStore } from './useFileStore'
 import { useToastStore } from './useToastStore'
 import { useWorkbenchStore } from './useWorkbenchStore'
+import { useSettingsStore } from './useSettingsStore'
 import { createBigIntStorage } from '@shared/serialization.ts'
 import i18n from '../i18n'
 
@@ -156,6 +157,44 @@ export const useChatStore = create<ChatStore>()(
         const language = languageOverride || useWorkbenchStore.getState().language || 'en'
         const readyFiles = fileState.files.filter(f => f.status === 'ready')
         const startTime = Date.now()
+
+        const { provider } = useSettingsStore.getState()
+        
+        // Check for Key (skip if provider is 'custom' or special case)
+        // We fetch the config from the backend to ensure we capture environment variables (process.env.OPENAI_API_KEY)
+        let apiKey: string | undefined
+        try {
+          const configRes = await window.electronAPI.getAIConfig()
+          if (configRes.success && configRes.data) {
+            apiKey = configRes.data.apiKey
+          }
+        } catch (e) {
+          console.error('Failed to check AI config', e)
+        }
+
+        if (!apiKey && provider !== 'custom') { // Adjust logic based on your provider requirements
+           const botMsgId = generateId();
+           set(state => ({
+              messages: [
+                 ...state.messages,
+                 {
+                    id: generateId(), // User Msg
+                    type: 'user',
+                    content: text,
+                    timestamp: Date.now()
+                 },
+                 {
+                    id: botMsgId, // Bot Msg (Error State)
+                    type: 'assistant',
+                    content: '',
+                    status: 'error',
+                    error: 'ERR_NO_API_KEY', // Special Flag
+                    timestamp: Date.now() + 1
+                 }
+              ]
+           }));
+           return;
+        }
 
         // Create and set new AbortController
         const abortController = new AbortController()

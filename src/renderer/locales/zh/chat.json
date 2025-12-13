@@ -80,5 +80,8 @@
   "autofix_failed_toast_desc": "无法自动修复查询",
   "error_failed_to_fix_sql": "修复 SQL 失败",
   "error_fixed_sql_execution_failed": "修复后的 SQL 执行失败",
-  "error_no_sql_to_fix": "没有 SQL 可以修复"
+  "error_no_sql_to_fix": "没有 SQL 可以修复",
+  "error_api_key_required_title": "需要配置 API Key",
+  "error_api_key_required_description": "Wansan Studio 是一款本地优先的工具。为了开始分析，请先在设置中配置您的 OpenAI 或其他模型服务商的 API 密钥。",
+  "error_go_to_settings": "前往设置"
 }

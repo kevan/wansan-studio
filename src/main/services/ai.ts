@@ -7,8 +7,7 @@ import type {
   AIAnalysisResult,
   RelationSuggestion,
   ContextAnalysisResult,
-} from '../../shared/types'
-import { isDev } from '../utils/env'
+} from '@shared/types.ts'
 
 interface AIConfig {
   apiKey?: string

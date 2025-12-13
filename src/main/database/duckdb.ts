@@ -7,6 +7,29 @@ import { app } from 'electron'
 const require = createRequire(import.meta.url)
 const duckdb = require('@duckdb/duckdb-wasm/dist/duckdb-node-blocking.cjs')
 
+// Helper to sanitize values for IPC (handle BigInt, etc.)
+function sanitizeValue(value: any): any {
+  if (typeof value === 'bigint') {
+    // Convert BigInt to number for IPC safety
+    // Note: This might lose precision for very large integers (> 2^53)
+    return Number(value)
+  }
+  if (value instanceof Date) {
+    return value.getTime() // Convert Date to timestamp for consistency
+  }
+  if (Array.isArray(value)) {
+    return value.map(sanitizeValue)
+  }
+  if (value !== null && typeof value === 'object') {
+    const plain: any = {}
+    for (const key of Object.keys(value)) {
+      plain[key] = sanitizeValue(value[key])
+    }
+    return plain
+  }
+  return value
+}
+
 export class DatabaseService {
   private db: any = null
   private conn: any = null
@@ -85,8 +108,14 @@ export class DatabaseService {
         throw new Error('Database not initialized')
       }
 
-      const arrowTable = this.conn.query(sql)
-      return arrowTable.toArray().map((row: any) => row.toJSON())
+      try {
+        const arrowTable = this.conn.query(sql)
+        // Convert Arrow table to JSON and sanitize for IPC
+        return arrowTable.toArray().map((row: any) => sanitizeValue(row.toJSON()))
+      } catch (error) {
+        console.error('Query failed:', sql, error)
+        throw error
+      }
     })
   }
 

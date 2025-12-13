@@ -80,5 +80,8 @@
   "autofix_failed_toast_desc": "Could not automatically fix the query",
   "error_failed_to_fix_sql": "Failed to fix SQL",
   "error_fixed_sql_execution_failed": "Fixed SQL execution failed",
-  "error_no_sql_to_fix": "No SQL to fix"
+  "error_no_sql_to_fix": "No SQL to fix",
+  "error_api_key_required_title": "API Key Required",
+  "error_api_key_required_description": "Wansan Studio is a local-first tool. To start analyzing, please configure your OpenAI or other model provider API key in settings.",
+  "error_go_to_settings": "Go to Settings"
 }

@@ -14,6 +14,7 @@ export interface ChatMessage {
   content: string
   timestamp: number
   status?: 'thinking' | 'planning' | 'executing' | 'error'
+  error?: string
   planSql?: string
   planReasoning?: string
   contextRef?: {
