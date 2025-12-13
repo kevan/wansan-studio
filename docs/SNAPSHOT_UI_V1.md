@@ -1,4 +1,4 @@
-# 📸 UI Snapshot: Wansan Desktop v1.0 (Baseline)
+# 📸 UI Snapshot: Wansan Studio v1.0 (Baseline)
 
 > **Date**: 2025-12-10
 > **Status**: Frozen / Production Ready

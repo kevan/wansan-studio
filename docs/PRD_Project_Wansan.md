@@ -30,7 +30,7 @@
 
 ```mermaid
 graph TD
-    App[Wansan Desktop]
+    App[Wansan Studio]
     
     subgraph "数据接入层 (Ingestion)"
         Import[拖拽上传 Excel/CSV]

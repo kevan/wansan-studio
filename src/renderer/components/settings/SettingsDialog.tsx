@@ -324,7 +324,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
 
             {/* SECTION 3: ABOUT */}
             <section className="text-center py-4">
-              <div className="font-semibold">Wansan Desktop</div>
+              <div className="font-semibold">Wansan Studio</div>
               <div className="text-xs text-muted-foreground mt-1">v0.1.0-alpha</div>
             </section>
 
