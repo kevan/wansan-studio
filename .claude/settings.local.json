@@ -27,7 +27,9 @@
       "Bash(npx vitest:*)",
       "Bash(node scripts/generate-icons.js:*)",
       "Bash(node scripts/generate-icons.cjs:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx electron-builder:*)"
     ]
   }
 }

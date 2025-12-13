@@ -1,33 +1,37 @@
 appId: com.wansan.studio
-productName: Wansan Studio
-
+productName: Wansan
 directories:
-  output: release
+  output: dist_electron
   buildResources: resources
 
 files:
   - dist/**/*
-  - public/**/*
+  - package.json
   - node_modules/**/*
 
+# [CRITICAL] Unpack WASM to avoid ASAR issues
+asarUnpack:
+  - "node_modules/@duckdb/duckdb-wasm"
+  - "node_modules/apache-arrow"
+  - "**/*.wasm"
+
 mac:
+  target: dmg
+  icon: resources/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
   category: public.app-category.business
-  icon: icon.icns
-  target:
-    - target: dmg
-      arch:
-        - x64
-        - arm64
 
 win:
-  icon: icon.ico
-  target:
-    - target: nsis
-      arch:
-        - x64
+  target: nsis
+  icon: resources/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
 
 linux:
-  icon: icon.png
+  icon: resources/icon.png
   target:
     - target: AppImage
       arch:
