@@ -83,5 +83,9 @@
   "error_no_sql_to_fix": "No SQL to fix",
   "error_api_key_required_title": "API Key Required",
   "error_api_key_required_description": "Wansan Studio is a local-first tool. To start analyzing, please configure your OpenAI or other model provider API key in settings.",
-  "error_go_to_settings": "Go to Settings"
+  "error_go_to_settings": "Go to Settings",
+  "auto_link_analysis_failed_title": "AI Context Analysis Failed",
+  "auto_link_missing_api_key_desc": "Missing API Key. Please configure your API key in settings.",
+  "file_process_failed_title": "File Processing Failed",
+  "file_process_missing_api_key_desc": "Missing API Key. Please configure your API key in settings to process files."
 }

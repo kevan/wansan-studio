@@ -25,7 +25,7 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
   const [totalCount, setTotalCount] = useState(0)
   const [isLoadingDemo, setIsLoadingDemo] = useState(false)
 
-  const allowedExtensions = ['.xlsx', '.xls', '.csv']
+  const allowedExtensions = ['.xlsx', '.xls', '.csv', '.json']
 
   // 处理单个文件
   const processFile = async (
@@ -154,7 +154,7 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
     // 批量处理文件
     await processFiles(
       validFiles.map(f => ({
-        path: f.path,
+        path: window.electronAPI.getPathForFile(f),
         name: f.name,
         size: f.size,
       }))

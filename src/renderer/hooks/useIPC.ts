@@ -186,6 +186,7 @@ declare global {
       exportReport: (payload: any) => Promise<IPCResponse>
       saveImage: (dataUrl: string, name?: string) => Promise<IPCResponse>
       openExternal: (url: string) => Promise<IPCResponse>
+      getPathForFile: (file: File) => string;
       windowControl: (
         action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
       ) => void

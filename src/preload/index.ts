@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
 // 定义暴露给渲染进程的 API
 const electronAPI = {
@@ -59,10 +59,8 @@ const electronAPI = {
 
   // Open external URLs in user's default browser
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
+  getPathForFile: (file: File) => webUtils.getPathForFile(file),
 }
 
 // 将 API 暴露给渲染进程
 contextBridge.exposeInMainWorld('electronAPI', electronAPI)
-
-// 类型声明（用于 TypeScript）
-export type ElectronAPI = typeof electronAPI

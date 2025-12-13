@@ -4,11 +4,14 @@ import { useContextAnalysis } from './useIPC'
 import { useToastStore } from '../stores/useToastStore'
 import type { RelationSuggestion } from '../../shared/types'
 import { useWorkbenchStore } from '../stores/useWorkbenchStore'
+import { useTranslation } from 'react-i18next' // Import useTranslation
 
 export function useAutoLink() {
   // Use hooks for mutations and toasts
   const analysisMutation = useContextAnalysis()
   const { addToast } = useToastStore()
+  const { language: currentLanguage } = useWorkbenchStore.getState()
+  const { t } = useTranslation('chat') // Initialize useTranslation
 
   // We do NOT destructure state from useFileStore here for the callback dependencies.
   // Instead, we access the store directly inside the callback to ensure we always have the freshest state
@@ -16,13 +19,34 @@ export function useAutoLink() {
 
   const checkAutoLink = useCallback(
     async (currentFiles?: FileAsset[]) => {
+      // 0. Check for API Key before proceeding with AI calls
+      let apiKey: string | undefined
+      try {
+        const configRes = await window.electronAPI.getAIConfig()
+        if (configRes.success && configRes.data) {
+          apiKey = configRes.data.apiKey
+        }
+      } catch (e) {
+        console.error('Failed to check AI config for auto-link', e)
+      }
+
+      if (!apiKey) {
+        addToast({
+          title: t('auto_link_analysis_failed_title'),
+          description: t('auto_link_missing_api_key_desc'),
+          type: 'error',
+          duration: 10000,
+        })
+        return
+      }
+
       // 1. Get the latest state directly from the store
       const store = useFileStore.getState()
       const filesToUse = currentFiles || store.files
       const relationsToUse = store.relations
       const addRelation = store.addRelation
       const setSuggestedPrompts = store.setSuggestedPrompts
-      const language = useWorkbenchStore.getState().language
+      const language = currentLanguage || 'en' // Use currentLanguage or default to 'en'
 
       console.log('checkAutoLink called. Files count:', filesToUse.length)
 
