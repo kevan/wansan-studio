@@ -6,6 +6,7 @@ import { useFileStore } from './useFileStore'
 import { useToastStore } from './useToastStore'
 import { useWorkbenchStore } from './useWorkbenchStore'
 import { createBigIntStorage } from '@shared/serialization.ts'
+import i18n from '../i18n'
 
 const generateId = () => crypto.randomUUID()
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -32,6 +33,7 @@ interface ChatStore {
   messages: ChatMessage[]
   history: ChatMessage[]
   replyToId: string | null
+  abortController: AbortController | null
   setReplyTo: (id: string | null) => void
   updateMessage: (
     id: string,
@@ -60,6 +62,9 @@ interface ChatStore {
     originalQuery?: string,
     originalSql?: string
   ) => Promise<void>
+  resetLoading: () => void
+  stopGeneration: () => void
+  removeMessage: (id: string) => void
   reset: () => void
 }
 
@@ -86,11 +91,12 @@ const reviveMessages = (messages: ChatMessage[] = []) =>
     }
   })
 
-const initialChatState: Pick<ChatStore, 'messages' | 'history' | 'replyToId'> =
+const initialChatState: Pick<ChatStore, 'messages' | 'history' | 'replyToId' | 'abortController'> =
   {
     messages: [],
     history: [],
     replyToId: null,
+    abortController: null,
   }
 
 export const useChatStore = create<ChatStore>()(
@@ -150,6 +156,11 @@ export const useChatStore = create<ChatStore>()(
         const language = languageOverride || useWorkbenchStore.getState().language || 'en'
         const readyFiles = fileState.files.filter(f => f.status === 'ready')
         const startTime = Date.now()
+
+        // Create and set new AbortController
+        const abortController = new AbortController()
+        set({ abortController })
+
         const resolvedSchemas =
           schemas ??
           readyFiles.map(f => ({
@@ -232,6 +243,11 @@ export const useChatStore = create<ChatStore>()(
           })
 
         try {
+          // Check if aborted
+          if (abortController.signal.aborted) {
+            throw new Error('Generation aborted by user')
+          }
+
           const resolvedPrompt = resolveMentions(text)
           const planResponse = await window.electronAPI.askAI(
             resolvedPrompt,
@@ -240,6 +256,12 @@ export const useChatStore = create<ChatStore>()(
             context,
             language
           )
+
+            // Check if aborted after AI call
+            if (abortController.signal.aborted) {
+              throw new Error('Generation aborted by user')
+            }
+
             if (!planResponse.success || !planResponse.data) {
               throw new Error(planResponse.error || 'AI request failed')
             }
@@ -271,6 +293,11 @@ export const useChatStore = create<ChatStore>()(
 
             // Cinematic delay to let users see the SQL before execution
             await sleep(800)
+
+            // Check if aborted before execution
+            if (abortController.signal.aborted) {
+              throw new Error('Generation aborted by user')
+            }
 
             get().updateMessage(botMsgId, msg => ({
               ...msg,
@@ -308,20 +335,26 @@ export const useChatStore = create<ChatStore>()(
                 insights: [],
               },
             }))
+
+            // Clear abort controller on success
+            set({ abortController: null })
           } catch (error: any) {
             get().updateMessage(botMsgId, msg => ({
               ...msg,
               status: 'error',
               content: `Error: ${error?.message || 'Unknown error'}`,
             }))
+
+            // Clear abort controller on error
+            set({ abortController: null })
           }
         },
         rerunAnalysis: async originalMessage => {
           if (!originalMessage.originalQuery) {
             useToastStore.getState().addToast({
               type: 'error',
-              title: 'Cannot rerun',
-              description: 'Original query missing.',
+              title: i18n.t('error_cannot_rerun_title', { ns: 'chat' }),
+              description: i18n.t('error_cannot_rerun_desc', { ns: 'chat' }),
               duration: 4000,
             })
             return
@@ -351,7 +384,7 @@ export const useChatStore = create<ChatStore>()(
 
             // Call AI to fix the SQL
             if (!originalSql) {
-              throw new Error('No SQL to fix')
+              throw new Error(i18n.t('error_no_sql_to_fix', { ns: 'chat' }))
             }
 
             const fixResult = await window.electronAPI.fixSQL(
@@ -361,7 +394,7 @@ export const useChatStore = create<ChatStore>()(
             )
 
             if (!fixResult.success || !fixResult.data) {
-              throw new Error(fixResult.error || 'Failed to fix SQL')
+              throw new Error(fixResult.error || i18n.t('error_failed_to_fix_sql', { ns: 'chat' }))
             }
 
             const { sql: fixedSql, reasoning } = fixResult.data
@@ -370,7 +403,7 @@ export const useChatStore = create<ChatStore>()(
             const execution = await window.electronAPI.runSQL(fixedSql)
 
             if (!execution.success) {
-              throw new Error(execution.error || 'Fixed SQL execution failed')
+              throw new Error(execution.error || i18n.t('error_fixed_sql_execution_failed', { ns: 'chat' }))
             }
 
             const data = execution.data ?? []
@@ -381,15 +414,22 @@ export const useChatStore = create<ChatStore>()(
               ...msg,
               type: 'assistant',
               status: undefined,
-              content: 'Auto-fix successful!',
+              content: i18n.t('autofix_successful_content', { ns: 'chat' }),
               reportData: {
-                title: `Fixed: ${msg.originalQuery || 'Query'}`,
-                summary: `Original error: ${error}. Fix reasoning: ${reasoning}`,
+                title: i18n.t('autofix_fixed_title', {
+                  ns: 'chat',
+                  query: msg.originalQuery || i18n.t('autofix_fixed_query_fallback', { ns: 'chat' })
+                }),
+                summary: i18n.t('autofix_summary', {
+                  ns: 'chat',
+                  error,
+                  reasoning
+                }),
                 sql: fixedSql,
-                reasoning: `Auto-fix applied. ${reasoning}`,
+                reasoning: i18n.t('autofix_reasoning', { ns: 'chat', reasoning }),
                 suggestions: [],
                 chartType: 'table',
-                chartTitle: 'Fixed Query Results',
+                chartTitle: i18n.t('autofix_chart_title', { ns: 'chat' }),
                 tableData: data,
                 columns,
                 vizConfig: {},
@@ -399,8 +439,8 @@ export const useChatStore = create<ChatStore>()(
 
             useToastStore.getState().addToast({
               type: 'success',
-              title: 'Auto-fix Successful',
-              description: 'The SQL query has been fixed and executed.',
+              title: i18n.t('autofix_success_toast_title', { ns: 'chat' }),
+              description: i18n.t('autofix_success_toast_desc', { ns: 'chat' }),
               duration: 4000,
             })
 
@@ -409,16 +449,51 @@ export const useChatStore = create<ChatStore>()(
             get().updateMessage(messageId, msg => ({
               ...msg,
               status: 'error',
-              content: `Auto-fix failed: ${error?.message || 'Unknown error'}`,
+              content: i18n.t('autofix_failed_content', {
+                ns: 'chat',
+                error: error?.message || i18n.t('error_unknown', { ns: 'chat' })
+              }),
             }))
 
             useToastStore.getState().addToast({
               type: 'error',
-              title: 'Auto-fix Failed',
-              description: error?.message || 'Could not automatically fix the query.',
+              title: i18n.t('autofix_failed_toast_title', { ns: 'chat' }),
+              description: error?.message || i18n.t('autofix_failed_toast_desc', { ns: 'chat' }),
               duration: 4000,
             })
           }
+        },
+        resetLoading: () => {
+          set(state => ({
+            abortController: null,
+            messages: state.messages.map(m =>
+              m.status === 'thinking' || m.status === 'planning' || m.status === 'executing'
+                ? { ...m, status: 'error', content: i18n.t('interrupted_retry', { ns: 'chat' }) }
+                : m
+            ),
+            history: state.history.map(m =>
+              m.status === 'thinking' || m.status === 'planning' || m.status === 'executing'
+                ? { ...m, status: 'error', content: i18n.t('interrupted_retry', { ns: 'chat' }) }
+                : m
+            ),
+          }))
+        },
+        stopGeneration: () => {
+          const { abortController } = get()
+          if (abortController) {
+            abortController.abort()
+          }
+          get().resetLoading()
+        },
+        removeMessage: (id: string) => {
+          set(state => {
+            const nextMessages = state.messages.filter(m => m.id !== id)
+            return {
+              messages: nextMessages,
+              history: nextMessages,
+              replyToId: state.replyToId === id ? null : state.replyToId,
+            }
+          })
         },
         reset: () => set({ ...initialChatState }),
       }

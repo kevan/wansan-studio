@@ -22,7 +22,12 @@
       "Bash(node -c -e \"require(''tsup''); console.log(''tsup available'')\")",
       "Bash(ls -la node_modules/@duckdb/duckdb-wasm/dist/duckdb-node*.wasm)",
       "Bash(ls node_modules/@duckdb/duckdb-wasm/dist/*.wasm:*)",
-      "Bash(grep -l \"zustand.*persist\" src/renderer/stores/*.ts)"
+      "Bash(grep -l \"zustand.*persist\" src/renderer/stores/*.ts)",
+      "Bash(npm run type-check:*)",
+      "Bash(npx vitest:*)",
+      "Bash(node scripts/generate-icons.js:*)",
+      "Bash(node scripts/generate-icons.cjs:*)",
+      "Bash(ls:*)"
     ]
   }
 }

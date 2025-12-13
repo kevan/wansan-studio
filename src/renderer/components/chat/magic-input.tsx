@@ -9,6 +9,7 @@ import {
   FileSpreadsheet,
   Hash,
   X,
+  Square,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { useFileStore } from '../../stores/useFileStore'
@@ -53,6 +54,7 @@ export function MagicInput({
   const setReplyTo = useChatStore(state => state.setReplyTo)
   const rerunAnalysis = useChatStore(state => state.rerunAnalysis)
   const resetChat = useChatStore(state => state.reset)
+  const stopGeneration = useChatStore(state => state.stopGeneration)
   const addToast = useToastStore(state => state.addToast)
   const files = useFileStore(state => state.files)
   const { t } = useTranslation('chat')
@@ -341,23 +343,30 @@ export function MagicInput({
           </div>
 
           <div className="pb-1">
-            <button
-              onClick={handleSubmit}
-              disabled={!hasContent || loading}
-              className={cn(
-                'h-10 w-10 rounded-full flex items-center justify-center transition-all duration-200',
-                hasContent && !loading
-                  ? 'bg-black text-white hover:bg-zinc-800 shadow-md active:scale-95'
-                  : 'bg-zinc-100 text-zinc-300 cursor-not-allowed'
-              )}
-              aria-label="Send message"
-            >
-              {loading ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
+            {loading ? (
+              <button
+                onClick={stopGeneration}
+                className="h-10 w-10 rounded-full flex items-center justify-center transition-all duration-200 bg-red-50 hover:bg-red-100 active:scale-95"
+                aria-label="Stop generation"
+                title={t('stop_generation')}
+              >
+                <Square className="w-4 h-4 fill-current text-red-500" />
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                disabled={!hasContent}
+                className={cn(
+                  'h-10 w-10 rounded-full flex items-center justify-center transition-all duration-200',
+                  hasContent
+                    ? 'bg-black text-white hover:bg-zinc-800 shadow-md active:scale-95'
+                    : 'bg-zinc-100 text-zinc-300 cursor-not-allowed'
+                )}
+                aria-label="Send message"
+              >
                 <ArrowUp className="w-4 h-4 stroke-[3]" />
-              )}
-            </button>
+              </button>
+            )}
           </div>
         </div>
       </div>

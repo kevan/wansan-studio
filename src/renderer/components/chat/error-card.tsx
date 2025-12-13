@@ -17,9 +17,9 @@ export function ErrorCard({ message }: ErrorCardProps) {
   const [isFixing, setIsFixing] = useState(false)
   const autoFixMessage = useChatStore(state => state.autoFixMessage)
   const updateMessageData = useChatStore(state => state.updateMessageData)
-  const { t } = useTranslation('common')
+  const { t } = useTranslation('chat')
 
-  const errorMessage = message.content || 'Unknown error occurred'
+  const errorMessage = message.content || t('error_unknown')
   const hasSql = !!message.reportData?.sql
   const originalQuery = message.originalQuery
   const originalSql = message.reportData?.sql
@@ -28,8 +28,8 @@ export function ErrorCard({ message }: ErrorCardProps) {
     if (!originalSql || !originalQuery) {
       useToastStore.getState().addToast({
         type: 'error',
-        title: 'Cannot Auto-Fix',
-        description: 'Missing original query or SQL statement.',
+        title: t('error_cannot_autofix_title'),
+        description: t('error_cannot_autofix_desc'),
         duration: 4000,
       })
       return
@@ -64,9 +64,9 @@ export function ErrorCard({ message }: ErrorCardProps) {
         <div className="flex items-center gap-2">
           <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-sm text-red-800">分析失败</h3>
+            <h3 className="font-semibold text-sm text-red-800">{t('error_analysis_failed')}</h3>
             <p className="text-xs text-red-600 mt-1">
-              在处理您的请求时遇到了问题
+              {t('error_processing_request')}
             </p>
           </div>
         </div>
@@ -76,7 +76,7 @@ export function ErrorCard({ message }: ErrorCardProps) {
       <div className="mb-3">
         <div className="bg-white/70 border border-red-100 rounded-md p-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-red-700">错误详情</span>
+            <span className="text-xs font-medium text-red-700">{t('error_details')}</span>
           </div>
           <pre className="text-xs text-red-800 font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
             {errorMessage}
@@ -84,24 +84,12 @@ export function ErrorCard({ message }: ErrorCardProps) {
         </div>
       </div>
 
-      {/* Original Query (if available) */}
-      {originalQuery && (
-        <div className="mb-3">
-          <div className="bg-white/70 border border-zinc-200 rounded-md p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-zinc-700">原始提问</span>
-            </div>
-            <p className="text-xs text-zinc-600">{originalQuery}</p>
-          </div>
-        </div>
-      )}
-
       {/* Original SQL (if available) */}
       {hasSql && (
         <div className="mb-3">
           <div className="bg-white/70 border border-zinc-200 rounded-md p-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-zinc-700">生成的 SQL</span>
+              <span className="text-xs font-medium text-zinc-700">{t('error_generated_sql')}</span>
             </div>
             <pre className="text-xs text-zinc-600 font-mono whitespace-pre-wrap max-h-40 overflow-y-auto bg-zinc-50 p-2 rounded">
               <code>{originalSql}</code>
@@ -124,12 +112,12 @@ export function ErrorCard({ message }: ErrorCardProps) {
           {isFixing ? (
             <>
               <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-              正在修复...
+              {t('error_auto_fixing')}
             </>
           ) : (
             <>
               <Sparkles className="h-3 w-3 mr-1" />
-              ✨ 自动修复
+              ✨ {t('error_auto_fix')}
             </>
           )}
         </Button>
@@ -141,7 +129,7 @@ export function ErrorCard({ message }: ErrorCardProps) {
           className="text-xs h-7 px-3"
         >
           <Code className="h-3 w-3 mr-1" />
-          编辑 SQL
+          {t('error_edit_sql')}
         </Button>
       </div>
 

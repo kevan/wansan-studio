@@ -28,6 +28,7 @@ import { useTranslation } from 'react-i18next'
 import i18n from './i18n'
 import { useWorkbenchStore } from './stores/useWorkbenchStore'
 import { useSettingsStore } from './stores/useSettingsStore'
+import { useChatStore } from './stores/useChatStore'
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow'
 import logo from './src/assets/logo.png'
 
@@ -165,6 +166,11 @@ function App() {
 	      void i18n.changeLanguage(language)
 	    }
 	  }, [language])
+
+  // Reset loading state on app startup to fix zombie loading states
+  useEffect(() => {
+    useChatStore.getState().resetLoading()
+  }, [])
 
   useEffect(() => {
     const handleOpenDashboard = () => {

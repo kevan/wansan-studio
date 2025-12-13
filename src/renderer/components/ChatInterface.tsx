@@ -4,8 +4,9 @@ import { ReportCard } from './chat/ReportCard'
 import { ErrorCard } from './chat/error-card'
 import { EmptyState } from './chat/empty-state'
 import { MagicInput } from './chat/magic-input'
-import { User, Bot, Sparkles, GitBranch, Brain, Zap } from 'lucide-react'
+import { User, Bot, Sparkles, GitBranch, Brain, Zap, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useChatStore } from '../stores/useChatStore'
 
 export interface ChatMessage {
   id: string
@@ -62,6 +63,7 @@ export function ChatInterface({
 }: ChatInterfaceProps) {
   const dummyDivRef = useRef<HTMLDivElement>(null)
   const { t } = useTranslation('chat')
+  const removeMessage = useChatStore(state => state.removeMessage)
 
   // Auto-scroll to bottom when messages or loading state changes
   useEffect(() => {
@@ -84,7 +86,7 @@ export function ChatInterface({
           messages.map(message => (
             <div
               key={message.id}
-              className="flex gap-4 w-full max-w-5xl mx-auto group animate-in fade-in slide-in-from-bottom-2"
+              className="flex gap-4 w-full max-w-5xl mx-auto group animate-in fade-in slide-in-from-bottom-2 relative"
             >
               {/* Avatar */}
               <div className="flex-shrink-0 mt-1">
@@ -105,16 +107,28 @@ export function ChatInterface({
 
               {/* Content */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-semibold text-zinc-900">
-                    {message.type === 'user' ? t('you') : t('assistant')}
-                  </span>
-                  <span className="text-xs text-zinc-400">
-                    {new Date(message.timestamp).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-zinc-900">
+                      {message.type === 'user' ? t('you') : t('assistant')}
+                    </span>
+                    <span className="text-xs text-zinc-400">
+                      {new Date(message.timestamp).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+
+                  {/* Delete Button */}
+                  <button
+                    onClick={() => removeMessage(message.id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-red-50"
+                    title={t('delete_message')}
+                    aria-label="Delete message"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-zinc-400 hover:text-red-500 transition-colors" />
+                  </button>
                 </div>
 
                 {message.type === 'user' ? (
@@ -161,7 +175,7 @@ export function ChatInterface({
                         <ErrorCard message={message} />
                       </div>
                     )}
-                    {message.content && (
+                    {message.status !== 'error' && message.content && (
                       <div className="mb-4 text-zinc-800 leading-relaxed">
                         {message.content}
                       </div>
