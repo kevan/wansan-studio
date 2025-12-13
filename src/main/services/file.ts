@@ -74,6 +74,8 @@ export class FileService {
         return this.parseExcelFile(filePath)
       case '.csv':
         return this.parseCSVFile(filePath)
+      case '.json':
+        return this.parseJsonFile(filePath)
       default:
         throw new Error(`Unsupported file type: ${ext}`)
     }
@@ -181,6 +183,46 @@ export class FileService {
     }
   }
 
+  private async parseJsonFile(filePath: string) {
+    try {
+      const fileName = basename(filePath)
+      const tableName = await getUniqueTableName(
+        this.databaseService.getDb(),
+        fileName
+      )
+
+      // Use DuckDB's read_json_auto to handle both array and newline-delimited JSON
+      const normalizedPath = filePath.replace(/\\/g, '/')
+      await this.databaseService.query(
+        `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${normalizedPath}')`
+      )
+
+      // Get schema and preview data
+      let schema = await this.databaseService.getSchema(tableName)
+      schema.description = fileName
+
+      schema = await this.enrichSchemaWithSamples(tableName, schema)
+
+      const preview = await this.databaseService.query(
+        `SELECT * FROM "${tableName}" LIMIT 5`
+      )
+      const countResult = await this.databaseService.query(
+        `SELECT COUNT(*) as count FROM "${tableName}"`
+      )
+
+      return {
+        tableName,
+        schema,
+        rowCount: countResult[0].count,
+        preview,
+      }
+    } catch (error) {
+      throw new Error(
+        `Failed to parse JSON file: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+    }
+  }
+
   async reIngestFile(
     filePath: string,
     tableName: string
@@ -215,7 +257,7 @@ export class FileService {
         tableName
       )
       columns = result.columns
-    } else if (ext === '.csv') {
+    } else if (ext === '.csv' || ext === '.json') {
       await this.databaseService.query(`DROP TABLE IF EXISTS "${tableName}"`)
       await this.ingestCSVWithFallback(filePath, tableName)
 

@@ -148,8 +148,8 @@ export function DashboardHeader() {
           >
             <ZoomOut className="h-3.5 w-3.5 text-zinc-500" />
           </Button>
-          <span className="text-xs w-10 text-center font-medium tabular-nums text-zinc-600">
-            {canvasConfig.zoom}%
+          <span className="text-xs w-10 text-center font-medium tabular-nums text-zinc-600 whitespace-nowrap">
+            {canvasConfig.zoom}{isA4 ? '' : '%'}
           </span>
           <Button
             variant="ghost"
@@ -177,8 +177,8 @@ export function DashboardHeader() {
             >
               <Minus className="h-3.5 w-3.5" />
             </Button>
-            <span className="text-xs px-2 font-medium tabular-nums text-zinc-600">
-              {t('pages_count', { count: pageCount })}
+            <span className="text-xs px-2 font-medium tabular-nums text-zinc-600 whitespace-nowrap">
+              {pageCount}P
             </span>
             <Button
               variant="ghost"

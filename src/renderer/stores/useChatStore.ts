@@ -53,6 +53,12 @@ interface ChatStore {
     languageOverride?: 'en' | 'zh'
   ) => Promise<void>
   rerunAnalysis: (originalMessage: ChatMessage) => Promise<void>
+  autoFixMessage: (
+    messageId: string,
+    error: string,
+    originalQuery?: string,
+    originalSql?: string
+  ) => Promise<void>
   reset: () => void
 }
 
@@ -321,6 +327,97 @@ export const useChatStore = create<ChatStore>()(
           }
 
           await get().sendMessage(originalMessage.originalQuery)
+        },
+        autoFixMessage: async (messageId: string, error: string, originalQuery?: string, originalSql?: string) => {
+          const message = get().messages.find(m => m.id === messageId)
+          if (!message) return
+
+          // Set status to repairing
+          get().updateMessage(messageId, msg => ({
+            ...msg,
+            status: 'executing',
+            content: '🔧 Attempting to auto-fix the SQL query...',
+          }))
+
+          try {
+            // Get the current schemas
+            const fileState = useFileStore.getState()
+            const readyFiles = fileState.files.filter(f => f.status === 'ready')
+            const schemas: TableSchema[] = readyFiles.map(f => ({
+              tableName: f.tableName || `table_${f.id}`,
+              columns: f.columns,
+            }))
+
+            // Call AI to fix the SQL
+            if (!originalSql) {
+              throw new Error('No SQL to fix')
+            }
+
+            const fixResult = await window.electronAPI.fixSQL(
+              originalSql,
+              error,
+              schemas
+            )
+
+            if (!fixResult.success || !fixResult.data) {
+              throw new Error(fixResult.error || 'Failed to fix SQL')
+            }
+
+            const { sql: fixedSql, reasoning } = fixResult.data
+
+            // Execute the fixed SQL
+            const execution = await window.electronAPI.runSQL(fixedSql)
+
+            if (!execution.success) {
+              throw new Error(execution.error || 'Fixed SQL execution failed')
+            }
+
+            const data = execution.data ?? []
+            const columns = data.length > 0 ? Object.keys(data[0]) : []
+
+            // Update message with success
+            get().updateMessage(messageId, msg => ({
+              ...msg,
+              type: 'assistant',
+              status: undefined,
+              content: 'Auto-fix successful!',
+              reportData: {
+                title: `Fixed: ${msg.originalQuery || 'Query'}`,
+                summary: `Original error: ${error}. Fix reasoning: ${reasoning}`,
+                sql: fixedSql,
+                reasoning: `Auto-fix applied. ${reasoning}`,
+                suggestions: [],
+                chartType: 'table',
+                chartTitle: 'Fixed Query Results',
+                tableData: data,
+                columns,
+                vizConfig: {},
+                insights: [],
+              },
+            }))
+
+            useToastStore.getState().addToast({
+              type: 'success',
+              title: 'Auto-fix Successful',
+              description: 'The SQL query has been fixed and executed.',
+              duration: 4000,
+            })
+
+          } catch (error: any) {
+            // Update message with error
+            get().updateMessage(messageId, msg => ({
+              ...msg,
+              status: 'error',
+              content: `Auto-fix failed: ${error?.message || 'Unknown error'}`,
+            }))
+
+            useToastStore.getState().addToast({
+              type: 'error',
+              title: 'Auto-fix Failed',
+              description: error?.message || 'Could not automatically fix the query.',
+              duration: 4000,
+            })
+          }
         },
         reset: () => set({ ...initialChatState }),
       }

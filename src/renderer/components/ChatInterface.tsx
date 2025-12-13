@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react'
 import type { LoadingType } from '../../shared/types'
 import { ReportCard } from './chat/ReportCard'
+import { ErrorCard } from './chat/error-card'
 import { EmptyState } from './chat/empty-state'
 import { MagicInput } from './chat/magic-input'
 import { User, Bot, Sparkles, GitBranch, Brain, Zap } from 'lucide-react'
@@ -130,7 +131,7 @@ export function ChatInterface({
                         </span>
                       </div>
                     )}
-                    {message.status && (
+                    {message.status && message.status !== 'error' && (
                       <div className="mb-3 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-sm text-indigo-800 animate-pulse">
                         <div className="flex items-center gap-2 font-medium">
                           {message.status === 'planning' ||
@@ -142,7 +143,6 @@ export function ChatInterface({
                           {message.status === 'thinking' && t('status_thinking')}
                           {message.status === 'planning' && t('status_planning')}
                           {message.status === 'executing' && t('status_executing')}
-                          {message.status === 'error' && t('status_error')}
                         </div>
                         {message.planSql && (
                           <pre className="mt-2 max-h-32 overflow-y-auto rounded-md bg-white/80 p-2 text-xs text-zinc-800 border border-indigo-100">
@@ -153,6 +153,12 @@ export function ChatInterface({
                             </code>
                           </pre>
                         )}
+                      </div>
+                    )}
+
+                    {message.status === 'error' && (
+                      <div className="mb-4">
+                        <ErrorCard message={message} />
                       </div>
                     )}
                     {message.content && (
