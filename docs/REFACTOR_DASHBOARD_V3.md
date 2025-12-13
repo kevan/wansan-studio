@@ -92,7 +92,7 @@ export function PageLayer({ isA4, pageCount }: { isA4: boolean, pageCount: numbe
         >
            {/* Footer Branding */}
            <div className="absolute bottom-0 w-full h-12 border-t flex items-center justify-between px-8 text-xs text-zinc-300">
-              <span>Project Wansan</span>
+              <span>Wansan Studio</span>
               <span>Page {i + 1}</span>
            </div>
         </div>

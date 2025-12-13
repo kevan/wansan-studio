@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Wansan - Local-First BI</title>
+    <title>Wansan Studio - Local-First BI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -37,12 +37,12 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
         body { font-family: 'Inter', sans-serif; }
-        
+
         /* 文字辉光效果 */
         .glow-text {
             text-shadow: 0 0 20px rgba(25, 183, 104, 0.4);
         }
-        
+
         /* 按钮辉光 */
         .btn-glow:hover {
             box-shadow: 0 0 25px rgba(25, 183, 104, 0.4);
@@ -52,7 +52,7 @@
         .hero-gradient {
             background: radial-gradient(circle at 50% 0%, rgba(25, 183, 104, 0.06) 0%, rgba(15, 17, 21, 0) 60%);
         }
-        
+
         /* 网格背景 */
         .grid-bg {
             background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
@@ -98,7 +98,7 @@
         <div class="absolute inset-0 grid-bg pointer-events-none -z-10"></div>
 
         <div class="max-w-5xl mx-auto px-6 text-center relative z-10">
-            
+
             <!-- Badge: Local-First Status -->
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-wansan-green mb-8 animate-fade-in-up">
                 <span class="w-1.5 h-1.5 rounded-full bg-wansan-green animate-pulse-slow"></span>
@@ -132,7 +132,7 @@
             <!-- Feature Showcase: 核心原理图 (The Comic/Schematic) -->
             <div id="features" class="relative max-w-4xl mx-auto mt-8 p-1 rounded-2xl bg-gradient-to-b from-white/10 to-transparent animate-fade-in-up" style="animation-delay: 0.3s;">
                 <div class="bg-[#121418] rounded-xl border border-white/5 p-8 md:p-16 relative overflow-hidden text-center">
-                    
+
                     <!-- Diagram Logic Title -->
                     <h3 class="text-2xl md:text-3xl font-bold text-white mb-2">
                         逻辑穿墙而过，<span class="text-wansan-green">数据深锁本地</span>。
@@ -141,7 +141,7 @@
 
                     <!-- CSS Visualization of the Concept -->
                     <div class="flex items-center justify-center gap-4 md:gap-20 py-8 select-none">
-                        
+
                         <!-- Left: Local Fortress -->
                         <div class="group relative">
                             <div class="w-32 h-32 bg-[#1A1D21] rounded-lg border border-white/10 flex flex-col items-center justify-center relative z-10 shadow-2xl">
@@ -175,7 +175,7 @@
                         </div>
 
                     </div>
-                    
+
                     <p class="mt-8 text-xs text-wansan-gray italic">
                         * Wansan 仅提取表头信息 (Column Names) 发送给 AI 以生成 SQL 语句。<br>
                         您的实际单元格数据 (Row Data) 永远不会离开本地 DuckDB 引擎。
@@ -189,7 +189,7 @@
 
     <!-- Footer Simple -->
     <footer class="border-t border-white/5 bg-[#0A0C0F] py-12 text-center text-wansan-gray text-sm">
-        <p>&copy; 2024 Project Wansan. Built for Privacy.</p>
+        <p>&copy; 2024 Wansan Studio. Built for Privacy.</p>
     </footer>
 
 </body>

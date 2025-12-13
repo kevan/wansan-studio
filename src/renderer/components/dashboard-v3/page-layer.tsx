@@ -31,7 +31,7 @@ export function PageLayer({ isA4, pageCount }: PageLayerProps) {
               <div className="rounded bg-black p-1 text-white">
                 <Database className="h-3 w-3" />
               </div>
-              <span className="font-semibold text-zinc-600">Project Wansan</span>
+              <span className="font-semibold text-zinc-600">Wansan Studio</span>
             </div>
             <span className="text-xs text-zinc-400">Page {i + 1}</span>
           </div>

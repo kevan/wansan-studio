@@ -1,4 +1,4 @@
-# 产品需求文档 (PRD) - Project Wansan (万三)
+# 产品需求文档 (PRD) - Wansan Studio (万三)
 
 | 项目名称 | 万三 (Wansan) |
 | :--- | :--- |
