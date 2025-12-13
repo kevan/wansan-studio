@@ -124,7 +124,7 @@ class WansanApp {
     if (isDev()) {
       this.mainWindow.loadURL('http://localhost:5173')
     } else {
-      this.mainWindow.loadFile(join(__dirname, '../../renderer/index.html'))
+      this.mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
     }
 
     // 窗口准备好后显示
