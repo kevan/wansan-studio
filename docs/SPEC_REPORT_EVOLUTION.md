@@ -43,7 +43,7 @@ Current `react-grid-layout` (RGL) is absolute. Narrative reports require **Docum
 The "Chat-to-Chart" flow is atomic. We need a "Topic-to-Report" flow.
 
 ### 3.1 The Pipeline
-1.  **User**: "Generate a Project Wansan Review Report."
+1.  **User**: "Generate a Wansan Studio Review Report."
 2.  **Planner Agent**: Generates a **Structure JSON**:
     ```json
     [

@@ -29,7 +29,8 @@
       "Bash(node scripts/generate-icons.cjs:*)",
       "Bash(ls:*)",
       "Bash(npm run build:*)",
-      "Bash(npx electron-builder:*)"
+      "Bash(npx electron-builder:*)",
+      "Bash(git check-ignore:*)"
     ]
   }
 }

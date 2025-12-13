@@ -1,4 +1,4 @@
-### 📂 Project Wansan: 战略与架构对齐文档 (Strategy & Architecture Alignment Doc)
+### 📂 Wansan Studio: 战略与架构对齐文档 (Strategy & Architecture Alignment Doc)
 
 **To:** Lead Architect / Dev Team
 **From:** CMO & Product Strategy
@@ -9,7 +9,7 @@
 
 ### 1. 愿景综述 (Executive Summary)
 
-**Project Wansan (万三)** 的市场定位已从“另一个 AI BI 工具”升级为 **“反云端 (Anti-Cloud) 的隐私堡垒”**。
+**Wansan Studio (万三)** 的市场定位已从“另一个 AI BI 工具”升级为 **“反云端 (Anti-Cloud) 的隐私堡垒”**。
 
 我们不与 Tableau 比功能，也不与 ChatGPT 比算力。我们的核心护城河是 **架构级的隐私保护 (Architectural Privacy)**。
 *   **核心叙事**: "云端喧嚣时代的静默异类。"

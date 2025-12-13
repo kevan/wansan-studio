@@ -1,6 +1,6 @@
-### 📂 文档一：Project Wansan 落地页开发规格书 (Master Spec)
+### 📂 文档一：Wansan Studio 落地页开发规格书 (Master Spec)
 
-**项目名称**: Project Wansan (万三)
+**项目名称**: Wansan Studio (万三)
 **版本**: v1.0 Release Candidate
 **目标**: 构建一个高转化率、极致极客风的单页落地页。
 
@@ -76,7 +76,7 @@
 You are a Senior Frontend Developer specializing in Tailwind CSS and conversion-focused Landing Pages.
 
 # Task
-Build a single-file `index.html` for "Project Wansan" based on the provided Master Spec.
+Build a single-file `index.html` for "Wansan Studio" based on the provided Master Spec.
 
 # Tech Stack
 - HTML5
