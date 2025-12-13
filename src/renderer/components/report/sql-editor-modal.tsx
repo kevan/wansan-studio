@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import Editor from '@monaco-editor/react'
+import Editor from 'react-simple-code-editor'
+import { highlight, languages } from 'prismjs'
+import 'prismjs/components/prism-sql'
+import 'prismjs/themes/prism.css'
 import { Play, RotateCcw, Copy, X, Check, AlignLeft, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../utils/cn'
@@ -97,7 +100,7 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }
 
         <div className="flex-1 flex flex-col gap-4 overflow-hidden p-1">
           {reasoning && (
-            <div className="flex-none bg-indigo-50/50 border border-indigo-100 p-4 rounded-lg text-sm text-indigo-900/80">
+            <div className="flex-none bg-indigo-50/50 border border-indigo-100 p-4 rounded-lg text-sm text-indigo-900/80 max-h-[30%] overflow-y-auto">
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
                 <h4 className="font-semibold text-xs tracking-wide uppercase text-indigo-400">
@@ -122,32 +125,19 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }
                 Format
               </button>
             </div>
-            <div className="flex-1 min-h-0 relative">
+            <div className="flex-1 min-h-0 relative overflow-auto bg-zinc-50/30">
               <Editor
-                height="100%"
-                defaultLanguage="sql"
-                defaultValue={sql}
                 value={sql}
-                onChange={(val) => setSql(val || '')}
-                options={{
-                  minimap: { enabled: false },
-                  scrollBeyondLastLine: false,
-                  fontSize: 13,
-                  lineNumbersMinChars: 3,
-                  lineDecorationsWidth: 0,
-                  renderLineHighlight: 'line',
-                  fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, 'Courier New', monospace",
-                  padding: { top: 16, bottom: 16 },
-                  overviewRulerLanes: 0,
-                  hideCursorInOverviewRuler: true,
-                  scrollbar: {
-                    vertical: 'visible',
-                    horizontal: 'auto',
-                    useShadows: false,
-                    verticalScrollbarSize: 10,
-                  },
-                  automaticLayout: true,
+                onValueChange={setSql}
+                highlight={code => highlight(code, languages.sql, 'sql')}
+                padding={16}
+                style={{
+                  fontFamily: '"Fira Code", "Fira Mono", monospace',
+                  fontSize: 14,
+                  backgroundColor: '#f9f9f9',
+                  minHeight: '100%',
                 }}
+                className="min-h-full"
               />
             </div>
           </div>
