@@ -39,7 +39,14 @@ export function ReportChart({ option, className, style }: ReportChartProps) {
 
   useEffect(() => {
     if (!instanceRef.current) return
-    instanceRef.current.setOption(option, { notMerge: true })
+    // Disable ECharts default title to avoid duplication with our UI header
+    const optionWithHiddenTitle = {
+      title: {
+        show: false,
+      },
+      ...option,
+    }
+    instanceRef.current.setOption(optionWithHiddenTitle, { notMerge: true })
   }, [option])
 
   return <div ref={chartRef} className={className} style={style} />

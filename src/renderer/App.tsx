@@ -29,6 +29,7 @@ import i18n from './i18n'
 import { useWorkbenchStore } from './stores/useWorkbenchStore'
 import { useSettingsStore } from './stores/useSettingsStore'
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow'
+import logo from './src/assets/logo.png'
 
 const LAYOUT_STORAGE_KEY = 'wansan-layout'
 
@@ -233,8 +234,9 @@ function App() {
             <PanelLeft className="h-4 w-4 mx-auto" />
           </button>
           <div className="h-4 w-px bg-zinc-300 dark:bg-zinc-700" />
+          {/* Logo Image */}
           <div className="flex items-center gap-2">
-            <Database className="h-4 w-4 text-indigo-500" />
+            <img src={logo} className="h-6 w-6 rounded-md " alt="Wansan" />
             <span className="text-sm font-semibold text-zinc-900">Wansan</span>
           </div>
         </div>

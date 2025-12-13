@@ -142,6 +142,7 @@ export const useChatStore = create<ChatStore>()(
         const fileState = useFileStore.getState()
         const language = languageOverride || useWorkbenchStore.getState().language || 'en'
         const readyFiles = fileState.files.filter(f => f.status === 'ready')
+        const startTime = Date.now()
         const resolvedSchemas =
           schemas ??
           readyFiles.map(f => ({
@@ -276,11 +277,16 @@ export const useChatStore = create<ChatStore>()(
 
             const data = execution.data ?? []
             const columns = data.length > 0 ? Object.keys(data[0]) : []
+            const endTime = Date.now()
+            const latency = endTime - startTime
 
             get().updateMessage(botMsgId, msg => ({
               ...msg,
               status: undefined,
               content: plan.summary || '',
+              metadata: {
+                latency,
+              },
               reportData: {
                 title: plan.title,
                 summary: plan.summary,

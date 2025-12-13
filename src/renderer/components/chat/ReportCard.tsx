@@ -81,10 +81,22 @@ export function ReportCard({
 
       {/* Compact Toolbar Footer */}
       <div className="flex items-center justify-between p-3 border-t bg-zinc-50/50">
-        {/* Timestamp */}
-        <span className="text-[10px] text-zinc-400 tabular-nums">
-          {message.timestamp ? new Date(message.timestamp).toLocaleString() : ''}
-        </span>
+        {/* Timestamp & Latency */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-zinc-400 tabular-nums">
+            {message.timestamp ? new Date(message.timestamp).toLocaleString() : ''}
+          </span>
+
+          {/* Execution Latency Badge */}
+          {message.metadata?.latency && (
+            <span
+              className="flex items-center gap-1 text-[10px] text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded-sm tabular-nums"
+              title="总执行时间 (AI + SQL)"
+            >
+              ⚡ {(message.metadata.latency / 1000).toFixed(1)}s
+            </span>
+          )}
+        </div>
 
         {/* Action Toolbar */}
         <div className="flex items-center gap-1">
