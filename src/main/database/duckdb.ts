@@ -1,6 +1,7 @@
 import { createRequire } from 'module'
 import path from 'path'
 import { Mutex } from 'async-mutex'
+import { app } from 'electron'
 
 // Use blocking DuckDB version to avoid worker issues
 const require = createRequire(import.meta.url)
@@ -17,7 +18,15 @@ export class DatabaseService {
 
     console.log('Initializing DuckDB-WASM (Blocking)...')
     try {
-      const DUCKDB_DIST = path.dirname(require.resolve('@duckdb/duckdb-wasm'))
+      // Resolve the path to the WASM bundle
+      let DUCKDB_DIST = path.dirname(require.resolve('@duckdb/duckdb-wasm'))
+      
+      // [FIX] If packaged, point to the unpacked directory (physical path)
+      // This is crucial for WASM loading to work correctly with asarUnpack
+      if (app.isPackaged) {
+        DUCKDB_DIST = DUCKDB_DIST.replace('app.asar', 'app.asar.unpacked')
+      }
+      
       console.log('DUCKDB_DIST:', DUCKDB_DIST)
 
       // Bundle paths - Node.js uses generic wasm files, not node-specific ones
