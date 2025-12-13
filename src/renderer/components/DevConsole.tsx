@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { isDev } from '../utils/env'
 import i18n from '../i18n'
 
@@ -15,8 +15,8 @@ interface DevConsoleProps {
 
 // 生产环境不渲染
 export function DevConsole({
-  defaultOpen = false,
-}: DevConsoleProps) {
+                             defaultOpen = false,
+                           }: DevConsoleProps) {
   if (!isDev) return null
 
   const [isOpen, setIsOpen] = useState(defaultOpen)
@@ -38,24 +38,24 @@ export function DevConsole({
 
     const createLogger =
       (type: LogEntry['type']) =>
-      (...args: unknown[]) => {
-        originalConsole[type](...args)
-        const message = args
-          .map(arg =>
-            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-          )
-          .join(' ')
+        (...args: unknown[]) => {
+          originalConsole[type](...args)
+          const message = args
+            .map(arg =>
+              typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg),
+            )
+            .join(' ')
 
-        setLogs(prev => [
-          ...prev.slice(-99),
-          {
-            id: ++logIdRef.current,
-            type,
-            message,
-            timestamp: new Date(),
-          },
-        ])
-      }
+          setLogs(prev => [
+            ...prev.slice(-99),
+            {
+              id: ++logIdRef.current,
+              type,
+              message,
+              timestamp: new Date(),
+            },
+          ])
+        }
 
     console.log = createLogger('log')
     console.warn = createLogger('warn')
@@ -86,8 +86,8 @@ export function DevConsole({
 
   const printAllTables = useCallback(async () => {
     try {
-      console.log('📊 Fetching all tables from DuckDB...')
       const result = await window.electronAPI.invoke('get-schema')
+      console.log('📊 Fetching all tables from DuckDB...', result)
 
       if (result.success && result.data && Array.isArray(result.data.tables)) {
         const tables = result.data.tables

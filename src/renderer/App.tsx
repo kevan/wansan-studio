@@ -300,7 +300,7 @@ function App() {
         {/* 左侧 Sidebar */}
         <Panel
           ref={leftPanelRef}
-          defaultSize={15}
+          defaultSize={20}
           minSize={15}
           maxSize={20}
           collapsible
@@ -321,7 +321,7 @@ function App() {
         {/* 主画布区域 - Chat/Workspace */}
         <Panel
           ref={middlePanelRef}
-          defaultSize={35}
+          defaultSize={30}
           minSize={0}
           collapsible
           collapsedSize={0}

@@ -4,6 +4,8 @@ import {
   FolderClosed,
   FolderOpen,
   FileSpreadsheet,
+  FileJson,
+  FileText,
   Link2,
   Type,
   Hash,
@@ -67,7 +69,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
     }
 
     if (data.type === 'file') {
-      return <FileSpreadsheet className="w-4 h-4 text-green-600" />
+      return getFileIcon()
     }
 
     if (data.type === 'relation') {
@@ -204,6 +206,21 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
         duration: 3000,
       })
     }
+  }
+
+  const getFileIcon = () => {
+    if (data.type === 'file' && data.fileId) {
+      const file = files.find(f => f.id === data.fileId)
+      if (file) {
+        const extension = file.name.toLowerCase()
+        if (extension.endsWith('.json')) {
+          return <FileJson className="w-4 h-4 text-orange-500" />
+        } else if (extension.endsWith('.csv')) {
+          return <FileText className="w-4 h-4 text-blue-500" />
+        }
+      }
+    }
+    return <FileSpreadsheet className="w-4 h-4 text-green-600" />
   }
 
   // --- Interaction ---

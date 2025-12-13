@@ -58,7 +58,7 @@ export function setupIPC(
     try {
       const result = await dialog.showOpenDialog({
         properties: ['openFile'],
-        filters: [{ name: 'Data Files', extensions: ['xlsx', 'xls', 'csv'] }],
+        filters: [{ name: 'Data Files', extensions: ['xlsx', 'xls', 'csv', 'json'] }],
       })
 
       if (result.canceled) {
@@ -76,7 +76,7 @@ export function setupIPC(
     try {
       const result = await dialog.showOpenDialog({
         properties: ['openFile', 'multiSelections'],
-        filters: [{ name: 'Data Files', extensions: ['xlsx', 'xls', 'csv'] }],
+        filters: [{ name: 'Data Files', extensions: ['xlsx', 'xls', 'csv', 'json'] }],
       })
 
       if (result.canceled) {
@@ -306,6 +306,22 @@ export function setupIPC(
       return { success: false, error: 'Cancelled' }
     } catch (error) {
       console.error('Save file error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  })
+
+  // 删除表
+  ipcMain.handle('delete-table', async (event, tableName: string) => {
+    try {
+      // Sanitize table name to prevent SQL injection
+      // Double quotes are important for identifier safety
+      await databaseService.query(`DROP TABLE IF EXISTS "${tableName}"`)
+      return { success: true }
+    } catch (error) {
+      console.error("Drop table failed:", error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

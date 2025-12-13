@@ -1,8 +1,10 @@
 import duckdb from 'duckdb'
+import { Mutex } from 'async-mutex'
 
 export class DatabaseService {
   private db: duckdb.Database | null = null
   private connection: duckdb.Connection | null = null
+  private mutex: Mutex = new Mutex()
 
   async initialize(): Promise<void> {
     try {
@@ -13,7 +15,7 @@ export class DatabaseService {
       this.connection = this.db.connect()
 
       // 设置一些有用的配置
-      await this.query("SET memory_limit='1GB'")
+      await this.query('SET memory_limit=\'1GB\'')
       await this.query('SET threads=4')
 
       console.log('DuckDB initialized successfully')
@@ -24,200 +26,85 @@ export class DatabaseService {
   }
 
   async query(sql: string): Promise<any[]> {
-    if (!this.connection) {
-      throw new Error('Database not initialized')
-    }
+    return this.mutex.runExclusive(async () => {
+      if (!this.connection) {
+        throw new Error('Database not initialized')
+      }
 
-    return new Promise((resolve, reject) => {
-      this.connection!.all(sql, (err: Error | null, result: any[]) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(result || [])
-        }
+      return new Promise((resolve, reject) => {
+        this.connection!.all(sql, (err: Error | null, result: any[]) => {
+          if (err) {
+            reject(err)
+          } else {
+            resolve(result || [])
+          }
+        })
       })
     })
   }
 
-  async createTableFromData(tableName: string, data: any[][]): Promise<void> {
-    if (!data || data.length === 0) {
-      throw new Error('No data provided')
-    }
-
-    // 第一行作为列名
-    const headers = data[0]
-    const rows = data.slice(1)
-
-    if (headers.length === 0) {
-      throw new Error('No columns found')
-    }
-
-    // 清理列名（移除特殊字符，确保有效的 SQL 标识符）
-    const cleanHeaders = headers.map((header, index) => {
-      let cleanName = String(header || `column_${index + 1}`)
-        .replace(/[^a-zA-Z0-9_]/g, '_')
-        .replace(/^[0-9]/, 'col_$&')
-
-      // 确保不为空
-      if (!cleanName || cleanName === '_') {
-        cleanName = `column_${index + 1}`
-      }
-
-      return cleanName
-    })
-
-    // 删除已存在的表
-    try {
-      await this.query(`DROP TABLE IF EXISTS ${tableName}`)
-    } catch (error) {
-      // 忽略删除错误
-    }
-
-    // 分析数据类型
-    const columnTypes = this.inferColumnTypes(rows, cleanHeaders.length)
-
-    // 创建表结构
-    const columnDefs = cleanHeaders
-      .map((name, index) => `"${name}" ${columnTypes[index]}`)
-      .join(', ')
-
-    const createTableSQL = `CREATE TABLE ${tableName} (${columnDefs})`
-    await this.query(createTableSQL)
-
-    // 插入数据
-    if (rows.length > 0) {
-      // 批量插入数据 - 使用完整的 SQL 语句而非参数化查询
-      // DuckDB Node.js 绑定对参数化查询支持有限
-      const batchSize = 100
-      for (let i = 0; i < rows.length; i += batchSize) {
-        const batch = rows.slice(i, i + batchSize)
-        const valueStrings = batch.map(row => {
-          const values = row.slice(0, cleanHeaders.length).map(value => {
-            // 处理空值
-            if (value === null || value === undefined || value === '') {
-              return 'NULL'
-            }
-            // 处理字符串 - 转义单引号
-            if (typeof value === 'string') {
-              return `'${value.replace(/'/g, "''")}'`
-            }
-            // 数字直接使用
-            if (typeof value === 'number') {
-              return String(value)
-            }
-            // 其他类型转为字符串
-            return `'${String(value).replace(/'/g, "''")}'`
-          })
-
-          // 补齐缺失的列
-          while (values.length < cleanHeaders.length) {
-            values.push('NULL')
-          }
-
-          return `(${values.join(', ')})`
-        })
-
-        const insertSQL = `INSERT INTO ${tableName} VALUES ${valueStrings.join(', ')}`
-        await this.query(insertSQL)
-      }
-    }
-  }
-
-  private inferColumnTypes(rows: any[][], columnCount: number): string[] {
-    const types = new Array(columnCount).fill('VARCHAR')
-
-    if (rows.length === 0) {
-      return types
-    }
-
-    // 分析每列的数据类型
-    for (let colIndex = 0; colIndex < columnCount; colIndex++) {
-      let hasNumbers = 0
-      let hasIntegers = 0
-      let hasDecimals = 0
-      let hasDates = 0
-      let totalNonNull = 0
-
-      for (const row of rows.slice(0, Math.min(100, rows.length))) {
-        const value = row[colIndex]
-
-        if (value === null || value === undefined || value === '') {
-          continue
-        }
-
-        totalNonNull++
-        const strValue = String(value).trim()
-
-        // 检查是否为数字
-        if (!isNaN(Number(strValue)) && strValue !== '') {
-          hasNumbers++
-          if (Number.isInteger(Number(strValue))) {
-            hasIntegers++
-          } else {
-            hasDecimals++
-          }
-        }
-
-        // 检查是否为日期
-        if (this.isDateLike(strValue)) {
-          hasDates++
-        }
-      }
-
-      // 根据分析结果确定类型
-      if (totalNonNull === 0) {
-        types[colIndex] = 'VARCHAR'
-      } else if (hasDates / totalNonNull > 0.8) {
-        types[colIndex] = 'DATE'
-      } else if (hasNumbers / totalNonNull > 0.8) {
-        if (hasDecimals > 0) {
-          types[colIndex] = 'DOUBLE'
-        } else {
-          types[colIndex] = 'BIGINT'
-        }
-      } else {
-        types[colIndex] = 'VARCHAR'
-      }
-    }
-
-    return types
-  }
-
-  private isDateLike(value: string): boolean {
-    // 简单的日期格式检测
-    const datePatterns = [
-      /^\d{4}-\d{2}-\d{2}$/,
-      /^\d{2}\/\d{2}\/\d{4}$/,
-      /^\d{4}\/\d{2}\/\d{2}$/,
-      /^\d{2}-\d{2}-\d{4}$/,
-    ]
-
-    return (
-      datePatterns.some(pattern => pattern.test(value)) &&
-      !isNaN(Date.parse(value))
-    )
-  }
-
   async getSchema(tableName?: string): Promise<any> {
-    if (!tableName) {
-      // 返回所有表的信息
-      const tables = await this.query(
-        "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
-      )
-      return { tables }
-    }
+    try {
+      if (!this.connection) {
+        throw new Error('Database not initialized')
+      }
 
-    // 返回特定表的结构信息
-    const columns = await this.query(`
-      SELECT column_name as name, data_type as type, is_nullable as nullable
-      FROM information_schema.columns 
-      WHERE table_name = '${tableName}'
-      ORDER BY ordinal_position
-    `)
+      if (!tableName) {
+        // 返回所有表的信息，包含列详情
+        const tablesResult = await this.query(
+          'SELECT table_name FROM information_schema.tables WHERE table_schema = \'main\'',
+        )
 
-    return {
-      tableName,
-      columns,
+        if (!tablesResult || tablesResult.length === 0) {
+          return { tables: [] }
+        }
+
+        // 并行获取每个表的详细结构
+        const tablesWithDetails = await Promise.all(
+          tablesResult.map(async (row: any) => {
+            const tableName = row.table_name
+            try {
+              const columns = await this.query(`
+                  SELECT column_name as name, data_type as type, is_nullable as nullable
+                  FROM information_schema.columns
+                  WHERE table_name = '${tableName}'
+                  ORDER BY ordinal_position
+              `)
+
+              return {
+                tableName,
+                description: '',
+                columns: columns || [],
+              }
+            } catch (error) {
+              console.error(`Failed to get schema for table ${tableName}:`, error)
+              return {
+                tableName,
+                description: 'Error fetching schema',
+                columns: [],
+              }
+            }
+          }),
+        )
+
+        return { tables: tablesWithDetails }
+      }
+
+      // 返回特定表的结构信息
+      const columns = await this.query(`
+          SELECT column_name as name, data_type as type, is_nullable as nullable
+          FROM information_schema.columns
+          WHERE table_name = '${tableName}'
+          ORDER BY ordinal_position
+      `)
+
+      return {
+        tableName,
+        columns,
+      }
+    } catch (error) {
+      console.error('getSchema error:', error)
+      throw error
     }
   }
 
@@ -229,16 +116,18 @@ export class DatabaseService {
   }
 
   async close(): Promise<void> {
-    if (this.connection) {
-      this.connection.close()
-      this.connection = null
-    }
+    await this.mutex.runExclusive(async () => {
+      if (this.connection) {
+        this.connection.close()
+        this.connection = null
+      }
 
-    if (this.db) {
-      this.db.close()
-      this.db = null
-    }
+      if (this.db) {
+        this.db.close()
+        this.db = null
+      }
 
-    console.log('DuckDB connection closed')
+      console.log('DuckDB connection closed')
+    })
   }
 }

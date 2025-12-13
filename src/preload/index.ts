@@ -15,6 +15,8 @@ const electronAPI = {
   runSQL: (sql: string) => ipcRenderer.invoke('run-sql', sql),
   getSchema: (tableName?: string) =>
     ipcRenderer.invoke('get-schema', tableName),
+  deleteTable: (tableName: string) =>
+    ipcRenderer.invoke('delete-table', tableName),
 
   // AI 功能
   askAI: (

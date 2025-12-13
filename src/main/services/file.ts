@@ -66,6 +66,7 @@ export class FileService {
   }
 
   async parseFile(filePath: string) {
+    console.log('parseFile', filePath)
     const ext = extname(filePath).toLowerCase()
 
     switch (ext) {
@@ -193,8 +194,9 @@ export class FileService {
 
       // Use DuckDB's read_json_auto to handle both array and newline-delimited JSON
       const normalizedPath = filePath.replace(/\\/g, '/')
+      // Use array format to handle inconsistent JSON more robustly
       await this.databaseService.query(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${normalizedPath}')`
+        `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${normalizedPath}', format='auto', auto_detect=true)`
       )
 
       // Get schema and preview data
@@ -217,8 +219,9 @@ export class FileService {
         preview,
       }
     } catch (error) {
+      console.error('Failed to parse JSON file:', error)
       throw new Error(
-        `Failed to parse JSON file: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to parse JSON file: ${error instanceof Error ? error.message : 'Unknown error'}. The JSON might have inconsistent field types or structure.`
       )
     }
   }
@@ -227,6 +230,7 @@ export class FileService {
     filePath: string,
     tableName: string
   ): Promise<ReloadResult> {
+    console.log('reIngestFile', filePath, tableName)
     // 处理 Demo 数据（DEMO_MEMORY 路径）
     if (filePath === 'DEMO_MEMORY') {
       // 重新摄取 Demo 数据
@@ -257,12 +261,22 @@ export class FileService {
         tableName
       )
       columns = result.columns
-    } else if (ext === '.csv' || ext === '.json') {
+    } else if (ext === '.csv') {
       await this.databaseService.query(`DROP TABLE IF EXISTS "${tableName}"`)
       await this.ingestCSVWithFallback(filePath, tableName)
 
       // We need to fetch the schema manually for CSV as we did in parseCSVFile
       // Ideally parseCSVFile logic should be extracted but for now duplication is small
+    } else if (ext === '.json') {
+      await this.databaseService.query(`DROP TABLE IF EXISTS "${tableName}"`)
+
+      // Use DuckDB's read_json_auto to re ingest JSON file
+      const normalizedPath = filePath.replace(/\\/g, '/')
+      await this.databaseService.query(
+        `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${normalizedPath}')`
+      )
+
+      // We need to fetch the schema manually for JSON as we did in parseJsonFile
       const columnsResult = await new Promise<any[]>((resolve, reject) => {
         this.databaseService
           .getDb()

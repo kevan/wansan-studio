@@ -34,6 +34,10 @@ const mockIPC = {
     console.log(`Mock runSQL: ${sql}`)
     return { success: true, data: [] }
   },
+  deleteTable: (tableName: string) => {
+    console.log(`Mock deleteTable: ${tableName}`)
+    return { success: true, data: [] }
+  },
   getSchema: async (tableName?: string) => {
     console.log(`Mock getSchema: ${tableName}`)
     return {
@@ -155,6 +159,7 @@ declare global {
       parseFile: (filePath: string) => Promise<IPCResponse>
       runSQL: (sql: string) => Promise<IPCResponse>
       getSchema: (tableName?: string) => Promise<IPCResponse>
+      deleteTable: (tableName?: string) => Promise<IPCResponse>
       generateSQL: (prompt: string, schema: any) => Promise<IPCResponse>
       askAI: (
         query: string,

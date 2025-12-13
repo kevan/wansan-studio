@@ -272,9 +272,12 @@ export async function generateAnalysis(
   language: 'en' | 'zh' = 'en',
 ): Promise<AIGenerationOutput> {
   if (isDev()) {
+    // Use a custom replacer to handle BigInt serialization
     console.log(
       'generateAnalysis pre request - schemas:',
-      JSON.stringify(schemas),
+      JSON.stringify(schemas, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+      ),
     )
     console.log('generateAnalysis context:', context)
   }
@@ -373,9 +376,12 @@ export async function analyzeContext(
   language: 'en' | 'zh' = 'en',
 ): Promise<ContextAnalysisResult> {
   if (isDev()) {
+    // Use a custom replacer to handle BigInt serialization
     console.log(
       'analyzeContext pre request - schemas:',
-      JSON.stringify(schemas),
+      JSON.stringify(schemas, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+      ),
     )
   }
 

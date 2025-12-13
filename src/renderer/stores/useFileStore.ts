@@ -166,7 +166,20 @@ export const useFileStore = create<ProjectState>()(
         }))
       },
 
-      removeFile: id => {
+      removeFile: async id => {
+        const { files } = get()
+        const file = files.find(f => f.id === id)
+
+        if (file) {
+          try {
+            // Clean up DuckDB table
+            await window.electronAPI.deleteTable(file.tableName)
+          } catch (e) {
+            console.error("Failed to drop table", e)
+            // Proceed anyway to clear UI
+          }
+        }
+
         set(state => {
           const remainingFiles = state.files.filter(f => f.id !== id)
           const remainingRelations = state.relations.filter(
