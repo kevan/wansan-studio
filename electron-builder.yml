@@ -5,9 +5,10 @@ directories:
   buildResources: resources
 
 files:
-  - dist/**/*
-  - package.json
-  - node_modules/**/*
+  - "dist/**/*"
+  - "package.json"
+  - "node_modules/**/*"
+
 
 # [CRITICAL] Unpack WASM to avoid ASAR issues
 asarUnpack:

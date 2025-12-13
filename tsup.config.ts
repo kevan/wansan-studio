@@ -4,7 +4,7 @@ export default defineConfig({
   entry: ['src/main/index.ts', 'src/preload/index.ts'],
   format: ['esm', 'cjs'],
   target: 'node20',
-  clean: true,
+  clean: false, // Don't clean dist, handled by build script or we append to it
   outDir: 'dist',
   external: ['electron', 'dotenv'],
   sourcemap: true,

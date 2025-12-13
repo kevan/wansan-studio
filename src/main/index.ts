@@ -124,7 +124,12 @@ class WansanApp {
     if (isDev()) {
       this.mainWindow.loadURL('http://localhost:5173')
     } else {
-      this.mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+      // 在生产环境中，loadFile 默认相对于 app.getAppPath() (即 app.asar)
+      // 尝试直接加载 dist/renderer/index.html
+      const entry = 'dist/renderer/index.html'
+      this.mainWindow.loadFile(entry).catch((e) => {
+          console.error('Failed to load local file:', entry, e)
+      })
     }
 
     // 窗口准备好后显示
