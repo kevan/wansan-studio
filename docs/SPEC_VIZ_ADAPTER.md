@@ -64,24 +64,3 @@ export function adaptChartConfig(
 *   **Pie Limit**: If Categories > 20, Pie charts are unreadable.
     *   **Auto-Group**: Top 19 + "Others". (Advanced feature, maybe skip for MVP).
     *   **MVP**: Just slice top 20.
-
-### 执行指令
-
-请将以下指令发送给 **Code Agent**。
-
-```markdown
-### TASK: Implement Smart Viz Adapter
-
-**Context**: Read `docs/SPEC_VIZ_ADAPTER.md`.
-
-**Goal**: Enable seamless switching between Chart Types (Bar <-> Pie <-> Line) without data errors.
-
-**Steps**:
-1.  **Library**: Create `src/renderer/src/lib/viz-adapter.ts`.
-2.  **Logic**: Implement `adaptChartConfig`.
-    -   Extract data from `xAxis.data` and `series[0].data` (for Cartesian).
-    -   Extract data from `series[0].data` objects (for Pie).
-    -   Re-construct the ECharts option for the target type.
-3.  **Integration**: Update `src/renderer/src/components/report/viz-controls.tsx`.
-    -   Inside `handleTypeChange`, use `adaptChartConfig` to generate the new config before saving.
-```

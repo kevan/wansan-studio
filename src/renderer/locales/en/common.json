@@ -61,6 +61,7 @@
   "refine": "Refine",
   "pinned_to_canvas": "Pinned to Canvas",
   "pin_to_canvas": "Pin to Canvas",
+  "unpin_from_canvas": "Unpin from Canvas",
   "pinned": "Pinned",
   "pin": "Pin",
   "edit_viz": "Edit visualization",

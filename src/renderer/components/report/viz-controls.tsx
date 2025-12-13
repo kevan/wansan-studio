@@ -12,6 +12,7 @@ import {
 import type { AIAnalysisResult } from '@shared/types'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
+import { adaptChartConfig } from '@/lib/viz-adapter'
 
 type VizType = NonNullable<AIAnalysisResult['visualization']>['type']
 
@@ -78,7 +79,14 @@ export function VizControls({
   }, [open])
 
   const handleChartTypeChange = (type: VizType) => {
-    onChange({ type })
+    // Use adaptChartConfig to intelligently map configuration when switching chart types
+    const adapted = adaptChartConfig(
+      type,
+      vizType,
+      vizConfig,
+      data || []
+    )
+    onChange(adapted)
   }
 
   const handleXAxisChange = (value: string) => {
@@ -132,7 +140,7 @@ export function VizControls({
         }}
         onMouseDown={e => e.stopPropagation()}
         className={cn(
-          'p-1.5 bg-white text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 rounded-md border border-zinc-200 shadow-sm transition-colors cursor-pointer',
+          'p-1.5 rounded-md transition-colors hover:bg-zinc-200 text-zinc-500',
           disabled && 'cursor-not-allowed opacity-60'
         )}
         title={t('edit_viz')}
@@ -143,11 +151,23 @@ export function VizControls({
       {open && (
         <div
           ref={popoverRef}
-          className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-zinc-200 z-50"
+          className="fixed z-[100] w-80 bg-white rounded-lg shadow-xl border border-zinc-200"
+          style={{
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)'
+          }}
           onClick={e => e.stopPropagation()}
         >
-          <div className="px-4 py-2 border-b border-zinc-100 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          <div className="px-4 py-2 border-b border-zinc-100 text-xs font-semibold uppercase tracking-wide text-zinc-500 flex items-center justify-between">
             {t('visualization')}
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="text-zinc-400 hover:text-zinc-600"
+            >
+              ✕
+            </button>
           </div>
 
           <div className="p-4 space-y-4">

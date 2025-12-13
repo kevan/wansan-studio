@@ -61,6 +61,7 @@
   "refine": "微调",
   "pinned_to_canvas": "已固定到画布",
   "pin_to_canvas": "固定到画布",
+  "unpin_from_canvas": "从画布移除",
   "pinned": "已固定",
   "pin": "固定",
   "edit_viz": "编辑可视化",

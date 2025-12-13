@@ -4,6 +4,7 @@ import {
   Sparkles,
   RefreshCw,
   Code,
+  Settings2,
 } from 'lucide-react'
 import { DashboardWidget } from '../DashboardWidget'
 import { ReportData, useWorkbenchStore } from '../../stores/useWorkbenchStore'
@@ -12,6 +13,7 @@ import { cn } from '../../utils/cn'
 import { SqlEditorModal } from '../report/sql-editor-modal'
 import type { ChatMessage } from '../ChatInterface'
 import { useTranslation } from 'react-i18next'
+import { VizControls } from '@/components/report/viz-controls'
 
 interface ReportCardProps {
   messageId: string
@@ -29,6 +31,7 @@ export function ReportCard({
   const [isLogicOpen, setIsLogicOpen] = useState(false)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const pinReport = useWorkbenchStore(state => state.pinReport)
+  const removeReport = useWorkbenchStore(state => state.removeReport)
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const setReplyTo = useChatStore(state => state.setReplyTo)
   const updateReportConfig = useChatStore(state => state.updateReportConfig)
@@ -38,8 +41,13 @@ export function ReportCard({
 
   const isPinned = pinnedReports.some(r => r.sourceMessageId === messageId)
 
-  const handlePin = () => {
-    if (!isPinned) {
+  const handlePinToggle = () => {
+    if (isPinned) {
+      const pinnedReport = pinnedReports.find(r => r.sourceMessageId === messageId)
+      if (pinnedReport) {
+        removeReport(pinnedReport.id)
+      }
+    } else {
       window.dispatchEvent(new Event('wansan:open-dashboard'))
       pinReport(messageId, reportData, message.timestamp)
     }
@@ -80,6 +88,15 @@ export function ReportCard({
 
         {/* Action Toolbar */}
         <div className="flex items-center gap-1">
+          {/* Viz Controls */}
+          <VizControls
+            vizType={reportData.chartType}
+            vizConfig={reportData.vizConfig}
+            columns={reportData.columns}
+            data={reportData.tableData}
+            onChange={updates => updateReportConfig(messageId, updates)}
+          />
+
           {/* Inspect Code & Logic Button */}
           <button
             onClick={() => setIsEditorOpen(true)}
@@ -109,17 +126,11 @@ export function ReportCard({
 
           {/* Pin Button */}
           <button
-            onClick={handlePin}
-            disabled={isPinned}
-            className={cn(
-              'p-1.5 rounded-md transition-colors',
-              isPinned
-                ? 'text-orange-600 bg-orange-50 cursor-default'
-                : 'hover:bg-zinc-200'
-            )}
-            title={isPinned ? t('pinned_to_canvas') : t('pin_to_canvas')}
+            onClick={handlePinToggle}
+            className={cn('p-1.5 rounded-md transition-colors hover:bg-zinc-200')}
+            title={isPinned ? t('unpin_from_canvas') : t('pin_to_canvas')}
           >
-            <Pin className="w-4 h-4" />
+            <Pin className={cn('w-4 h-4', isPinned ? 'fill-current text-orange-600' : 'text-zinc-500')} />
           </button>
         </div>
       </div>
