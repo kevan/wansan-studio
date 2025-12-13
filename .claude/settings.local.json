@@ -8,7 +8,10 @@
       "Bash(npx tsc:*)",
       "Bash(find:*)",
       "Bash(npm run dev -- --host)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(cat:*)",
+      "WebSearch"
     ]
   }
 }

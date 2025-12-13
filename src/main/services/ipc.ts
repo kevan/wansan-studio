@@ -15,7 +15,7 @@ import type {
 
 export function setupIPC(
   databaseService: DatabaseService,
-  aiService: AIService
+  aiService: AIService,
 ) {
   const fileService = new FileService(databaseService)
 
@@ -92,7 +92,7 @@ export function setupIPC(
   // 执行 SQL
   ipcMain.handle('run-sql', async (_event, sql: string) => {
     try {
-      const result = await executeSQL(sql, databaseService.getDb())
+      const result = await executeSQL(sql, databaseService)
       return { success: true, data: result }
     } catch (error) {
       console.error('SQL execution error:', error)
@@ -126,7 +126,7 @@ export function setupIPC(
       schemas: TableSchema[],
       relations: RelationSuggestion[],
       context?: { lastSql: string; lastQuery: string },
-      language?: 'en' | 'zh'
+      language?: 'en' | 'zh',
     ) => {
       try {
         const result = await aiService.generatePlan(
@@ -134,7 +134,7 @@ export function setupIPC(
           schemas,
           relations,
           context,
-          language
+          language,
         )
         return { success: true, data: result }
       } catch (error) {
@@ -144,7 +144,7 @@ export function setupIPC(
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
-    }
+    },
   )
 
   // AI 修复 SQL
@@ -154,7 +154,7 @@ export function setupIPC(
       _event,
       originalSql: string,
       error: string,
-      schemas: TableSchema[]
+      schemas: TableSchema[],
     ) => {
       try {
         const result = await aiService.fixQuery(originalSql, error, schemas)
@@ -166,7 +166,7 @@ export function setupIPC(
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
-    }
+    },
   )
 
   // AI 分析上下文 (关系 + 提示词)
@@ -183,7 +183,7 @@ export function setupIPC(
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
-    }
+    },
   )
 
   // 获取 AI 配置
@@ -230,7 +230,7 @@ export function setupIPC(
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
-    }
+    },
   )
 
   // 重新摄取文件
@@ -247,7 +247,7 @@ export function setupIPC(
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
-    }
+    },
   )
 
   // 摄取 JSON 数据（用于 Demo 数据）
@@ -255,8 +255,7 @@ export function setupIPC(
     'ingest-json',
     async (_event, tableName: string, rows: any[]) => {
       try {
-        const db = databaseService.getDb()
-        const result = await ingestJsonData(db, tableName, rows)
+        const result = await ingestJsonData(databaseService, tableName, rows)
         return { success: true, data: result }
       } catch (error) {
         console.error('Ingest JSON error:', error)
@@ -265,7 +264,7 @@ export function setupIPC(
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
-    }
+    },
   )
 
   // 保存图片
@@ -321,7 +320,7 @@ export function setupIPC(
       await databaseService.query(`DROP TABLE IF EXISTS "${tableName}"`)
       return { success: true }
     } catch (error) {
-      console.error("Drop table failed:", error)
+      console.error('Drop table failed:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -339,7 +338,7 @@ export function setupIPC(
         layoutOptions?: { isA4?: boolean; landscape?: boolean }
         clip?: { x: number; y: number; width: number; height: number }
         dpr?: number
-      }
+      },
     ) => {
       const win = BrowserWindow.fromWebContents(event.sender)
       if (!win) {
@@ -384,7 +383,7 @@ export function setupIPC(
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
-    }
+    },
   )
 
   console.log('IPC handlers registered and updated successfully')

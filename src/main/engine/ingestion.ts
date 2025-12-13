@@ -2,15 +2,15 @@ import * as XLSX from 'xlsx'
 import fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
-import duckdb from 'duckdb'
+import { DatabaseService } from '../database/duckdb'
 import { TableSchema, ColumnSchema, ColumnType } from '../../shared/types'
 
 /**
  * 摄取 JSON 数据到 DuckDB（用于 Demo 数据）
- * 参考 ingestExcelFile 的方式，让 DuckDB 直接读取 JSON 文件
+ * 使用 registerFileText 方法注册虚拟文件，然后用 read_json_auto 读取
  */
 export async function ingestJsonData(
-  db: duckdb.Database,
+  databaseService: DatabaseService,
   tableName: string,
   rows: any[]
 ): Promise<TableSchema> {
@@ -18,59 +18,34 @@ export async function ingestJsonData(
     throw new Error('No data provided')
   }
 
-  // 将 JSON 数据写入临时文件
-  const tempFilePath = path.join(os.tmpdir(), `${tableName}.json`)
+  const tempFileName = `${tableName}.json`
 
   try {
-    // 写入 JSON 文件
-    await fs.writeFile(tempFilePath, JSON.stringify(rows), 'utf-8')
+    const jsonContent = JSON.stringify(rows)
 
-    // 删除已存在的表
-    await new Promise<void>((resolve, reject) => {
-      db.exec(`DROP TABLE IF EXISTS "${tableName}"`, err => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+    await databaseService.registerFileText(tempFileName, jsonContent)
 
-    // 使用 DuckDB 的 read_json_auto 直接读取 JSON 并创建表
-    // 让 DuckDB 自动推断类型，类似 read_csv_auto
-    await new Promise<void>((resolve, reject) => {
-      db.exec(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${tempFilePath.replace(/\\/g, '/')}')`,
-        err => {
-          if (err) return reject(err)
-          resolve()
-        }
-      )
-    })
+    await databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
 
-    // 获取表结构
-    const columnsResult = await new Promise<any[]>((resolve, reject) => {
-      db.all(`PRAGMA table_info('${tableName}');`, (err, res) => {
-        if (err) return reject(err)
-        resolve(res)
-      })
-    })
+    await databaseService.exec(
+      `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${tempFileName}', format='auto', auto_detect=true)`
+    )
 
-    // 获取样本值用于返回
+    const columnsResult = await databaseService.query(
+      `PRAGMA table_info('${tableName}');`
+    )
+
     const inferredColumns: ColumnSchema[] = await Promise.all(
-      columnsResult.map(async col => {
-        const samples = await new Promise<any[]>((resolve, reject) => {
-          db.all(
-            `SELECT DISTINCT "${col.name}" FROM "${tableName}" WHERE "${col.name}" IS NOT NULL LIMIT 3`,
-            (err, res) => {
-              if (err) return reject(err)
-              resolve(res.map(row => row[col.name]))
-            }
-          )
-        })
+      columnsResult.map(async (col: any) => {
+        const samples = await databaseService.query(
+          `SELECT DISTINCT "${col.name}" FROM "${tableName}" WHERE "${col.name}" IS NOT NULL LIMIT 3`
+        )
 
         return {
           name: col.name,
           safeName: col.name,
           type: col.type as ColumnType,
-          sampleValues: samples,
+          sampleValues: samples.map((row: any) => row[col.name]),
         }
       })
     )
@@ -81,12 +56,6 @@ export async function ingestJsonData(
       columns: inferredColumns,
     }
   } finally {
-    // 删除临时文件
-    await fs
-      .unlink(tempFilePath)
-      .catch(err =>
-        console.error(`Failed to delete temp file: ${tempFilePath}`, err)
-      )
   }
 }
 
@@ -137,6 +106,7 @@ function findHeaderRow(data: any[][]): {
     const nonEmptyCount = row.filter(
       cell => cell !== null && cell !== undefined && cell !== ''
     ).length
+
     if (
       row.length > 0 &&
       nonEmptyCount / row.length > 0.5 &&
@@ -147,33 +117,27 @@ function findHeaderRow(data: any[][]): {
     }
   }
 
-  const headers = data[headerRowIndex].map(h => String(h || ''))
+  const headers = data[headerRowIndex].map((h: any) => String(h || ''))
   return { headerRowIndex, headers }
 }
 
 async function getSampleValues(
-  db: duckdb.Database,
+  databaseService: DatabaseService,
   tableName: string,
   columnName: string
 ): Promise<any[]> {
-  return new Promise((resolve, reject) => {
-    db.all(
-      `SELECT DISTINCT "${columnName}" FROM "${tableName}" WHERE "${columnName}" IS NOT NULL LIMIT 3`,
-      (err, res) => {
-        if (err) return reject(err)
-        const samples = res.map(row => {
-          const val = row[columnName]
-          return typeof val === 'bigint' ? val.toString() : val
-        })
-        resolve(samples)
-      }
-    )
+  const rows = await databaseService.query(
+    `SELECT DISTINCT "${columnName}" FROM "${tableName}" WHERE "${columnName}" IS NOT NULL LIMIT 3`
+  )
+  return rows.map((row: any) => {
+    const val = row[columnName]
+    return typeof val === 'bigint' ? val.toString() : val
   })
 }
 
 export async function ingestExcelFile(
   fileBuffer: Buffer,
-  db: duckdb.Database,
+  databaseService: DatabaseService,
   fileName: string,
   targetTableName?: string
 ): Promise<TableSchema> {
@@ -211,44 +175,30 @@ export async function ingestExcelFile(
   let tableName: string
   if (targetTableName) {
     tableName = targetTableName
-    await new Promise<void>((resolve, reject) => {
-      db.exec(`DROP TABLE IF EXISTS "${tableName}"`, err => {
-        if (err) return reject(err)
-        resolve()
-      })
-    })
+    await databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
   } else {
-    tableName = await getUniqueTableName(db, fileName)
+    tableName = await getUniqueTableName(databaseService, fileName)
   }
 
-  const tempFilePath = path.join(os.tmpdir(), `${tableName}.csv`)
+  const tempFileName = `${tableName}.csv`
 
   try {
-    await fs.writeFile(tempFilePath, csvData, 'utf-8')
+    await databaseService.registerFileText(tempFileName, csvData)
 
-    await new Promise<void>((resolve, reject) => {
-      db.exec(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${tempFilePath.replace(/\\/g, '/')}', HEADER=TRUE);`,
-        err => {
-          if (err) return reject(err)
-          resolve()
-        }
-      )
-    })
+    await databaseService.exec(
+      `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${tempFileName}', HEADER=TRUE, SAMPLE_SIZE=-1, auto_detect=true)`
+    )
 
-    const columnsResult = await new Promise<any[]>((resolve, reject) => {
-      db.all(`PRAGMA table_info('${tableName}');`, (err, res) => {
-        if (err) return reject(err)
-        resolve(res)
-      })
-    })
+    const columnsResult = await databaseService.query(
+      `PRAGMA table_info('${tableName}');`
+    )
 
     const columns: ColumnSchema[] = []
     for (const col of columnsResult) {
-      const sampleValues = await getSampleValues(db, tableName, col.name)
+      const sampleValues = await getSampleValues(databaseService, tableName, col.name)
       columns.push({
         name: col.name,
-        safeName: col.name, // Already safe due to normalization
+        safeName: col.name,
         type: col.type as ColumnType,
         sampleValues,
       })
@@ -256,16 +206,11 @@ export async function ingestExcelFile(
 
     return { tableName, description: fileName, columns }
   } finally {
-    await fs
-      .unlink(tempFilePath)
-      .catch(err =>
-        console.error(`Failed to delete temp file: ${tempFilePath}`, err)
-      )
   }
 }
 
 export async function getUniqueTableName(
-  db: duckdb.Database,
+  databaseService: DatabaseService,
   originalName: string
 ): Promise<string> {
   const baseName = path.parse(originalName).name
@@ -278,19 +223,11 @@ export async function getUniqueTableName(
   let counter = 1
 
   while (true) {
-    const exists = await new Promise<boolean>(resolve => {
-      db.all(
-        `SELECT table_name FROM information_schema.tables WHERE table_name = '${currentName}' AND table_schema = 'main'`,
-        (err, res) => {
-          if (err) {
-            console.error(err)
-            resolve(false)
-          } else resolve(res && res.length > 0)
-        }
-      )
-    })
+    const exists = await databaseService.query(
+      `SELECT table_name FROM information_schema.tables WHERE table_name = '${currentName}' AND table_schema = 'main'`
+    )
 
-    if (!exists) return currentName
+    if (!exists || exists.length === 0) return currentName
     currentName = `${safeName}_${counter++}`
   }
 }
