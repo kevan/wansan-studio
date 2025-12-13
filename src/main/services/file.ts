@@ -1,7 +1,7 @@
 import fs from 'fs-extra'
 import { extname, basename } from 'path'
 import { DatabaseService } from '../database/duckdb'
-import { ingestExcelFile, getUniqueTableName, ingestJsonData } from '../engine/ingestion'
+import { ingestExcelFile, getUniqueTableName, ingestJsonData, getSampleValues } from '../engine/ingestion'
 import { DEMO_DATA } from '../../shared/demo-data'
 import { ReloadResult, ColumnSchema, ColumnType } from '../../shared/types'
 
@@ -289,13 +289,11 @@ export class FileService {
       const columnsResult = await this.databaseService.query(`PRAGMA table_info('${tableName}');`)
 
       for (const col of columnsResult) {
-        const samplesRes = await this.databaseService.query(
-          `SELECT DISTINCT "${col.name}" FROM "${tableName}" WHERE "${col.name}" IS NOT NULL LIMIT 3`
+        const sampleValues = await getSampleValues(
+          this.databaseService,
+          tableName,
+          col.name
         )
-        const sampleValues = samplesRes.map(row => {
-          const val = row[col.name]
-          return typeof val === 'bigint' ? val.toString() : val
-        })
 
         columns.push({
           name: col.name,
@@ -321,13 +319,11 @@ export class FileService {
       const columnsResult = await this.databaseService.query(`PRAGMA table_info('${tableName}');`)
 
       for (const col of columnsResult) {
-        const samplesRes = await this.databaseService.query(
-          `SELECT DISTINCT "${col.name}" FROM "${tableName}" WHERE "${col.name}" IS NOT NULL LIMIT 3`
+        const sampleValues = await getSampleValues(
+          this.databaseService,
+          tableName,
+          col.name
         )
-        const sampleValues = samplesRes.map(row => {
-          const val = row[col.name]
-          return typeof val === 'bigint' ? val.toString() : val
-        })
 
         columns.push({
           name: col.name,

@@ -37,15 +37,17 @@ export async function ingestJsonData(
 
     const inferredColumns: ColumnSchema[] = await Promise.all(
       columnsResult.map(async (col: any) => {
-        const samples = await databaseService.query(
-          `SELECT DISTINCT "${col.name}" FROM "${tableName}" WHERE "${col.name}" IS NOT NULL LIMIT 3`
+        const sampleValues = await getSampleValues(
+          databaseService,
+          tableName,
+          col.name
         )
 
         return {
           name: col.name,
           safeName: col.name,
           type: col.type as ColumnType,
-          sampleValues: samples.map((row: any) => row[col.name]),
+          sampleValues,
         }
       })
     )
@@ -121,7 +123,7 @@ function findHeaderRow(data: any[][]): {
   return { headerRowIndex, headers }
 }
 
-async function getSampleValues(
+export async function getSampleValues(
   databaseService: DatabaseService,
   tableName: string,
   columnName: string
