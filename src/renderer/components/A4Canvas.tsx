@@ -42,7 +42,7 @@ interface A4HeaderProps {
   title: string
   subtitle?: string
   logo?: string
-  timestamp?: Date
+  timestamp?: number
   className?: string
   onTitleChange?: (newTitle: string) => void
   isEditable?: boolean
@@ -54,7 +54,7 @@ export function A4Header({
   title,
   subtitle,
   logo,
-  timestamp = new Date(),
+  timestamp = Date.now(),
   className = '',
   onTitleChange,
   isEditable = false,
@@ -113,7 +113,7 @@ export function A4Header({
           {showTimestamp && (
             <div className="text-right text-sm text-gray-500">
               <div>{t('generated_time')}</div>
-              <div className="font-mono">{timestamp.toLocaleString()}</div>
+              <div className="font-mono">{new Date(timestamp).toLocaleString()}</div>
             </div>
           )}
         </div>

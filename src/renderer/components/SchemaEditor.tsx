@@ -81,7 +81,7 @@ export function SchemaEditor() {
         {currentFile && (
           <div className="flex flex-col min-h-0">
             <div className="sticky top-0 z-30 bg-zinc-50/95 backdrop-blur border-b px-6 py-2 flex items-center justify-between text-xs text-zinc-600">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <span className="font-medium text-zinc-900">
                   {t('edit_schema', { name: currentFile.name })}
                 </span>
@@ -91,6 +91,11 @@ export function SchemaEditor() {
                     cols: currentFile.columns.length,
                   })}
                 </span>
+                {currentFile.lastModified && (
+                  <span className="text-xs text-zinc-400">
+                    {t('last_updated')}: {new Date(currentFile.lastModified).toLocaleString()}
+                  </span>
+                )}
               </div>
               <span className="text-xs text-zinc-400">
                 {t('table_name_label', { name: currentFile.tableName })}
@@ -145,6 +150,38 @@ function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
   const IconComponent = config.icon
   const { t } = useTranslation('common')
 
+  // 格式化显示值（处理时间戳）
+  const formatDisplayValue = (value: any, type: string): string => {
+    const lowerType = type.toLowerCase()
+
+    // 检查是否为时间类型
+    if (
+      lowerType.includes('date') ||
+      lowerType.includes('time') ||
+      lowerType.includes('timestamp')
+    ) {
+      // 如果是数字类型的时间戳，转换为 Date 并格式化
+      if (typeof value === 'number') {
+        try {
+          return new Date(value).toLocaleString()
+        } catch {
+          return String(value)
+        }
+      }
+      // 如果是字符串类型的时间，也尝试格式化
+      if (typeof value === 'string') {
+        try {
+          return new Date(value).toLocaleString()
+        } catch {
+          return value
+        }
+      }
+    }
+
+    // 其他类型直接转换为字符串
+    return String(value)
+  }
+
   return (
     <tr className="hover:bg-zinc-50 transition-colors">
       {/* Field Name - 包含 Key 图标 */}
@@ -188,15 +225,18 @@ function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
       <td className="px-4 py-3">
         {Array.isArray(column.sampleValues) && column.sampleValues.length > 0 ? (
           <div className="flex gap-1 flex-wrap text-xs text-muted-foreground">
-            {column.sampleValues.map((val, i) => (
-              <span
-                key={i}
-                className="bg-zinc-100 px-1.5 py-0.5 rounded text-[10px] border text-zinc-600 max-w-[120px] truncate inline-block align-middle"
-                title={String(val)}
-              >
-                {val}
-              </span>
-            ))}
+            {column.sampleValues.map((val, i) => {
+              const displayValue = formatDisplayValue(val, column.type)
+              return (
+                <span
+                  key={i}
+                  className="bg-zinc-100 px-1.5 py-0.5 rounded text-[10px] border text-zinc-600 max-w-[120px] truncate inline-block align-middle"
+                  title={displayValue}
+                >
+                  {displayValue}
+                </span>
+              )
+            })}
           </div>
         ) : (
           <span className="text-xs text-muted-foreground text-zinc-400 opacity-30 italic">

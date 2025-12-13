@@ -1,7 +1,8 @@
 import fs from 'fs-extra'
 import { extname, basename } from 'path'
 import { DatabaseService } from '../database/duckdb'
-import { ingestExcelFile, getUniqueTableName } from '../engine/ingestion'
+import { ingestExcelFile, getUniqueTableName, ingestJsonData } from '../engine/ingestion'
+import { DEMO_DATA } from '../../shared/demo-data'
 import { ReloadResult, ColumnSchema, ColumnType } from '../../shared/types'
 
 // Intelligent Time Anchor Detection
@@ -184,6 +185,21 @@ export class FileService {
     filePath: string,
     tableName: string
   ): Promise<ReloadResult> {
+    // 处理 Demo 数据（DEMO_MEMORY 路径）
+    if (filePath === 'DEMO_MEMORY') {
+      // 重新摄取 Demo 数据
+      const result = await ingestJsonData(
+        this.databaseService.getDb(),
+        tableName,
+        DEMO_DATA
+      )
+
+      return {
+        lastModified: Date.now(),
+        newColumns: result.columns,
+      }
+    }
+
     const ext = extname(filePath).toLowerCase()
     const stats = await fs.stat(filePath)
     let columns: ColumnSchema[] = []

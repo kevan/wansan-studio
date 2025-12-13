@@ -22,6 +22,17 @@
   "table_count": "{{count}} 个表",
   "empty_title": "准备好分析数据了吗？",
   "empty_subtitle": "我可以帮你生成报表、分析趋势、挖掘洞察。试试下面的快捷指令，或者直接告诉我你想了解什么。",
+  "demo_load_button": "加载示例数据",
+  "demo_loading": "正在加载示例数据...",
+  "demo_or_start_with": "或快速体验",
+  "demo_success_title": "示例数据加载成功",
+  "demo_success_msg": "Superstore 数据集已准备就绪！试试问：\"按类别展示销售额\"",
+  "demo_error_title": "加载示例数据失败",
+  "demo_hint": "使用 Superstore 数据集立即体验",
+  "demo_toast_loading": "正在加载 Superstore 示例数据...",
+  "demo_toast_success": "示例数据加载成功！",
+  "file_drag_title": "拖拽 Excel/CSV 文件到此处",
+  "file_drag_subtitle": "支持批量拖拽多个文件，或点击选择",
   "starter_sales_title": "销售概览",
   "starter_sales_prompt": "请为我展示过去12个月的销售趋势，按月统计，并计算增长率。",
   "starter_customer_title": "客户细分",
@@ -30,5 +41,15 @@
   "starter_metric_prompt": "计算本季度的总营收、平均客单价以及利润率。",
   "starter_anomaly_title": "异常检测",
   "starter_anomaly_prompt": "帮我找出上个月销售数据中的异常值，并分析可能的原因。",
-  "ai_suggestion_title": "AI 推荐"
+  "ai_suggestion_title": "AI 推荐",
+  "demo_prompts": [
+    "显示按类别统计的总销售额",
+    "分析利润随时间的变化趋势",
+    "哪个地区的销售额最高？",
+    "显示各地区的利润率",
+    "按数量统计的畅销类别",
+    "2023年月度销售趋势",
+    "比较各地区的利润",
+    "识别利润最高的客户"
+  ]
 }

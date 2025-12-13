@@ -2,6 +2,12 @@ import React, { useState } from 'react'
 import { useParseFile, useSelectFiles } from '../hooks/useIPC'
 import { useFileStore } from '../stores/useFileStore'
 import { useAutoLink } from '../hooks/useAutoLink'
+import { loadDemoData } from '../lib/demo-data'
+import { useToastStore } from '../stores/useToastStore'
+import { Sparkles } from 'lucide-react'
+import { Button } from './ui/button'
+import { Separator } from './ui/separator'
+import { useTranslation } from 'react-i18next'
 
 interface WelcomeScreenProps {
   onDataImported?: (tableName: string) => void
@@ -12,9 +18,12 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
   const selectFilesMutation = useSelectFiles()
   const { addFile, updateFile } = useFileStore()
   const { checkAutoLink } = useAutoLink()
+  const { addToast } = useToastStore()
+  const { t } = useTranslation('chat')
   const [isDragging, setIsDragging] = useState(false)
   const [processingCount, setProcessingCount] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
+  const [isLoadingDemo, setIsLoadingDemo] = useState(false)
 
   const allowedExtensions = ['.xlsx', '.xls', '.csv']
 
@@ -154,6 +163,33 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
 
   const isProcessing = totalCount > 0
 
+  const handleLoadDemoData = async () => {
+    setIsLoadingDemo(true)
+    try {
+      // 从 i18n 获取 demo 提示词
+      const demoPrompts = t('demo_prompts', { returnObjects: true }) as string[]
+      const result = await loadDemoData(demoPrompts)
+      if (result.success) {
+        addToast({
+          title: t('demo_success_title'),
+          description: t('demo_success_msg'),
+          type: 'success',
+        })
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      console.error('Load demo data error:', error)
+      addToast({
+        title: t('demo_error_title'),
+        description: error instanceof Error ? error.message : t('unknown_error', 'Unknown error'),
+        type: 'error',
+      })
+    } finally {
+      setIsLoadingDemo(false)
+    }
+  }
+
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       {/* Drop Zone - 核心空态界面 */}
@@ -204,10 +240,10 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
 
             {/* 主文案 */}
             <h2 className="text-xl font-semibold text-zinc-900 mb-2">
-              拖拽 Excel/CSV 文件到此处
+              {t('file_drag_title')}
             </h2>
             <p className="text-zinc-500 mb-4">
-              支持批量拖拽多个文件，或点击选择
+              {t('file_drag_subtitle')}
             </p>
 
             {/* 支持的格式 */}
@@ -215,6 +251,43 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
               <span className="px-2 py-1 bg-zinc-100 rounded">.xlsx</span>
               <span className="px-2 py-1 bg-zinc-100 rounded">.xls</span>
               <span className="px-2 py-1 bg-zinc-100 rounded">.csv</span>
+            </div>
+
+            {/* Load Demo Data Section */}
+            <div className="mt-8 pt-6 border-t border-zinc-100">
+              <div className="flex flex-col items-center gap-3 w-full max-w-xs mx-auto">
+                <div className="flex items-center gap-2 w-full">
+                  <Separator className="flex-1" />
+                  <span className="text-xs text-zinc-400 uppercase tracking-wide">{t('demo_or_start_with', 'or start with')}</span>
+                  <Separator className="flex-1" />
+                </div>
+
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 bg-white hover:bg-zinc-50 border-zinc-200 text-zinc-700 hover:text-zinc-900"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleLoadDemoData()
+                  }}
+                  disabled={isLoadingDemo}
+                >
+                  {isLoadingDemo ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
+                      {t('demo_loading')}
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 text-amber-500" />
+                      {t('demo_load_button')}
+                    </>
+                  )}
+                </Button>
+
+                <p className="text-xs text-zinc-400 text-center">
+                  {t('demo_hint')}
+                </p>
+              </div>
             </div>
           </>
         )}

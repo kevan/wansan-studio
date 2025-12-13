@@ -5,6 +5,91 @@ import * as path from 'path'
 import duckdb from 'duckdb'
 import { TableSchema, ColumnSchema, ColumnType } from '../../shared/types'
 
+/**
+ * 摄取 JSON 数据到 DuckDB（用于 Demo 数据）
+ * 参考 ingestExcelFile 的方式，让 DuckDB 直接读取 JSON 文件
+ */
+export async function ingestJsonData(
+  db: duckdb.Database,
+  tableName: string,
+  rows: any[]
+): Promise<TableSchema> {
+  if (!rows || rows.length === 0) {
+    throw new Error('No data provided')
+  }
+
+  // 将 JSON 数据写入临时文件
+  const tempFilePath = path.join(os.tmpdir(), `${tableName}.json`)
+
+  try {
+    // 写入 JSON 文件
+    await fs.writeFile(tempFilePath, JSON.stringify(rows), 'utf-8')
+
+    // 删除已存在的表
+    await new Promise<void>((resolve, reject) => {
+      db.exec(`DROP TABLE IF EXISTS "${tableName}"`, err => {
+        if (err) return reject(err)
+        resolve()
+      })
+    })
+
+    // 使用 DuckDB 的 read_json_auto 直接读取 JSON 并创建表
+    // 让 DuckDB 自动推断类型，类似 read_csv_auto
+    await new Promise<void>((resolve, reject) => {
+      db.exec(
+        `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${tempFilePath.replace(/\\/g, '/')}')`,
+        err => {
+          if (err) return reject(err)
+          resolve()
+        }
+      )
+    })
+
+    // 获取表结构
+    const columnsResult = await new Promise<any[]>((resolve, reject) => {
+      db.all(`PRAGMA table_info('${tableName}');`, (err, res) => {
+        if (err) return reject(err)
+        resolve(res)
+      })
+    })
+
+    // 获取样本值用于返回
+    const inferredColumns: ColumnSchema[] = await Promise.all(
+      columnsResult.map(async col => {
+        const samples = await new Promise<any[]>((resolve, reject) => {
+          db.all(
+            `SELECT DISTINCT "${col.name}" FROM "${tableName}" WHERE "${col.name}" IS NOT NULL LIMIT 3`,
+            (err, res) => {
+              if (err) return reject(err)
+              resolve(res.map(row => row[col.name]))
+            }
+          )
+        })
+
+        return {
+          name: col.name,
+          safeName: col.name,
+          type: col.type as ColumnType,
+          sampleValues: samples,
+        }
+      })
+    )
+
+    return {
+      tableName,
+      description: 'Demo Data',
+      columns: inferredColumns,
+    }
+  } finally {
+    // 删除临时文件
+    await fs
+      .unlink(tempFilePath)
+      .catch(err =>
+        console.error(`Failed to delete temp file: ${tempFilePath}`, err)
+      )
+  }
+}
+
 function unmergeCells(worksheet: XLSX.WorkSheet): void {
   if (!worksheet['!merges']) {
     return

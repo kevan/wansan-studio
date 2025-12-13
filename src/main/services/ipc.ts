@@ -4,6 +4,7 @@ import { FileService } from './file'
 import { AIService } from './ai'
 import { executeSQL } from '../engine/executor'
 import { checkFilesConsistency } from '../engine/file-watcher'
+import { ingestJsonData } from '../engine/ingestion'
 import fs from 'fs-extra'
 import type {
   TableSchema,
@@ -241,6 +242,24 @@ export function setupIPC(
         return { success: true, data: result }
       } catch (error) {
         console.error('Re-ingest file error:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      }
+    }
+  )
+
+  // 摄取 JSON 数据（用于 Demo 数据）
+  ipcMain.handle(
+    'ingest-json',
+    async (_event, tableName: string, rows: any[]) => {
+      try {
+        const db = databaseService.getDb()
+        const result = await ingestJsonData(db, tableName, rows)
+        return { success: true, data: result }
+      } catch (error) {
+        console.error('Ingest JSON error:', error)
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error',

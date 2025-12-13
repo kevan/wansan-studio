@@ -35,14 +35,18 @@ const LAYOUT_STORAGE_KEY = 'wansan-layout'
 const loadLayoutPrefs = () => {
   try {
     const raw = localStorage.getItem(LAYOUT_STORAGE_KEY)
-    if (!raw) return { rightCollapsed: true, rightSize: 45 }
+    if (!raw) return { rightCollapsed: true, rightSize: 50 }
     const parsed = JSON.parse(raw) as { rightCollapsed?: boolean; rightSize?: number }
+
+    // 确保 rightSize 有合理的值（> 0）
+    const rightSize = (parsed.rightSize && parsed.rightSize > 0) ? parsed.rightSize : 50
+
     return {
       rightCollapsed: parsed.rightCollapsed ?? true,
-      rightSize: parsed.rightSize ?? 45,
+      rightSize,
     }
   } catch {
-    return { rightCollapsed: true, rightSize: 45 }
+    return { rightCollapsed: true, rightSize: 50 }
   }
 }
 
@@ -110,7 +114,8 @@ function App() {
     if (!rightPanelRef.current) return
     if (isRightCollapsed) {
       rightPanelRef.current.expand?.()
-      rightPanelRef.current.resize?.(rightPanelSize || 45)
+      const newSize = rightPanelSize > 0 ? rightPanelSize : 50
+      rightPanelRef.current.resize?.(newSize)
       setIsRightCollapsed(false)
     } else {
       rightPanelRef.current.collapse?.()
@@ -149,7 +154,7 @@ function App() {
       LAYOUT_STORAGE_KEY,
       JSON.stringify({
         rightCollapsed: isRightCollapsed,
-        rightSize: rightPanelSize || 45,
+        rightSize: rightPanelSize || 50,
       })
     )
   }, [isRightCollapsed, rightPanelSize])

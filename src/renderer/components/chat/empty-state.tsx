@@ -77,7 +77,7 @@ export function EmptyState({ onSelectPrompt }: EmptyStateProps) {
         <h2 className="text-2xl font-semibold text-zinc-900 mb-2">
           {t('empty_title')}
         </h2>
-        <p className="text-zinc-500 max-w-md mx-auto">
+        <p className="text-znic-500 max-w-md mx-auto">
           {t('empty_subtitle')}
         </p>
       </div>

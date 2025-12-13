@@ -68,7 +68,7 @@ export function useAI() {
         id: `user-${Date.now()}`,
         type: 'user',
         content: query,
-        timestamp: new Date(),
+        timestamp: Date.now(),
       })
 
       assistantId = `assistant-${Date.now()}`
@@ -78,7 +78,7 @@ export function useAI() {
         id: assistantId,
         type: 'assistant',
         content: '',
-        timestamp: new Date(),
+        timestamp: Date.now(),
         status: 'thinking',
       })
 
@@ -181,7 +181,7 @@ export function useAI() {
           id: `error-${Date.now()}`,
           type: 'assistant',
           content: `Error: ${errorMessage}`,
-          timestamp: new Date(),
+          timestamp: Date.now(),
           status: 'error',
         })
       }

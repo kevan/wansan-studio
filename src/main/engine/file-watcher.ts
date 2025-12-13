@@ -6,6 +6,11 @@ export async function checkFilesConsistency(
 ): Promise<string[]> {
   const changedIds: string[] = []
   for (const file of files) {
+    // 跳过 Demo 数据（路径为 DEMO_MEMORY，不是真实文件）
+    if (file.path === 'DEMO_MEMORY') {
+      continue
+    }
+
     try {
       const stats = await fs.stat(file.path)
       // Tolerance 100ms. Note: file.lastModified might be undefined for old files, handle gracefully

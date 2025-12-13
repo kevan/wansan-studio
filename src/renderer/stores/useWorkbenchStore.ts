@@ -31,7 +31,7 @@ export interface ReportData {
     y_axis?: string | string[] | null
     series_name?: string
   }
-  timestamp?: Date
+  timestamp?: number
 }
 
 export interface ReportWidget {
@@ -54,7 +54,7 @@ interface WorkbenchState {
   pageCount: number
   editingReportId: string | null
   language: Language
-  pinReport: (messageId: string, reportData: ReportData, timestamp?: Date) => void
+  pinReport: (messageId: string, reportData: ReportData, timestamp?: number) => void
   removeReport: (reportId: string) => void
   updateReportTitle: (reportId: string, newTitle: string) => void
   updateReportConfig: (
@@ -265,7 +265,9 @@ export const useWorkbenchStore = create<WorkbenchState>()(
             reportData: {
               ...report.reportData,
               timestamp: report.reportData.timestamp
-                ? new Date(report.reportData.timestamp)
+                ? typeof report.reportData.timestamp === 'number'
+                  ? report.reportData.timestamp
+                  : new Date(report.reportData.timestamp).getTime()
                 : undefined,
             },
           })),

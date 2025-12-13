@@ -10,7 +10,7 @@ export interface ChatMessage {
   id: string
   type: 'user' | 'assistant'
   content: string
-  timestamp: Date
+  timestamp: number
   status?: 'thinking' | 'planning' | 'executing' | 'error'
   planSql?: string
   planReasoning?: string

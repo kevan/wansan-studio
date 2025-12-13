@@ -57,10 +57,27 @@ interface ChatStore {
 }
 
 const reviveMessages = (messages: ChatMessage[] = []) =>
-  messages.map(message => ({
-    ...message,
-    timestamp: new Date(message.timestamp),
-  }))
+  messages.map(message => {
+    // 确保 timestamp 是 number 类型，避免 Date 对象导致 React 渲染错误
+    const timestampValue = message.timestamp
+    let timestamp: number
+
+    if (typeof timestampValue === 'number') {
+      timestamp = timestampValue
+    } else if (typeof timestampValue === 'object' && timestampValue && 'getTime' in timestampValue) {
+      // 检查是否为 Date 对象
+      timestamp = (timestampValue as Date).getTime()
+    } else if (typeof timestampValue === 'string') {
+      timestamp = new Date(timestampValue).getTime()
+    } else {
+      timestamp = Date.now()
+    }
+
+    return {
+      ...message,
+      timestamp,
+    }
+  })
 
 const initialChatState: Pick<ChatStore, 'messages' | 'history' | 'replyToId'> =
   {
@@ -187,14 +204,14 @@ export const useChatStore = create<ChatStore>()(
           id: userMsgId,
           type: 'user',
           content: text,
-          timestamp: new Date(),
+          timestamp: Date.now(),
         }
 
           const ghostMsg: ChatMessage = {
             id: botMsgId,
             type: 'assistant',
             content: '',
-            timestamp: new Date(Date.now() + 1),
+            timestamp: Date.now() + 1,
             status: 'thinking',
             originalQuery: text,
           }

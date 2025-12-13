@@ -108,8 +108,14 @@ const initialState = {
   selectedNode: null,
 }
 
-const sanitizeValue = (value: any) =>
-  typeof value === 'bigint' ? Number(value) : value
+const sanitizeValue = (value: any) => {
+  // 处理 bigint
+  if (typeof value === 'bigint') return Number(value)
+  // 处理 Date 对象
+  if (value instanceof Date) return value.getTime()
+  // 返回原值
+  return value
+}
 
 const sanitizeFile = (file: FileNode): FileNode => ({
   ...file,

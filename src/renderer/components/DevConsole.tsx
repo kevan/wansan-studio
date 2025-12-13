@@ -84,6 +84,35 @@ export function DevConsole({
     }
   }, [])
 
+  const printAllTables = useCallback(async () => {
+    try {
+      console.log('📊 Fetching all tables from DuckDB...')
+      const result = await window.electronAPI.invoke('get-schema')
+
+      if (result.success && result.data && Array.isArray(result.data.tables)) {
+        const tables = result.data.tables
+        console.log(`✅ Found ${tables.length} table(s):`, tables)
+
+        // 详细打印每个表的结构
+        tables.forEach((table: any, idx: number) => {
+          console.log(`\n${idx + 1}. Table: ${table.tableName || 'unnamed'}`)
+          console.log(`   Description: ${table.description || 'N/A'}`)
+          console.log(`   Columns: ${table.columns?.length || 0}`)
+
+          if (table.columns && Array.isArray(table.columns)) {
+            table.columns.forEach((col: any) => {
+              console.log(`     - ${col.name} (${col.type || 'unknown'})`)
+            })
+          }
+        })
+      } else {
+        console.warn('No tables found or invalid response:', result)
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch tables:', error)
+    }
+  }, [])
+
   useEffect(() => {
     const handleLanguageChange = (lng: string) => setLanguage(lng)
     i18n.on('languageChanged', handleLanguageChange)
@@ -228,6 +257,12 @@ export function DevConsole({
               </button>
             </div>
             <div className="flex flex-wrap gap-2 items-center">
+              <button
+                onClick={printAllTables}
+                className="px-3 py-2 bg-blue-700 hover:bg-blue-600 rounded text-sm"
+              >
+                🗄️ Print All Tables
+              </button>
               <button
                 onClick={resetApp}
                 className="px-3 py-2 bg-red-700 hover:bg-red-600 rounded text-sm"

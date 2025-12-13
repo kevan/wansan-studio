@@ -19,7 +19,7 @@ interface DashboardWidgetProps {
     y_axis?: string | string[] | null
     series_name?: string
   }
-  timestamp?: Date
+  timestamp?: number
   className?: string
   variant?: 'chat' | 'dashboard'
   onTitleChange?: (newTitle: string) => void
@@ -99,7 +99,7 @@ export function DashboardWidget({
                           {t('generated_time')}
                         </div>
                         <div className="font-mono">
-                          {timestamp.toLocaleString()}
+                          {new Date(timestamp).toLocaleString()}
                         </div>
                       </div>
                     )}
