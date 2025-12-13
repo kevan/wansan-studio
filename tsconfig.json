@@ -26,7 +26,8 @@
   "include": [
     "src/renderer/**/*",
     "src/shared/**/*",
-    "src/types/**/*"
+    "src/types/**/*",
+    "src/main/**/*"
   ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

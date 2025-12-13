@@ -11,7 +11,18 @@
       "Bash(pkill:*)",
       "Bash(npm uninstall:*)",
       "Bash(cat:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(lsof -ti:5173:*)",
+      "Bash(xargs kill -9)",
+      "Bash(node test-duckdb.js 2>&1:*)",
+      "Bash(ls -la node_modules/@duckdb/duckdb-wasm/*.node)",
+      "Bash(node -e \"\nconst createRequire = require(''node:module'').createRequire;\nconst path = require(''node:path'');\nconst require = createRequire(process.cwd() + ''/src/main/database/duckdb-blocking.ts'');\n\nconst DUCKDB_DIST = path.dirname(createRequire(process.cwd()).resolve(''@duckdb/duckdb-wasm''));\nconsole.log(''DUCKDB_DIST:'', DUCKDB_DIST);\n\ntry {\n  const duckdb = require(''@duckdb/duckdb-wasm/dist/duckdb-node-blocking.cjs'');\n  console.log(''Successfully loaded blocking module'');\n  console.log(''Available exports:'', Object.keys(duckdb).slice(0, 10));\n} catch (e) {\n  console.error(''Failed to load:'', e.message);\n}\n\")",
+      "Bash(node -p \"Object.keys(require('@duckdb/duckdb-wasm/dist/duckdb-node-blocking.cjs')).slice(0, 15)\":*)",
+      "Bash(node -p:*)",
+      "Bash(node -c -e \"require(''tsup''); console.log(''tsup available'')\")",
+      "Bash(ls -la node_modules/@duckdb/duckdb-wasm/dist/duckdb-node*.wasm)",
+      "Bash(ls node_modules/@duckdb/duckdb-wasm/dist/*.wasm:*)",
+      "Bash(grep -l \"zustand.*persist\" src/renderer/stores/*.ts)"
     ]
   }
 }

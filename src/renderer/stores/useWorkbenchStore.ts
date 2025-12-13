@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { persist } from 'zustand/middleware'
 import type { Layout } from 'react-grid-layout'
+import { createBigIntStorage } from '@shared/serialization.ts'
 import { GRID_ROW_HEIGHT, PAGE_GAP_PX, PAGE_HEIGHT_PX } from '@/components/dashboard-v3/page-layer'
 import type { AIAnalysisResult } from '@shared/types'
 
@@ -250,7 +251,7 @@ export const useWorkbenchStore = create<WorkbenchState>()(
     },
     {
       name: 'wansan-workbench',
-      storage: createJSONStorage(() => localStorage),
+      storage: createBigIntStorage(),
       partialize: state => ({
         pinnedReports: state.pinnedReports,
         canvasConfig: state.canvasConfig,

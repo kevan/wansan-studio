@@ -1,8 +1,9 @@
 import { OpenAI } from 'openai'
 import { z } from 'zod'
-import { ContextAnalysisResult, RelationSuggestion, TableSchema } from '../../shared/types'
+import { ContextAnalysisResult, RelationSuggestion, TableSchema } from '@shared/types.ts'
 import { isDev } from '../utils/env'
 import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources'
+import { safeStringify, parse } from '@shared/serialization.ts'
 
 function getModelToUse(preferredModel?: string) {
   const envModel = process.env.OPENAI_MODEL
@@ -275,9 +276,7 @@ export async function generateAnalysis(
     // Use a custom replacer to handle BigInt serialization
     console.log(
       'generateAnalysis pre request - schemas:',
-      JSON.stringify(schemas, (key, value) =>
-        typeof value === 'bigint' ? value.toString() : value
-      ),
+      safeStringify(schemas, 2),
     )
     console.log('generateAnalysis context:', context)
   }
@@ -356,7 +355,7 @@ OUTPUT RULE: The "summary", "title", "reasoning", and "suggestions" fields MUST 
   }
 
   try {
-    const parsedResult = JSON.parse(resultJson)
+    const parsedResult = parse(resultJson)
     return AIGenerationSchema.parse(parsedResult)
   } catch (error) {
     console.error('Failed to parse or validate AI response:', error)
@@ -379,9 +378,7 @@ export async function analyzeContext(
     // Use a custom replacer to handle BigInt serialization
     console.log(
       'analyzeContext pre request - schemas:',
-      JSON.stringify(schemas, (key, value) =>
-        typeof value === 'bigint' ? value.toString() : value
-      ),
+      safeStringify(schemas, 2),
     )
   }
 
@@ -428,7 +425,7 @@ OUTPUT RULE: The "suggestedPrompts" MUST be written in ${languageNote}.`,
   }
 
   try {
-    const rawResult = JSON.parse(resultJson)
+    const rawResult = parse(resultJson)
     return ContextAnalysisResultSchema.parse(rawResult)
   } catch (error) {
     console.error(
@@ -492,7 +489,7 @@ Fix the SQL. Ensure all table/column names are double-quoted and match the schem
     console.log('fixSQL post request - resultJson:', resultJson)
   }
   try {
-    return FixSQLResultSchema.parse(JSON.parse(resultJson))
+    return FixSQLResultSchema.parse(parse(resultJson))
   } catch (e) {
     throw new Error(`Failed to parse fix result: ${resultJson}`)
   }

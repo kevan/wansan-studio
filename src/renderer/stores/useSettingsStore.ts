@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { persist } from 'zustand/middleware'
 import { AI_PROVIDERS, type AIProviderKey } from '@/src/lib/constants'
+import { createBigIntStorage } from '@shared/serialization.ts'
 
 export type SettingsLanguage = 'en' | 'zh'
 
@@ -65,7 +66,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: SETTINGS_STORAGE_KEY,
-      storage: createJSONStorage(() => localStorage),
+      storage: createBigIntStorage(),
       version: 3,
       migrate: persistedState => {
         const state = persistedState as Partial<SettingsState> | undefined

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import type { ColumnSchema, FileNode, SyncStatus } from '../../shared/types'
+import { persist } from 'zustand/middleware'
+import type { ColumnSchema, FileNode, SyncStatus } from '@shared/types.ts'
+import { createBigIntStorage } from '@shared/serialization.ts'
 
 // Re-export shared types for other components to use
 export type { ColumnSchema, FileNode, SyncStatus }
@@ -331,7 +332,7 @@ export const useFileStore = create<ProjectState>()(
     }),
     {
       name: 'wansan-files',
-      storage: createJSONStorage(() => localStorage),
+      storage: createBigIntStorage(),
       partialize: state => ({
         projectName: state.projectName,
         files: state.files.map(sanitizeFile),

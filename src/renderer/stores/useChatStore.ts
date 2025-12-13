@@ -1,10 +1,11 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { persist } from 'zustand/middleware'
 import type { ChatMessage } from '../components/ChatInterface'
 import type { TableSchema, RelationSuggestion, AIAnalysisResult } from '../../shared/types'
 import { useFileStore } from './useFileStore'
 import { useToastStore } from './useToastStore'
 import { useWorkbenchStore } from './useWorkbenchStore'
+import { createBigIntStorage } from '@shared/serialization.ts'
 
 const generateId = () => crypto.randomUUID()
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -424,7 +425,7 @@ export const useChatStore = create<ChatStore>()(
     },
     {
       name: 'wansan-chat',
-      storage: createJSONStorage(() => localStorage),
+      storage: createBigIntStorage(),
       partialize: state => ({
         messages: state.messages,
         history: state.history,
