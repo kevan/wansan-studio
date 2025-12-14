@@ -1,25 +1,11 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { MainContent } from './components/MainContent'
 import { DevConsole } from './components/DevConsole'
 import { isDev } from './utils/env'
 import { Toaster } from './components/ui/toaster'
-import {
-  Panel,
-  PanelResizeHandle,
-  PanelGroup,
-  ImperativePanelHandle,
-} from 'react-resizable-panels'
-import {
-  ChevronRight,
-  PanelLeft,
-  PanelRightClose,
-  PanelRightOpen,
-  LayoutDashboard,
-  Database,
-  MonitorPlay,
-  RotateCcw,
-} from 'lucide-react'
+import { ImperativePanelHandle, Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
+import { MonitorPlay, PanelLeft, PanelRightClose, PanelRightOpen, RotateCcw } from 'lucide-react'
 import { DashboardCanvasV3 } from './components/dashboard-v3'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { cn } from '@/utils/cn'
@@ -58,13 +44,13 @@ function App() {
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
   const initialLayout = loadLayoutPrefs()
   const [isRightCollapsed, setIsRightCollapsed] = useState(initialLayout.rightCollapsed)
-	  const [rightPanelSize, setRightPanelSize] = useState(initialLayout.rightSize)
-	  const [isPresentationMode, setIsPresentationMode] = useState(false)
-	  const language = useWorkbenchStore(state => state.language)
-	  const hasCompletedOnboarding = useSettingsStore(
-	    state => state.hasCompletedOnboarding
-	  )
-	  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [rightPanelSize, setRightPanelSize] = useState(initialLayout.rightSize)
+  const [isPresentationMode, setIsPresentationMode] = useState(false)
+  const language = useWorkbenchStore(state => state.language)
+  const hasCompletedOnboarding = useSettingsStore(
+    state => state.hasCompletedOnboarding,
+  )
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const chatPanelRef = useRef<ImperativePanelHandle>(null)
   const leftPanelRef = useRef<ImperativePanelHandle>(null)
   const middlePanelRef = useRef<ImperativePanelHandle>(null)
@@ -157,15 +143,15 @@ function App() {
       JSON.stringify({
         rightCollapsed: isRightCollapsed,
         rightSize: rightPanelSize || 50,
-      })
+      }),
     )
   }, [isRightCollapsed, rightPanelSize])
 
-	  useEffect(() => {
-	    if (language && i18n.language !== language) {
-	      void i18n.changeLanguage(language)
-	    }
-	  }, [language])
+  useEffect(() => {
+    if (language && i18n.language !== language) {
+      void i18n.changeLanguage(language)
+    }
+  }, [language])
 
   // Reset loading state on app startup to fix zombie loading states
   useEffect(() => {
@@ -209,22 +195,22 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isPresentationMode, togglePresentation])
 
-	  const handleHeaderDoubleClick = useCallback(() => {
-	    window.electronAPI?.windowControl?.('toggle-maximize')
-	  }, [])
+  const handleHeaderDoubleClick = useCallback(() => {
+    window.electronAPI?.windowControl?.('toggle-maximize')
+  }, [])
 
-	  if (!hasCompletedOnboarding) {
-	    return (
-	      <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
-	        <Toaster />
-	        <OnboardingFlow />
-	      </div>
-	    )
-	  }
+  if (!hasCompletedOnboarding) {
+    return (
+      <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
+        <Toaster />
+        <OnboardingFlow />
+      </div>
+    )
+  }
 
-	  return (
-	    <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
-	      <Toaster />
+  return (
+    <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
+      <Toaster />
       {/* Global Window Header */}
       <header
         className="h-12 border-b border-zinc-200 flex items-center justify-between px-4 shrink-0 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur draggable z-50"
@@ -242,8 +228,8 @@ function App() {
           <div className="h-4 w-px bg-zinc-300 dark:bg-zinc-700" />
           {/* Logo Image */}
           <div className="flex items-center gap-2">
-            <img src={logo} className="h-6 w-6 rounded-md " alt="Wansan" />
-            <span className="text-sm font-semibold text-zinc-900">Wansan</span>
+            <img src={logo} className="h-6 w-6 rounded-md " alt="Wansan Studio" />
+            <span className="text-sm font-semibold text-zinc-900">Wansan Studio</span>
           </div>
         </div>
         {/* MIDDLE DRAG SPACER */}
@@ -285,7 +271,7 @@ function App() {
               'h-8 gap-2 px-3 rounded-md border text-xs font-medium flex items-center transition-colors',
               isRightCollapsed
                 ? 'bg-black text-white border-black hover:bg-zinc-800'
-                : 'border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200'
+                : 'border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200',
             )}
             onClick={toggleRight}
             title={isRightCollapsed ? t('show_dashboard') : t('hide_dashboard')}
@@ -369,13 +355,13 @@ function App() {
             <div
               className={cn(
                 'flex-1 w-full overflow-hidden transition-all',
-                isPresentationMode ? 'p-0' : 'p-1'
+                isPresentationMode ? 'p-0' : 'p-1',
               )}
             >
               <div
                 className={cn(
                   'h-full w-full bg-white dark:bg-black transition-all',
-                  !isPresentationMode && 'rounded-lg border border-zinc-200 shadow-sm'
+                  !isPresentationMode && 'rounded-lg border border-zinc-200 shadow-sm',
                 )}
               >
                 <DashboardCanvasV3 />

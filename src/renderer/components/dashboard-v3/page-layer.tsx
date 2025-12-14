@@ -1,5 +1,5 @@
 import React from 'react'
-import { Database, Sparkles } from 'lucide-react'
+import logo from '@/src/assets/logo.png'
 
 export const PAGE_WIDTH_PX = 794
 export const PAGE_HEIGHT_PX = 1123
@@ -28,9 +28,7 @@ export function PageLayer({ isA4, pageCount }: PageLayerProps) {
           <div className="flex-1" />
           <div className="flex h-16 flex-none items-center justify-between border-t px-8 text-xs text-zinc-400">
             <div className="flex items-center gap-2">
-              <div className="rounded bg-black p-1 text-white">
-                <Database className="h-3 w-3" />
-              </div>
+              <img src={logo} className="h-6 w-6 rounded-md " alt="Wansan Studio" />
               <span className="font-semibold text-zinc-600">Wansan Studio</span>
             </div>
             <span className="text-xs text-zinc-400">Page {i + 1}</span>
