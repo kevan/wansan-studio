@@ -700,11 +700,25 @@ export const useChatStore = create<ChatStore>()(
         },
         removeMessage: (id: string) => {
           set(state => {
-            const nextMessages = state.messages.filter(m => m.id !== id)
+            const index = state.messages.findIndex(m => m.id === id)
+            if (index === -1) return state
+
+            const message = state.messages[index]
+            const idsToRemove = [id]
+
+            // If it's an assistant message, try to remove the preceding user message if it exists
+            if (message.type === 'assistant') {
+               // Look backwards from the current message index
+               if (index > 0 && state.messages[index - 1].type === 'user') {
+                 idsToRemove.push(state.messages[index - 1].id)
+               }
+            }
+
+            const nextMessages = state.messages.filter(m => !idsToRemove.includes(m.id))
             return {
               messages: nextMessages,
               history: nextMessages,
-              replyToId: state.replyToId === id ? null : state.replyToId,
+              replyToId: state.replyToId && idsToRemove.includes(state.replyToId) ? null : state.replyToId,
             }
           })
         },
