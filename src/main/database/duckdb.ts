@@ -200,7 +200,9 @@ export class DatabaseService {
       }
 
       if (this.db) {
-        await this.db.terminate()
+        if (typeof this.db.terminate === 'function') {
+          await this.db.terminate()
+        }
         this.db = null
       }
 
