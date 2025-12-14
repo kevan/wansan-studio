@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { AlertCircle, RefreshCw, Code, Sparkles, Settings, KeyRound } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { Button } from '../ui/button'
@@ -7,7 +7,7 @@ import { useChatStore } from '../../stores/useChatStore'
 import { useToastStore } from '../../stores/useToastStore'
 import { SqlEditorModal } from '../report/sql-editor-modal'
 import { useTranslation } from 'react-i18next'
-// import { useSettingsStore } from '../../stores/useSettingsStore' // Or trigger UI event
+import { useSettingsStore } from '../../stores/useSettingsStore'
 
 interface ErrorCardProps {
   message: ChatMessage
@@ -18,7 +18,25 @@ export function ErrorCard({ message }: ErrorCardProps) {
   const [isFixing, setIsFixing] = useState(false)
   const autoFixMessage = useChatStore(state => state.autoFixMessage)
   const updateMessageData = useChatStore(state => state.updateMessageData)
+  const apiKey = useSettingsStore(state => state.apiKey)
+  const messages = useChatStore(state => state.messages)
+  const sendMessage = useChatStore(state => state.sendMessage)
   const { t } = useTranslation('chat')
+
+  useEffect(() => {
+    if (message.error === 'ERR_NO_API_KEY' && apiKey) {
+      // Only retry if this is the latest message to avoid cascading retries on history
+      const index = messages.findIndex(m => m.id === message.id)
+      const isLatest = index === messages.length - 1
+
+      if (isLatest && index > 0) {
+        const prevMsg = messages[index - 1]
+        if (prevMsg.type === 'user') {
+          sendMessage(prevMsg.content)
+        }
+      }
+    }
+  }, [apiKey, message.error, message.id, messages, sendMessage])
 
   const errorMessage = message.content || t('error_unknown')
   const hasSql = !!message.reportData?.sql
