@@ -20,7 +20,7 @@ export function ErrorCard({ message }: ErrorCardProps) {
   const updateMessageData = useChatStore(state => state.updateMessageData)
   const apiKey = useSettingsStore(state => state.apiKey)
   const messages = useChatStore(state => state.messages)
-  const sendMessage = useChatStore(state => state.sendMessage)
+  const retryMessage = useChatStore(state => state.retryMessage)
   const { t } = useTranslation('chat')
 
   useEffect(() => {
@@ -32,11 +32,11 @@ export function ErrorCard({ message }: ErrorCardProps) {
       if (isLatest && index > 0) {
         const prevMsg = messages[index - 1]
         if (prevMsg.type === 'user') {
-          sendMessage(prevMsg.content)
+          retryMessage(message.id, prevMsg.content)
         }
       }
     }
-  }, [apiKey, message.error, message.id, messages, sendMessage])
+  }, [apiKey, message.error, message.id, messages, retryMessage])
 
   const errorMessage = message.content || t('error_unknown')
   const hasSql = !!message.reportData?.sql

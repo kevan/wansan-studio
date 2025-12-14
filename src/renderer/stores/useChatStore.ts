@@ -56,6 +56,10 @@ interface ChatStore {
     relations?: RelationSuggestion[],
     languageOverride?: 'en' | 'zh'
   ) => Promise<void>
+  retryMessage: (
+    messageId: string,
+    originalQuery: string
+  ) => Promise<void>
   rerunAnalysis: (originalMessage: ChatMessage) => Promise<void>
   autoFixMessage: (
     messageId: string,
@@ -385,6 +389,176 @@ export const useChatStore = create<ChatStore>()(
             }))
 
             // Clear abort controller on error
+            set({ abortController: null })
+          }
+        },
+        retryMessage: async (messageId, originalQuery) => {
+          const { messages } = get()
+          const fileState = useFileStore.getState()
+          const language = useWorkbenchStore.getState().language || 'en'
+          const readyFiles = fileState.files.filter(f => f.status === 'ready')
+          const startTime = Date.now()
+
+          // Locate the message to retry
+          const targetMsgIndex = messages.findIndex(m => m.id === messageId)
+          if (targetMsgIndex === -1) return
+          const targetMsg = messages[targetMsgIndex]
+
+          // Set status to thinking and clear error/content
+          get().updateMessage(messageId, msg => ({
+            ...msg,
+            status: 'thinking',
+            error: undefined,
+            content: '',
+            reportData: undefined, // Clear old report data
+          }))
+
+          // Create and set new AbortController
+          const abortController = new AbortController()
+          set({ abortController })
+
+          const schemas: TableSchema[] = readyFiles.map(f => ({
+            tableName: f.tableName || `table_${f.id}`,
+            columns: f.columns,
+          }))
+
+          const relations: RelationSuggestion[] = fileState.relations
+            .map(rel => {
+              const fileA = fileState.files.find(f => f.id === rel.fileAId)
+              const fileB = fileState.files.find(f => f.id === rel.fileBId)
+              if (!fileA || !fileB) return null
+              return {
+                sourceTable: fileA.tableName,
+                sourceColumn: rel.columnA,
+                targetTable: fileB.tableName,
+                targetColumn: rel.columnB,
+                confidence: 1,
+                reason: 'User confirmed or auto-detected in session',
+              } satisfies RelationSuggestion
+            })
+            .filter((r): r is RelationSuggestion => r !== null)
+
+          // Determine context (from messages preceding the target)
+          const precedingMessages = messages.slice(0, targetMsgIndex)
+          const contextMsg = [...precedingMessages].reverse().find(
+            m => m.type === 'assistant' && m.reportData?.sql
+          )
+          
+          let context:
+            | {
+                lastSql: string
+                lastQuery: string
+              }
+            | undefined
+
+          if (contextMsg?.type === 'assistant' && contextMsg.reportData) {
+            const contextIndex = messages.findIndex(m => m.id === contextMsg.id)
+            const precedingUser = [...messages]
+              .slice(0, contextIndex)
+              .reverse()
+              .find(m => m.type === 'user')
+            context = {
+              lastSql: contextMsg.reportData.sql || '',
+              lastQuery: precedingUser?.content || '',
+            }
+          }
+
+          try {
+            if (abortController.signal.aborted) {
+              throw new Error('Generation aborted by user')
+            }
+
+            const resolvedPrompt = resolveMentions(originalQuery)
+            const planResponse = await window.electronAPI.askAI(
+              resolvedPrompt,
+              schemas,
+              relations,
+              context,
+              language
+            )
+
+            if (abortController.signal.aborted) {
+              throw new Error('Generation aborted by user')
+            }
+
+            if (!planResponse.success || !planResponse.data) {
+              throw new Error(planResponse.error || 'AI request failed')
+            }
+            const plan = planResponse.data
+
+            if (plan.status === 'error' || !plan.sql) {
+              throw new Error(plan.error || 'AI returned an error')
+            }
+
+             const refinementHint =
+              (plan.reasoning || '')
+                .toLowerCase()
+                .includes('modified previous sql') || !!context
+            const contextRef =
+              refinementHint && context
+                ? {
+                    query: context.lastQuery,
+                    sqlSummary: context.lastSql,
+                  }
+                : undefined
+
+            get().updateMessage(messageId, msg => ({
+              ...msg,
+              status: 'planning',
+              planSql: plan.sql,
+              planReasoning: plan.reasoning,
+              contextRef,
+            }))
+
+            if (abortController.signal.aborted) {
+              throw new Error('Generation aborted by user')
+            }
+
+            get().updateMessage(messageId, msg => ({
+              ...msg,
+              status: 'executing',
+            }))
+
+            const execution = await window.electronAPI.runSQL(plan.sql)
+            if (!execution.success) {
+              throw new Error(execution.error || 'SQL execution failed')
+            }
+
+            const data = execution.data ?? []
+            const columns = data.length > 0 ? Object.keys(data[0]) : []
+            const endTime = Date.now()
+            const latency = endTime - startTime
+
+            get().updateMessage(messageId, msg => ({
+              ...msg,
+              status: undefined,
+              content: plan.summary || '',
+              metadata: {
+                latency,
+              },
+              reportData: {
+                title: plan.title,
+                summary: plan.summary,
+                sql: plan.sql,
+                reasoning: plan.reasoning,
+                suggestions: plan.suggestions,
+                chartType: plan.visualization?.type,
+                chartTitle: plan.title,
+                tableData: data,
+                columns,
+                vizConfig: plan.visualization?.config as any,
+                insights: [],
+              },
+            }))
+
+            set({ abortController: null })
+          } catch (error: any) {
+            get().updateMessage(messageId, msg => ({
+              ...msg,
+              status: 'error',
+              content: `Error: ${error?.message || 'Unknown error'}`,
+            }))
+
             set({ abortController: null })
           }
         },
