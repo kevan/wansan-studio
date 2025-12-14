@@ -39,9 +39,9 @@ export function ErrorCard({ message }: ErrorCardProps) {
   }, [apiKey, message.error, message.id, messages, retryMessage])
 
   const errorMessage = message.content || t('error_unknown')
-  const hasSql = !!message.reportData?.sql
+  const hasSql = !!message.reportData?.sql || !!message.planSql
   const originalQuery = message.originalQuery
-  const originalSql = message.reportData?.sql
+  const originalSql = message.reportData?.sql || message.planSql
 
   // [NEW] Handle Missing Key Case
   if (message.error === 'ERR_NO_API_KEY') {
