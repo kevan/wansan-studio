@@ -10,11 +10,13 @@ import {
   Hash,
   X,
   Square,
+  Settings,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { useFileStore } from '../../stores/useFileStore'
 import { useChatStore } from '../../stores/useChatStore'
 import { useToastStore } from '../../stores/useToastStore'
+import { useSettingsStore } from '../../stores/useSettingsStore'
 import type { ChatMessage } from '../ChatInterface'
 import { useTranslation } from 'react-i18next'
 
@@ -57,6 +59,7 @@ export function MagicInput({
   const stopGeneration = useChatStore(state => state.stopGeneration)
   const addToast = useToastStore(state => state.addToast)
   const files = useFileStore(state => state.files)
+  const apiKey = useSettingsStore(state => state.apiKey)
   const { t } = useTranslation('chat')
 
   const readyTables = useMemo(() => files.filter(f => f.status === 'ready'), [files])
@@ -228,6 +231,24 @@ export function MagicInput({
   }, [])
 
   const hasContent = value.trim().length > 0
+
+  if (!apiKey) {
+    return (
+      <div className={cn('relative w-full flex justify-center', className)}>
+        <div ref={containerRef} className="relative w-full max-w-2xl">
+          <div
+            onClick={() =>
+              document.dispatchEvent(new CustomEvent('open-settings', { detail: 'ai' }))
+            }
+            className="w-full rounded-2xl border border-amber-200 shadow-sm bg-amber-50 cursor-pointer hover:bg-amber-100 transition-colors flex items-center justify-center gap-2 px-4 py-4 text-amber-800"
+          >
+            <Settings className="w-5 h-5" />
+            <span className="font-medium">⚙️ Configuration Required: Set up AI Key</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={cn('relative w-full flex justify-center', className)}>
