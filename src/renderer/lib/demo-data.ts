@@ -1,7 +1,7 @@
-import { FileNode } from '../../shared/types'
+import { FileNode } from '@shared/types.ts'
 import { useFileStore } from '../stores/useFileStore'
-import { generateId } from '../../shared/utils'
-import { DEMO_DATA } from '../../shared/demo-data'
+import { generateId } from '@shared/utils.ts'
+import { DEMO_DATA } from '@shared/demo-data.ts'
 
 export { DEMO_DATA } from '../../shared/demo-data'
 

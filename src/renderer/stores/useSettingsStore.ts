@@ -33,6 +33,12 @@ const getProviderDefaults = (provider: AIProviderKey) => {
   return { baseUrl: config.baseUrl, model: defaultModel }
 }
 
+const detectDefaultLanguage = (): 'en' | 'zh' => {
+  const lang = navigator.language || 'en';
+  // Match 'zh', 'zh-CN', 'zh-TW' -> 'zh'
+  return lang.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+};
+
 const initialSettingsState: Omit<
   SettingsState,
   'setProvider' | 'updateSettings' | 'completeOnboarding' | 'resetSettings' | 'activateLicense'
@@ -40,7 +46,7 @@ const initialSettingsState: Omit<
   provider: 'openai',
   apiKey: '',
   ...getProviderDefaults('openai'),
-  language: 'zh',
+  language: detectDefaultLanguage(),
   hasCompletedOnboarding: false,
   isActivated: false,
 }

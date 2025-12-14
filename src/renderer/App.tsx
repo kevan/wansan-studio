@@ -47,9 +47,9 @@ function App() {
   const [rightPanelSize, setRightPanelSize] = useState(initialLayout.rightSize)
   const [isPresentationMode, setIsPresentationMode] = useState(false)
   const language = useWorkbenchStore(state => state.language)
-  const hasCompletedOnboarding = useSettingsStore(
-    state => state.hasCompletedOnboarding,
-  )
+  // const hasCompletedOnboarding = useSettingsStore(
+  //   state => state.hasCompletedOnboarding,
+  // )
   const fileInputRef = useRef<HTMLInputElement>(null)
   const chatPanelRef = useRef<ImperativePanelHandle>(null)
   const leftPanelRef = useRef<ImperativePanelHandle>(null)
@@ -74,17 +74,6 @@ function App() {
       })
     }
   }, [])
-
-  const toggleChatCollapse = () => {
-    if (isChatCollapsed) {
-      chatPanelRef.current?.expand?.()
-      chatPanelRef.current?.resize?.(35)
-      setIsChatCollapsed(false)
-    } else {
-      chatPanelRef.current?.collapse?.()
-      setIsChatCollapsed(true)
-    }
-  }
 
   const toggleLeft = () => {
     if (!leftPanelRef.current) return
@@ -199,14 +188,14 @@ function App() {
     window.electronAPI?.windowControl?.('toggle-maximize')
   }, [])
 
-  if (!hasCompletedOnboarding) {
-    return (
-      <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
-        <Toaster />
-        <OnboardingFlow />
-      </div>
-    )
-  }
+  // if (!hasCompletedOnboarding) {
+  //   return (
+  //     <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
+  //       <Toaster />
+  //       <OnboardingFlow />
+  //     </div>
+  //   )
+  // }
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">

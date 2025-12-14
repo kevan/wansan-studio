@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Crown, Lock, Sparkles, Settings } from 'lucide-react'
 import { useFileStore } from '../stores/useFileStore'
+import { useSettingsStore } from '@/stores/useSettingsStore'
 import { useParseFile } from '../hooks/useIPC'
 import { DataTreeManager } from './data-tree'
 import { useAutoLink } from '../hooks/useAutoLink'
@@ -9,6 +10,7 @@ import { Button } from './ui/button'
 import { useToastStore } from '../stores/useToastStore'
 import { useTranslation } from 'react-i18next'
 import { SettingsDialog } from './settings/SettingsDialog'
+import { cn } from '@/utils/cn'
 
 interface SidebarProps {
   onImportData?: () => void
@@ -16,6 +18,7 @@ interface SidebarProps {
 
 export function Sidebar(_props: SidebarProps) {
   const { files, addFile, updateFile, setView } = useFileStore()
+  const settings = useSettingsStore()
   const [isImporting, setIsImporting] = useState(false)
   const parseFileMutation = useParseFile()
   const { checkAutoLink } = useAutoLink()
@@ -225,31 +228,68 @@ export function Sidebar(_props: SidebarProps) {
       </div>
 
       {/* 底部: 设置 */}
-      <div className="p-4 border-t border-zinc-200">
+      <div className="p-2 mt-auto border-t border-zinc-100 dark:border-zinc-800 flex flex-col gap-1">
+        {/* STATUS CARD (CLEAN STYLE) */}
+        <div
+          onClick={() =>
+            document.dispatchEvent(
+              new CustomEvent('open-settings', { detail: 'general' })
+            )
+          }
+          className={cn(
+            'relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all border group',
+            // Common Base
+            'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700',
+            // Conditional Tint
+            !settings.isActivated && "hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10"
+          )}
+        >
+          {settings.isActivated ? (
+            <>
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-yellow-50 border border-yellow-100">
+                <Crown className="w-4 h-4 text-yellow-600 fill-yellow-600" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-zinc-700">
+                  Beta Pro
+                </span>
+                <span className="text-[10px] text-zinc-400">
+                  License Active
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-50 border border-indigo-100 group-hover:bg-indigo-100 group-hover:scale-105 transition-all">
+                <Sparkles className="w-4 h-4 text-indigo-600" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-zinc-700 dark:text-zinc-200 group-hover:text-indigo-700">
+                  Activate Beta
+                </span>
+                <span className="text-[10px] text-zinc-400 group-hover:text-indigo-500/80">
+                  Unlock Full Access
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* SETTINGS LINK */}
         <SettingsDialog
           trigger={
-            <button className="flex items-center gap-2 text-sm text-zinc-600 hover:text-zinc-900 transition-colors no-drag">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-              {t('settings')}
-            </button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-2 text-zinc-500 hover:text-foreground h-8 mt-1"
+              onClick={() =>
+                document.dispatchEvent(
+                  new CustomEvent('open-settings', { detail: 'ai' })
+                )
+              }
+            >
+              <Settings className="w-4 h-4" />
+              <span className="text-xs">{t('settings')}</span>
+            </Button>
           }
         />
       </div>

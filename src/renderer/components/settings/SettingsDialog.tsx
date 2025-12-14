@@ -6,7 +6,7 @@ import {
   Bot,
   AlertCircle,
   Key,
-  Settings,
+  Settings2,
   Sparkles,
 } from 'lucide-react'
 
@@ -50,11 +50,18 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>('idle')
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('ai')
   const [licenseCode, setLicenseCode] = useState('')
 
   useEffect(() => {
-    const handleOpenSettings = () => {
+    const handleOpenSettings = (e: Event) => {
       setIsOpen(true)
+      const detail = (e as CustomEvent).detail
+      if (detail && typeof detail === 'string') {
+        setActiveTab(detail)
+      } else {
+        setActiveTab('ai')
+      }
     }
     document.addEventListener('open-settings', handleOpenSettings)
 
@@ -169,7 +176,8 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
         </DialogHeader>
 
         <Tabs
-          defaultValue="ai"
+          value={activeTab}
+          onValueChange={setActiveTab}
           className="flex flex-col flex-1 overflow-hidden"
         >
           <div className="px-6 pt-4 shrink-0">
@@ -178,7 +186,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                 <Sparkles className="w-4 h-4" /> AI Engine
               </TabsTrigger>
               <TabsTrigger value="general" className="flex gap-2">
-                <Settings className="w-4 h-4" /> General
+                <Settings2 className="w-4 h-4" /> General
               </TabsTrigger>
             </TabsList>
           </div>
@@ -363,126 +371,43 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
           {/* TAB: GENERAL */}
           <TabsContent
             value="general"
-            className="flex-1 overflow-y-auto px-6 py-4 space-y-6"
+            className="flex-1 overflow-y-auto px-6 py-4"
           >
-            {/* SECTION 2: PREFERENCES */}
-            <section>
-              <h4 className="text-base font-semibold text-foreground mb-4">
-                {t('settings.section_app')}
-              </h4>
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    {t('general.language_label')}
-                  </label>
-                  <Select
-                    value={settings.language}
-                    onValueChange={value => {
-                      const lang = value === 'en' ? 'en' : 'zh'
-                      settings.updateSettings({ language: lang })
-                      setWorkbenchLanguage(lang)
-                    }}
+            <div className="space-y-6">
+              {/* 1. LICENSE SECTION (NEW) */}
+              <section className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
+                <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
+                  <Key className="h-4 w-4 text-indigo-500" />
+                  License Status
+                </h4>
+
+                <div className="flex items-center justify-between mb-4">
+                  <span
+                    className={cn(
+                      'text-xs font-mono font-bold px-2 py-1 rounded',
+                      settings.isActivated
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                    )}
                   >
-                    <SelectTrigger>
-                      <span className="text-sm text-zinc-700 truncate">
-                        {languageLabel ||
-                          t('general.select_language_placeholder')}
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="zh">
-                        {t('general.language_zh')}
-                      </SelectItem>
-                      <SelectItem value="en">
-                        {t('general.language_en')}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-sm text-zinc-500">
-                    {t('data.placeholder')}
-                  </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      settings.resetSettings()
-                      addToast({
-                        title: t('data.reset_title'),
-                        description: t('data.reset_desc'),
-                        type: 'info',
-                      })
-                    }}
-                  >
-                    {t('data.reset_button')}
-                  </Button>
-                </div>
-              </div>
-            </section>
-
-            <Separator />
-
-            {/* SECTION: LICENSE */}
-            <section>
-              <h4 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
-                <Key className="h-5 w-5" />
-                License
-              </h4>
-              <div className="space-y-4">
-                <div
-                  className={cn(
-                    'flex items-center justify-between p-3 border rounded-lg',
-                    settings.isActivated
-                      ? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
-                      : 'bg-zinc-50 dark:bg-zinc-900'
-                  )}
-                >
-                  <div>
-                    <div className="text-sm font-medium">
-                      Activation Status
-                    </div>
-                    <div
-                      className={cn(
-                        'text-xs mt-1 font-mono',
-                        settings.isActivated
-                          ? 'text-green-700 dark:text-green-400 font-bold'
-                          : 'text-zinc-500'
-                      )}
-                    >
-                      {settings.isActivated
-                        ? '✅ BETA ACCESS GRANTED'
-                        : 'TRIAL / UNREGISTERED'}
-                    </div>
-                  </div>
+                    {settings.isActivated ? 'BETA PRO ACTIVE' : 'TRIAL MODE'}
+                  </span>
                 </div>
 
                 {!settings.isActivated && (
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Enter Beta Code (e.g. WANSAN-BETA)"
+                      placeholder="Enter Code (e.g. WANSAN-BETA)"
                       value={licenseCode}
                       onChange={e => setLicenseCode(e.target.value)}
-                      className={cn(
-                        'uppercase font-mono px-3 transition-colors',
-                        'focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-zinc-900'
-                      )}
+                      className="bg-white"
                     />
                     <Button
                       onClick={() => {
                         if (settings.activateLicense(licenseCode)) {
-                          addToast({
-                            title: 'Activated',
-                            description: 'Welcome to the Beta!',
-                            type: 'success',
-                          })
-                          setLicenseCode('')
+                          addToast({ title: 'Activated!', type: 'success' })
                         } else {
-                          addToast({
-                            title: 'Activation Failed',
-                            description: 'Invalid code provided.',
-                            type: 'error',
-                          })
+                          addToast({ title: 'Invalid Code', type: 'error' })
                         }
                       }}
                     >
@@ -490,21 +415,81 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                     </Button>
                   </div>
                 )}
-              </div>
-            </section>
+                {settings.isActivated && (
+                  <p className="text-xs text-zinc-500">
+                    Thanks for testing Wansan Studio.
+                  </p>
+                )}
+              </section>
 
-            <Separator />
+              <Separator />
 
-            {/* SECTION 3: ABOUT */}
-            <section className="text-center py-4">
-              <div className="font-semibold">Wansan Studio</div>
-              <div className="text-xs text-muted-foreground mt-1">
-                v0.1.0-alpha
-              </div>
-            </section>
+              {/* 2. PREFERENCES (Existing Language/Reset) */}
+              <section>
+                <h4 className="text-base font-semibold text-foreground mb-4">
+                  {t('settings.section_app')}
+                </h4>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      {t('general.language_label')}
+                    </label>
+                    <Select
+                      value={settings.language}
+                      onValueChange={value => {
+                        const lang = value === 'en' ? 'en' : 'zh'
+                        settings.updateSettings({ language: lang })
+                        setWorkbenchLanguage(lang)
+                      }}
+                    >
+                      <SelectTrigger>
+                        <span className="text-sm text-zinc-700 truncate">
+                          {languageLabel ||
+                            t('general.select_language_placeholder')}
+                        </span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="zh">
+                          {t('general.language_zh')}
+                        </SelectItem>
+                        <SelectItem value="en">
+                          {t('general.language_en')}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-            {/* 底部间隔器 - 确保滚动时底部内容不被截断 */}
-            <div className="h-8" />
+                  <div className="space-y-2">
+                    <p className="text-sm text-zinc-500">
+                      {t('data.placeholder')}
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        settings.resetSettings()
+                        addToast({
+                          title: t('data.reset_title'),
+                          description: t('data.reset_desc'),
+                          type: 'info',
+                        })
+                      }}
+                    >
+                      {t('data.reset_button')}
+                    </Button>
+                  </div>
+                </div>
+              </section>
+
+              <Separator />
+
+              {/* 3. ABOUT */}
+              <section className="text-center py-4">
+                <div className="font-semibold text-sm">Wansan Studio</div>
+                <div className="text-xs text-muted-foreground">v1.0.1 Beta</div>
+              </section>
+
+              <div className="h-10" />
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>
