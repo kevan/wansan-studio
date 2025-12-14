@@ -54,6 +54,9 @@ export interface ProjectState {
   // 当前选中的树节点 (支持文件、列、关联)
   selectedNode: SelectedNode | null
 
+  // Restoring state
+  isRestoring: boolean
+
   // Actions
   setProjectName: (name: string) => void
   addFile: (
@@ -82,6 +85,7 @@ export interface ProjectState {
   removeRelation: (id: string) => void
 
   setSuggestedPrompts: (prompts: string[]) => void
+  setRestoring: (isRestoring: boolean) => void
 
   // Sync Actions
   markAsStale: (ids: string[]) => void
@@ -107,6 +111,7 @@ const initialState = {
   activeFileId: null,
   activeView: 'chat' as ViewMode,
   selectedNode: null,
+  isRestoring: false,
 }
 
 const sanitizeValue = (value: any) => {
@@ -265,6 +270,8 @@ export const useFileStore = create<ProjectState>()(
       },
 
       setSuggestedPrompts: prompts => set({ suggestedPrompts: prompts }),
+
+      setRestoring: isRestoring => set({ isRestoring }),
 
       markAsStale: ids =>
         set(state => ({

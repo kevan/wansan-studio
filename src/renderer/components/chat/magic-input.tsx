@@ -11,6 +11,7 @@ import {
   X,
   Square,
   Sparkles,
+  Loader2,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { useFileStore } from '../../stores/useFileStore'
@@ -58,6 +59,7 @@ export function MagicInput({
   const stopGeneration = useChatStore(state => state.stopGeneration)
   const addToast = useToastStore(state => state.addToast)
   const files = useFileStore(state => state.files)
+  const isRestoring = useFileStore(state => state.isRestoring)
   const suggestedPrompts = useFileStore(state => state.suggestedPrompts)
   const { t } = useTranslation('chat')
 
@@ -414,10 +416,10 @@ export function MagicInput({
               }}
               onSelect={e => setCursorPosition(e.currentTarget.selectionStart)}
               onKeyDown={handleKeyDown}
-              disabled={loading}
+              disabled={loading || isRestoring}
             />
             <div className="flex items-center justify-between text-[11px] text-zinc-400 mt-1">
-              <span>{t('input_hint')}</span>
+              <span>{isRestoring ? 'Restoring session...' : t('input_hint')}</span>
               <span className="font-mono text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded">
                 {t('table_count', { count: readyTables.length })}
               </span>
@@ -434,6 +436,10 @@ export function MagicInput({
               >
                 <Square className="w-4 h-4 fill-current text-red-500" />
               </button>
+            ) : isRestoring ? (
+              <div className="h-10 w-10 flex items-center justify-center">
+                <Loader2 className="w-4 h-4 text-zinc-400 animate-spin" />
+              </div>
             ) : (
               <button
                 onClick={handleSubmit}

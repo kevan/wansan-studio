@@ -8,6 +8,7 @@ export function useDataRehydrate() {
   const markAsStale = useFileStore(state => state.markAsStale)
   const reloadFile = useFileStore(state => state.reloadFile)
   const updateFile = useFileStore(state => state.updateFile)
+  const setRestoring = useFileStore(state => state.setRestoring)
   const addToast = useToastStore(state => state.addToast)
   const dismissToast = useToastStore(state => state.dismissToast)
   const { mutateAsync: reIngestFile } = useReIngestFile()
@@ -38,6 +39,7 @@ export function useDataRehydrate() {
     if (filesToRestore.length === 0) return
 
     hasRunRef.current = true
+    setRestoring(true)
     let cancelled = false
 
     const toastId = addToast({
@@ -89,6 +91,7 @@ export function useDataRehydrate() {
       )
 
       if (cancelled) return
+      setRestoring(false)
       dismissToast(toastId)
       if (failCount > 0) {
         addToast({
@@ -109,12 +112,13 @@ export function useDataRehydrate() {
     }
 
     restore().catch(() => {
-      // Errors handled individually above
+      setRestoring(false)
     })
 
     return () => {
       cancelled = true
+      setRestoring(false)
       dismissToast(toastId)
     }
-  }, [addToast, dismissToast, files, hydrated, markAsStale, reIngestFile, reloadFile])
+  }, [addToast, dismissToast, files, hydrated, markAsStale, reIngestFile, reloadFile, setRestoring])
 }
