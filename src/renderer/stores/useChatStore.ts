@@ -159,7 +159,7 @@ export const useChatStore = create<ChatStore>()(
         const startTime = Date.now()
 
         const { provider } = useSettingsStore.getState()
-        
+
         // Check for Key (skip if provider is 'custom' or special case)
         // We fetch the config from the backend to ensure we capture environment variables (process.env.OPENAI_API_KEY)
         let apiKey: string | undefined
@@ -331,7 +331,7 @@ export const useChatStore = create<ChatStore>()(
             }))
 
             // Cinematic delay to let users see the SQL before execution
-            await sleep(800)
+            // await sleep(800)
 
             // Check if aborted before execution
             if (abortController.signal.aborted) {

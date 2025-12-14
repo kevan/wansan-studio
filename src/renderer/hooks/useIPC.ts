@@ -239,7 +239,7 @@ export const useContextAnalysis = () => {
       const { schemas, language } = Array.isArray(params)
         ? { schemas: params, language: undefined }
         : params
-      const response = await getIpc().analyzeContext(schemas, language)
+      const response = await getIpc().invoke('analyze-context', schemas, language)
       if (!response.success) {
         throw new Error(response.error || 'Failed to analyze context')
       }
