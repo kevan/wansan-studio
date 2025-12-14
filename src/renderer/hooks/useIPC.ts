@@ -30,49 +30,7 @@ const mockIPC = {
       data: [{ tableName: 'mock_table', schema: { columns: [] }, rowCount: 0 }],
     }
   },
-  runSQL: async (sql: string) => {
-    console.log(`Mock runSQL: ${sql}`)
-    return { success: true, data: [] }
-  },
-  getSchema: async (tableName?: string) => {
-    console.log(`Mock getSchema: ${tableName || ''}`)
-    return { success: true, data: [] }
-  },
-  deleteTable: async (tableName: string) => {
-    console.log(`Mock deleteTable: ${tableName}`)
-    return { success: true }
-  },
-  resetDB: async () => {
-    console.log('Mock resetDB')
-    return { success: true }
-  },
-  askAI: async (...args: any[]) => {
-    console.log('Mock askAI', args)
-    return { success: true, data: { sql: 'SELECT * FROM table', explanation: 'Mock AI' } }
-  },
-  fixSQL: async (...args: any[]) => {
-    console.log('Mock fixSQL', args)
-    return { success: true, data: { sql: 'SELECT * FROM table', explanation: 'Mock AI Fix' } }
-  },
-  analyzeContext: async (...args: any[]) => {
-    console.log('Mock analyzeContext', args)
-    return { success: true, data: 'Mock context analysis' }
-  },
-  getAIConfig: async () => {
-    return { success: true, data: { provider: 'openai' } }
-  },
-  setAIConfig: async (config: any) => {
-    console.log('Mock setAIConfig', config)
-    return { success: true }
-  },
-  clearAIConfig: async () => {
-    console.log('Mock clearAIConfig')
-    return { success: true }
-  },
-  checkFilesConsistency: async (files: any[]) => {
-    console.log('Mock checkFilesConsistency', files)
-    return { success: true, data: [] }
-  },
+  // ...
   reIngestFile: async (filePath: string, tableName: string, sheetName?: string) => {
     console.log(`Mock reIngestFile: ${filePath} ${sheetName || ''}`)
     return { success: true, data: { lastModified: Date.now(), newColumns: [] } }
@@ -81,38 +39,73 @@ const mockIPC = {
     console.log(`Mock exportPDF: ${data}`)
     return { success: true }
   },
-  saveImage: async (dataUrl: string, name?: string) => {
-    console.log(`Mock saveImage: ${name}`)
-    return { success: true }
-  },
-  saveFile: async (content: string, extension: string, name: string) => {
-    console.log(`Mock saveFile: ${name}.${extension}`)
-    return { success: true }
-  },
   exportReport: async (payload: any) => {
     console.log('Mock exportReport', payload)
+    return { success: true }
+  },
+  resetDB: async () => {
+    console.log('Mock resetDB')
     return { success: true }
   },
   openExternal: async (url: string) => {
     console.log('Mock openExternal', url)
     return { success: true }
   },
-  getPathForFile: (file: File) => {
-    return file.name // Mock path
-  },
   windowControl: (action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize') => {
     console.log('Mock windowControl', action)
   },
   platform: 'darwin', // Mock platform
-  version: { electron: 'mock', chrome: 'mock', node: 'mock' } as NodeJS.ProcessVersions, // Mock versions
-  secureSet: async (key: string, value: string) => { 
-    console.log(`Mock secureSet: ${key} = ${value}`); 
-    return true; 
-  },
-  secureGet: async (key: string) => { 
-    console.log(`Mock secureGet: ${key}`); 
-    return null; 
-  },
+  version: { electron: 'mock', chrome: 'mock', node: 'mock' }, // Mock versions
+}
+
+// 声明全局 electronAPI（将由主进程注入）
+declare global {
+  interface Window {
+    electronAPI: {
+      // Removed ? to match global.d.ts
+      invoke: (channel: string, ...args: any[]) => Promise<IPCResponse>
+      selectFile: () => Promise<IPCResponse<string>>
+      selectFiles: () => Promise<IPCResponse<string[]>>
+      parseFile: (filePath: string) => Promise<IPCResponse<any[]>>
+      runSQL: (sql: string) => Promise<IPCResponse>
+      getSchema: (tableName?: string) => Promise<IPCResponse>
+      deleteTable: (tableName?: string) => Promise<IPCResponse>
+      generateSQL: (prompt: string, schema: any) => Promise<IPCResponse>
+      askAI: (
+        query: string,
+        schemas: any[],
+        relations: any[],
+        context?: { lastSql: string; lastQuery: string },
+        language?: 'en' | 'zh'
+      ) => Promise<IPCResponse>
+      fixSQL: (
+        originalSql: string,
+        error: string,
+        schemas: any[]
+      ) => Promise<IPCResponse>
+      analyzeContext: (schemas: any[], language?: 'en' | 'zh') => Promise<IPCResponse>
+      getAIConfig: () => Promise<IPCResponse>
+      setAIConfig: (config: any) => Promise<IPCResponse>
+      clearAIConfig: () => Promise<IPCResponse>
+      checkFilesConsistency: (files: any[]) => Promise<IPCResponse>
+      reIngestFile: (
+        filePath: string,
+        tableName: string,
+        sheetName?: string
+      ) => Promise<IPCResponse<ReloadResult>>
+      exportPDF: (data: any) => Promise<IPCResponse>
+      exportReport: (payload: any) => Promise<IPCResponse>
+      resetDB: () => Promise<IPCResponse>
+      saveImage: (dataUrl: string, name?: string) => Promise<IPCResponse>
+      openExternal: (url: string) => Promise<IPCResponse>
+      getPathForFile: (file: File) => string;
+      windowControl: (
+        action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
+      ) => void
+      platform: string
+      version: NodeJS.ProcessVersions
+    }
+  }
 }
 
 function getIpc() {
