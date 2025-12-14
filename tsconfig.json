@@ -27,7 +27,8 @@
     "src/renderer/**/*",
     "src/shared/**/*",
     "src/types/**/*",
-    "src/main/**/*"
+    "src/main/**/*",
+    "src/preload/**/*"
   ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

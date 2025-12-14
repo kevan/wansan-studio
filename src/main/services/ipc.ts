@@ -13,10 +13,13 @@ import type {
   ContextAnalysisResult,
 } from '../../shared/types'
 
+import { setupSecureStorageHandlers } from './secure-storage'
+
 export function setupIPC(
   databaseService: DatabaseService,
   aiService: AIService,
 ) {
+  setupSecureStorageHandlers()
   const fileService = new FileService(databaseService)
 
   ipcMain.handle('open-external', async (_event, url: string) => {

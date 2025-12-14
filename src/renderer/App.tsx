@@ -58,25 +58,13 @@ function App() {
   const rightPanelRef = useRef<ImperativePanelHandle>(null)
   const { t } = useTranslation('common')
 
-  // Sync AI config to main process on startup
+  // Load secure settings (API Key) on startup
   useEffect(() => {
-    const syncAIConfig = async () => {
-      const settings = useSettingsStore.getState()
-      if (settings.apiKey) {
-        const config: AIConfig = {
-          apiKey: settings.apiKey,
-          baseURL: settings.baseUrl,
-          model: settings.model,
-        }
-        try {
-          await window.electronAPI.setAIConfig(config)
-          console.log('[App] Synced AI config to main process')
-        } catch (error) {
-          console.error('[App] Failed to sync AI config:', error)
-        }
-      }
+    const initSettings = async () => {
+      await useSettingsStore.getState().loadSecureSettings()
+      console.log('[App] Secure settings loaded')
     }
-    syncAIConfig()
+    initSettings()
   }, [])
 
 

@@ -58,6 +58,10 @@ const electronAPI = {
   windowControl: (action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize') =>
     ipcRenderer.send('window-control', action),
 
+  // Secure Storage
+  secureSet: (key: string, value: string) => ipcRenderer.invoke('secure-set', key, value),
+  secureGet: (key: string) => ipcRenderer.invoke('secure-get', key),
+
   // Open external URLs in user's default browser
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
   getPathForFile: (file: File) => webUtils.getPathForFile(file),
@@ -65,3 +69,6 @@ const electronAPI = {
 
 // 将 API 暴露给渲染进程
 contextBridge.exposeInMainWorld('electronAPI', electronAPI)
+
+export type ElectronAPI = typeof electronAPI
+
