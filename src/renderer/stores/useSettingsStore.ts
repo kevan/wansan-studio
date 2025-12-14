@@ -109,7 +109,16 @@ export const useSettingsStore = create<SettingsState>()(
           return nextState
         }),
       completeOnboarding: () => set({ hasCompletedOnboarding: true }),
-      resetSettings: () => set({ ...initialSettingsState }),
+      resetSettings: () => {
+        set({ ...initialSettingsState })
+        const defaults = getProviderDefaults('openai')
+        const aiConfig: AIConfig = {
+          apiKey: '',
+          baseURL: defaults.baseUrl,
+          model: defaults.model,
+        }
+        void window.electronAPI.setAIConfig(aiConfig)
+      },
     }),
     {
       name: SETTINGS_STORAGE_KEY,
