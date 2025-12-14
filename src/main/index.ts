@@ -55,9 +55,9 @@ class WansanApp {
     this.setupIPC()
 
     // 在开发模式下启动时清理 AI 配置
-    if (isDev()) {
-      this.aiService.clearConfig()
-    }
+    // if (isDev()) {
+    //   this.aiService.clearConfig()
+    // }
 
     // 设置应用事件监听
     this.setupAppEvents()
@@ -137,9 +137,9 @@ class WansanApp {
       this.mainWindow?.show()
       setDockIcon()
 
-      if (isDev()) {
-        this.mainWindow?.webContents.openDevTools()
-      }
+      // if (isDev()) {
+      //   this.mainWindow?.webContents.openDevTools()
+      // }
     })
 
     // 窗口关闭事件
@@ -177,11 +177,9 @@ class WansanApp {
   }
 
   private setupAppEvents() {
-    // macOS 特殊处理
+    // 应用退出处理
     app.on('window-all-closed', () => {
-      if (process.platform !== 'darwin') {
-        app.quit()
-      }
+      app.quit()
     })
 
     app.on('activate', () => {
