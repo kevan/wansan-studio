@@ -123,16 +123,17 @@ export function ChatInterface({
                   </div>
 
                   {/* Delete Button */}
-                  {message.type !== 'user' && (
-                    <button
-                      onClick={() => removeMessage(message.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-red-50"
-                      title={t('delete_message')}
-                      aria-label="Delete message"
-                    >
-                      <Trash2 className="h-3.5 w-3.5 text-zinc-400 hover:text-red-500 transition-colors" />
-                    </button>
-                  )}
+                  {message.type !== 'user' &&
+                    !['thinking', 'planning', 'executing'].includes(message.status || '') && (
+                      <button
+                        onClick={() => removeMessage(message.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-red-50"
+                        title={t('delete_message')}
+                        aria-label="Delete message"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-zinc-400 hover:text-red-500 transition-colors" />
+                      </button>
+                    )}
                 </div>
 
                 {message.type === 'user' ? (
