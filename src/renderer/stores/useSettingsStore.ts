@@ -12,12 +12,14 @@ export interface SettingsState {
   model: string
   language: SettingsLanguage
   hasCompletedOnboarding: boolean
+  isActivated: boolean
   setProvider: (provider: AIProviderKey) => void
+  activateLicense: (code: string) => boolean
   updateSettings: (
     patch: Partial<
       Omit<
         SettingsState,
-        'setProvider' | 'updateSettings' | 'completeOnboarding' | 'resetSettings'
+        'setProvider' | 'updateSettings' | 'completeOnboarding' | 'resetSettings' | 'activateLicense'
       >
     >
   ) => void
@@ -33,13 +35,14 @@ const getProviderDefaults = (provider: AIProviderKey) => {
 
 const initialSettingsState: Omit<
   SettingsState,
-  'setProvider' | 'updateSettings' | 'completeOnboarding' | 'resetSettings'
+  'setProvider' | 'updateSettings' | 'completeOnboarding' | 'resetSettings' | 'activateLicense'
 > = {
   provider: 'openai',
   apiKey: '',
   ...getProviderDefaults('openai'),
   language: 'zh',
   hasCompletedOnboarding: false,
+  isActivated: false,
 }
 
 export const SETTINGS_STORAGE_KEY = 'wansan-settings-v1'
@@ -51,6 +54,15 @@ export const useSettingsStore = create<SettingsState>()(
       setProvider: provider => {
         const defaults = getProviderDefaults(provider)
         set({ provider, ...defaults })
+      },
+      activateLicense: (code: string) => {
+        const validCodes = ['WANSAN-BETA', 'INTERNAL-TEST']
+        // Simple case-insensitive check
+        if (validCodes.includes(code.trim().toUpperCase())) {
+          set({ isActivated: true })
+          return true
+        }
+        return false
       },
       updateSettings: patch =>
         set(state => {
@@ -80,6 +92,7 @@ export const useSettingsStore = create<SettingsState>()(
           provider,
           baseUrl: state.baseUrl ?? defaults.baseUrl,
           model: state.model ?? defaults.model,
+          isActivated: state.isActivated ?? false,
         }
       },
     }

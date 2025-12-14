@@ -1,5 +1,5 @@
 appId: com.wansan.studio
-productName: Wansan
+productName: Wansan Studio
 directories:
   output: dist_electron
   buildResources: resources
@@ -23,6 +23,7 @@ mac:
   target: dmg
   icon: resources/icon.icns
   hardenedRuntime: true
+  identity: null
   gatekeeperAssess: false
   category: public.app-category.business
 

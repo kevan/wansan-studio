@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, useEffect } from 'react'
-import { Loader2, CheckCircle2, XCircle, Bot, AlertCircle } from 'lucide-react'
+import { Loader2, CheckCircle2, XCircle, Bot, AlertCircle, Key } from 'lucide-react'
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -28,6 +28,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>('idle')
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false)
+  const [licenseCode, setLicenseCode] = useState('')
 
   useEffect(() => {
     const handleOpenSettings = () => {
@@ -329,6 +330,69 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                     {t('data.reset_button')}
                   </Button>
                 </div>
+              </div>
+            </section>
+
+            <Separator className="my-6" />
+
+            {/* SECTION: LICENSE */}
+            <section>
+              <h4 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
+                <Key className="h-5 w-5" />
+                License
+              </h4>
+              <div className="space-y-4">
+                <div
+                  className={cn(
+                    'flex items-center justify-between p-3 border rounded-lg',
+                    settings.isActivated
+                      ? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900'
+                      : 'bg-zinc-50 dark:bg-zinc-900'
+                  )}
+                >
+                  <div>
+                    <div className="text-sm font-medium">Activation Status</div>
+                    <div
+                      className={cn(
+                        'text-xs mt-1 font-mono',
+                        settings.isActivated ? 'text-green-700 dark:text-green-400 font-bold' : 'text-zinc-500'
+                      )}
+                    >
+                      {settings.isActivated ? '✅ BETA ACCESS GRANTED' : 'TRIAL / UNREGISTERED'}
+                    </div>
+                  </div>
+                </div>
+
+                {!settings.isActivated && (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter Beta Code (e.g. WANSAN-BETA)"
+                      value={licenseCode}
+                      onChange={e => setLicenseCode(e.target.value)}
+                      className="uppercase font-mono"
+                    />
+                    <Button
+                      onClick={() => {
+                        if (settings.activateLicense(licenseCode)) {
+                          addToast({
+                            title: 'Activated',
+                            description: 'Welcome to the Beta!',
+                            type: 'success',
+                          })
+                          setLicenseCode('')
+                        } else {
+                          addToast({
+                            title: 'Activation Failed',
+                            description: 'Invalid code provided.',
+                            type: 'error',
+                          })
+                        }
+                      }}
+                    >
+                      Activate
+                    </Button>
+                  </div>
+                )}
               </div>
             </section>
 
