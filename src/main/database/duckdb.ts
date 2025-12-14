@@ -181,6 +181,17 @@ export class DatabaseService {
     }
   }
 
+  async dropAllTables(): Promise<void> {
+    await this.ensureInitialized()
+    const tables = await this.query(
+      "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
+    )
+
+    for (const table of tables) {
+      await this.exec(`DROP TABLE IF EXISTS "${table.table_name}"`)
+    }
+  }
+
   async close(): Promise<void> {
     await this.mutex.runExclusive(async () => {
       if (this.conn) {

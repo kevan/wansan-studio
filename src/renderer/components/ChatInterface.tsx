@@ -7,6 +7,7 @@ import { MagicInput } from './chat/magic-input'
 import { User, Bot, Sparkles, GitBranch, Brain, Zap, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useChatStore } from '../stores/useChatStore'
+import { format } from 'sql-formatter'
 
 export interface ChatMessage {
   id: string
@@ -160,11 +161,15 @@ export function ChatInterface({
                           {message.status === 'executing' && t('status_executing')}
                         </div>
                         {message.planSql && (
-                          <pre className="mt-2 max-h-32 overflow-y-auto rounded-md bg-white/80 p-2 text-xs text-zinc-800 border border-indigo-100">
-                            <code>
-                              {message.planSql.length > 400
-                                ? `${message.planSql.slice(0, 400)}...`
-                                : message.planSql}
+                          <pre className="mt-2 max-h-48 overflow-y-auto rounded-md bg-white/80 p-3 text-xs text-zinc-800 border border-indigo-100 font-mono leading-relaxed scrollbar-thin">
+                            <code className="whitespace-pre-wrap block">
+                              {(() => {
+                                try {
+                                  return format(message.planSql, { language: 'postgresql' })
+                                } catch (e) {
+                                  return message.planSql
+                                }
+                              })()}
                             </code>
                           </pre>
                         )}

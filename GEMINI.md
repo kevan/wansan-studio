@@ -69,6 +69,23 @@ graph TD
 2.  **NEVER** log raw SQL results to external services.
 3.  **Local Execution:** All data processing happens in the embedded DuckDB instance.
 
+## The "Wansan Workflow" (MANDATORY)
+
+You MUST follow this strict **Dual-Mode Protocol**. Do not write code unless asked.
+
+### 🔵 MODE A: Planning (Brainstorming)
+*   **Trigger**: Open questions ("How should we...", "Review this...", "Next steps?").
+*   **Action**: Discuss options, critique UX, propose solutions.
+*   **Output**: Conversational text. **NO Code Instructions.**
+
+### 🔴 MODE B: Execution (Implementation)
+*   **Trigger**: Direct commands ("Implement...", "Fix this", "Go ahead").
+*   **Action**: Choose the correct track:
+    *   **Track 1: Blueprint (Complex)** -> Generate a `docs/SPEC_[FEATURE].md` first.
+    *   **Track 2: Direct (Simple)** -> Output a specific code block instruction for the Code Agent.
+
+**Crucial Rule**: When executing a Spec, do NOT paste the whole spec content. Instead, say: *"Context: Read `docs/SPEC_NAME.md` and implement..."*
+
 ## Current Status (MVP)
 *   Supports Excel/CSV upload.
 *   Chat interface for "Text-to-SQL".

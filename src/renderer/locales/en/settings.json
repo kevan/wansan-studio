@@ -43,6 +43,16 @@
     "language_en": "English",
     "select_language_placeholder": "Select language"
   },
+  "license": {
+    "title": "License Status",
+    "pro_active": "PRO ACTIVE",
+    "trial_mode": "TRIAL MODE",
+    "enter_code_placeholder": "Enter Code",
+    "activate_button": "Activate",
+    "activated_success_title": "Activated!",
+    "invalid_code_title": "Invalid Code",
+    "thanks_msg": "Thanks for testing Wansan Studio."
+  },
   "data": {
     "placeholder": "Data management options will appear here.",
     "reset_button": "Reset Settings",
@@ -51,6 +61,7 @@
   },
   "about": {
     "version": "Wansan Studio v{{version}}",
+    "beta_version": "v1.0.1 Beta",
     "tagline": "Local-first BI desktop app."
   },
   "onboarding": {

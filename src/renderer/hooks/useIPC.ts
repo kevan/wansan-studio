@@ -27,106 +27,12 @@ const mockIPC = {
     console.log(`Mock parseFile: ${filePath}`)
     return {
       success: true,
-      data: { tableName: 'mock_table', schema: { columns: [] }, rowCount: 0 },
+      data: [{ tableName: 'mock_table', schema: { columns: [] }, rowCount: 0 }],
     }
   },
-  runSQL: async (sql: string) => {
-    console.log(`Mock runSQL: ${sql}`)
-    return { success: true, data: [] }
-  },
-  deleteTable: (tableName: string) => {
-    console.log(`Mock deleteTable: ${tableName}`)
-    return { success: true, data: [] }
-  },
-  getSchema: async (tableName?: string) => {
-    console.log(`Mock getSchema: ${tableName}`)
-    return {
-      success: true,
-      data: { tableName: tableName || 'mock_table', columns: [] },
-    }
-  },
-  generateSQL: async (prompt: string, schema: any) => {
-    console.log(
-      `Mock generateSQL: ${prompt}, Schema: ${JSON.stringify(schema)}`
-    )
-    return {
-      success: true,
-      data: {
-        status: 'success',
-        sql: 'SELECT 1',
-        data: [],
-        columns: [],
-        title: 'Mock Report',
-        summary: 'Mock Summary',
-        reasoning: 'Mock Reason',
-        suggestions: [],
-        visualization: {
-          type: 'table',
-          config: { x_axis: '', y_axis: '' },
-        },
-      },
-    }
-  },
-  askAI: async (
-    query: string,
-    schemas: any[],
-    relations: any[],
-    _context?: { lastSql: string; lastQuery: string },
-    _language?: 'en' | 'zh'
-  ) => {
-    console.log(
-      `Mock askAI: ${query}, Schemas: ${JSON.stringify(schemas)}, Relations: ${JSON.stringify(relations)}`
-    )
-    return {
-      success: true,
-      data: {
-        status: 'success',
-        sql: 'SELECT 1',
-        data: [],
-        columns: [],
-        title: 'Mock Report',
-        summary: 'Mock Summary',
-        reasoning: 'Mock Reason',
-        suggestions: [],
-        visualization: {
-          type: 'table',
-          config: { x_axis: '', y_axis: '' },
-        },
-      },
-    }
-  },
-  analyzeContext: async (schemas: any[], language?: 'en' | 'zh'): Promise<IPCResponse> => {
-    console.log(`Mock analyzeContext, Schemas: ${JSON.stringify(schemas)}, Language: ${language}`)
-    return {
-      success: true,
-      data: {
-        relationships: [],
-        suggestedPrompts: [
-          'Mock Prompt 1',
-          'Mock Prompt 2',
-          'Mock Prompt 3',
-          'Mock Prompt 4',
-        ],
-      },
-    }
-  },
-  getAIConfig: async () => {
-    return { success: true, data: {} }
-  },
-  setAIConfig: async (config: any) => {
-    console.log(`Mock setAIConfig: ${config}`)
-    return { success: true }
-  },
-  clearAIConfig: async () => {
-    console.log(`Mock clearAIConfig`)
-    return { success: true }
-  },
-  checkFilesConsistency: async (files: any[]) => {
-    console.log(`Mock checkFilesConsistency: ${files.length}`)
-    return { success: true, data: [] }
-  },
-  reIngestFile: async (filePath: string, tableName: string) => {
-    console.log(`Mock reIngestFile: ${filePath}`)
+  // ...
+  reIngestFile: async (filePath: string, tableName: string, sheetName?: string) => {
+    console.log(`Mock reIngestFile: ${filePath} ${sheetName || ''}`)
     return { success: true, data: { lastModified: Date.now(), newColumns: [] } }
   },
   exportPDF: async (data: any) => {
@@ -135,6 +41,10 @@ const mockIPC = {
   },
   exportReport: async (payload: any) => {
     console.log('Mock exportReport', payload)
+    return { success: true }
+  },
+  resetDB: async () => {
+    console.log('Mock resetDB')
     return { success: true }
   },
   openExternal: async (url: string) => {
@@ -156,7 +66,7 @@ declare global {
       invoke: (channel: string, ...args: any[]) => Promise<IPCResponse>
       selectFile: () => Promise<IPCResponse<string>>
       selectFiles: () => Promise<IPCResponse<string[]>>
-      parseFile: (filePath: string) => Promise<IPCResponse>
+      parseFile: (filePath: string) => Promise<IPCResponse<any[]>>
       runSQL: (sql: string) => Promise<IPCResponse>
       getSchema: (tableName?: string) => Promise<IPCResponse>
       deleteTable: (tableName?: string) => Promise<IPCResponse>
@@ -180,10 +90,12 @@ declare global {
       checkFilesConsistency: (files: any[]) => Promise<IPCResponse>
       reIngestFile: (
         filePath: string,
-        tableName: string
+        tableName: string,
+        sheetName?: string
       ) => Promise<IPCResponse<ReloadResult>>
       exportPDF: (data: any) => Promise<IPCResponse>
       exportReport: (payload: any) => Promise<IPCResponse>
+      resetDB: () => Promise<IPCResponse>
       saveImage: (dataUrl: string, name?: string) => Promise<IPCResponse>
       openExternal: (url: string) => Promise<IPCResponse>
       getPathForFile: (file: File) => string;
@@ -425,14 +337,17 @@ export const useReIngestFile = () => {
     mutationFn: async ({
       filePath,
       tableName,
+      sheetName,
     }: {
       filePath: string
       tableName: string
+      sheetName?: string
     }) => {
       const response = await getIpc().invoke(
         're-ingest-file',
         filePath,
-        tableName
+        tableName,
+        sheetName
       )
       if (!response.success) {
         throw new Error(response.error || 'Failed to re-ingest file')

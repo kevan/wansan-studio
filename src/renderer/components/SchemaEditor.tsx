@@ -152,6 +152,8 @@ function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
 
   // 格式化显示值（处理时间戳）
   const formatDisplayValue = (value: any, type: string): string => {
+    if (value === null || value === undefined) return ''
+
     const lowerType = type.toLowerCase()
 
     // 检查是否为时间类型
@@ -160,21 +162,14 @@ function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
       lowerType.includes('time') ||
       lowerType.includes('timestamp')
     ) {
-      // 如果是数字类型的时间戳，转换为 Date 并格式化
-      if (typeof value === 'number') {
-        try {
-          return new Date(value).toLocaleString()
-        } catch {
-          return String(value)
+      try {
+        const date = new Date(value)
+        // 只有有效日期才格式化
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleString()
         }
-      }
-      // 如果是字符串类型的时间，也尝试格式化
-      if (typeof value === 'string') {
-        try {
-          return new Date(value).toLocaleString()
-        } catch {
-          return value
-        }
+      } catch {
+        // 忽略错误，回退到原始值
       }
     }
 

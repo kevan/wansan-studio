@@ -17,6 +17,7 @@ const electronAPI = {
     ipcRenderer.invoke('get-schema', tableName),
   deleteTable: (tableName: string) =>
     ipcRenderer.invoke('delete-table', tableName),
+  resetDB: () => ipcRenderer.invoke('reset-db'),
 
   // AI 功能
   askAI: (
@@ -37,8 +38,8 @@ const electronAPI = {
   // 文件同步
   checkFilesConsistency: (files: any[]) =>
     ipcRenderer.invoke('check-files-consistency', files),
-  reIngestFile: (filePath: string, tableName: string) =>
-    ipcRenderer.invoke('re-ingest-file', filePath, tableName),
+  reIngestFile: (filePath: string, tableName: string, sheetName?: string) =>
+    ipcRenderer.invoke('re-ingest-file', filePath, tableName, sheetName),
 
   // 导出功能
   exportPDF: (data: any) => ipcRenderer.invoke('export-pdf', data),

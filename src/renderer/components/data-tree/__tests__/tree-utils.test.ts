@@ -31,7 +31,7 @@ describe('tree-utils', () => {
 
       expect(fileNode).toBeDefined()
       expect(fileNode?.id).toBe('file:file_1')
-      expect(fileNode?.name).toBe('t_test') // Uses tableName
+      expect(fileNode?.name).toBe('test.csv') // Uses file.name, not tableName
       expect(fileNode?.children).toHaveLength(2)
 
       const col1 = fileNode?.children?.[0]

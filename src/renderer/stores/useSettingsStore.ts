@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { AI_PROVIDERS, type AIProviderKey } from '@/src/lib/constants'
 import { createBigIntStorage } from '@shared/serialization.ts'
+import type { AIConfig } from '@shared/types'
 
 export type SettingsLanguage = 'en' | 'zh'
 
@@ -60,6 +61,14 @@ export const useSettingsStore = create<SettingsState>()(
       setProvider: provider => {
         const defaults = getProviderDefaults(provider)
         set({ provider, ...defaults })
+        // Call main process to update AI config
+        const currentSettings = get()
+        const aiConfig: AIConfig = {
+          apiKey: currentSettings.apiKey,
+          baseURL: defaults.baseUrl, // Use default baseUrl for the provider
+          model: defaults.model, // Use default model for the provider
+        }
+        void window.electronAPI.setAIConfig(aiConfig)
       },
       activateLicense: (code: string) => {
         const validCodes = ['WANSAN-BETA', 'INTERNAL-TEST']
@@ -72,12 +81,32 @@ export const useSettingsStore = create<SettingsState>()(
       },
       updateSettings: patch =>
         set(state => {
+          let nextState = { ...state, ...patch }
           const nextProvider = (patch as Partial<SettingsState>).provider
+
           if (nextProvider && nextProvider !== state.provider) {
             const defaults = getProviderDefaults(nextProvider)
-            return { ...state, ...patch, provider: nextProvider, ...defaults }
+            nextState = { ...state, ...patch, provider: nextProvider, ...defaults }
           }
-          return { ...state, ...patch }
+
+          // Call main process to update AI config if relevant settings changed
+          const aiSettingsChanged = (
+            (patch as Partial<SettingsState>).apiKey !== undefined ||
+            (patch as Partial<SettingsState>).baseUrl !== undefined ||
+            (patch as Partial<SettingsState>).model !== undefined ||
+            nextProvider !== undefined
+          )
+
+          if (aiSettingsChanged) {
+            const aiConfig: AIConfig = {
+              apiKey: nextState.apiKey,
+              baseURL: nextState.baseUrl,
+              model: nextState.model,
+            }
+            void window.electronAPI.setAIConfig(aiConfig)
+          }
+
+          return nextState
         }),
       completeOnboarding: () => set({ hasCompletedOnboarding: true }),
       resetSettings: () => set({ ...initialSettingsState }),

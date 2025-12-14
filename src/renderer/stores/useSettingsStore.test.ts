@@ -29,7 +29,7 @@ describe('useSettingsStore', () => {
     expect(state.apiKey).toBe('')
     expect(state.baseUrl).toBe('https://api.openai.com/v1')
     expect(state.model).toBeTruthy()
-    expect(state.language).toBe('zh')
+    expect(state.language).toBe('en')
     expect(state.hasCompletedOnboarding).toBe(false)
   })
 

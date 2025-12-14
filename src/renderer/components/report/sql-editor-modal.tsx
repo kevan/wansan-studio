@@ -7,6 +7,7 @@ import { Play, RotateCcw, Copy, X, Check, AlignLeft, Sparkles } from 'lucide-rea
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../utils/cn'
 import { format } from 'sql-formatter'
+import { useToastStore } from '@/stores/useToastStore'
 
 interface SqlEditorModalProps {
   isOpen: boolean
@@ -22,6 +23,7 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }
   const [isRunning, setIsRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const addToast = useToastStore(state => state.addToast)
 
   // Auto-format SQL when modal opens
   useEffect(() => {
@@ -45,8 +47,16 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }
   const handleRun = async () => {
     setIsRunning(true)
     setError(null)
+    const startTime = performance.now()
     try {
       await onRun(sql)
+      const duration = Math.round(performance.now() - startTime)
+      addToast({
+        title: t('sql_editor.run_success'),
+        description: `${t('sql_editor.execution_time')}: ${duration}ms`,
+        type: 'success',
+        duration: 3000
+      })
     } catch (e: any) {
       setError(e.message || 'Execution failed')
     } finally {
@@ -163,7 +173,7 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }
               className="flex items-center gap-2 px-3 py-1.5 text-sm text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 rounded-md transition-colors border border-transparent hover:border-zinc-300"
             >
               {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-              {copied ? t('sql_editor.copy_success') : 'Copy'}
+              {copied ? t('sql_editor.copy_success') : t('sql_editor.copy')}
             </button>
           </div>
 

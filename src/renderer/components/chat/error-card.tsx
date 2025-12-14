@@ -153,27 +153,27 @@ export function ErrorCard({ message }: ErrorCardProps) {
           )}
         </Button>
 
-        <Button
-          onClick={handleEditSql}
-          size="sm"
-          variant="outline"
-          className="text-xs h-7 px-3"
-        >
-          <Code className="h-3 w-3 mr-1" />
-          {t('error_edit_sql')}
-        </Button>
+        {hasSql && (
+          <Button
+            onClick={handleEditSql}
+            size="sm"
+            variant="outline"
+            className="text-xs h-7 px-3"
+          >
+            <Code className="h-3 w-3 mr-1" />
+            {t('error_edit_sql')}
+          </Button>
+        )}
       </div>
 
       {/* SQL Editor Modal */}
-      {hasSql && (
-        <SqlEditorModal
-          isOpen={isEditorOpen}
-          onClose={() => setIsEditorOpen(false)}
-          initialSql={originalSql || ''}
-          reasoning={message.reportData?.reasoning}
-          onRun={handleRunSql}
-        />
-      )}
+      <SqlEditorModal
+        isOpen={isEditorOpen}
+        onClose={() => setIsEditorOpen(false)}
+        initialSql={originalSql || ''}
+        reasoning={message.reportData?.reasoning}
+        onRun={handleRunSql}
+      />
     </div>
   )
 }

@@ -1,12 +1,12 @@
 {
   "name": "wansan-studio",
-  "version": "0.1.0",
+  "version": "1.0.1",
   "description": "本地优先的智能商业报表桌面端软件 - Local-First Business Intelligence Desktop App",
   "main": "dist/main/index.js",
   "homepage": "./",
   "author": {
     "name": "Wansan Studio",
-    "email": "contact@wansan.studio"
+    "email": "jin4074@gmail.com"
   },
   "license": "MIT",
   "private": true,
@@ -66,6 +66,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "concurrently": "^8.2.2",
+    "csv-parse": "^6.1.0",
     "dotenv": "^17.2.3",
     "echarts": "^6.0.0",
     "echarts-for-react": "^3.0.5",

@@ -183,10 +183,10 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
           <div className="px-6 pt-4 shrink-0">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="ai" className="flex gap-2">
-                <Sparkles className="w-4 h-4" /> AI Engine
+                <Sparkles className="w-4 h-4" /> {t('tabs.ai')}
               </TabsTrigger>
               <TabsTrigger value="general" className="flex gap-2">
-                <Settings2 className="w-4 h-4" /> General
+                <Settings2 className="w-4 h-4" /> {t('tabs.general')}
               </TabsTrigger>
             </TabsList>
           </div>
@@ -378,7 +378,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
               <section className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
                 <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
                   <Key className="h-4 w-4 text-indigo-500" />
-                  License Status
+                  {t('license.title')}
                 </h4>
 
                 <div className="flex items-center justify-between mb-4">
@@ -390,14 +390,14 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                         : 'bg-yellow-100 text-yellow-700'
                     )}
                   >
-                    {settings.isActivated ? 'BETA PRO ACTIVE' : 'TRIAL MODE'}
+                    {settings.isActivated ? t('license.pro_active') : t('license.trial_mode')}
                   </span>
                 </div>
 
                 {!settings.isActivated && (
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Enter Code (e.g. WANSAN-BETA)"
+                      placeholder={t('license.enter_code_placeholder')}
                       value={licenseCode}
                       onChange={e => setLicenseCode(e.target.value)}
                       className="bg-white"
@@ -405,19 +405,19 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                     <Button
                       onClick={() => {
                         if (settings.activateLicense(licenseCode)) {
-                          addToast({ title: 'Activated!', type: 'success' })
+                          addToast({ title: t('license.activated_success_title'), type: 'success' })
                         } else {
-                          addToast({ title: 'Invalid Code', type: 'error' })
+                          addToast({ title: t('license.invalid_code_title'), type: 'error' })
                         }
                       }}
                     >
-                      Activate
+                      {t('license.activate_button')}
                     </Button>
                   </div>
                 )}
                 {settings.isActivated && (
                   <p className="text-xs text-zinc-500">
-                    Thanks for testing Wansan Studio.
+                    {t('license.thanks_msg')}
                   </p>
                 )}
               </section>
@@ -485,7 +485,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
               {/* 3. ABOUT */}
               <section className="text-center py-4">
                 <div className="font-semibold text-sm">Wansan Studio</div>
-                <div className="text-xs text-muted-foreground">v1.0.1 Beta</div>
+                <div className="text-xs text-muted-foreground">{t('about.beta_version')}</div>
               </section>
 
               <div className="h-10" />

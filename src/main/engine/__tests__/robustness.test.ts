@@ -100,7 +100,8 @@ describe('Engine Robustness & Integration', () => {
 
   it('Task A: Ingestion should handle nasty files', async () => {
     const fileBuffer = await fs.readFile(TEST_FILE_PATH)
-    schema = await ingestExcelFile(fileBuffer, dbService, 'nasty.xlsx')
+    const result = await ingestExcelFile(fileBuffer, dbService, 'nasty.xlsx')
+    schema = result[0]
 
     expect(schema).toBeDefined()
     expect(schema.columns).toHaveLength(7)
@@ -174,16 +175,19 @@ describe('Engine Robustness & Integration', () => {
     if (!openai) return
 
     // Ingest
-    ordersSchema = await ingestExcelFile(
+    const ordersResult = await ingestExcelFile(
       await fs.readFile(ORDERS_FILE_PATH),
       dbService,
       'orders.xlsx',
     )
-    customersSchema = await ingestExcelFile(
+    ordersSchema = ordersResult[0]
+
+    const customersResult = await ingestExcelFile(
       await fs.readFile(CUSTOMERS_FILE_PATH),
       dbService,
       'customers.xlsx',
     )
+    customersSchema = customersResult[0]
 
     // AI Inference
     let relationships: any[] = []

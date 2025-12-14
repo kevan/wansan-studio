@@ -17,6 +17,7 @@ import { useSettingsStore } from './stores/useSettingsStore'
 import { useChatStore } from './stores/useChatStore'
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow'
 import logo from './src/assets/logo.png'
+import type { AIConfig } from '@shared/types'
 
 const LAYOUT_STORAGE_KEY = 'wansan-layout'
 
@@ -56,6 +57,27 @@ function App() {
   const middlePanelRef = useRef<ImperativePanelHandle>(null)
   const rightPanelRef = useRef<ImperativePanelHandle>(null)
   const { t } = useTranslation('common')
+
+  // Sync AI config to main process on startup
+  useEffect(() => {
+    const syncAIConfig = async () => {
+      const settings = useSettingsStore.getState()
+      if (settings.apiKey) {
+        const config: AIConfig = {
+          apiKey: settings.apiKey,
+          baseURL: settings.baseUrl,
+          model: settings.model,
+        }
+        try {
+          await window.electronAPI.setAIConfig(config)
+          console.log('[App] Synced AI config to main process')
+        } catch (error) {
+          console.error('[App] Failed to sync AI config:', error)
+        }
+      }
+    }
+    syncAIConfig()
+  }, [])
 
 
   // 处理导入数据 - 触发文件选择或其他导入方式

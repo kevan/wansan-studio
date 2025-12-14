@@ -176,6 +176,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
       const result = await reIngest.mutateAsync({
         filePath: file.path,
         tableName: file.tableName,
+        sheetName: file.sheetName,
       })
       // result is ReloadResult { lastModified, newColumns }
 

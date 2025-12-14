@@ -3,6 +3,9 @@
     "title": "Edit SQL Query",
     "run": "Run Query",
     "reset": "Reset to Original",
-    "copy_success": "SQL Copied!"
+    "copy": "Copy SQL",
+    "copy_success": "SQL Copied!",
+    "run_success": "Query Executed Successfully",
+    "execution_time": "Execution Time"
   }
 }

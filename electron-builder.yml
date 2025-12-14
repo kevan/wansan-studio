@@ -1,4 +1,4 @@
-appId: com.wansan.studio
+appId: app.wansan.studio
 productName: Wansan Studio
 directories:
   output: dist_electron

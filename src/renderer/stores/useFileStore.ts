@@ -138,7 +138,7 @@ export const useFileStore = create<ProjectState>()(
       setProjectName: name => set({ projectName: name }),
 
       addFile: file => {
-        const existing = get().files.find(f => f.path === file.path)
+        const existing = get().files.find(f => f.path === file.path && f.sheetName === file.sheetName)
         if (existing) {
           throw new Error(`File "${file.name}" is already imported.`)
         }

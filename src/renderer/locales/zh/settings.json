@@ -43,6 +43,16 @@
     "language_en": "English",
     "select_language_placeholder": "选择语言"
   },
+  "license": {
+    "title": "授权状态",
+    "pro_active": "专业版已激活",
+    "trial_mode": "试用模式",
+    "enter_code_placeholder": "输入激活码",
+    "activate_button": "激活",
+    "activated_success_title": "激活成功！",
+    "invalid_code_title": "无效激活码",
+    "thanks_msg": "感谢试用 Wansan Studio。"
+  },
   "data": {
     "placeholder": "数据管理选项将显示在这里。",
     "reset_button": "重置设置",
@@ -51,6 +61,7 @@
   },
   "about": {
     "version": "Wansan Studio v{{version}}",
+    "beta_version": "v1.0.1 测试版",
     "tagline": "本地优先的 BI 桌面应用。"
   },
   "onboarding": {

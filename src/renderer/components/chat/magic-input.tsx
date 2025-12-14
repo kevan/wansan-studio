@@ -10,6 +10,7 @@ import {
   Hash,
   X,
   Square,
+  Sparkles,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { useFileStore } from '../../stores/useFileStore'
@@ -57,6 +58,7 @@ export function MagicInput({
   const stopGeneration = useChatStore(state => state.stopGeneration)
   const addToast = useToastStore(state => state.addToast)
   const files = useFileStore(state => state.files)
+  const suggestedPrompts = useFileStore(state => state.suggestedPrompts)
   const { t } = useTranslation('chat')
 
   const readyTables = useMemo(() => files.filter(f => f.status === 'ready'), [files])
@@ -68,6 +70,21 @@ export function MagicInput({
     replyMessage?.reportData?.summary ||
     (replyMessage ? t('reply_fallback') : '')
 
+  // 1. Context Prompts from recent messages
+  const contextPrompts = useMemo(() => {
+    const raw = messages
+      .filter(m => m.type === 'assistant' && m.reportData?.suggestions)
+      .slice(-5) // Look at last 5 assistant messages
+      .flatMap(m => m.reportData?.suggestions || [])
+    return Array.from(new Set(raw))
+  }, [messages])
+
+  // 2. All Prompts (Global + Context), unique
+  const allPrompts = useMemo(() => {
+    return Array.from(new Set([...suggestedPrompts, ...contextPrompts]))
+  }, [suggestedPrompts, contextPrompts])
+
+  // 3. Filtered Tables
   const filteredTables = useMemo(() => {
     if (!mention.active) return []
     const q = mention.query.toLowerCase()
@@ -76,54 +93,49 @@ export function MagicInput({
       .map(file => file.name || file.tableName || `table_${file.id.slice(0, 6)}`)
   }, [mention, readyTables])
 
-  const handleCommand = (commandRaw: string) => {
-    const command = commandRaw.trim().slice(1).toLowerCase()
-    switch (command) {
-      case 'clear':
-        resetChat()
-        addToast({
-          title: t('chat_cleared'),
-          type: 'info',
-          duration: 2500,
-        })
-        return
-      case 'export':
-        addToast({
-          title: t('export_triggered'),
-          description: t('export_desc'),
-          type: 'info',
-          duration: 3000,
-        })
-        return
-      case 'rerun': {
-        const lastAssistant = [...messages]
-          .reverse()
-          .find(m => m.type === 'assistant' && m.originalQuery)
-        if (lastAssistant) {
-          rerunAnalysis(lastAssistant)
-          addToast({
-            title: t('rerun_last'),
-            type: 'info',
-            duration: 2500,
-          })
-        } else {
-          addToast({
-            title: t('no_rerun'),
-            type: 'warning',
-            duration: 2500,
-          })
+  // 4. Command Query (content after /)
+  const commandQuery = value.startsWith('/') ? value.slice(1).toLowerCase() : ''
+
+  // 5. Filtered Commands
+  const filteredCommands = useMemo(() => {
+    if (!value.startsWith('/')) return []
+    
+    const cmds = [
+      {
+        id: 'clear',
+        label: 'Clear Chat',
+        icon: Eraser,
+        action: () => {
+          resetChat()
+          addToast({ title: t('chat_cleared'), type: 'info', duration: 2500 })
+          setPopoverOpen(false)
+          setValue('')
         }
-        return
+      },
+      {
+        id: 'export',
+        label: t('export_markdown'),
+        icon: Download,
+        action: () => {
+          addToast({ title: t('export_triggered'), description: t('export_desc'), type: 'info', duration: 3000 })
+          setPopoverOpen(false)
+          setValue('')
+        }
       }
-      default:
-        addToast({
-          title: t('unknown_command'),
-          description: t('unknown_command_desc'),
-          type: 'warning',
-          duration: 3000,
-        })
-    }
-  }
+    ]
+    return cmds.filter(c => c.id.includes(commandQuery) || c.label.toLowerCase().includes(commandQuery))
+  }, [value, commandQuery, t, resetChat, addToast])
+
+  // 6. Filtered Prompts for Command Mode
+  const filteredCommandPrompts = useMemo(() => {
+    if (!value.startsWith('/')) return []
+    return allPrompts.filter(p => p.toLowerCase().includes(commandQuery)).slice(0, 10)
+  }, [value, allPrompts, commandQuery])
+
+  // Combined list for navigation in command mode
+  const commandListItems = useMemo(() => {
+    return [...filteredCommands, ...filteredCommandPrompts]
+  }, [filteredCommands, filteredCommandPrompts])
 
   const insertTableMention = (tableName: string) => {
     if (!mention.active) return
@@ -141,14 +153,30 @@ export function MagicInput({
     }, 0)
   }
 
+  const insertPrompt = (prompt: string) => {
+    setValue(prompt)
+    setTriggerType(null)
+    setPopoverOpen(false)
+    textareaRef.current?.focus()
+  }
+
   const handleSubmit = () => {
     const trimmed = value.trim()
     if (!trimmed || loading) return
 
     if (trimmed.startsWith('/')) {
-      handleCommand(trimmed)
-      setValue('')
-      return
+      const cmd = trimmed.slice(1).toLowerCase()
+      if (['clear', 'export'].includes(cmd)) {
+         if (cmd === 'clear') { 
+            resetChat()
+            addToast({ title: t('chat_cleared'), type: 'info', duration: 2500 })
+         }
+         if (cmd === 'export') { 
+            addToast({ title: t('export_triggered'), description: t('export_desc'), type: 'info', duration: 3000 })
+         }
+         setValue('')
+         return
+      }
     }
 
     onSubmit(trimmed)
@@ -157,7 +185,7 @@ export function MagicInput({
 
   const detectMention = (text: string, caret: number): MentionState => {
     const before = text.slice(0, caret)
-    const match = before.match(/(?:^|\\s)@([\\w\\-]*)$/)
+    const match = before.match(/(?:^|\s)@([\w\-]*)$/)
     if (!match) return { active: false }
     const query = match[1] || ''
     const start = match.index !== undefined ? match.index + match[0].indexOf('@') : caret
@@ -165,7 +193,8 @@ export function MagicInput({
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (mention.active && filteredTables.length > 0) {
+    // TABLE TRIGGER
+    if (triggerType === 'table' && filteredTables.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
         setMentionIndex(i => (i + 1) % filteredTables.length)
@@ -183,6 +212,36 @@ export function MagicInput({
       }
       if (e.key === 'Escape') {
         setMention({ active: false })
+        setPopoverOpen(false)
+        return
+      }
+    }
+
+    // COMMAND TRIGGER (Commands + Prompts)
+    if (triggerType === 'command' && commandListItems.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setMentionIndex(i => (i + 1) % commandListItems.length)
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setMentionIndex(i => (i - 1 + commandListItems.length) % commandListItems.length)
+        return
+      }
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault()
+        const item = commandListItems[mentionIndex]
+        if (typeof item === 'string') {
+            insertPrompt(item)
+        } else {
+            item.action()
+        }
+        return
+      }
+      if (e.key === 'Escape') {
+        setTriggerType(null)
+        setPopoverOpen(false)
         return
       }
     }
@@ -199,19 +258,24 @@ export function MagicInput({
     setMentionIndex(0)
 
     const lastChar = value[value.length - 1]
-    if (lastChar === '@') {
+    
+    // Priority 1: Table Mention (@)
+    if (lastChar === '@' || nextMention.active) {
       setTriggerType('table')
       setPopoverOpen(true)
-    } else if (lastChar === '/') {
+      return
+    } 
+    
+    // Priority 2: Commands (/) - Now includes prompts
+    if (value.startsWith('/')) {
       setTriggerType('command')
       setPopoverOpen(true)
-    } else if (!nextMention.active) {
-      setTriggerType(null)
-      setPopoverOpen(false)
-    } else {
-      setTriggerType('table')
-      setPopoverOpen(true)
+      return
     }
+
+    // Default: Close popover
+    setTriggerType(null)
+    setPopoverOpen(false)
   }, [value, cursorPosition])
 
   useEffect(() => {
@@ -221,6 +285,7 @@ export function MagicInput({
         !containerRef.current.contains(event.target as Node)
       ) {
         setMention({ active: false })
+        setPopoverOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -259,8 +324,8 @@ export function MagicInput({
             <div className="px-3 py-2 bg-zinc-50 border-b border-zinc-100 text-xs font-medium text-zinc-500 flex items-center gap-2">
               {triggerType === 'command' ? (
                 <>
-                  <Database className="w-3 h-3" />
-                  Commands
+                  <Sparkles className="w-3 h-3 text-indigo-500" />
+                  Commands & Suggestions
                 </>
               ) : (
                 <>
@@ -269,7 +334,7 @@ export function MagicInput({
                 </>
               )}
             </div>
-            <div className="max-h-48 overflow-y-auto p-1">
+            <div className="max-h-64 overflow-y-auto p-1">
               {triggerType === 'table' &&
                 filteredTables.map((table, idx) => (
                   <button
@@ -289,28 +354,45 @@ export function MagicInput({
 
               {triggerType === 'command' && (
                 <>
-                  <button
-                    className="w-full text-left px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors hover:bg-zinc-100 text-zinc-700"
-                    onClick={() => {
-                      handleCommand('/clear')
-                      setPopoverOpen(false)
-                      setValue('')
-                    }}
-                  >
-                    <Eraser className="w-4 h-4 text-zinc-500" />
-                    Clear Chat
-                  </button>
-                  <button
-                    className="w-full text-left px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors hover:bg-zinc-100 text-zinc-700"
-                    onClick={() => {
-                      handleCommand('/export')
-                      setPopoverOpen(false)
-                      setValue('')
-                    }}
-                  >
-                    <Download className="w-4 h-4 text-zinc-500" />
-                    {t('export_markdown')}
-                  </button>
+                  {filteredCommands.map((cmd, idx) => (
+                    <button
+                      key={cmd.id}
+                      className={cn(
+                        'w-full text-left px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors',
+                        idx === mentionIndex
+                          ? 'bg-zinc-100 text-zinc-900'
+                          : 'hover:bg-zinc-50 text-zinc-700'
+                      )}
+                      onClick={cmd.action}
+                    >
+                      <cmd.icon className="w-4 h-4 text-zinc-500" />
+                      {cmd.label}
+                    </button>
+                  ))}
+                  
+                  {filteredCommands.length > 0 && filteredCommandPrompts.length > 0 && (
+                    <div className="h-px bg-zinc-100 my-1 mx-2" />
+                  )}
+
+                  {filteredCommandPrompts.map((prompt, idx) => {
+                    // Adjust index based on commands length
+                    const realIdx = idx + filteredCommands.length
+                    return (
+                        <button
+                        key={prompt}
+                        className={cn(
+                            'w-full text-left px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors',
+                            realIdx === mentionIndex
+                            ? 'bg-indigo-50 text-indigo-900'
+                            : 'hover:bg-zinc-50 text-zinc-700'
+                        )}
+                        onClick={() => insertPrompt(prompt)}
+                        >
+                        <Sparkles className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                        <span className="truncate">{prompt}</span>
+                        </button>
+                    )
+                  })}
                 </>
               )}
             </div>

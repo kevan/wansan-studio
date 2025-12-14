@@ -2,18 +2,14 @@ import Store from 'electron-store'
 import { OpenAI } from 'openai'
 import type { ClientOptions } from 'openai'
 import { generateAnalysis, analyzeContext } from '../engine/ai-bridge'
+import { processSampleValue } from '../../shared/serialization'
 import type {
   TableSchema,
   AIAnalysisResult,
   RelationSuggestion,
   ContextAnalysisResult,
+  AIConfig,
 } from '@shared/types.ts'
-
-interface AIConfig {
-  apiKey?: string
-  baseURL?: string
-  model?: string
-}
 
 // Define schema for electron-store
 const schema = {
@@ -138,7 +134,19 @@ export class AIService {
     language?: 'en' | 'zh'
   ): Promise<ContextAnalysisResult> {
     const client = this.requireOpenAI()
-    return analyzeContext(client, schemas, this.model, language)
+
+    // Process sample values in schemas to handle BigInt, format dates, and truncate/summarize
+    const processedSchemas = schemas.map(schema => ({
+      ...schema,
+      columns: schema.columns.map(col => ({
+        ...col,
+        sampleValues: (col.sampleValues || []).map(val =>
+          processSampleValue(val, col.type)
+        ),
+      })),
+    }))
+
+    return analyzeContext(client, processedSchemas, this.model, language)
   }
 
   /**

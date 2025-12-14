@@ -78,6 +78,7 @@ export interface FileNode {
   name: string
   path: string
   tableName: string // DuckDB table name
+  sheetName?: string // Excel Sheet Name
   status: SyncStatus
   size?: number
   columns: ColumnSchema[]
@@ -91,3 +92,10 @@ export interface ReloadResult {
   lastModified: number
   newColumns: ColumnSchema[]
 }
+
+export interface AIConfig {
+  apiKey?: string
+  baseURL?: string
+  model?: string
+}
+

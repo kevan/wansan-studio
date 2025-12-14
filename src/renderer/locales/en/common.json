@@ -97,6 +97,18 @@
   "data_sources_root": "Data Sources",
   "relationships_root": "Relationships",
 
+  "sidebar": {
+    "electron_api_unavailable": "Electron API unavailable",
+    "duplicate_file_skipped_title": "Duplicate file skipped",
+    "duplicate_file_skipped_desc": "{{fileName}} already imported, skipping.",
+    "import_failed_title": "Import failed",
+    "parse_failed": "Parsing failed",
+    "pro_active": "PRO ACTIVE",
+    "license_active": "License Active",
+    "trial_mode": "TRIAL MODE",
+    "unlock_full_access": "Unlock Full Access"
+  },
+
   "settings_title": "Settings",
   "settings_tab_ai": "AI Model",
   "settings_tab_general": "General",

@@ -32,7 +32,7 @@ export function Sidebar(_props: SidebarProps) {
   const handleImportClick = async () => {
     console.log('handleImportClick: Started')
     if (!window.electronAPI) {
-      alert('Electron API 不可用')
+      alert(t('sidebar.electron_api_unavailable'))
       return
     }
 
@@ -49,78 +49,130 @@ export function Sidebar(_props: SidebarProps) {
 
           let fileId: string | null = null
           try {
-            // 添加文件到 store
+            // 添加文件到 store (Placeholder)
             fileId = addFile({
               name: fileName,
               path: filePath,
               tableName: '',
               status: 'uploading',
               columns: [],
+              sheetName: undefined,
             })
 
             updateFile(fileId, { status: 'processing' })
-            const parseResult = await parseFileMutation.mutateAsync(filePath)
+            const parseResults = await parseFileMutation.mutateAsync(filePath)
             console.log(
               'handleImportClick: Parsed file',
               fileName,
-              parseResult.tableName
+              parseResults
             )
+            
+            const results = Array.isArray(parseResults) ? parseResults : [parseResults]
+            let placeholderUsed = false
 
-            // 从 preview 数据中提取每列的样本值
-            const columns = (parseResult.schema?.columns || []).map(
-              (
-                col: { name: string; type: string; nullable: boolean },
-                colIndex: number
-              ) => {
-                // preview 可能是 [[header...], [row1...], ...] 或 [{col: val}, ...]
-                const preview = parseResult.preview || []
-                const sampleValues: string[] = []
+            for (const res of results) {
+                 // Check for duplicates (excluding the placeholder itself)
+                 const isDuplicate = useFileStore.getState().files.some(f => 
+                     f.id !== fileId && 
+                     f.path === filePath && 
+                     f.sheetName === res.sheetName
+                 )
 
-                // 如果是对象数组格式 (CSV 解析结果)
-                if (
-                  preview.length > 0 &&
-                  typeof preview[0] === 'object' &&
-                  !Array.isArray(preview[0])
-                ) {
-                  for (const row of preview.slice(0, 5)) {
-                    const val = row[col.name]
+                 if (isDuplicate) {
+                     console.warn(`Skipping duplicate sheet: ${res.sheetName || 'default'}`)
+                     continue
+                 }
+
+                // 从 preview 数据中提取每列的样本值
+                const columns = (res.schema?.columns || []).map(
+                  (
+                    col: { name: string; type: string; nullable: boolean },
+                    colIndex: number
+                  ) => {
+                    // preview 可能是 [[header...], [row1...], ...] 或 [{col: val}, ...]
+                    const preview = res.preview || []
+                    const sampleValues: string[] = []
+
+                    // 如果是对象数组格式 (CSV 解析结果)
                     if (
-                      val !== null &&
-                      val !== undefined &&
-                      val !== '' &&
-                      sampleValues.length < 3
+                      preview.length > 0 &&
+                      typeof preview[0] === 'object' &&
+                      !Array.isArray(preview[0])
                     ) {
-                      sampleValues.push(String(val))
+                      for (const row of preview.slice(0, 5)) {
+                        const val = row[col.name]
+                        if (
+                          val !== null &&
+                          val !== undefined &&
+                          val !== '' &&
+                          sampleValues.length < 3
+                        ) {
+                          sampleValues.push(String(val))
+                        }
+                      }
+                    } else if (Array.isArray(preview[0])) {
+                      // 如果是二维数组格式 (Excel 解析结果)，跳过第一行（表头）
+                      for (const row of preview.slice(1, 6)) {
+                        const val = row[colIndex]
+                        if (
+                          val !== null &&
+                          val !== undefined &&
+                          val !== '' &&
+                          sampleValues.length < 3
+                        ) {
+                          sampleValues.push(String(val))
+                        }
+                      }
+                    }
+
+                    return {
+                      ...col,
+                      sampleValues,
                     }
                   }
-                } else if (Array.isArray(preview[0])) {
-                  // 如果是二维数组格式 (Excel 解析结果)，跳过第一行（表头）
-                  for (const row of preview.slice(1, 6)) {
-                    const val = row[colIndex]
-                    if (
-                      val !== null &&
-                      val !== undefined &&
-                      val !== '' &&
-                      sampleValues.length < 3
-                    ) {
-                      sampleValues.push(String(val))
-                    }
-                  }
+                )
+
+                const fileData = {
+                  name: res.sheetName ? `${fileName} - ${res.sheetName}` : fileName,
+                  status: 'ready' as const,
+                  tableName: res.tableName,
+                  sheetName: res.sheetName,
+                  columns,
+                  rowCount: res.rowCount,
                 }
 
-                return {
-                  ...col,
-                  sampleValues,
+                if (!placeholderUsed) {
+                   updateFile(fileId, fileData)
+                   placeholderUsed = true
+                } else {
+                   try {
+                       addFile({
+                           ...fileData,
+                           path: filePath
+                       })
+                   } catch (e) {
+                       console.warn("Failed to add sheet", e)
+                   }
                 }
-              }
-            )
+            }
 
-            updateFile(fileId, {
-              status: 'ready',
-              tableName: parseResult.tableName,
-              columns,
-              rowCount: parseResult.rowCount,
-            })
+            if (!placeholderUsed && fileId) {
+                // All sheets were duplicates or no sheets found
+                // If results were empty, it's an error?
+                if (results.length === 0) {
+                     updateFile(fileId, { status: 'error', error: 'No data found' })
+                } else {
+                     // All duplicates
+                     useFileStore.getState().removeFile(fileId)
+                     addToast({
+                        title: t('sidebar.duplicate_file_skipped_title'),
+                        description: t('sidebar.duplicate_file_skipped_desc', { fileName }),
+                        type: 'warning',
+                        duration: 4000
+                     })
+                }
+            }
+
           } catch (error) {
             console.error(
               'handleImportClick: Error processing file',
@@ -128,21 +180,23 @@ export function Sidebar(_props: SidebarProps) {
               error
             )
             const message =
-              error instanceof Error ? error.message : '解析失败'
+              error instanceof Error ? error.message : t('sidebar.parse_failed')
 
             if (
               error instanceof Error &&
               error.message.toLowerCase().includes('already imported')
             ) {
               addToast({
-                title: 'Duplicate file skipped',
-                description: `${fileName} 已经导入，无需重复添加。`,
+                title: t('sidebar.duplicate_file_skipped_title'),
+                description: t('sidebar.duplicate_file_skipped_desc', {
+                  fileName,
+                }),
                 type: 'warning',
                 duration: 4000,
               })
             } else {
               addToast({
-                title: 'Import failed',
+                title: t('sidebar.import_failed_title'),
                 description: `${fileName}: ${message}`,
                 type: 'error',
                 duration: 4000,
@@ -251,10 +305,10 @@ export function Sidebar(_props: SidebarProps) {
               </div>
               <div className="flex flex-col">
                 <span className="text-xs font-bold text-zinc-700">
-                  Beta Pro
+                  {t('sidebar.pro_active')}
                 </span>
                 <span className="text-[10px] text-zinc-400">
-                  License Active
+                  {t('sidebar.license_active')}
                 </span>
               </div>
             </>
@@ -265,10 +319,10 @@ export function Sidebar(_props: SidebarProps) {
               </div>
               <div className="flex flex-col">
                 <span className="text-xs font-bold text-zinc-700 dark:text-zinc-200 group-hover:text-indigo-700">
-                  Activate Beta
+                  {t('sidebar.trial_mode')}
                 </span>
                 <span className="text-[10px] text-zinc-400 group-hover:text-indigo-500/80">
-                  Unlock Full Access
+                  {t('sidebar.unlock_full_access')}
                 </span>
               </div>
             </>

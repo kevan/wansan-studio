@@ -62,6 +62,9 @@ export function useAI() {
     language?: 'en' | 'zh'
   ) => {
     let assistantId: string | null = null
+    let generatedSql: string | undefined
+    let generatedReasoning: string | undefined
+
     try {
       // 1. Add User Message
       addMessage({
@@ -103,6 +106,11 @@ export function useAI() {
       const suggestions = aiResponse.suggestions
       const vizType = aiResponse.visualization?.type
       const vizConfig = aiResponse.visualization?.config
+
+      // Save for error handling
+      generatedSql = sql
+      generatedReasoning = reasoning
+
       const refinementHint =
         (aiResponse.reasoning || '')
           .toLowerCase()
@@ -174,13 +182,25 @@ export function useAI() {
         updateMessage(assistantId, message => ({
           ...message,
           status: 'error',
-          content: `Error: ${errorMessage}`,
+          error: errorMessage, // Explicitly set error field
+          content: errorMessage, // Also set content for fallback display
+          reportData: generatedSql
+            ? {
+                sql: generatedSql,
+                reasoning: generatedReasoning,
+                title: 'Error',
+                summary: 'SQL Execution Failed',
+                tableData: [],
+                columns: [],
+              }
+            : undefined,
         }))
       } else {
         addMessage({
           id: `error-${Date.now()}`,
           type: 'assistant',
-          content: `Error: ${errorMessage}`,
+          content: errorMessage,
+          error: errorMessage,
           timestamp: Date.now(),
           status: 'error',
         })

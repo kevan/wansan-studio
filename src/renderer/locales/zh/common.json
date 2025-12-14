@@ -97,6 +97,18 @@
   "data_sources_root": "数据源",
   "relationships_root": "关联关系",
 
+  "sidebar": {
+    "electron_api_unavailable": "Electron API 不可用",
+    "duplicate_file_skipped_title": "跳过重复文件",
+    "duplicate_file_skipped_desc": "{{fileName}} 已经导入，无需重复添加。",
+    "import_failed_title": "导入失败",
+    "parse_failed": "解析失败",
+    "pro_active": "专业版已激活",
+    "license_active": "授权已激活",
+    "trial_mode": "试用模式",
+    "unlock_full_access": "解锁完整版"
+  },
+
   "settings_title": "设置",
   "settings_tab_ai": "AI 模型",
   "settings_tab_general": "通用",

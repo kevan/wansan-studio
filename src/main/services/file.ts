@@ -114,33 +114,63 @@ export class FileService {
     try {
       const fileBuffer = await fs.readFile(filePath)
       const fileName = basename(filePath)
-      const { tableName, description } = await ingestExcelFile(
+      const schemas = await ingestExcelFile(
         fileBuffer,
         this.databaseService,
         fileName
       )
 
-      // Post-ingestion queries to get additional info
-      let schema = await this.databaseService.getSchema(tableName)
-      if (description) {
-        schema.description = description
+      const results = []
+
+      for (const schemaItem of schemas) {
+        // Post-ingestion queries to get additional info
+        let schema = await this.databaseService.getSchema(schemaItem.tableName)
+        if (schemaItem.description) {
+          schema.description = schemaItem.description
+        }
+
+        schema = await this.enrichSchemaWithSamples(schemaItem.tableName, schema)
+
+        const preview = await this.databaseService.query(
+          `SELECT * FROM "${schemaItem.tableName}" LIMIT 5`
+        )
+        const countResult = await this.databaseService.query(
+          `SELECT COUNT(*) as count FROM "${schemaItem.tableName}"`
+        )
+
+        // Try to extract sheet name from description if it matches format "File - Sheet"
+        // This is a bit hacky, but consistent with ingestion.ts logic
+        let sheetName: string | undefined
+        if (schemaItem.description && schemaItem.description.includes(' - ')) {
+           const parts = schemaItem.description.split(' - ')
+           if (parts.length > 1) {
+             sheetName = parts.slice(1).join(' - ')
+           }
+        } else if (schemas.length === 1) {
+             // Single sheet, maybe don't set sheetName explicitly or set to 'Sheet1' if we can't determine?
+             // Actually ingestion.ts doesn't return sheetName in Schema, only description.
+             // We can proceed without sheetName or infer it if we want.
+        }
+
+        results.push({
+          tableName: schemaItem.tableName,
+          schema,
+          rowCount: countResult[0].count,
+          preview,
+          sheetName
+        })
       }
 
-      schema = await this.enrichSchemaWithSamples(tableName, schema)
-
-      const preview = await this.databaseService.query(
-        `SELECT * FROM "${tableName}" LIMIT 5`
-      )
-      const countResult = await this.databaseService.query(
-        `SELECT COUNT(*) as count FROM "${tableName}"`
-      )
-
-      return {
-        tableName,
-        schema,
-        rowCount: countResult[0].count,
-        preview,
-      }
+      // Return array or single object if only 1? 
+      // To be consistent and allow frontend to iterate, array is better.
+      // But for backward compatibility with other file types (CSV/JSON) which return single object...
+      // I should probably wrap CSV/JSON in array too or make frontend handle both.
+      // Let's make parseFile always return array?
+      // No, parseCSVFile returns single object.
+      // If I change parseFile return type, I need to standardize.
+      
+      // Let's return array for Excel, and update frontend to handle Array | Object.
+      return results
     } catch (error) {
       throw new Error(
         `Failed to parse Excel file: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -179,12 +209,13 @@ export class FileService {
         `SELECT COUNT(*) as count FROM "${tableName}"`
       )
 
-      return {
+      // Wrap in array for consistency?
+      return [{
         tableName,
         schema,
         rowCount: countResult[0].count,
         preview,
-      }
+      }]
     } catch (error) {
       throw new Error(
         `Failed to parse CSV file: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -223,12 +254,12 @@ export class FileService {
         `SELECT COUNT(*) as count FROM "${tableName}"`
       )
 
-      return {
+      return [{
         tableName,
         schema,
         rowCount: countResult[0].count,
         preview,
-      }
+      }]
     } catch (error) {
       console.error('Failed to parse JSON file:', error)
       throw new Error(
@@ -239,9 +270,9 @@ export class FileService {
 
   async reIngestFile(
     filePath: string,
-    tableName: string
+    tableName: string,
+    sheetName?: string // New optional param
   ): Promise<ReloadResult> {
-    console.log('reIngestFile', filePath, tableName)
     // 处理 Demo 数据（DEMO_MEMORY 路径）
     if (filePath === 'DEMO_MEMORY') {
       // 重新摄取 Demo 数据
@@ -250,7 +281,7 @@ export class FileService {
         tableName,
         DEMO_DATA
       )
-
+      console.log('reIngestFile', filePath, tableName, result.columns)
       return {
         lastModified: Date.now(),
         newColumns: result.columns,
@@ -264,14 +295,24 @@ export class FileService {
     if (ext === '.xlsx' || ext === '.xls') {
       const fileBuffer = await fs.readFile(filePath)
       const fileName = basename(filePath)
-      // ingestExcelFile returns TableSchema which has columns
-      const result = await ingestExcelFile(
+      // ingestExcelFile returns TableSchema[]
+      const schemas = await ingestExcelFile(
         fileBuffer,
         this.databaseService,
         fileName,
-        tableName
+        tableName,
+        sheetName
       )
-      columns = result.columns
+      // Since we pass tableName (and maybe sheetName), we expect 1 result which matches our target.
+      // If we didn't pass sheetName and there are multiple sheets, ingestExcelFile might behave legacy (first sheet) or return all?
+      // With my update, if targetTableName is passed and NO sheetName, it assumes first sheet.
+      // If we want specific sheet, sheetName MUST be passed.
+      
+      if (schemas.length > 0) {
+        columns = schemas[0].columns
+      } else {
+        throw new Error(`Re-ingestion failed: No table found for ${filePath} (Sheet: ${sheetName || 'First'})`)
+      }
     } else if (ext === '.csv') {
       await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
 
@@ -292,7 +333,8 @@ export class FileService {
         const sampleValues = await getSampleValues(
           this.databaseService,
           tableName,
-          col.name
+          col.name,
+          col.type
         )
 
         columns.push({
@@ -322,7 +364,8 @@ export class FileService {
         const sampleValues = await getSampleValues(
           this.databaseService,
           tableName,
-          col.name
+          col.name,
+          col.type
         )
 
         columns.push({
@@ -335,6 +378,7 @@ export class FileService {
     } else {
       throw new Error(`Unsupported file type: ${ext}`)
     }
+    console.log('reIngestFile', filePath, tableName, columns)
 
     return {
       lastModified: stats.mtimeMs,

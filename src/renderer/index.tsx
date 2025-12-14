@@ -32,8 +32,17 @@ root.render(
 )
 
 if (import.meta.env.DEV) {
-  ;(window as any).resetApp = () => {
+  ;(window as any).resetApp = async () => {
     console.log('💥 NUKING APP STATE...')
+
+    try {
+      if (window.electronAPI) {
+        console.log('🧹 Clearing DuckDB...')
+        await window.electronAPI.resetDB()
+      }
+    } catch (e) {
+      console.error('Failed to reset DB:', e)
+    }
 
     localStorage.removeItem('wansan-files')
     localStorage.removeItem('wansan-chat')

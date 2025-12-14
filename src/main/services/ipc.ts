@@ -236,9 +236,9 @@ export function setupIPC(
   // 重新摄取文件
   ipcMain.handle(
     're-ingest-file',
-    async (_event, filePath: string, tableName: string) => {
+    async (_event, filePath: string, tableName: string, sheetName?: string) => {
       try {
-        const result = await fileService.reIngestFile(filePath, tableName)
+        const result = await fileService.reIngestFile(filePath, tableName, sheetName)
         return { success: true, data: result }
       } catch (error) {
         console.error('Re-ingest file error:', error)
@@ -266,6 +266,20 @@ export function setupIPC(
       }
     },
   )
+
+  // 清空数据库
+  ipcMain.handle('reset-db', async () => {
+    try {
+      await databaseService.dropAllTables()
+      return { success: true }
+    } catch (error) {
+      console.error('Reset DB error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  })
 
   // 保存图片
   ipcMain.handle('save-image', async (_event, dataUrl: string, name?: string) => {

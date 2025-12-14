@@ -7,7 +7,7 @@
   "status_executing": "Executing SQL...",
   "status_error": "Execution failed",
   "suggested": "Suggested:",
-  "placeholder_default": "Tell me what data you need...",
+  "placeholder_default": "Ask anything about your data...",
   "placeholder_with_table": "About {{tableName}}, what would you like to know?",
   "reply_fallback": "Chart Analysis",
   "chat_cleared": "Chat cleared",
