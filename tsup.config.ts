@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-  entry: ['src/main/index.ts', 'src/preload/index.ts'],
+  entry: ['src/main/index.ts', 'src/preload/index.ts', 'src/main/workers/excelWorker.ts'],
   format: ['esm', 'cjs'],
   target: 'node20',
   clean: false, // Don't clean dist, handled by build script or we append to it
