@@ -38,6 +38,7 @@
     "electron-updater": "^6.1.7",
     "fs-extra": "^11.3.2",
     "lodash.debounce": "^4.0.8",
+    "node-machine-id": "^1.1.12",
     "openai": "^6.10.0",
     "xlsx": "^0.18.5",
     "zod": "^4.1.13"
