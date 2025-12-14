@@ -35,6 +35,17 @@ const mockIPC = {
     console.log(`Mock reIngestFile: ${filePath} ${sheetName || ''}`)
     return { success: true, data: { lastModified: Date.now(), newColumns: [] } }
   },
+  getDeviceId: async () => {
+    return { success: true, data: 'mock-device-id' }
+  },
+  secureSet: async (key: string, value: string) => {
+    console.log(`Mock secureSet: ${key}=${value}`)
+    return { success: true }
+  },
+  secureGet: async (key: string) => {
+    console.log(`Mock secureGet: ${key}`)
+    return { success: true, data: 'mock-value' }
+  },
   exportPDF: async (data: any) => {
     console.log(`Mock exportPDF: ${data}`)
     return { success: true }
@@ -93,6 +104,9 @@ declare global {
         tableName: string,
         sheetName?: string
       ) => Promise<IPCResponse<ReloadResult>>
+      getDeviceId: () => Promise<IPCResponse<string>>
+      secureSet: (key: string, value: string) => Promise<IPCResponse<boolean>>
+      secureGet: (key: string) => Promise<IPCResponse<string | null>>
       exportPDF: (data: any) => Promise<IPCResponse>
       exportReport: (payload: any) => Promise<IPCResponse>
       resetDB: () => Promise<IPCResponse>

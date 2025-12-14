@@ -53,6 +53,9 @@ const electronAPI = {
   }) => ipcRenderer.invoke('export-report', payload),
 
   // 系统信息
+  getDeviceId: () => ipcRenderer.invoke('get-device-id'),
+  secureSet: (key: string, value: string) => ipcRenderer.invoke('secure-set', key, value),
+  secureGet: (key: string) => ipcRenderer.invoke('secure-get', key),
   platform: process.platform,
   version: process.versions,
   windowControl: (action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize') =>

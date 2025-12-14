@@ -2,6 +2,8 @@ import { ipcMain, dialog, BrowserWindow, shell } from 'electron'
 import { DatabaseService } from '../database/duckdb'
 import { FileService } from './file'
 import { AIService } from './ai'
+import { getDeviceId } from './device'
+import { secureSet, secureGet } from './secure-storage'
 import { executeSQL } from '../engine/executor'
 import { checkFilesConsistency } from '../engine/file-watcher'
 import { ingestJsonData } from '../engine/ingestion'
@@ -214,6 +216,31 @@ export function setupIPC(
     } catch (error) {
       return { success: false, error: 'Failed to clear AI config' }
     }
+  })
+
+  // 获取设备 ID
+  ipcMain.handle('get-device-id', async () => {
+    try {
+      const id = await getDeviceId()
+      return { success: true, data: id }
+    } catch (error) {
+      console.error('Get device ID error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  })
+
+  // 安全存储
+  ipcMain.handle('secure-set', async (_event, key: string, value: string) => {
+    const success = secureSet(key, value)
+    return { success }
+  })
+
+  ipcMain.handle('secure-get', async (_event, key: string) => {
+    const value = secureGet(key)
+    return { success: true, data: value }
   })
 
   // 检查文件一致性

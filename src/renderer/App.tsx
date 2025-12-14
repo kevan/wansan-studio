@@ -18,6 +18,7 @@ import { useChatStore } from './stores/useChatStore'
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow'
 import logo from './src/assets/logo.png'
 import type { AIConfig } from '@shared/types'
+import { useBootSequence } from './hooks/use-boot-sequence'
 
 const LAYOUT_STORAGE_KEY = 'wansan-layout'
 
@@ -40,6 +41,7 @@ const loadLayoutPrefs = () => {
 }
 
 function App() {
+  useBootSequence()
   useDataRehydrate()
   const [isChatCollapsed, setIsChatCollapsed] = useState(false)
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
@@ -61,6 +63,9 @@ function App() {
   // Sync AI config to main process on startup
   useEffect(() => {
     const syncAIConfig = async () => {
+      // First load sensitive data (API Key) from secure storage
+      await useSettingsStore.getState().loadSensitiveData()
+      
       const settings = useSettingsStore.getState()
       if (settings.apiKey) {
         const config: AIConfig = {

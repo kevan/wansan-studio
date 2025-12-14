@@ -48,6 +48,9 @@ interface ElectronAPI {
   }) => Promise<IPCResponse<any>>
 
   // 系统信息
+  getDeviceId: () => Promise<IPCResponse<string>>
+  secureSet: (key: string, value: string) => Promise<IPCResponse<boolean>>
+  secureGet: (key: string) => Promise<IPCResponse<string | null>>
   platform: NodeJS.Platform
   version: NodeJS.ProcessVersions
   windowControl: (action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize') => void

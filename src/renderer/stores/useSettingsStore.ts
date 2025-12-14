@@ -14,13 +14,16 @@ export interface SettingsState {
   language: SettingsLanguage
   hasCompletedOnboarding: boolean
   isActivated: boolean
+  deviceId?: string
+  validBetaCodes: string[]
   setProvider: (provider: AIProviderKey) => void
   activateLicense: (code: string) => boolean
+  loadSensitiveData: () => Promise<void>
   updateSettings: (
     patch: Partial<
       Omit<
         SettingsState,
-        'setProvider' | 'updateSettings' | 'completeOnboarding' | 'resetSettings' | 'activateLicense'
+        'setProvider' | 'updateSettings' | 'completeOnboarding' | 'resetSettings' | 'activateLicense' | 'loadSensitiveData'
       >
     >
   ) => void
@@ -42,7 +45,7 @@ const detectDefaultLanguage = (): 'en' | 'zh' => {
 
 const initialSettingsState: Omit<
   SettingsState,
-  'setProvider' | 'updateSettings' | 'completeOnboarding' | 'resetSettings' | 'activateLicense'
+  'setProvider' | 'updateSettings' | 'completeOnboarding' | 'resetSettings' | 'activateLicense' | 'loadSensitiveData'
 > = {
   provider: 'openai',
   apiKey: '',
@@ -50,6 +53,7 @@ const initialSettingsState: Omit<
   language: detectDefaultLanguage(),
   hasCompletedOnboarding: false,
   isActivated: false,
+  validBetaCodes: [],
 }
 
 export const SETTINGS_STORAGE_KEY = 'wansan-settings-v1'
@@ -58,6 +62,27 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
       ...initialSettingsState,
+      loadSensitiveData: async () => {
+        try {
+          // We use a specific key for the current active API Key.
+          // Note: In a real multi-provider setup, we might want 'apiKey_openai', etc.
+          // For now, consistent with existing logic, we just store 'apiKey'.
+          const res = await window.electronAPI.secureGet('apiKey')
+          if (res.success && res.data) {
+             set({ apiKey: res.data })
+             // Also update main process config
+             const current = get()
+             const aiConfig: AIConfig = {
+               apiKey: res.data,
+               baseURL: current.baseUrl,
+               model: current.model,
+             }
+             void window.electronAPI.setAIConfig(aiConfig)
+          }
+        } catch (e) {
+          console.error('Failed to load sensitive data', e)
+        }
+      },
       setProvider: provider => {
         const defaults = getProviderDefaults(provider)
         set({ provider, ...defaults })
@@ -71,12 +96,16 @@ export const useSettingsStore = create<SettingsState>()(
         void window.electronAPI.setAIConfig(aiConfig)
       },
       activateLicense: (code: string) => {
-        const validCodes = ['WANSAN-BETA', 'INTERNAL-TEST']
-        // Simple case-insensitive check
-        if (validCodes.includes(code.trim().toUpperCase())) {
+        // ... (unchanged)
+        const { validBetaCodes } = get()
+        const normalizedCode = code.trim().toUpperCase()
+
+        // Check dynamic list
+        if (validBetaCodes.includes(normalizedCode)) {
           set({ isActivated: true })
           return true
         }
+
         return false
       },
       updateSettings: patch =>
@@ -87,6 +116,14 @@ export const useSettingsStore = create<SettingsState>()(
           if (nextProvider && nextProvider !== state.provider) {
             const defaults = getProviderDefaults(nextProvider)
             nextState = { ...state, ...patch, provider: nextProvider, ...defaults }
+          }
+
+          // Secure Storage Hook
+          if ((patch as Partial<SettingsState>).apiKey !== undefined) {
+             const newKey = (patch as Partial<SettingsState>).apiKey
+             if (newKey !== undefined) {
+                void window.electronAPI.secureSet('apiKey', newKey)
+             }
           }
 
           // Call main process to update AI config if relevant settings changed
@@ -111,6 +148,9 @@ export const useSettingsStore = create<SettingsState>()(
       completeOnboarding: () => set({ hasCompletedOnboarding: true }),
       resetSettings: () => {
         set({ ...initialSettingsState })
+        // Clear secure storage? Optional but good practice
+        void window.electronAPI.secureSet('apiKey', '')
+
         const defaults = getProviderDefaults('openai')
         const aiConfig: AIConfig = {
           apiKey: '',
@@ -124,9 +164,14 @@ export const useSettingsStore = create<SettingsState>()(
       name: SETTINGS_STORAGE_KEY,
       storage: createBigIntStorage(),
       version: 3,
+      partialize: (state) => {
+        // Exclude apiKey from persistence
+        const { apiKey, ...rest } = state
+        return rest
+      },
       migrate: persistedState => {
         const state = persistedState as Partial<SettingsState> | undefined
-        if (!state) return initialSettingsState
+        if (!state) return initialSettingsState as any
 
         const provider = (state.provider ?? 'openai') as AIProviderKey
         const defaults = getProviderDefaults(provider)
@@ -137,7 +182,8 @@ export const useSettingsStore = create<SettingsState>()(
           baseUrl: state.baseUrl ?? defaults.baseUrl,
           model: state.model ?? defaults.model,
           isActivated: state.isActivated ?? false,
-        }
+          // apiKey will be missing here, initialized to empty string from initialSettingsState
+        } as any
       },
     }
   )
