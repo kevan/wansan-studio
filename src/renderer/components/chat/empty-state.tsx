@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next'
 
 interface EmptyStateProps {
   onSelectPrompt: (text: string) => void
+  isChatLoading: boolean
+  isRestoring: boolean
 }
 
 const STYLES = [
@@ -50,7 +52,7 @@ const STARTER_PROMPTS = [
   },
 ]
 
-export function EmptyState({ onSelectPrompt }: EmptyStateProps) {
+export function EmptyState({ onSelectPrompt, isChatLoading, isRestoring }: EmptyStateProps) {
   const suggestedPrompts = useFileStore(state => state.suggestedPrompts)
   const { t } = useTranslation('chat')
 
@@ -87,8 +89,18 @@ export function EmptyState({ onSelectPrompt }: EmptyStateProps) {
         {promptsToShow.map((item, idx) => (
           <button
             key={idx}
-            onClick={() => onSelectPrompt(item.prompt)}
-            className="group flex items-start gap-4 p-4 rounded-xl border border-zinc-200 bg-white hover:border-orange-200 hover:shadow-md transition-all duration-200 text-left"
+            onClick={() => {
+              if (!isChatLoading && !isRestoring) {
+                onSelectPrompt(item.prompt)
+              }
+            }}
+            disabled={isChatLoading || isRestoring}
+            className={cn(
+              "group flex items-start gap-4 p-4 rounded-xl border transition-all duration-200 text-left",
+              isChatLoading || isRestoring
+                ? "border-zinc-100 bg-white cursor-not-allowed"
+                : "border-zinc-200 bg-white hover:border-orange-200 hover:shadow-md"
+            )}
           >
             <div
               className={cn(

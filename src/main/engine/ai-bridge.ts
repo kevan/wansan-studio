@@ -455,7 +455,7 @@ export async function fixSQL(
   const systemPrompt = `You are a DuckDB SQL Repair Expert.
 Your goal is to FIX a broken SQL query based on the error message and table schema.
 
-OUTPUT: JSON object { "sql": "FIXED_SQL", "reasoning": "Brief explanation of the fix" }`
+OUTPUT: JSON object { "sql": "FIXED_SQL", "reasoning": "Brief explanation of the fix (supplementary to the original plan)" }`
 
   const userPrompt = `### 📂 SCHEMA
 ${schemaContext}

@@ -639,7 +639,7 @@ export const useChatStore = create<ChatStore>()(
                   reasoning
                 }),
                 sql: fixedSql,
-                reasoning: i18n.t('autofix_reasoning', { ns: 'chat', reasoning }),
+                reasoning: (msg.planReasoning ? msg.planReasoning + '\n\n' : '') + i18n.t('autofix_reasoning', { ns: 'chat', reasoning }),
                 suggestions: [],
                 chartType: 'table',
                 chartTitle: i18n.t('autofix_chart_title', { ns: 'chat' }),

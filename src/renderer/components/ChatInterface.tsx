@@ -66,6 +66,8 @@ export function ChatInterface({
   const dummyDivRef = useRef<HTMLDivElement>(null)
   const { t } = useTranslation('chat')
   const removeMessage = useChatStore(state => state.removeMessage)
+  const isChatLoading = useChatStore(state => !!state.abortController)
+  const isRestoring = !useChatStore.persist.hasHydrated()
 
   // Auto-scroll to bottom when messages or loading state changes
   useEffect(() => {
@@ -82,7 +84,7 @@ export function ChatInterface({
       <div className="flex-1 overflow-y-auto p-4 pb-0 space-y-6">
         {messages.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center pb-0">
-            <EmptyState onSelectPrompt={handleQuerySubmit} />
+            <EmptyState onSelectPrompt={handleQuerySubmit} isChatLoading={isChatLoading} isRestoring={isRestoring} />
           </div>
         ) : (
           messages.map(message => (
@@ -210,10 +212,13 @@ export function ChatInterface({
                                 (suggestion, idx) => (
                                   <button
                                     key={idx}
-                                    onClick={() =>
-                                      handleQuerySubmit(suggestion)
-                                    }
-                                    className="px-3 py-1.5 rounded-full bg-white border border-zinc-200 text-zinc-600 text-xs hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700 transition-colors shadow-sm"
+                                    onClick={() => {
+                                      if (!isChatLoading && !isRestoring) {
+                                        handleQuerySubmit(suggestion)
+                                      }
+                                    }}
+                                    disabled={isChatLoading || isRestoring}
+                                    className={`px-3 py-1.5 rounded-full bg-white border text-xs shadow-sm ${ (isChatLoading || isRestoring) ? 'border-zinc-100 text-zinc-400 cursor-not-allowed' : 'border-zinc-200 text-zinc-600 hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700 transition-colors'}`}
                                   >
                                     {suggestion}
                                   </button>
