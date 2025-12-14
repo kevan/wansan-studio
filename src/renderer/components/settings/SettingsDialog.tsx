@@ -463,7 +463,10 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                       placeholder="Enter Beta Code (e.g. WANSAN-BETA)"
                       value={licenseCode}
                       onChange={e => setLicenseCode(e.target.value)}
-                      className="uppercase font-mono"
+                      className={cn(
+                        'uppercase font-mono px-3 transition-colors',
+                        'focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-zinc-900'
+                      )}
                     />
                     <Button
                       onClick={() => {
