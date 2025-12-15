@@ -29,17 +29,6 @@ export function PageLayer({ isA4, pageCount }: PageLayerProps) {
           style={{ height: PAGE_HEIGHT_PX }}
         >
           <div className="flex-1" />
-          <div className="flex h-16 flex-none items-center justify-between border-t px-8 text-xs text-zinc-400">
-            <div className="flex items-center gap-2">
-              <img
-                src={logo}
-                className="h-6 w-6 rounded-md "
-                alt="Wansan Studio"
-              />
-              <span className="font-semibold text-zinc-600">Wansan Studio</span>
-            </div>
-            <span className="text-xs text-zinc-400">Page {i + 1}</span>
-          </div>
         </div>
       ))}
     </div>

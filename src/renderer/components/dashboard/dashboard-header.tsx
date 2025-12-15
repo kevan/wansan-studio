@@ -87,11 +87,49 @@ export function DashboardHeader() {
           !el.classList?.contains('hide-on-export'),
       })
 
+      const logoImg = new Image()
+      await new Promise<void>(resolve => {
+        logoImg.onload = () => resolve()
+        logoImg.onerror = () => resolve()
+        logoImg.src = logo
+      })
+
       const fileName = `${canvasConfig.title || 'Report'}.${type === 'png' ? 'png' : 'pdf'}`
 
       if (type === 'png') {
         Analytics.track('export_clicked', { format: 'png' })
-        await window.electronAPI?.saveImage(dataUrl, fileName)
+        
+        const img = new Image()
+        img.src = dataUrl
+        await new Promise(r => { img.onload = r })
+
+        const footerHeightPx = 60
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width
+        canvas.height = img.height + footerHeightPx
+        const ctx = canvas.getContext('2d')
+
+        if (ctx) {
+            ctx.fillStyle = '#f4f4f5'
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+            ctx.drawImage(img, 0, 0)
+            
+            // Draw Watermark
+            ctx.globalAlpha = 0.6
+            const footerY = img.height + 20
+            
+            // Logo
+            const logoSize = 24
+            ctx.drawImage(logoImg, 30, footerY, logoSize, logoSize)
+            
+            // Text
+            ctx.font = '500 20px sans-serif'
+            ctx.fillStyle = '#a1a1aa' // zinc-400
+            ctx.textBaseline = 'middle'
+            ctx.fillText('Created with Wansan Studio', 30 + logoSize + 12, footerY + (logoSize/2))
+        }
+
+        await window.electronAPI?.saveImage(canvas.toDataURL('image/png'), fileName)
         return
       }
 
@@ -100,20 +138,10 @@ export function DashboardHeader() {
       }
 
       const img = new Image()
-      const imageLoad = new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve()
-        img.onerror = err => reject(err)
-      })
       img.src = dataUrl
+      await new Promise(r => { img.onload = r })
 
-      const logoImg = new Image()
-      const logoLoad = new Promise<void>(resolve => {
-        logoImg.onload = () => resolve()
-        logoImg.onerror = () => resolve()
-        logoImg.src = logo
-      })
-
-      await Promise.all([imageLoad, logoLoad])
+      // Logo is already loaded above as logoImg
 
       const pdf = new jsPDF({
         orientation: isA4 ? 'portrait' : 'landscape',
@@ -124,8 +152,8 @@ export function DashboardHeader() {
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = pdf.internal.pageSize.getHeight()
 
-      // Reserve space for footer in Screen mode
-      const footerHeightMM = isA4 ? 0 : 12
+      // Reserve space for footer (Watermark style)
+      const footerHeightMM = 8
       const contentHeightMM = pdfHeight - footerHeightMM
 
       // Dynamic slice height based on available content area aspect ratio
@@ -162,28 +190,21 @@ export function DashboardHeader() {
         const sliceData = canvas.toDataURL('image/png')
         pdf.addImage(sliceData, 'PNG', 0, 0, pdfWidth, contentHeightMM)
 
-        // Draw Footer for Screen Mode
-        if (!isA4) {
-          const footerY = pdfHeight - 4
-          // Draw Border Line
-          pdf.setDrawColor(228, 228, 231) // zinc-200
-          pdf.line(10, pdfHeight - footerHeightMM, pdfWidth - 10, pdfHeight - footerHeightMM)
-          
-          // Draw Logo
-          pdf.addImage(logoImg, 'PNG', 10, footerY - 5, 5, 5)
+        // Draw Watermark Footer
+        const footerY = pdfHeight - 3
+        
+        // Draw Logo
+        pdf.addImage(logoImg, 'PNG', 10, footerY - 3, 3, 3)
 
-          // Draw Text
-          pdf.setFontSize(9)
-          pdf.setTextColor(82, 82, 91) // zinc-600
-          pdf.text('Wansan Studio', 18, footerY - 1.5)
+        // Draw Text
+        pdf.setFontSize(7)
+        pdf.setTextColor(200, 200, 200) // Very light gray (watermark)
+        pdf.text('Created with Wansan Studio', 16, footerY - 1)
 
-          // Draw Page Number
-          pdf.setTextColor(161, 161, 170) // zinc-400
-          pdf.setFontSize(8)
-          pdf.text(`Page ${i + 1}`, pdfWidth - 10, footerY - 1.5, {
-            align: 'right',
-          })
-        }
+        // Draw Page Number
+        pdf.text(`Page ${i + 1}`, pdfWidth - 10, footerY - 1, {
+          align: 'right',
+        })
       }
 
       pdf.save(fileName)
