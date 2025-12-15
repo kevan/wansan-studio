@@ -170,6 +170,45 @@ export function formatDateValue(val: any): string | null {
 }
 
 /**
+ * Format a value for display in UI (tables, big numbers, etc.)
+ * Handles timestamps, floating point numbers (fixed precision), and generic strings.
+ */
+export function formatForDisplay(value: any): string {
+  if (value === null || value === undefined) return '—'
+
+  if (typeof value === 'number') {
+    // 1. Check for timestamp range (2000-2030)
+    const minTimestamp = 946684800000 // 2000-01-01
+    const maxTimestamp = 1893456000000 // 2030-01-01
+    if (value >= minTimestamp && value <= maxTimestamp) {
+      try {
+        return new Date(value).toLocaleString()
+      } catch {
+        // Fallback to number formatting if date fails
+      }
+    }
+
+    // 2. Format numbers (add commas, limit decimals)
+    // Use maximumFractionDigits: 4 to avoid overly long floats but keep reasonable precision
+    return new Intl.NumberFormat('en-US', { 
+      maximumFractionDigits: 4 
+    }).format(value)
+  }
+
+  // If string looks like a date, try formatting it (e.g., '2023-01-01')
+  if (typeof value === 'string' && !isNaN(Date.parse(value)) && value.length > 10) {
+     // Simple heuristic: don't aggressive format short strings like "2023"
+     try {
+      return new Date(value).toLocaleString()
+    } catch {
+      return value
+    }
+  }
+
+  return String(value)
+}
+
+/**
  * Process a single value for LLM context sampling
  * Handles: BigInt, Date (ISO), JSON summarization, and string truncation
  */

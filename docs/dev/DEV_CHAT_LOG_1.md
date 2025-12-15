@@ -2102,3 +2102,137 @@ const { isActivated } = useSettingsStore();
   </div>
 )}
 ```
+
+
+内测期间用户碰到问题时，我们如何收集有效信息进行排查
+
+这是 **🔵 模式 A：规划 (Planning)** 响应。
+
+对于本地优先（Local-First）应用，最痛苦的就是：**用户说“挂了”，但你这边的代码跑得好好的。**
+因为你没有服务器日志，所有现场都在用户的那台 MacBook 里的内存或本地数据库里。
+
+我们需要构建一套 **“黑匣子 (Black Box)”** 机制，让用户能一键把“事故现场”打包发给你。
+
+我建议采用 **"轻量级复制 + 重量级导出"** 的组合策略：
+
+---
+
+### 策略 1：轻量级错误卡片 (The "Copy" Button)
+*   **场景**：Chat 里的某次分析失败了。
+*   **痛点**：用户截图发群里，只有“Error”一个词，没有堆栈信息。
+*   **方案**：在红色错误卡片上增加 **`[ 复制调试信息 ]`** 按钮。
+*   **内容**：
+    ```json
+    {
+      "error": "Binder Error: Column 'amt' not found",
+      "sql": "SELECT amt FROM t_orders...", // 关键！
+      "schema": "t_orders(amount DOUBLE, ...)", // 关键！
+      "version": "1.0.1"
+    }
+    ```
+*   **动作**：用户点击 -> 粘贴到微信群。你一眼就能看出是列名写错了。
+
+### 策略 2：重量级诊断包 (The "Dump" Command)
+*   **场景**：软件白屏、卡死、数据算不对等复杂问题。
+*   **方案**：实现 **`/debug`** (或 `/dump`) 斜杠指令，或在设置页增加 **`[ 导出诊断日志 ]`** 按钮。
+*   **动作**：
+    1.  点击后，系统收集最近的 50 条 Log、Store 状态、硬件信息。
+    2.  **自动脱敏**：抹去 API Key，抹去具体数据行，只保留 Schema。
+    3.  生成一个 `wansan-debug-{date}.md` 文件保存到桌面。
+    4.  引导用户：“请把桌面上的这个文件发给开发者”。
+
+---
+
+### 🚀 执行指令
+
+我们优先实现 **策略 2 (诊断包导出)**，因为它能覆盖最全的场景。
+
+请将以下指令发送给 **Code Agent**。
+
+***
+
+### TASK: Implement Debug Log Exporter
+
+**Goal**: Create a tool to export sanitized app state for troubleshooting.
+
+#### Step 1: Create Utility (`src/renderer/src/utils/debug-exporter.ts`)
+
+**Logic**:
+Gather state, sanitize secrets, and save file.
+
+```typescript
+import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useFileStore } from '@/stores/useFileStore';
+import { useChatStore } from '@/stores/useChatStore';
+
+export async function exportDebugLog() {
+  const settings = useSettingsStore.getState();
+  const files = useFileStore.getState().files;
+  const chats = useChatStore.getState().messages;
+
+  const report = {
+    timestamp: new Date().toISOString(),
+    app_info: {
+      version: "1.0.1", // Retrieve dynamically if possible
+      platform: navigator.platform,
+      userAgent: navigator.userAgent
+    },
+    settings: {
+      ...settings,
+      apiKey: "REDACTED", // CRITICAL: Mask API Key
+      deviceId: settings.deviceId
+    },
+    files: files.map(f => ({
+      name: f.name,
+      size: f.size, // Assuming size is tracked
+      columns: f.columns.map(c => `${c.name} (${c.type})`).join(', ')
+      // NO DATA ROWS
+    })),
+    recent_errors: chats
+      .filter(m => m.status === 'error')
+      .slice(-5)
+      .map(m => ({
+        id: m.id,
+        error: m.error,
+        sql: m.sql
+      }))
+  };
+
+  // Convert to String
+  const content = JSON.stringify(report, null, 2);
+  
+  // Save File (Using Electron Bridge if available, or Blob download)
+  const blob = new Blob([content], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `wansan-debug-${Date.now()}.json`;
+  a.click();
+  
+  return true;
+}
+```
+
+#### Step 2: Integrate Hook (`MagicInput.tsx` and `SettingsDialog.tsx`)
+
+**Magic Input**:
+Handle `/debug` command.
+
+```tsx
+// Inside onKeyDown or command handler
+if (inputValue === '/debug') {
+  await exportDebugLog();
+  toast.success("Debug log saved to Downloads");
+  setInputValue("");
+  return;
+}
+```
+
+**Settings Dialog**:
+Add a button in the "About" section.
+
+```tsx
+<Button variant="outline" size="sm" onClick={exportDebugLog} className="mt-2">
+  <Bug className="w-4 h-4 mr-2"/> Export Diagnostic Info
+</Button>
+```

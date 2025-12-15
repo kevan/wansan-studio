@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Edit2 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
+import { formatForDisplay } from '@shared/serialization'
 
 interface A4CanvasProps {
   children: React.ReactNode
@@ -344,6 +345,12 @@ interface A4DataTableProps {
   className?: string
 }
 
+interface A4DataTableProps {
+  data: Array<Record<string, any>>
+  maxRows?: number
+  className?: string
+}
+
 export function A4DataTable({
   data,
   maxRows = 20,
@@ -385,7 +392,7 @@ export function A4DataTable({
                     key={column}
                     className="px-3 py-2 text-gray-900 border-b border-gray-100"
                   >
-                    {row[column]}
+                    {formatForDisplay(row[column])}
                   </td>
                 ))}
               </tr>

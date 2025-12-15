@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-table'
 import { cn } from '@/utils/cn.ts'
 import { useTranslation } from 'react-i18next'
+import { formatForDisplay } from '@shared/serialization'
 
 interface ReportTableProps {
   data: Array<Record<string, any>>
@@ -31,41 +32,12 @@ export function ReportTable({
   const [sorting, setSorting] = React.useState<SortingState>([])
   const isDashboard = variant === 'dashboard'
 
-// 格式化时间戳的辅助函数
-  const formatTimestamp = (value: any): string => {
-    if (typeof value === 'number') {
-      // 检查是否在合理的时间戳范围内（2000-2030年）
-      const minTimestamp = 946684800000 // 2000-01-01
-      const maxTimestamp = 1893456000000 // 2030-01-01
-
-      if (value >= minTimestamp && value <= maxTimestamp) {
-        try {
-          return new Date(value).toLocaleString()
-        } catch {
-          return String(value)
-        }
-      }
-    }
-
-    // 如果是字符串类型的时间，也尝试格式化
-    if (typeof value === 'string' && !isNaN(Date.parse(value))) {
-      try {
-        return new Date(value).toLocaleString()
-      } catch {
-        return value
-      }
-    }
-
-    // 其他情况保持原样
-    return value === null || value === undefined ? '—' : String(value)
-  }
-
   const columnDefs: ColumnDef<Record<string, any>>[] = columnKeys.map(key => ({
     accessorKey: key,
     header: key,
     cell: info => {
       const value = info.getValue()
-      const display = formatTimestamp(value)
+      const display = formatForDisplay(value)
       return (
         <span className="truncate" title={display}>
           {display}
