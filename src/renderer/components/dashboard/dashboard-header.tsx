@@ -36,6 +36,7 @@ import {
 } from '@/components/dashboard-v3/page-layer'
 import { useTranslation } from 'react-i18next'
 import { Analytics } from '../../services/analytics'
+import logo from '@/src/assets/logo.png'
 
 export function DashboardHeader() {
   const { canvasConfig, setCanvasConfig, setLayoutScenario } =
@@ -104,7 +105,15 @@ export function DashboardHeader() {
         img.onerror = err => reject(err)
       })
       img.src = dataUrl
-      await imageLoad
+
+      const logoImg = new Image()
+      const logoLoad = new Promise<void>(resolve => {
+        logoImg.onload = () => resolve()
+        logoImg.onerror = () => resolve()
+        logoImg.src = logo
+      })
+
+      await Promise.all([imageLoad, logoLoad])
 
       const pdf = new jsPDF({
         orientation: isA4 ? 'portrait' : 'landscape',
@@ -115,9 +124,13 @@ export function DashboardHeader() {
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = pdf.internal.pageSize.getHeight()
 
-      // Dynamic slice height based on PDF aspect ratio
-      const sliceHeight = img.width * (pdfHeight / pdfWidth)
-      
+      // Reserve space for footer in Screen mode
+      const footerHeightMM = isA4 ? 0 : 12
+      const contentHeightMM = pdfHeight - footerHeightMM
+
+      // Dynamic slice height based on available content area aspect ratio
+      const sliceHeight = img.width * (contentHeightMM / pdfWidth)
+
       // Only A4 mode has visual gaps to skip
       const ratio = img.width / (node.offsetWidth || 1)
       const gapHeight = isA4 ? PAGE_GAP_PX * ratio : 0
@@ -147,7 +160,30 @@ export function DashboardHeader() {
           canvas.height
         )
         const sliceData = canvas.toDataURL('image/png')
-        pdf.addImage(sliceData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+        pdf.addImage(sliceData, 'PNG', 0, 0, pdfWidth, contentHeightMM)
+
+        // Draw Footer for Screen Mode
+        if (!isA4) {
+          const footerY = pdfHeight - 4
+          // Draw Border Line
+          pdf.setDrawColor(228, 228, 231) // zinc-200
+          pdf.line(10, pdfHeight - footerHeightMM, pdfWidth - 10, pdfHeight - footerHeightMM)
+          
+          // Draw Logo
+          pdf.addImage(logoImg, 'PNG', 10, footerY - 5, 5, 5)
+
+          // Draw Text
+          pdf.setFontSize(9)
+          pdf.setTextColor(82, 82, 91) // zinc-600
+          pdf.text('Wansan Studio', 18, footerY - 1.5)
+
+          // Draw Page Number
+          pdf.setTextColor(161, 161, 170) // zinc-400
+          pdf.setFontSize(8)
+          pdf.text(`Page ${i + 1}`, pdfWidth - 10, footerY - 1.5, {
+            align: 'right',
+          })
+        }
       }
 
       pdf.save(fileName)
