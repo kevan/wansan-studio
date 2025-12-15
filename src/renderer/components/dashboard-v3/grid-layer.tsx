@@ -29,22 +29,28 @@ interface GridLayerProps {
   scale: number
 }
 
-const ROWS_PER_PAGE_VISUAL = Math.floor(PAGE_HEIGHT_PX / GRID_ROW_HEIGHT) // ~38 rows
-const ROWS_GAP = Math.ceil(PAGE_GAP_PX / GRID_ROW_HEIGHT) // ~2 rows
-const ROWS_FOOTER = Math.ceil(60 / GRID_ROW_HEIGHT) // reserve ~2 rows for footer zone
-const BLOCK_SIZE = ROWS_PER_PAGE_VISUAL + ROWS_GAP // total rows per page + gap block
-const SAFE_LIMIT = ROWS_PER_PAGE_VISUAL - ROWS_FOOTER
+const FOOTER_HEIGHT_PX = 80
+const PAGE_TOTAL_HEIGHT = PAGE_HEIGHT_PX + PAGE_GAP_PX
 
 const adjustLayoutForGaps = (layout: Layout[]): Layout[] =>
   layout.map(item => {
     const newItem = { ...item }
-    const itemTop = item.y
-    const itemBottom = item.y + item.h
-    const pageIndex = Math.floor(itemTop / BLOCK_SIZE)
-    const relativeBottom = itemBottom - pageIndex * BLOCK_SIZE
-
-    if (relativeBottom > SAFE_LIMIT) {
-      newItem.y = (pageIndex + 1) * BLOCK_SIZE
+    
+    const itemTopPx = item.y * GRID_ROW_HEIGHT
+    const itemBottomPx = (item.y + item.h) * GRID_ROW_HEIGHT
+    
+    // Check which page the TOP of the card is on
+    const pageIndex = Math.floor(itemTopPx / PAGE_TOTAL_HEIGHT)
+    
+    // The visual bottom limit of the content area on this page
+    // (Start of Page) + (Page Height) - (Footer Safe Zone)
+    const pageContentBottomPx = (pageIndex * PAGE_TOTAL_HEIGHT) + (PAGE_HEIGHT_PX - FOOTER_HEIGHT_PX)
+    
+    // If the card extends beyond the safe content area
+    if (itemBottomPx > pageContentBottomPx) {
+       // Move to next page top
+       const nextPageTopPx = (pageIndex + 1) * PAGE_TOTAL_HEIGHT
+       newItem.y = Math.ceil(nextPageTopPx / GRID_ROW_HEIGHT)
     }
 
     return newItem
