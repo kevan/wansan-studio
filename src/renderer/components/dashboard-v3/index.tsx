@@ -142,9 +142,11 @@ export function DashboardCanvasV3() {
           className="relative w-full transition-transform duration-200"
           style={{
             transform: `scale(${zoom / 100})`,
-            transformOrigin: 'top center',
-            width: isA4 ? `${PAGE_WIDTH_PX}px` : '100%',
-            minHeight: isA4 ? `${totalHeightPx ?? PAGE_HEIGHT_PX}px` : '100%',
+            transformOrigin: isA4 ? 'top center' : 'top left',
+            width: isA4 ? `${PAGE_WIDTH_PX}px` : `${100 / (zoom / 100)}%`,
+            minHeight: isA4
+              ? `${totalHeightPx ?? PAGE_HEIGHT_PX}px`
+              : `${100 / (zoom / 100)}%`,
           }}
         >
           <PageLayer isA4={isA4} pageCount={pageCount} />
