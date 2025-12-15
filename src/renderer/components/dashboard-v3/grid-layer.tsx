@@ -217,7 +217,7 @@ function ScreenGrid({ width, scale }: { width: number; scale: number }) {
       isBounded={false}
       onLayoutChange={handleLayoutChange}
       // Ensure minHeight is enough to scroll, and add padding at bottom for infinite feel
-      style={{ minHeight: '100vh', height: '100%', paddingBottom: '400px' }}
+      style={{ minHeight: '100vh', paddingBottom: '400px' }}
     >
       {flatReports.map(report => (
         <div key={report.id} data-grid={report.layout}>
