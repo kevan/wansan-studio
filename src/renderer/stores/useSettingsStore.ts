@@ -7,6 +7,13 @@ import { Analytics } from '../services/analytics'
 
 export type SettingsLanguage = 'en' | 'zh'
 
+export interface AIProviderConfig {
+  name: string
+  baseUrl: string
+  models: string[]
+  getKeyUrl?: string
+}
+
 export interface RemoteConfig {
   min_version?: string
   latest_version?: string
@@ -19,6 +26,7 @@ export interface RemoteConfig {
     level?: 'info' | 'warning'
   } | null
   features?: Record<string, boolean>
+  providers?: Record<string, AIProviderConfig>
 }
 
 export interface SettingsState {

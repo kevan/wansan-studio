@@ -60,6 +60,11 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
 
   const disclaimerText = i18n.language.startsWith('zh') ? DISCLAIMER_TEXT_ZH : DISCLAIMER_TEXT_EN
 
+  const activeProviders = useMemo(() => {
+    const remoteProviders = settings.remoteConfig?.providers
+    return remoteProviders ? { ...AI_PROVIDERS, ...remoteProviders } : AI_PROVIDERS
+  }, [settings.remoteConfig])
+
   useEffect(() => {
     const handleOpenSettings = (e: Event) => {
       setIsOpen(true)
@@ -77,26 +82,16 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
     }
   }, [])
 
-  const providerConfig = AI_PROVIDERS[settings.provider]
+  const providerConfig = activeProviders[settings.provider] || activeProviders['openai']
   const modelOptions = useMemo(
-    () => providerConfig.models,
-    [providerConfig.models]
+    () => providerConfig?.models || [],
+    [providerConfig]
   )
 
   const providerLabel = useMemo(() => {
-    switch (settings.provider) {
-      case 'openai':
-        return t('ai.provider_openai')
-      case 'deepseek':
-        return t('ai.provider_deepseek')
-      case 'moonshot':
-        return t('ai.provider_moonshot')
-      case 'custom':
-        return t('ai.provider_custom')
-      default:
-        return settings.provider
-    }
-  }, [settings.provider, t])
+    const config = activeProviders[settings.provider]
+    return config ? config.name : settings.provider
+  }, [settings.provider, activeProviders])
 
   const languageLabel =
     settings.language === 'zh'
@@ -224,18 +219,11 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                         </span>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="openai">
-                          {t('ai.provider_openai')}
-                        </SelectItem>
-                        <SelectItem value="deepseek">
-                          {t('ai.provider_deepseek')}
-                        </SelectItem>
-                        <SelectItem value="moonshot">
-                          {t('ai.provider_moonshot')}
-                        </SelectItem>
-                        <SelectItem value="custom">
-                          {t('ai.provider_custom')}
-                        </SelectItem>
+                        {Object.entries(activeProviders).map(([key, config]) => (
+                          <SelectItem key={key} value={key}>
+                            {config.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
