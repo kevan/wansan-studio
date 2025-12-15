@@ -64,6 +64,7 @@
     "beta_version": "v{{version}} Beta",
     "tagline": "Local-first BI desktop app."
   },
+  "debug_export_button": "Export Debug Logs",
   "onboarding": {
     "step_label": "Step {{current}} / {{total}}",
     "welcome_title": "Welcome to Wansan Studio",

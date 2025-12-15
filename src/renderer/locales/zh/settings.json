@@ -68,6 +68,7 @@
     "website": "官网",
     "github": "GitHub"
   },
+  "debug_export_button": "导出调试日志",
   "onboarding": {
     "step_label": "第 {{current}} / {{total}} 步",
     "welcome_title": "欢迎使用 Wansan Studio",
