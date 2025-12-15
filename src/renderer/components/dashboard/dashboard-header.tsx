@@ -29,6 +29,7 @@ import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 import { PAGE_GAP_PX, PAGE_HEIGHT_PX } from '@/components/dashboard-v3/page-layer'
 import { useTranslation } from 'react-i18next'
+import { Analytics } from '../../services/analytics'
 
 export function DashboardHeader() {
   const { canvasConfig, setCanvasConfig, setLayoutScenario } =
@@ -71,8 +72,13 @@ export function DashboardHeader() {
       const fileName = `${canvasConfig.title || 'Report'}.${type === 'png' ? 'png' : 'pdf'}`
 
       if (type === 'png') {
+        Analytics.track('export_clicked', { format: 'png' });
         await window.electronAPI?.saveImage(dataUrl, fileName)
         return
+      }
+
+      if (type === 'pdf') {
+        Analytics.track('export_clicked', { format: 'pdf' });
       }
 
       const img = new Image()

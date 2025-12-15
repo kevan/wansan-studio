@@ -3,8 +3,22 @@ import { persist } from 'zustand/middleware'
 import { AI_PROVIDERS, type AIProviderKey } from '@/src/lib/constants'
 import { createBigIntStorage } from '@shared/serialization.ts'
 import type { AIConfig } from '@shared/types'
+import { Analytics } from '../services/analytics'
 
 export type SettingsLanguage = 'en' | 'zh'
+
+export interface RemoteConfig {
+  min_version?: string;
+  latest_version?: string;
+  beta_code?: string;
+  announcement?: {
+    id: string;
+    text: string;
+    link?: string;
+    level?: 'info' | 'warning';
+  } | null;
+  features?: Record<string, boolean>;
+}
 
 export interface SettingsState {
   provider: AIProviderKey
@@ -16,14 +30,18 @@ export interface SettingsState {
   isActivated: boolean
   deviceId?: string
   validBetaCodes: string[]
+  remoteConfig: RemoteConfig
+  dismissedAnnouncementId: string | null
   setProvider: (provider: AIProviderKey) => void
   activateLicense: (code: string) => boolean
   loadSensitiveData: () => Promise<void>
+  setRemoteConfig: (cfg: RemoteConfig) => void
+  dismissAnnouncement: (id: string) => void
   updateSettings: (
     patch: Partial<
       Omit<
         SettingsState,
-        'setProvider' | 'updateSettings' | 'completeOnboarding' | 'resetSettings' | 'activateLicense' | 'loadSensitiveData'
+        'setProvider' | 'updateSettings' | 'completeOnboarding' | 'resetSettings' | 'activateLicense' | 'loadSensitiveData' | 'setRemoteConfig' | 'dismissAnnouncement'
       >
     >
   ) => void
@@ -45,7 +63,7 @@ const detectDefaultLanguage = (): 'en' | 'zh' => {
 
 const initialSettingsState: Omit<
   SettingsState,
-  'setProvider' | 'updateSettings' | 'completeOnboarding' | 'resetSettings' | 'activateLicense' | 'loadSensitiveData'
+  'setProvider' | 'updateSettings' | 'completeOnboarding' | 'resetSettings' | 'activateLicense' | 'loadSensitiveData' | 'setRemoteConfig' | 'dismissAnnouncement'
 > = {
   provider: 'openai',
   apiKey: '',
@@ -53,7 +71,9 @@ const initialSettingsState: Omit<
   language: detectDefaultLanguage(),
   hasCompletedOnboarding: false,
   isActivated: false,
-  validBetaCodes: [],
+  validBetaCodes: ['WANSAN-BETA'],
+  remoteConfig: {},
+  dismissedAnnouncementId: null,
 }
 
 export const SETTINGS_STORAGE_KEY = 'wansan-settings-v1'
@@ -64,9 +84,6 @@ export const useSettingsStore = create<SettingsState>()(
       ...initialSettingsState,
       loadSensitiveData: async () => {
         try {
-          // We use a specific key for the current active API Key.
-          // Note: In a real multi-provider setup, we might want 'apiKey_openai', etc.
-          // For now, consistent with existing logic, we just store 'apiKey'.
           const res = await window.electronAPI.secureGet('apiKey')
           if (res.success && res.data) {
              set({ apiKey: res.data })
@@ -86,28 +103,43 @@ export const useSettingsStore = create<SettingsState>()(
       setProvider: provider => {
         const defaults = getProviderDefaults(provider)
         set({ provider, ...defaults })
-        // Call main process to update AI config
         const currentSettings = get()
         const aiConfig: AIConfig = {
           apiKey: currentSettings.apiKey,
-          baseURL: defaults.baseUrl, // Use default baseUrl for the provider
-          model: defaults.model, // Use default model for the provider
+          baseURL: defaults.baseUrl, 
+          model: defaults.model, 
         }
         void window.electronAPI.setAIConfig(aiConfig)
       },
       activateLicense: (code: string) => {
-        // ... (unchanged)
-        const { validBetaCodes } = get()
+        const { validBetaCodes, remoteConfig } = get()
         const normalizedCode = code.trim().toUpperCase()
-
+        
         // Check dynamic list
         if (validBetaCodes.includes(normalizedCode)) {
           set({ isActivated: true })
+          Analytics.track('beta_activated', { code_prefix: normalizedCode.substring(0, 4) })
           return true
+        }
+        
+        // Check remote config beta_code
+        if (remoteConfig.beta_code && remoteConfig.beta_code.toUpperCase() === normalizedCode) {
+            set({ isActivated: true })
+            Analytics.track('beta_activated', { code_prefix: normalizedCode.substring(0, 4) })
+            return true
+        }
+        
+        // Fallback hardcoded check
+        if (['WANSAN-BETA', 'INTERNAL-TEST'].includes(normalizedCode)) {
+           set({ isActivated: true })
+           Analytics.track('beta_activated', { code_prefix: normalizedCode.substring(0, 4) })
+           return true
         }
 
         return false
       },
+      setRemoteConfig: (cfg: RemoteConfig) => set({ remoteConfig: cfg }),
+      dismissAnnouncement: (id: string) => set({ dismissedAnnouncementId: id }),
       updateSettings: patch =>
         set(state => {
           let nextState = { ...state, ...patch }
@@ -118,7 +150,6 @@ export const useSettingsStore = create<SettingsState>()(
             nextState = { ...state, ...patch, provider: nextProvider, ...defaults }
           }
 
-          // Secure Storage Hook
           if ((patch as Partial<SettingsState>).apiKey !== undefined) {
              const newKey = (patch as Partial<SettingsState>).apiKey
              if (newKey !== undefined) {
@@ -126,7 +157,6 @@ export const useSettingsStore = create<SettingsState>()(
              }
           }
 
-          // Call main process to update AI config if relevant settings changed
           const aiSettingsChanged = (
             (patch as Partial<SettingsState>).apiKey !== undefined ||
             (patch as Partial<SettingsState>).baseUrl !== undefined ||
@@ -148,9 +178,8 @@ export const useSettingsStore = create<SettingsState>()(
       completeOnboarding: () => set({ hasCompletedOnboarding: true }),
       resetSettings: () => {
         set({ ...initialSettingsState })
-        // Clear secure storage? Optional but good practice
         void window.electronAPI.secureSet('apiKey', '')
-
+        
         const defaults = getProviderDefaults('openai')
         const aiConfig: AIConfig = {
           apiKey: '',
@@ -165,7 +194,6 @@ export const useSettingsStore = create<SettingsState>()(
       storage: createBigIntStorage(),
       version: 3,
       partialize: (state) => {
-        // Exclude apiKey from persistence
         const { apiKey, ...rest } = state
         return rest
       },
@@ -182,7 +210,8 @@ export const useSettingsStore = create<SettingsState>()(
           baseUrl: state.baseUrl ?? defaults.baseUrl,
           model: state.model ?? defaults.model,
           isActivated: state.isActivated ?? false,
-          // apiKey will be missing here, initialized to empty string from initialSettingsState
+          remoteConfig: state.remoteConfig ?? {},
+          dismissedAnnouncementId: state.dismissedAnnouncementId ?? null,
         } as any
       },
     }

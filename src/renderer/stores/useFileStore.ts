@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { ColumnSchema, FileNode, SyncStatus } from '@shared/types.ts'
 import { createBigIntStorage } from '@shared/serialization.ts'
+import { Analytics } from '../services/analytics'
 
 // Re-export shared types for other components to use
 export type { ColumnSchema, FileNode, SyncStatus }
@@ -162,6 +163,10 @@ export const useFileStore = create<ProjectState>()(
           activeFileId: id,
           activeView: 'schema',
         }))
+
+        // Track Import
+        const ext = file.name.split('.').pop()?.toLowerCase() || 'unknown'
+        Analytics.track('file_imported', { file_type: ext })
 
         return id
       },

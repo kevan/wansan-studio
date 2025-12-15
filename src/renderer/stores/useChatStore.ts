@@ -8,6 +8,7 @@ import { useWorkbenchStore } from './useWorkbenchStore'
 import { useSettingsStore } from './useSettingsStore'
 import { createBigIntStorage } from '@shared/serialization.ts'
 import i18n from '../i18n'
+import { Analytics } from '../services/analytics'
 
 const generateId = () => crypto.randomUUID()
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -357,6 +358,12 @@ export const useChatStore = create<ChatStore>()(
             const endTime = Date.now()
             const latency = endTime - startTime
 
+            // Track Analysis Success
+            Analytics.track('analysis_generated', {
+              viz_type: plan.visualization?.type || 'unknown',
+              status: 'success'
+            })
+
             get().updateMessage(botMsgId, msg => ({
               ...msg,
               status: undefined,
@@ -382,6 +389,12 @@ export const useChatStore = create<ChatStore>()(
             // Clear abort controller on success
             set({ abortController: null })
           } catch (error: any) {
+            // Track Analysis Error
+            Analytics.track('analysis_generated', {
+              status: 'error',
+              error_type: 'execution_failed'
+            })
+
             get().updateMessage(botMsgId, msg => ({
               ...msg,
               status: 'error',
@@ -529,6 +542,12 @@ export const useChatStore = create<ChatStore>()(
             const endTime = Date.now()
             const latency = endTime - startTime
 
+            // Track Analysis Success
+            Analytics.track('analysis_generated', {
+              viz_type: plan.visualization?.type || 'unknown',
+              status: 'success'
+            })
+
             get().updateMessage(messageId, msg => ({
               ...msg,
               status: undefined,
@@ -553,6 +572,12 @@ export const useChatStore = create<ChatStore>()(
 
             set({ abortController: null })
           } catch (error: any) {
+            // Track Analysis Error
+            Analytics.track('analysis_generated', {
+              status: 'error',
+              error_type: 'execution_failed'
+            })
+
             get().updateMessage(messageId, msg => ({
               ...msg,
               status: 'error',

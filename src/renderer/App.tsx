@@ -19,6 +19,8 @@ import { OnboardingFlow } from './components/onboarding/OnboardingFlow'
 import logo from './src/assets/logo.png'
 import type { AIConfig } from '@shared/types'
 import { useBootSequence } from './hooks/use-boot-sequence'
+import { useRemoteConfig } from './hooks/use-remote-config'
+import { UpdateModal } from './components/update-modal'
 
 const LAYOUT_STORAGE_KEY = 'wansan-layout'
 
@@ -42,6 +44,7 @@ const loadLayoutPrefs = () => {
 
 function App() {
   useBootSequence()
+  useRemoteConfig()
   useDataRehydrate()
   const [isChatCollapsed, setIsChatCollapsed] = useState(false)
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
@@ -227,6 +230,7 @@ function App() {
   return (
     <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
       <Toaster />
+      <UpdateModal />
       {/* Global Window Header */}
       <header
         className="h-12 border-b border-zinc-200 flex items-center justify-between px-4 shrink-0 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur draggable z-50"
