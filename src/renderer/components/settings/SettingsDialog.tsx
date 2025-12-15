@@ -36,7 +36,7 @@ import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import { AI_PROVIDERS, type AIProviderKey } from '@/src/lib/constants'
 import { exportDebugLog } from '../../utils/debug-exporter'
-import { DISCLAIMER_TEXT } from '../../lib/legal-text'
+import { DISCLAIMER_TEXT_ZH, DISCLAIMER_TEXT_EN } from '../../lib/legal-text'
 
 type VerifyStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -48,7 +48,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
   const settings = useSettingsStore()
   const setWorkbenchLanguage = useWorkbenchStore(state => state.setLanguage)
   const addToast = useToastStore(state => state.addToast)
-  const { t } = useTranslation('settings')
+  const { t, i18n } = useTranslation('settings')
 
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>('idle')
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null)
@@ -56,6 +56,8 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('ai')
   const [licenseCode, setLicenseCode] = useState('')
+
+  const disclaimerText = i18n.language.startsWith('zh') ? DISCLAIMER_TEXT_ZH : DISCLAIMER_TEXT_EN
 
   useEffect(() => {
     const handleOpenSettings = (e: Event) => {
@@ -526,7 +528,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
             <DialogTitle>{t('about.disclaimer_link')}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-4 border rounded-md bg-zinc-50 text-sm whitespace-pre-wrap leading-relaxed">
-            {DISCLAIMER_TEXT}
+            {disclaimerText}
           </div>
         </DialogContent>
       </Dialog>
