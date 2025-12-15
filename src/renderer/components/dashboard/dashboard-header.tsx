@@ -103,7 +103,12 @@ export function DashboardHeader() {
         img.src = dataUrl
         await new Promise(r => { img.onload = r })
 
-        const footerHeightPx = 60
+        // Dynamic sizing for watermark based on image width
+        // Base scale: 3840px -> Logo ~96px, Font ~46px
+        const logoSize = Math.max(24, img.width * 0.025)
+        const fontSize = Math.max(12, img.width * 0.012)
+        const footerHeightPx = logoSize * 3 // Enough padding
+
         const canvas = document.createElement('canvas')
         canvas.width = img.width
         canvas.height = img.height + footerHeightPx
@@ -116,17 +121,19 @@ export function DashboardHeader() {
             
             // Draw Watermark
             ctx.globalAlpha = 0.6
-            const footerY = img.height + 20
+            const footerY = img.height + (footerHeightPx / 2) - (logoSize / 2)
+            const marginX = logoSize
             
             // Logo
-            const logoSize = 24
-            ctx.drawImage(logoImg, 30, footerY, logoSize, logoSize)
+            ctx.drawImage(logoImg, marginX, footerY, logoSize, logoSize)
             
             // Text
-            ctx.font = '500 20px sans-serif'
+            const textX = marginX + logoSize + (logoSize * 0.5)
+            const textY = footerY + (logoSize / 2)
+            ctx.font = `500 ${fontSize}px sans-serif`
             ctx.fillStyle = '#a1a1aa' // zinc-400
             ctx.textBaseline = 'middle'
-            ctx.fillText('Created with Wansan Studio', 30 + logoSize + 12, footerY + (logoSize/2))
+            ctx.fillText('Created with Wansan Studio', textX, textY)
         }
 
         await window.electronAPI?.saveImage(canvas.toDataURL('image/png'), fileName)
@@ -163,6 +170,10 @@ export function DashboardHeader() {
       const ratio = img.width / (node.offsetWidth || 1)
       const gapHeight = isA4 ? PAGE_GAP_PX * ratio : 0
 
+      // Calculate actual PDF pages needed based on image height (for Screen mode)
+      // For A4, we trust the store's pageCount as it aligns with visual pages
+      const loopCount = isA4 ? pageCount : Math.ceil(img.height / sliceHeight)
+
       const canvas = document.createElement('canvas')
       canvas.width = img.width
       canvas.height = sliceHeight
@@ -172,7 +183,7 @@ export function DashboardHeader() {
         throw new Error('Failed to get 2d context for slicing')
       }
 
-      for (let i = 0; i < pageCount; i++) {
+      for (let i = 0; i < loopCount; i++) {
         if (i > 0) pdf.addPage()
         const srcY = i * (sliceHeight + gapHeight)
         ctx.clearRect(0, 0, canvas.width, canvas.height)
