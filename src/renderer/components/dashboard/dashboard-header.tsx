@@ -107,7 +107,7 @@ export function DashboardHeader() {
       await imageLoad
 
       const pdf = new jsPDF({
-        orientation: 'portrait',
+        orientation: isA4 ? 'portrait' : 'landscape',
         unit: 'mm',
         format: 'a4',
       })
@@ -115,9 +115,12 @@ export function DashboardHeader() {
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = pdf.internal.pageSize.getHeight()
 
+      // Dynamic slice height based on PDF aspect ratio
+      const sliceHeight = img.width * (pdfHeight / pdfWidth)
+      
+      // Only A4 mode has visual gaps to skip
       const ratio = img.width / (node.offsetWidth || 1)
-      const sliceHeight = PAGE_HEIGHT_PX * ratio
-      const gapHeight = PAGE_GAP_PX * ratio
+      const gapHeight = isA4 ? PAGE_GAP_PX * ratio : 0
 
       const canvas = document.createElement('canvas')
       canvas.width = img.width
