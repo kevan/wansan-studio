@@ -131,7 +131,7 @@ export function DashboardHeader() {
             const textX = marginX + logoSize + (logoSize * 0.5)
             const textY = footerY + (logoSize / 2)
             ctx.font = `500 ${fontSize}px sans-serif`
-            ctx.fillStyle = '#a1a1aa' // zinc-400
+            ctx.fillStyle = '#71717a' // zinc-500
             ctx.textBaseline = 'middle'
             ctx.fillText('Created with Wansan Studio', textX, textY)
         }
@@ -209,7 +209,7 @@ export function DashboardHeader() {
 
         // Draw Text
         pdf.setFontSize(7)
-        pdf.setTextColor(200, 200, 200) // Very light gray (watermark)
+        pdf.setTextColor(120, 120, 120) // Darker gray
         pdf.text('Created with Wansan Studio', 16, footerY - 1)
 
         // Draw Page Number
