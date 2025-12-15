@@ -24,7 +24,7 @@ export function ChatStream() {
       const fileA = files.find(f => f.id === r.fileAId)
       const fileB = files.find(f => f.id === r.fileBId)
 
-      if (!fileA || !fileB) return null
+      if (!fileA || !fileB || fileA.status !== 'ready' || fileB.status !== 'ready') return null
 
       return {
         sourceTable: fileA.tableName,
@@ -56,7 +56,9 @@ export function ChatStream() {
           loading={
             messages.some(m => m.status === 'thinking')
               ? 'thinking'
-              : messages.some(m => m.status === 'planning' || m.status === 'executing')
+              : messages.some(
+                    m => m.status === 'planning' || m.status === 'executing'
+                  )
                 ? 'crunching'
                 : null
           }

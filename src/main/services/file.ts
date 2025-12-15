@@ -1,7 +1,12 @@
 import fs from 'fs-extra'
 import { extname, basename } from 'path'
 import { DatabaseService } from '../database/duckdb'
-import { ingestExcelFile, getUniqueTableName, ingestJsonData, getSampleValues } from '../engine/ingestion'
+import {
+  ingestExcelFile,
+  getUniqueTableName,
+  ingestJsonData,
+  getSampleValues,
+} from '../engine/ingestion'
 import { DEMO_DATA } from '../../shared/demo-data'
 import { ReloadResult, ColumnSchema, ColumnType } from '../../shared/types'
 
@@ -58,7 +63,9 @@ export class FileService {
         console.error('CSV ingestion failed after fallback', fallbackError)
         throw new Error(
           `Failed to parse CSV file: ${
-            fallbackError instanceof Error ? fallbackError.message : 'Unknown error'
+            fallbackError instanceof Error
+              ? fallbackError.message
+              : 'Unknown error'
           }`
         )
       }
@@ -129,7 +136,10 @@ export class FileService {
           schema.description = schemaItem.description
         }
 
-        schema = await this.enrichSchemaWithSamples(schemaItem.tableName, schema)
+        schema = await this.enrichSchemaWithSamples(
+          schemaItem.tableName,
+          schema
+        )
 
         const preview = await this.databaseService.query(
           `SELECT * FROM "${schemaItem.tableName}" LIMIT 5`
@@ -142,14 +152,14 @@ export class FileService {
         // This is a bit hacky, but consistent with ingestion.ts logic
         let sheetName: string | undefined
         if (schemaItem.description && schemaItem.description.includes(' - ')) {
-           const parts = schemaItem.description.split(' - ')
-           if (parts.length > 1) {
-             sheetName = parts.slice(1).join(' - ')
-           }
+          const parts = schemaItem.description.split(' - ')
+          if (parts.length > 1) {
+            sheetName = parts.slice(1).join(' - ')
+          }
         } else if (schemas.length === 1) {
-             // Single sheet, maybe don't set sheetName explicitly or set to 'Sheet1' if we can't determine?
-             // Actually ingestion.ts doesn't return sheetName in Schema, only description.
-             // We can proceed without sheetName or infer it if we want.
+          // Single sheet, maybe don't set sheetName explicitly or set to 'Sheet1' if we can't determine?
+          // Actually ingestion.ts doesn't return sheetName in Schema, only description.
+          // We can proceed without sheetName or infer it if we want.
         }
 
         results.push({
@@ -157,18 +167,18 @@ export class FileService {
           schema,
           rowCount: countResult[0].count,
           preview,
-          sheetName
+          sheetName,
         })
       }
 
-      // Return array or single object if only 1? 
+      // Return array or single object if only 1?
       // To be consistent and allow frontend to iterate, array is better.
       // But for backward compatibility with other file types (CSV/JSON) which return single object...
       // I should probably wrap CSV/JSON in array too or make frontend handle both.
       // Let's make parseFile always return array?
       // No, parseCSVFile returns single object.
       // If I change parseFile return type, I need to standardize.
-      
+
       // Let's return array for Excel, and update frontend to handle Array | Object.
       return results
     } catch (error) {
@@ -181,10 +191,7 @@ export class FileService {
   private async parseCSVFile(filePath: string) {
     try {
       const fileName = basename(filePath)
-      const tableName = await getUniqueTableName(
-        this.databaseService,
-        fileName
-      )
+      const tableName = await getUniqueTableName(this.databaseService, fileName)
 
       // Read CSV content and register as virtual file
       const csvContent = await fs.readFile(filePath, 'utf-8')
@@ -210,12 +217,14 @@ export class FileService {
       )
 
       // Wrap in array for consistency?
-      return [{
-        tableName,
-        schema,
-        rowCount: countResult[0].count,
-        preview,
-      }]
+      return [
+        {
+          tableName,
+          schema,
+          rowCount: countResult[0].count,
+          preview,
+        },
+      ]
     } catch (error) {
       throw new Error(
         `Failed to parse CSV file: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -226,10 +235,7 @@ export class FileService {
   private async parseJsonFile(filePath: string) {
     try {
       const fileName = basename(filePath)
-      const tableName = await getUniqueTableName(
-        this.databaseService,
-        fileName
-      )
+      const tableName = await getUniqueTableName(this.databaseService, fileName)
 
       // Read JSON content and register as virtual file
       const jsonContent = await fs.readFile(filePath, 'utf-8')
@@ -254,12 +260,14 @@ export class FileService {
         `SELECT COUNT(*) as count FROM "${tableName}"`
       )
 
-      return [{
-        tableName,
-        schema,
-        rowCount: countResult[0].count,
-        preview,
-      }]
+      return [
+        {
+          tableName,
+          schema,
+          rowCount: countResult[0].count,
+          preview,
+        },
+      ]
     } catch (error) {
       console.error('Failed to parse JSON file:', error)
       throw new Error(
@@ -288,6 +296,11 @@ export class FileService {
       }
     }
 
+    // Check existence first
+    if (!fs.existsSync(filePath)) {
+      throw new Error('FILE_NOT_FOUND')
+    }
+
     const ext = extname(filePath).toLowerCase()
     const stats = await fs.stat(filePath)
     let columns: ColumnSchema[] = []
@@ -307,11 +320,13 @@ export class FileService {
       // If we didn't pass sheetName and there are multiple sheets, ingestExcelFile might behave legacy (first sheet) or return all?
       // With my update, if targetTableName is passed and NO sheetName, it assumes first sheet.
       // If we want specific sheet, sheetName MUST be passed.
-      
+
       if (schemas.length > 0) {
         columns = schemas[0].columns
       } else {
-        throw new Error(`Re-ingestion failed: No table found for ${filePath} (Sheet: ${sheetName || 'First'})`)
+        throw new Error(
+          `Re-ingestion failed: No table found for ${filePath} (Sheet: ${sheetName || 'First'})`
+        )
       }
     } else if (ext === '.csv') {
       await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
@@ -327,7 +342,9 @@ export class FileService {
       )
 
       // Fetch schema for the reloaded CSV
-      const columnsResult = await this.databaseService.query(`PRAGMA table_info('${tableName}');`)
+      const columnsResult = await this.databaseService.query(
+        `PRAGMA table_info('${tableName}');`
+      )
 
       for (const col of columnsResult) {
         const sampleValues = await getSampleValues(
@@ -358,7 +375,9 @@ export class FileService {
       )
 
       // Fetch schema for the reloaded JSON
-      const columnsResult = await this.databaseService.query(`PRAGMA table_info('${tableName}');`)
+      const columnsResult = await this.databaseService.query(
+        `PRAGMA table_info('${tableName}');`
+      )
 
       for (const col of columnsResult) {
         const sampleValues = await getSampleValues(

@@ -93,6 +93,7 @@ export interface ProjectState {
 
   // Sync Actions
   markAsStale: (ids: string[]) => void
+  markFileMissing: (id: string) => void
   reloadFile: (
     fileId: string,
     result: { lastModified: number; newColumns: ColumnSchema[] }
@@ -148,19 +149,21 @@ export const useFileStore = create<ProjectState>()(
 
       addFile: file => {
         // [LIMIT CHECK]
-        const { isActivated } = useSettingsStore.getState();
-        const currentCount = get().files.length;
-        
+        const { isActivated } = useSettingsStore.getState()
+        const currentCount = get().files.length
+
         if (!isActivated && currentCount >= 1) {
-            useToastStore.getState().addToast({
-                title: i18n.t('trial_limit_reached_title', { ns: 'common' }),
-                description: i18n.t('trial_limit_file_desc', { ns: 'common' }),
-                type: 'warning',
-            });
-            throw new Error(i18n.t('trial_limit_reached_title', { ns: 'common' }));
+          useToastStore.getState().addToast({
+            title: i18n.t('trial_limit_reached_title', { ns: 'common' }),
+            description: i18n.t('trial_limit_file_desc', { ns: 'common' }),
+            type: 'warning',
+          })
+          throw new Error(i18n.t('trial_limit_reached_title', { ns: 'common' }))
         }
 
-        const existing = get().files.find(f => f.path === file.path && f.sheetName === file.sheetName)
+        const existing = get().files.find(
+          f => f.path === file.path && f.sheetName === file.sheetName
+        )
         if (existing) {
           throw new Error(`File "${file.name}" is already imported.`)
         }
@@ -202,7 +205,7 @@ export const useFileStore = create<ProjectState>()(
             // Clean up DuckDB table
             await window.electronAPI.deleteTable(file.tableName)
           } catch (e) {
-            console.error("Failed to drop table", e)
+            console.error('Failed to drop table', e)
             // Proceed anyway to clear UI
           }
         }
@@ -212,9 +215,14 @@ export const useFileStore = create<ProjectState>()(
           const remainingRelations = state.relations.filter(
             r => r.fileAId !== id && r.fileBId !== id
           )
-          const activeFileId = state.activeFileId === id ? remainingFiles[0]?.id ?? null : state.activeFileId
+          const activeFileId =
+            state.activeFileId === id
+              ? (remainingFiles[0]?.id ?? null)
+              : state.activeFileId
           const activeView =
-            state.activeView === 'schema' && !activeFileId ? 'chat' : state.activeView
+            state.activeView === 'schema' && !activeFileId
+              ? 'chat'
+              : state.activeView
 
           return {
             files: remainingFiles,
@@ -231,8 +239,8 @@ export const useFileStore = create<ProjectState>()(
           activeView: mode,
           activeFileId:
             mode === 'schema'
-              ? fileId ?? state.activeFileId ?? state.files[0]?.id ?? null
-              : fileId ?? state.activeFileId,
+              ? (fileId ?? state.activeFileId ?? state.files[0]?.id ?? null)
+              : (fileId ?? state.activeFileId),
         })),
 
       setSelectedNode: node => set({ selectedNode: node }),
@@ -301,6 +309,13 @@ export const useFileStore = create<ProjectState>()(
           ),
         })),
 
+      markFileMissing: id =>
+        set(state => ({
+          files: state.files.map(f =>
+            f.id === id ? { ...f, status: 'missing' } : f
+          ),
+        })),
+
       reloadFile: (fileId, { lastModified, newColumns }) => {
         let droppedRelationsCount = 0
         set(state => {
@@ -342,12 +357,18 @@ export const useFileStore = create<ProjectState>()(
             return valid
           })
 
-          droppedRelationsCount = state.relations.length - activeRelations.length
+          droppedRelationsCount =
+            state.relations.length - activeRelations.length
 
           return {
             files: state.files.map(f =>
               f.id === fileId
-                ? { ...f, columns: mergedColumns, status: 'ready', lastModified }
+                ? {
+                    ...f,
+                    columns: mergedColumns,
+                    status: 'ready',
+                    lastModified,
+                  }
                 : f
             ),
             relations: activeRelations,

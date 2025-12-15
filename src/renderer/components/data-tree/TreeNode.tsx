@@ -20,6 +20,7 @@ import {
   RefreshCw,
   X,
   AlertCircle,
+  FileWarning,
 } from 'lucide-react'
 import { MouseEvent } from 'react'
 import {
@@ -244,6 +245,8 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
     .replace(/\s+/g, ' ')
     .trim()
 
+  const isMissing = data.type === 'file' && data.status === 'missing'
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -268,16 +271,27 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
 
           {/* Icon */}
           <div className="flex items-center justify-center w-5 shrink-0 mr-1 relative">
-            {getIcon()}
-            {data.type === 'file' && data.status === 'out-of-sync' && (
-              <div className="absolute -top-1 -right-1 bg-white rounded-full">
-                <AlertCircle className="w-2.5 h-2.5 text-amber-500 fill-white" />
-              </div>
+            {isMissing ? (
+              <FileWarning className="w-4 h-4 text-red-400" />
+            ) : (
+              getIcon()
             )}
+            {!isMissing &&
+              data.type === 'file' &&
+              data.status === 'out-of-sync' && (
+                <div className="absolute -top-1 -right-1 bg-white rounded-full">
+                  <AlertCircle className="w-2.5 h-2.5 text-amber-500 fill-white" />
+                </div>
+              )}
           </div>
 
           {/* Label */}
-          <span className="truncate flex-1">{data.name}</span>
+          <span
+            className={`truncate flex-1 ${isMissing ? 'line-through text-red-400 opacity-80' : ''}`}
+            title={isMissing ? 'File not found on disk' : undefined}
+          >
+            {data.name}
+          </span>
 
           {/* Badges / Indicators */}
           {data.isKey && (

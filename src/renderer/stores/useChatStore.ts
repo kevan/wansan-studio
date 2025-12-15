@@ -1,7 +1,11 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { ChatMessage } from '../components/ChatInterface'
-import type { TableSchema, RelationSuggestion, AIAnalysisResult } from '@shared/types.ts'
+import type {
+  TableSchema,
+  RelationSuggestion,
+  AIAnalysisResult,
+} from '@shared/types.ts'
 import { useFileStore } from './useFileStore'
 import { useToastStore } from './useToastStore'
 import { useWorkbenchStore } from './useWorkbenchStore'
@@ -19,16 +23,19 @@ const resolveMentions = (text: string) => {
   const files = useFileStore.getState().files
   if (!files.length) return text
 
-  return text.replace(/@(?:"([^"]+)"|'([^']+)'|([^\s]+))/g, (match, g1, g2, g3) => {
-    const name = g1 || g2 || g3
-    if (!name) return match
-    const file = files.find(f => f.name === name)
-    if (file) {
-      const tableName = file.tableName || file.name || match
-      return `"${tableName}"`
+  return text.replace(
+    /@(?:"([^"]+)"|'([^']+)'|([^\s]+))/g,
+    (match, g1, g2, g3) => {
+      const name = g1 || g2 || g3
+      if (!name) return match
+      const file = files.find(f => f.name === name)
+      if (file) {
+        const tableName = file.tableName || file.name || match
+        return `"${tableName}"`
+      }
+      return match
     }
-    return match
-  })
+  )
 }
 
 interface ChatStore {
@@ -57,10 +64,7 @@ interface ChatStore {
     relations?: RelationSuggestion[],
     languageOverride?: 'en' | 'zh'
   ) => Promise<void>
-  retryMessage: (
-    messageId: string,
-    originalQuery: string
-  ) => Promise<void>
+  retryMessage: (messageId: string, originalQuery: string) => Promise<void>
   rerunAnalysis: (originalMessage: ChatMessage) => Promise<void>
   autoFixMessage: (
     messageId: string,
@@ -82,7 +86,11 @@ const reviveMessages = (messages: ChatMessage[] = []) =>
 
     if (typeof timestampValue === 'number') {
       timestamp = timestampValue
-    } else if (typeof timestampValue === 'object' && timestampValue && 'getTime' in timestampValue) {
+    } else if (
+      typeof timestampValue === 'object' &&
+      timestampValue &&
+      'getTime' in timestampValue
+    ) {
       // 检查是否为 Date 对象
       timestamp = (timestampValue as Date).getTime()
     } else if (typeof timestampValue === 'string') {
@@ -97,13 +105,15 @@ const reviveMessages = (messages: ChatMessage[] = []) =>
     }
   })
 
-const initialChatState: Pick<ChatStore, 'messages' | 'history' | 'replyToId' | 'abortController'> =
-  {
-    messages: [],
-    history: [],
-    replyToId: null,
-    abortController: null,
-  }
+const initialChatState: Pick<
+  ChatStore,
+  'messages' | 'history' | 'replyToId' | 'abortController'
+> = {
+  messages: [],
+  history: [],
+  replyToId: null,
+  abortController: null,
+}
 
 export const useChatStore = create<ChatStore>()(
   persist(
@@ -156,70 +166,71 @@ export const useChatStore = create<ChatStore>()(
             })
             return { messages: nextMessages, history: nextMessages }
           }),
-      sendMessage: async (text, schemas, relations, languageOverride) => {
-        const { messages, replyToId } = get()
-        const fileState = useFileStore.getState()
-        const language = languageOverride || useWorkbenchStore.getState().language || 'en'
-        const readyFiles = fileState.files.filter(f => f.status === 'ready')
-        const startTime = Date.now()
+        sendMessage: async (text, schemas, relations, languageOverride) => {
+          const { messages, replyToId } = get()
+          const fileState = useFileStore.getState()
+          const language =
+            languageOverride || useWorkbenchStore.getState().language || 'en'
+          const readyFiles = fileState.files.filter(f => f.status === 'ready')
+          const startTime = Date.now()
 
-        const { provider } = useSettingsStore.getState()
+          const { provider } = useSettingsStore.getState()
 
-        // Check for Key (skip if provider is 'custom' or special case)
-        // We fetch the config from the backend to ensure we capture environment variables (process.env.OPENAI_API_KEY)
-        let apiKey: string | undefined
-        try {
-          const configRes = await window.electronAPI.getAIConfig()
-          if (configRes.success && configRes.data) {
-            apiKey = configRes.data.apiKey
+          // Check for Key (skip if provider is 'custom' or special case)
+          // We fetch the config from the backend to ensure we capture environment variables (process.env.OPENAI_API_KEY)
+          let apiKey: string | undefined
+          try {
+            const configRes = await window.electronAPI.getAIConfig()
+            if (configRes.success && configRes.data) {
+              apiKey = configRes.data.apiKey
+            }
+          } catch (e) {
+            console.error('Failed to check AI config', e)
           }
-        } catch (e) {
-          console.error('Failed to check AI config', e)
-        }
 
-        if (!apiKey && provider !== 'custom') { // Adjust logic based on your provider requirements
-           const botMsgId = generateId();
-           set(state => ({
+          if (!apiKey && provider !== 'custom') {
+            // Adjust logic based on your provider requirements
+            const botMsgId = generateId()
+            set(state => ({
               messages: [
-                 ...state.messages,
-                 {
-                    id: generateId(), // User Msg
-                    type: 'user',
-                    content: text,
-                    timestamp: Date.now()
-                 },
-                 {
-                    id: botMsgId, // Bot Msg (Error State)
-                    type: 'assistant',
-                    content: '',
-                    status: 'error',
-                    error: 'ERR_NO_API_KEY', // Special Flag
-                    timestamp: Date.now() + 1
-                 }
-              ]
-           }));
-           return;
-        }
+                ...state.messages,
+                {
+                  id: generateId(), // User Msg
+                  type: 'user',
+                  content: text,
+                  timestamp: Date.now(),
+                },
+                {
+                  id: botMsgId, // Bot Msg (Error State)
+                  type: 'assistant',
+                  content: '',
+                  status: 'error',
+                  error: 'ERR_NO_API_KEY', // Special Flag
+                  timestamp: Date.now() + 1,
+                },
+              ],
+            }))
+            return
+          }
 
-        // Create and set new AbortController
-        const abortController = new AbortController()
-        set({ abortController })
+          // Create and set new AbortController
+          const abortController = new AbortController()
+          set({ abortController })
 
-        const resolvedSchemas =
-          schemas ??
-          readyFiles.map(f => ({
-            tableName: f.tableName || `table_${f.id}`,
+          const resolvedSchemas =
+            schemas ??
+            readyFiles.map(f => ({
+              tableName: f.tableName || `table_${f.id}`,
               columns: f.columns,
             }))
           const resolvedRelations =
             relations ??
             fileState.relations
               .map(rel => {
-                const fileA = fileState.files.find(f => f.id === rel.fileAId)
-                const fileB = fileState.files.find(f => f.id === rel.fileBId)
-                if (!fileA || !fileB) return null
-                return {
-                  sourceTable: fileA.tableName,
+                                const fileA = fileState.files.find(f => f.id === rel.fileAId)
+                                const fileB = fileState.files.find(f => f.id === rel.fileBId)
+                                if (!fileA || !fileB || fileA.status !== 'ready' || fileB.status !== 'ready') return null
+                                return {                  sourceTable: fileA.tableName,
                   sourceColumn: rel.columnA,
                   targetTable: fileB.tableName,
                   targetColumn: rel.columnB,
@@ -233,13 +244,16 @@ export const useChatStore = create<ChatStore>()(
           const manualContextMsg =
             replyToId &&
             messages.find(
-              m => m.id === replyToId && m.type === 'assistant' && m.reportData?.sql
+              m =>
+                m.id === replyToId &&
+                m.type === 'assistant' &&
+                m.reportData?.sql
             )
           const autoContextMsg =
             !manualContextMsg &&
-            [...messages].reverse().find(
-              m => m.type === 'assistant' && m.reportData?.sql
-            )
+            [...messages]
+              .reverse()
+              .find(m => m.type === 'assistant' && m.reportData?.sql)
           const selectedContext = manualContextMsg || autoContextMsg
           let context:
             | {
@@ -248,8 +262,13 @@ export const useChatStore = create<ChatStore>()(
               }
             | undefined
 
-          if (selectedContext?.type === 'assistant' && selectedContext.reportData) {
-            const selectedIndex = messages.findIndex(m => m.id === selectedContext.id)
+          if (
+            selectedContext?.type === 'assistant' &&
+            selectedContext.reportData
+          ) {
+            const selectedIndex = messages.findIndex(
+              m => m.id === selectedContext.id
+            )
             const precedingUser = [...messages]
               .slice(0, selectedIndex)
               .reverse()
@@ -263,12 +282,12 @@ export const useChatStore = create<ChatStore>()(
           const userMsgId = generateId()
           const botMsgId = generateId()
 
-        const userMsg: ChatMessage = {
-          id: userMsgId,
-          type: 'user',
-          content: text,
-          timestamp: Date.now(),
-        }
+          const userMsg: ChatMessage = {
+            id: userMsgId,
+            type: 'user',
+            content: text,
+            timestamp: Date.now(),
+          }
 
           const ghostMsg: ChatMessage = {
             id: botMsgId,
@@ -286,20 +305,20 @@ export const useChatStore = create<ChatStore>()(
             replyToId: null,
           })
 
-        try {
-          // Check if aborted
-          if (abortController.signal.aborted) {
-            throw new Error('Generation aborted by user')
-          }
+          try {
+            // Check if aborted
+            if (abortController.signal.aborted) {
+              throw new Error('Generation aborted by user')
+            }
 
-          const resolvedPrompt = resolveMentions(text)
-          const planResponse = await window.electronAPI.askAI(
-            resolvedPrompt,
-            resolvedSchemas,
-            resolvedRelations,
-            context,
-            language
-          )
+            const resolvedPrompt = resolveMentions(text)
+            const planResponse = await window.electronAPI.askAI(
+              resolvedPrompt,
+              resolvedSchemas,
+              resolvedRelations,
+              context,
+              language
+            )
 
             // Check if aborted after AI call
             if (abortController.signal.aborted) {
@@ -361,7 +380,7 @@ export const useChatStore = create<ChatStore>()(
             // Track Analysis Success
             Analytics.track('analysis_generated', {
               viz_type: plan.visualization?.type || 'unknown',
-              status: 'success'
+              status: 'success',
             })
 
             get().updateMessage(botMsgId, msg => ({
@@ -392,7 +411,7 @@ export const useChatStore = create<ChatStore>()(
             // Track Analysis Error
             Analytics.track('analysis_generated', {
               status: 'error',
-              error_type: 'execution_failed'
+              error_type: 'execution_failed',
             })
 
             get().updateMessage(botMsgId, msg => ({
@@ -437,11 +456,10 @@ export const useChatStore = create<ChatStore>()(
 
           const relations: RelationSuggestion[] = fileState.relations
             .map(rel => {
-              const fileA = fileState.files.find(f => f.id === rel.fileAId)
-              const fileB = fileState.files.find(f => f.id === rel.fileBId)
-              if (!fileA || !fileB) return null
-              return {
-                sourceTable: fileA.tableName,
+                              const fileA = fileState.files.find(f => f.id === rel.fileAId)
+                              const fileB = fileState.files.find(f => f.id === rel.fileBId)
+                              if (!fileA || !fileB || fileA.status !== 'ready' || fileB.status !== 'ready') return null
+                              return {                sourceTable: fileA.tableName,
                 sourceColumn: rel.columnA,
                 targetTable: fileB.tableName,
                 targetColumn: rel.columnB,
@@ -453,10 +471,10 @@ export const useChatStore = create<ChatStore>()(
 
           // Determine context (from messages preceding the target)
           const precedingMessages = messages.slice(0, targetMsgIndex)
-          const contextMsg = [...precedingMessages].reverse().find(
-            m => m.type === 'assistant' && m.reportData?.sql
-          )
-          
+          const contextMsg = [...precedingMessages]
+            .reverse()
+            .find(m => m.type === 'assistant' && m.reportData?.sql)
+
           let context:
             | {
                 lastSql: string
@@ -503,7 +521,7 @@ export const useChatStore = create<ChatStore>()(
               throw new Error(plan.error || 'AI returned an error')
             }
 
-             const refinementHint =
+            const refinementHint =
               (plan.reasoning || '')
                 .toLowerCase()
                 .includes('modified previous sql') || !!context
@@ -545,7 +563,7 @@ export const useChatStore = create<ChatStore>()(
             // Track Analysis Success
             Analytics.track('analysis_generated', {
               viz_type: plan.visualization?.type || 'unknown',
-              status: 'success'
+              status: 'success',
             })
 
             get().updateMessage(messageId, msg => ({
@@ -575,7 +593,7 @@ export const useChatStore = create<ChatStore>()(
             // Track Analysis Error
             Analytics.track('analysis_generated', {
               status: 'error',
-              error_type: 'execution_failed'
+              error_type: 'execution_failed',
             })
 
             get().updateMessage(messageId, msg => ({
@@ -600,7 +618,12 @@ export const useChatStore = create<ChatStore>()(
 
           await get().sendMessage(originalMessage.originalQuery)
         },
-        autoFixMessage: async (messageId: string, error: string, originalQuery?: string, originalSql?: string) => {
+        autoFixMessage: async (
+          messageId: string,
+          error: string,
+          originalQuery?: string,
+          originalSql?: string
+        ) => {
           const message = get().messages.find(m => m.id === messageId)
           if (!message) return
 
@@ -632,7 +655,10 @@ export const useChatStore = create<ChatStore>()(
             )
 
             if (!fixResult.success || !fixResult.data) {
-              throw new Error(fixResult.error || i18n.t('error_failed_to_fix_sql', { ns: 'chat' }))
+              throw new Error(
+                fixResult.error ||
+                  i18n.t('error_failed_to_fix_sql', { ns: 'chat' })
+              )
             }
 
             const { sql: fixedSql, reasoning } = fixResult.data
@@ -641,7 +667,10 @@ export const useChatStore = create<ChatStore>()(
             const execution = await window.electronAPI.runSQL(fixedSql)
 
             if (!execution.success) {
-              throw new Error(execution.error || i18n.t('error_fixed_sql_execution_failed', { ns: 'chat' }))
+              throw new Error(
+                execution.error ||
+                  i18n.t('error_fixed_sql_execution_failed', { ns: 'chat' })
+              )
             }
 
             const data = execution.data ?? []
@@ -656,15 +685,19 @@ export const useChatStore = create<ChatStore>()(
               reportData: {
                 title: i18n.t('autofix_fixed_title', {
                   ns: 'chat',
-                  query: msg.originalQuery || i18n.t('autofix_fixed_query_fallback', { ns: 'chat' })
+                  query:
+                    msg.originalQuery ||
+                    i18n.t('autofix_fixed_query_fallback', { ns: 'chat' }),
                 }),
                 summary: i18n.t('autofix_summary', {
                   ns: 'chat',
                   error,
-                  reasoning
+                  reasoning,
                 }),
                 sql: fixedSql,
-                reasoning: (msg.planReasoning ? msg.planReasoning + '\n\n' : '') + i18n.t('autofix_reasoning', { ns: 'chat', reasoning }),
+                reasoning:
+                  (msg.planReasoning ? msg.planReasoning + '\n\n' : '') +
+                  i18n.t('autofix_reasoning', { ns: 'chat', reasoning }),
                 suggestions: [],
                 chartType: 'table',
                 chartTitle: i18n.t('autofix_chart_title', { ns: 'chat' }),
@@ -681,7 +714,6 @@ export const useChatStore = create<ChatStore>()(
               description: i18n.t('autofix_success_toast_desc', { ns: 'chat' }),
               duration: 4000,
             })
-
           } catch (error: any) {
             // Update message with error
             get().updateMessage(messageId, msg => ({
@@ -689,14 +721,17 @@ export const useChatStore = create<ChatStore>()(
               status: 'error',
               content: i18n.t('autofix_failed_content', {
                 ns: 'chat',
-                error: error?.message || i18n.t('error_unknown', { ns: 'chat' })
+                error:
+                  error?.message || i18n.t('error_unknown', { ns: 'chat' }),
               }),
             }))
 
             useToastStore.getState().addToast({
               type: 'error',
               title: i18n.t('autofix_failed_toast_title', { ns: 'chat' }),
-              description: error?.message || i18n.t('autofix_failed_toast_desc', { ns: 'chat' }),
+              description:
+                error?.message ||
+                i18n.t('autofix_failed_toast_desc', { ns: 'chat' }),
               duration: 4000,
             })
           }
@@ -705,13 +740,25 @@ export const useChatStore = create<ChatStore>()(
           set(state => ({
             abortController: null,
             messages: state.messages.map(m =>
-              m.status === 'thinking' || m.status === 'planning' || m.status === 'executing'
-                ? { ...m, status: 'error', content: i18n.t('interrupted_retry', { ns: 'chat' }) }
+              m.status === 'thinking' ||
+              m.status === 'planning' ||
+              m.status === 'executing'
+                ? {
+                    ...m,
+                    status: 'error',
+                    content: i18n.t('interrupted_retry', { ns: 'chat' }),
+                  }
                 : m
             ),
             history: state.history.map(m =>
-              m.status === 'thinking' || m.status === 'planning' || m.status === 'executing'
-                ? { ...m, status: 'error', content: i18n.t('interrupted_retry', { ns: 'chat' }) }
+              m.status === 'thinking' ||
+              m.status === 'planning' ||
+              m.status === 'executing'
+                ? {
+                    ...m,
+                    status: 'error',
+                    content: i18n.t('interrupted_retry', { ns: 'chat' }),
+                  }
                 : m
             ),
           }))
@@ -733,17 +780,22 @@ export const useChatStore = create<ChatStore>()(
 
             // If it's an assistant message, try to remove the preceding user message if it exists
             if (message.type === 'assistant') {
-               // Look backwards from the current message index
-               if (index > 0 && state.messages[index - 1].type === 'user') {
-                 idsToRemove.push(state.messages[index - 1].id)
-               }
+              // Look backwards from the current message index
+              if (index > 0 && state.messages[index - 1].type === 'user') {
+                idsToRemove.push(state.messages[index - 1].id)
+              }
             }
 
-            const nextMessages = state.messages.filter(m => !idsToRemove.includes(m.id))
+            const nextMessages = state.messages.filter(
+              m => !idsToRemove.includes(m.id)
+            )
             return {
               messages: nextMessages,
               history: nextMessages,
-              replyToId: state.replyToId && idsToRemove.includes(state.replyToId) ? null : state.replyToId,
+              replyToId:
+                state.replyToId && idsToRemove.includes(state.replyToId)
+                  ? null
+                  : state.replyToId,
             }
           })
         },

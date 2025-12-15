@@ -9,6 +9,7 @@ export function useDataRehydrate() {
   const reloadFile = useFileStore(state => state.reloadFile)
   const updateFile = useFileStore(state => state.updateFile)
   const setRestoring = useFileStore(state => state.setRestoring)
+  const markFileMissing = useFileStore(state => state.markFileMissing)
   const addToast = useToastStore(state => state.addToast)
   const dismissToast = useToastStore(state => state.dismissToast)
   const { mutateAsync: reIngestFile } = useReIngestFile()
@@ -65,24 +66,32 @@ export function useDataRehydrate() {
           } catch (error) {
             if (cancelled) return
             failCount++
-            markAsStale([file.id])
-            updateFile(file.id, {
-              status: 'missing',
-              error:
-                error instanceof Error
-                  ? error.message
-                  : 'File missing or unreadable during restore',
-            })
-            console.error('Auto rehydrate failed:', {
-              file: file.path,
-              tableName: file.tableName,
-              error,
-            })
+
+            const errorMessage =
+              error instanceof Error ? error.message : 'Unknown error'
+
+            if (
+              errorMessage.includes('FILE_NOT_FOUND') ||
+              errorMessage.includes('ENOENT')
+            ) {
+              markFileMissing(file.id)
+              console.warn(`File missing during rehydration: ${file.path}`)
+            } else {
+              markAsStale([file.id])
+              updateFile(file.id, {
+                status: 'error',
+                error: errorMessage,
+              })
+              console.error('Auto rehydrate failed:', {
+                file: file.path,
+                tableName: file.tableName,
+                error,
+              })
+            }
+
             addToast({
               title: 'Restore failed',
-              description: `${file.name}: ${
-                error instanceof Error ? error.message : 'Unknown error'
-              }`,
+              description: `${file.name}: ${errorMessage}`,
               type: 'error',
               duration: 5000,
             })
@@ -120,5 +129,16 @@ export function useDataRehydrate() {
       setRestoring(false)
       dismissToast(toastId)
     }
-  }, [addToast, dismissToast, files, hydrated, markAsStale, reIngestFile, reloadFile, setRestoring])
+  }, [
+    addToast,
+    dismissToast,
+    files,
+    hydrated,
+    markAsStale,
+    markFileMissing,
+    reIngestFile,
+    reloadFile,
+    setRestoring,
+    updateFile,
+  ])
 }
