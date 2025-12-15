@@ -134,7 +134,7 @@ export function DashboardCanvasV3() {
   return (
     <div
       ref={containerRef}
-      className={`flex h-full w-full flex-1 justify-center overflow-auto bg-zinc-100/60 p-6 dark:bg-zinc-900 ${
+      className={`flex h-full w-full flex-1 overflow-auto bg-zinc-100/60 p-6 dark:bg-zinc-900 ${
         isSpacePressed ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''
       }`}
       onMouseDown={handleMouseDown}
@@ -142,10 +142,16 @@ export function DashboardCanvasV3() {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      <div className="flex min-h-min flex-col items-center">
+      <div
+        className={`mx-auto flex min-h-min w-fit flex-col ${
+          isA4 ? 'items-center' : ''
+        }`}
+      >
         <div
           id="dashboard-export-root"
-          className="relative w-full transition-transform duration-200"
+          className={`relative w-full transition-transform duration-200 ${
+            !isA4 ? 'bg-white shadow-sm' : ''
+          }`}
           style={{
             transform: `scale(${activeScale})`,
             transformOrigin: 'top center',
