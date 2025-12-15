@@ -37,6 +37,7 @@ import { useTranslation } from 'react-i18next'
 import { AI_PROVIDERS, type AIProviderKey } from '@/src/lib/constants'
 import { exportDebugLog } from '../../utils/debug-exporter'
 import { DISCLAIMER_TEXT_ZH, DISCLAIMER_TEXT_EN } from '../../lib/legal-text'
+import { SimpleMarkdown } from '@/components/ui/simple-markdown'
 
 type VerifyStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -527,8 +528,8 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
           <DialogHeader>
             <DialogTitle>{t('about.disclaimer_link')}</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-4 border rounded-md bg-zinc-50 text-sm whitespace-pre-wrap leading-relaxed">
-            {disclaimerText}
+          <div className="flex-1 overflow-y-auto p-6 border rounded-md bg-white">
+            <SimpleMarkdown content={disclaimerText} />
           </div>
         </DialogContent>
       </Dialog>
