@@ -61,7 +61,7 @@
   },
   "about": {
     "version": "Wansan Studio v{{version}}",
-    "beta_version": "v1.0.1 Beta",
+    "beta_version": "v{{version}} Beta",
     "tagline": "Local-first BI desktop app."
   },
   "onboarding": {

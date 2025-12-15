@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
+import fs from 'fs'
+
+const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'))
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -28,6 +31,7 @@ export default defineConfig(({ mode }) => ({
     }
   },
   define: {
-    __IS_DEV__: JSON.stringify(mode === 'development')
+    __IS_DEV__: JSON.stringify(mode === 'development'),
+    __APP_VERSION__: JSON.stringify(pkg.version)
   }
 }))

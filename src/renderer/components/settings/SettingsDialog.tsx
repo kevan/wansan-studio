@@ -485,7 +485,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
               {/* 3. ABOUT */}
               <section className="text-center py-4">
                 <div className="font-semibold text-sm">Wansan Studio</div>
-                <div className="text-xs text-muted-foreground">{t('about.beta_version')}</div>
+                <div className="text-xs text-muted-foreground">{t('about.beta_version', { version: __APP_VERSION__ })}</div>
               </section>
 
               <div className="h-10" />

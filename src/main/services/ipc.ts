@@ -85,7 +85,12 @@ export function setupIPC(
         return { success: false, error: 'User cancelled' }
       }
 
-      return { success: true, data: result.filePaths }
+      const filesWithStats = await Promise.all(result.filePaths.map(async (filePath) => {
+        const stats = await fs.stat(filePath);
+        return { path: filePath, size: stats.size };
+      }));
+
+      return { success: true, data: filesWithStats }
     } catch (error) {
       return { success: false, error: 'Multi-file selection error' }
     }

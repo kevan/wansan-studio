@@ -10,10 +10,11 @@ export type SettingsLanguage = 'en' | 'zh'
 export interface RemoteConfig {
   min_version?: string;
   latest_version?: string;
+  download_url?: string;
   beta_code?: string;
   announcement?: {
     id: string;
-    text: string;
+    text: string | { [lang: string]: string }; 
     link?: string;
     level?: 'info' | 'warning';
   } | null;

@@ -1,28 +1,43 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSettingsStore, RemoteConfig } from '../stores/useSettingsStore';
 import { useToastStore } from '../stores/useToastStore';
 import semver from 'semver';
+import { useTranslation } from 'react-i18next';
 
 export function useRemoteConfig() {
   const setRemoteConfig = useSettingsStore(s => s.setRemoteConfig);
   const updateSettings = useSettingsStore(s => s.updateSettings);
   const dismissedAnnouncementId = useSettingsStore(s => s.dismissedAnnouncementId);
   const { addToast } = useToastStore();
-  const appVersion = window.electronAPI.version.app; // Get real app version
+  const { t } = useTranslation('common');
+  const appVersion = __APP_VERSION__;
+  const initialized = useRef(false);
 
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
     async function fetchConfig() {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
       try {
         const res = await fetch("https://api.wansan.app/v1/config", {
-            headers: { 'X-App-Version': appVersion }
+            headers: { 'X-App-Version': appVersion },
+            signal: controller.signal
         });
-        if (!res.ok) return;
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+          throw new Error(`API Error: HTTP ${res.status}`);
+        }
         
         const data = await res.json();
         
         const config: RemoteConfig = {
             min_version: data.min_version,
             latest_version: data.latest_version,
+            download_url: data.download_url,
             beta_code: data.beta_code,
             announcement: data.announcement,
             features: data.features,
@@ -38,24 +53,44 @@ export function useRemoteConfig() {
         // 1. Force Update Check
         if (config.min_version && semver.lt(appVersion, config.min_version)) {
            // Dispatch global event for the modal
-           const event = new CustomEvent('force-update', { detail: config.latest_version });
+           const event = new CustomEvent('force-update', { 
+               detail: {
+                   version: config.latest_version,
+                   url: config.download_url || "https://wansan.app"
+               }
+           });
            document.dispatchEvent(event);
         }
 
         // 2. Announcement Check
-        if (config.announcement && config.announcement.id !== dismissedAnnouncementId) {
+        const currentDismissedId = useSettingsStore.getState().dismissedAnnouncementId;
+        const { language } = useSettingsStore.getState(); // Get current language
+
+        if (config.announcement && config.announcement.id !== currentDismissedId) {
+            const rawText = config.announcement.text;
+            let displayText = "";
+
+            if (typeof rawText === 'object') {
+                // Try exact match -> fallback to English -> fallback to first key
+                displayText = rawText[language] || rawText['en'] || Object.values(rawText)[0];
+            } else {
+                displayText = rawText;
+            }
+
             addToast({
-                title: config.announcement.level === 'warning' ? 'Important' : 'Announcement',
-                description: config.announcement.text,
+                title: config.announcement.level === 'warning' ? t('announcement_important') : t('announcement_title'),
+                description: displayText, // Use resolved text
                 type: config.announcement.level === 'warning' ? 'error' : 'info',
                 duration: 10000,
             });
-            // We don't auto-dismiss here. A "Mark as read" feature would be needed in UI.
         }
       } catch (e) {
-        console.error("Config fetch failed", e);
+        console.warn("Remote Config Failed (Offline Mode):", e);
+        // Fail-open: keep existing local defaults. Do not lock the app.
+        // The store is already initialized with defaults, so no action needed here.
+        // If we want to show an offline indicator, we could set a state here.
       }
     }
     fetchConfig();
-  }, [setRemoteConfig, addToast, dismissedAnnouncementId, appVersion, updateSettings]);
+  }, [setRemoteConfig, addToast, appVersion, updateSettings]);
 }

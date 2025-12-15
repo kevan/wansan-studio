@@ -5,6 +5,7 @@ import { ElectronAPI } from '../preload'
 
 // Vite 定义的全局变量
 declare const __IS_DEV__: boolean
+declare const __APP_VERSION__: string
 
 declare global {
   interface Window {

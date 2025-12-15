@@ -26,6 +26,7 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
   const [isLoadingDemo, setIsLoadingDemo] = useState(false)
 
   const allowedExtensions = ['.xlsx', '.xls', '.csv', '.json']
+  const MAX_SIZE = 100 * 1024 * 1024; // 100MB
 
   // 处理单个文件
   const processFile = async (
@@ -101,12 +102,24 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
       const result = await selectFilesMutation.mutateAsync()
       if (result && result.length > 0) {
         // Transform to match processFiles signature
-        const filesToProcess = result.map(filePath => ({
-          path: filePath,
-          name: filePath.split('/').pop() || 'unknown',
-        }))
+        const filesToProcess = result.map(fileData => ({
+          path: fileData.path,
+          name: fileData.path.split('/').pop() || 'unknown',
+          size: fileData.size,
+        }));
 
-        await processFiles(filesToProcess)
+        const oversizedFiles = filesToProcess.filter(f => f.size > MAX_SIZE);
+        const validSizeFiles = filesToProcess.filter(f => f.size <= MAX_SIZE);
+
+        if (oversizedFiles.length > 0) {
+            addToast({
+                title: t('file_too_large_title'),
+                description: t('file_too_large_desc', { files: oversizedFiles.map(f => f.name).join(', ') }),
+                type: "warning"
+            });
+        }
+
+        await processFiles(validSizeFiles)
       }
     } catch (error) {
       console.error('File selection error:', error)
@@ -140,8 +153,19 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
 
     const droppedFiles = Array.from(e.dataTransfer.files)
 
+    const oversizedFiles = droppedFiles.filter(f => f.size > MAX_SIZE);
+    const validSizeFiles = droppedFiles.filter(f => f.size <= MAX_SIZE);
+
+    if (oversizedFiles.length > 0) {
+        addToast({
+            title: t('file_too_large_title'),
+            description: t('file_too_large_desc', { files: oversizedFiles.map(f => f.name).join(', ') }),
+            type: "warning"
+        });
+    }
+
     // 过滤支持的文件类型
-    const validFiles = droppedFiles.filter(file => {
+    const validFiles = validSizeFiles.filter(file => {
       const ext = '.' + file.name.split('.').pop()?.toLowerCase()
       return allowedExtensions.includes(ext)
     })

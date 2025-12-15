@@ -96,6 +96,8 @@
   "start_analysis": "开始分析",
   "data_sources_root": "数据源",
   "relationships_root": "关联关系",
+  "data_detail": "数据详情",
+  "value": "数值",
 
   "sidebar": {
     "electron_api_unavailable": "Electron API 不可用",
@@ -106,8 +108,17 @@
     "pro_active": "专业版已激活",
     "license_active": "授权已激活",
     "trial_mode": "试用模式",
-    "unlock_full_access": "解锁完整版"
+    "unlock_full_access": "解锁完整版",
+    "file_too_large_title": "文件过大",
+    "file_too_large_desc": "超出 Beta 限制 (100MB)。已跳过文件: {{files}}"
   },
+
+  "update_modal_title": "需要重要更新",
+  "update_modal_desc": "检测到新版本 ({{version}})。为了继续使用 Wansan Studio，请进行更新。更新包含重要功能和安全修复。",
+  "update_modal_button": "下载更新",
+
+  "announcement_title": "公告",
+  "announcement_important": "重要通知",
 
   "settings_title": "设置",
   "settings_tab_ai": "AI 模型",

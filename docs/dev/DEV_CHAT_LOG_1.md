@@ -1592,3 +1592,513 @@ const handleExportPDF = () => {
   // ... export logic ...
 }
 ```
+
+针对 WANSAN_CONFIG client 端是不是应该要处理激活以外的工作
+
+这是 **🔵 模式 A：规划 (Planning)** 响应。
+
+**是的，绝对不仅是激活。**
+
+`WANSAN_CONFIG` 是您的 **"远程指挥塔 (Remote Control)"**。在内测阶段，它的战略意义甚至大于 License 系统。
+
+在 `SPEC_CLIENT_INTEGRATION.md` 中，我们定义了从云端拉取配置的逻辑。除了 `beta_code`，客户端还需要处理以下 **3 个关键运营配置**：
+
+### 1. 强制更新弹窗 (Force Update / Minimum Version)
+*   **场景**：您发现 v1.0.1 有个毁灭性的 Bug（比如计算金额会少个0），您发了 v1.0.2 修复。
+*   **需求**：必须阻止 v1.0.1 的用户继续使用。
+*   **Client 处理逻辑**：
+    *   比较本地 `appVersion` 和远程 `config.min_version`。
+    *   如果 `local < min`，**弹出一个无法关闭的 Modal**：“版本过低，请下载最新版”。
+
+### 2. 首页公告 (Announcement Banner)
+*   **场景**：您想告诉用户“加群送内测码”，或者“服务器今晚维护”。
+*   **需求**：在 App 首页显示一条醒目的通知。
+*   **Client 处理逻辑**：
+    *   检查 `config.announcement` 字段。
+    *   如果存在且 ID 未被用户关闭过 -> 在 Chat 区域顶部渲染一个可关闭的 `Alert` 组件。
+
+### 3. 功能开关 (Feature Flags)
+*   **场景**：您做了一个新功能“AI 预测”，但不确定稳不稳定。
+*   **需求**：先只对 10% 的用户开放，或者随时能远程关掉。
+*   **Client 处理逻辑**：
+    *   将 `config.features` 存入 Store。
+    *   在 UI 代码里：`if (features.enable_prediction) showButton()`。
+
+---
+
+### 🚀 执行指令：扩充客户端配置处理逻辑
+
+我们需要更新 `useRemoteConfig` 和 `useSettingsStore`，让它们能够“读懂”并“执行”这些高级配置。
+
+请将以下指令发送给 **Code Agent**。
+
+***
+
+### TASK: Implement Advanced Remote Config Logic
+
+**Goal**: Handle `min_version` checks and `announcement` display from the cloud config.
+
+#### Step 1: Update Store (`useSettingsStore.ts`)
+
+Add fields to store the config.
+
+```typescript
+interface RemoteConfig {
+  min_version?: string;
+  latest_version?: string;
+  beta_code?: string;
+  announcement?: {
+    id: string;
+    text: string;
+    link?: string;
+    level?: 'info' | 'warning';
+  } | null;
+  features?: Record<string, boolean>;
+}
+
+interface SettingsState {
+  // ...
+  remoteConfig: RemoteConfig;
+  setRemoteConfig: (cfg: RemoteConfig) => void;
+  dismissedAnnouncementId: string | null;
+  dismissAnnouncement: (id: string) => void;
+}
+```
+
+#### Step 2: Implement Logic Hook (`use-remote-config.ts`)
+
+Create a hook that runs on mount to fetch and **act** on the config.
+
+```typescript
+import { useEffect } from 'react';
+import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useToastStore } from '@/stores/useToastStore';
+// Use a semver library or simple string compare
+import semver from 'semver'; // or write a simple compare helper
+
+const APP_VERSION = "1.0.1"; // Hardcoded or from package.json
+
+export function useRemoteConfig() {
+  const setRemoteConfig = useSettingsStore(s => s.setRemoteConfig);
+  const { addToast } = useToastStore();
+
+  useEffect(() => {
+    async function fetchConfig() {
+      try {
+        const res = await fetch("https://api.wansan.app/v1/config", {
+            headers: { 'X-App-Version': APP_VERSION }
+        });
+        const config = await res.json();
+        setRemoteConfig(config);
+
+        // 1. Force Update Check
+        if (config.min_version && semver.lt(APP_VERSION, config.min_version)) {
+           // DISPATCH A GLOBAL EVENT or Set a Blocking State
+           // For MVP: Just alert (Blocking Modal is better)
+           document.dispatchEvent(new CustomEvent('force-update', { detail: config.latest_version }));
+        }
+
+        // 2. Announcement Check (Toast version)
+        // Or handle this in UI layer
+      } catch (e) {
+        console.error("Config fetch failed", e);
+      }
+    }
+    fetchConfig();
+  }, []);
+}
+```
+
+#### Step 3: Global Update Modal (`src/renderer/src/components/update-modal.tsx`)
+
+A blocking modal that listens for the `force-update` event.
+
+*   **Render**: If triggered, show "Critical Update Required".
+*   **Action**: Button "Download Update" -> Opens `https://wansan.app` (or download link).
+*   **Mount**: Put this in `App.tsx`.
+
+目前的版本发布出去，还有什么可能存在的技术风险吗
+
+这是 **🔵 模式 A：规划 (Planning)** 响应。
+
+作为一个即将面向公众（尤其是非技术群体如小红书用户）发布的 **Beta 版本**，目前的架构虽然在逻辑上闭环了，但在 **“真实世界的混乱”** 面前，依然存在几个显著的技术风险点。
+
+我将风险按 **破坏力 (Severity)** 分级，请您重点关注 **🔴 致命级** 风险。
+
+---
+
+### 🔴 致命级风险 (Showstoppers)
+
+如果不处理好，用户会直接流失，或者应用无法启动。
+
+#### 1. 杀毒软件误报 (Anti-Virus False Positive)
+*   **现象**：由于 Windows `.exe` 没有签名，部分杀毒软件（如 360、火绒、Windows Defender）可能会直接把安装包当做病毒**隔离或删除**。
+*   **后果**：用户下载了个寂寞，且对软件产生极度不信任。
+*   **对策**：
+    *   **话术引导**：在文档中明确写出“可能会被杀软误杀，请添加信任”。
+    *   **压缩包**：发布时不要只发 `.exe`，最好套一层 `.7z` 或 `.zip` 压缩包（带密码更好，但这太麻烦），通常能规避第一层扫描。
+
+#### 2. Excel 解析的“千奇百怪” (Parsing Chaos)
+*   **现象**：用户上传的 Excel 极其不规范（如：第一行不是表头、日期格式是 `44562` 这种数字、包含巨大的空行、极其复杂的合并单元格）。
+*   **后果**：
+    *   `xlsx` 解析库可能会报错。
+    *   或者更糟：解析成功了，但列名全是 `__EMPTY_1`，导致 AI 根本看不懂，生成的 SQL 全是错的。
+*   **对策**：
+    *   **Schema 确认页**：这就是为什么我们之前设计的“导入后确认 Schema”环节如此重要。**一定要让用户看一眼解析结果**。如果乱码，用户自己知道是文件问题。
+
+#### 3. WASM 内存爆炸 (OOM Crash)
+*   **现象**：DuckDB-WASM 运行在渲染进程或 Node 进程中，受 V8 引擎内存限制（通常 2GB-4GB）。如果用户导入一个 **500MB** 的 Excel（解压后可能变 2GB CSV），App 会直接**白屏崩溃**。
+*   **后果**：应用闪退。
+*   **对策**：
+    *   **硬限制**：在 `ingestion.ts` 里加一个判断，如果是 MVP，检测到文件 > 100MB，直接弹窗拒绝：“内测版暂支持 100MB 以内文件”。
+
+---
+
+### 🟡 体验级风险 (UX Friction)
+
+影响体验，但不至于完全不能用。
+
+#### 4. Token 超限 (Context Window Overflow)
+*   **现象**：用户上传了一个**宽表**（比如有 200 列）。
+*   **后果**：我们把 200 个列名 + 类型 + 样本数据塞进 Prompt，直接撑爆了 OpenAI 的 Context Window (如 gpt-3.5-turbo 的 4k/16k 限制)。API 返回 `400 Bad Request`。
+*   **对策**：
+    *   **截断保护**：在 `ai-bridge` 构造 Prompt 时，检查字符数。如果太长，优先保留列名，丢弃样本数据；或者提示用户“表格列数过多，建议删减”。
+
+#### 5. 启动慢 (Re-ingestion Latency)
+*   **现象**：DuckDB 是内存数据库。用户第一次玩得很开心，导入了 10 个文件。第二次打开 App，系统需要重新解析这 10 个文件。
+*   **后果**：启动页可能会卡在 "Restoring Session..." 长达 10-20 秒。
+*   **对策**：
+    *   **Loading 动画**：确保 Loading 界面是有趣的、在动的，别让用户以为死机了。
+
+---
+
+### 🟢 运营风险 (Ops Risk)
+
+#### 6. Cloudflare 域名被墙
+*   **现象**：`api.wansan.app` 在某些地区或运营商网络下无法访问。
+*   **后果**：配置拉取失败，用户可能卡在内测码验证，或者看不到公告。
+*   **对策**：
+    *   **Fail-Open 策略**：客户端代码必须健壮。如果 `fetch(/config)` 失败（网络错误），**默认放行**（使用本地硬编码配置），而不是锁死 App。让用户先用上再说。
+
+---
+
+### 🛡️ 架构师的最终建议
+
+针对内测，我们无法解决所有问题。**抓大放小**：
+
+1.  **必须加文件大小限制**：限制在 **50MB** 或 **100MB**。这是防止 OOM 最廉价的手段。
+2.  **必须做网络容错**：如果连不上 Cloudflare，默认允许用户进入（降级体验）。
+3.  **文档即客服**：把 `sudo xattr`、`杀毒软件`、`文件大小` 这三点写在文档最显眼的地方。
+
+**准备好接受用户的疯狂吐槽了吗？如果是，那就发布吧！** 🚀
+
+
+执行文件大小限制和网络容错
+
+这是 **🔴 模式 B：执行 (Execution) - 轨道 2 (Direct Method)** 的响应。
+
+这是发布前最后的两道安全阀。
+
+1.  **文件大小限制 (Safety Valve)**: 防止 V8 内存崩溃。
+2.  **网络容错 (Fail-Open)**: 防止因 CF 被墙导致 App 变砖。
+
+请将以下指令发送给 **Code Agent**。
+
+***
+
+### TASK: Implement Safety Limits & Network Resilience
+
+**Goal**: Prevent OOM crashes and ensure App works even if API is blocked.
+
+#### Step 1: File Size Limit (`src/renderer/src/stores/useFileStore.ts` or Ingestion Logic)
+
+**Action**: Add a check before processing file.
+
+**Constraint**: Max 100MB (100 * 1024 * 1024 bytes).
+
+```typescript
+// Inside addFiles / handleDrop
+const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+
+const onDrop = async (files: File[]) => {
+  const validFiles = [];
+  const rejectedFiles = [];
+
+  for (const f of files) {
+    if (f.size > MAX_SIZE) {
+      rejectedFiles.push(f.name);
+    } else {
+      validFiles.push(f);
+    }
+  }
+
+  if (rejectedFiles.length > 0) {
+    useToastStore.getState().addToast({
+      title: "File too large",
+      description: `Beta limit is 100MB. Skipped: ${rejectedFiles.join(', ')}`,
+      type: "warning"
+    });
+  }
+
+  // Proceed with validFiles...
+};
+```
+
+#### Step 2: Network Fail-Open (`src/renderer/src/hooks/use-remote-config.ts`)
+
+**Action**: Wrap the fetch in a try-catch that **defaults to a working state**.
+
+```typescript
+// Inside useRemoteConfig
+useEffect(() => {
+  async function fetchConfig() {
+    try {
+      // 1. Set Timeout (Don't hang for 30s if firewall blocks it)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+      const res = await fetch("https://api.wansan.app/v1/config", {
+         headers: { 'X-App-Version': APP_VERSION },
+         signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) throw new Error("API Error");
+      
+      const config = await res.json();
+      setRemoteConfig(config); // Update with Cloud Config
+      
+    } catch (e) {
+      console.warn("Remote Config Failed (Offline Mode):", e);
+      // 2. FAIL-OPEN STRATEGY
+      // Keep existing local defaults (which should allow "WANSAN-BETA")
+      // Do NOT lock the app.
+      // Optional: Set a flag in store "isOfflineMode: true" to show a small indicator if needed.
+    }
+  }
+  fetchConfig();
+}, []);
+```
+
+强制更新的地址也应该从服务端返回
+
+这是 **🔴 模式 B：执行 (Execution) - 轨道 2 (Direct Method)** 的响应。
+
+**非常严谨的考虑。**
+如果在内测期间我们临时决定更换下载渠道（比如从百度网盘换到夸克网盘），如果下载链接是写死在客户端的，那就无法通过强制更新引导用户去新地址了。
+
+我们需要在云端配置中增加 `download_url` 字段，并让客户端弹窗动态读取。
+
+请将以下指令发送给 **Code Agent**。
+
+***
+
+### TASK: Dynamic Update URL
+
+**Goal**: Fetch the update download URL from the cloud config instead of hardcoding it.
+
+#### Step 1: Update Interfaces (`src/renderer/src/stores/useSettingsStore.ts`)
+
+Add `download_url` to the `RemoteConfig` type.
+
+```typescript
+export interface RemoteConfig {
+  min_version?: string;
+  latest_version?: string;
+  download_url?: string; // [NEW]
+  beta_code?: string;
+  // ...
+}
+```
+
+#### Step 2: Pass URL in Event (`src/renderer/src/hooks/use-remote-config.ts`)
+
+Update the dispatch logic to send the URL.
+
+```typescript
+// Inside fetchConfig success block
+if (config.min_version && semver.lt(APP_VERSION, config.min_version)) {
+   // Dispatch object with version AND url
+   document.dispatchEvent(new CustomEvent('force-update', { 
+      detail: { 
+         version: config.latest_version, 
+         url: config.download_url || "https://wansan.app" // Fallback
+      } 
+   }));
+}
+```
+
+#### Step 3: Update Modal to Use URL (`src/renderer/src/components/update-modal.tsx`)
+
+Update the modal to read the URL from the event details.
+
+```tsx
+export function UpdateModal() {
+  const [updateInfo, setUpdateInfo] = useState<{ version: string, url: string } | null>(null);
+
+  useEffect(() => {
+    const handler = (e: CustomEvent) => {
+      // e.detail is now the object { version, url }
+      setUpdateInfo(e.detail);
+    };
+    document.addEventListener('force-update', handler as EventListener);
+    return () => document.removeEventListener('force-update', handler as EventListener);
+  }, []);
+
+  if (!updateInfo) return null;
+
+  return (
+    <Dialog open={true}>
+      <DialogContent className="prevent-close"> {/* Ensure user cannot close */}
+         <DialogHeader>
+           <DialogTitle>Critical Update Required</DialogTitle>
+           <DialogDescription>
+             The current version is obsolete. Please update to v{updateInfo.version} to continue.
+           </DialogDescription>
+         </DialogHeader>
+         <div className="flex justify-end">
+           <Button 
+             onClick={() => window.open(updateInfo.url, '_blank')} 
+             className="w-full bg-red-600 hover:bg-red-700 text-white"
+           >
+             Download Update
+           </Button>
+         </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+```
+
+---
+
+### ⚠️ 运维提醒 (Manual Ops)
+
+代码更新后，别忘了更新您的 Cloudflare KV 数据：
+
+```bash
+npx wrangler kv:key put --binding=WANSAN_CONFIG "global_settings" '{
+  "min_version": "1.0.0",
+  "latest_version": "1.0.1",
+  "download_url": "https://pan.baidu.com/s/xxxxx", 
+  "beta_code": "WANSAN-BETA"
+}'
+```
+
+我改变想法了，要区分激活与未激活的能力限制，有哪些功能点可以区分
+
+这是 **🔵 模式 A：规划 (Planning)** 响应。
+
+**这是回归商业本质的理性调整。**
+如果软件“太好用且完全免费”，用户往往会产生“廉价感”，甚至怀疑你会偷数据。适度的能力限制（Gating）不仅能促进付费（或激活），还能提升产品的感知价值。
+
+针对 Wansan 这种 **本地 BI 工具**，我梳理了以下 **3 个最不伤害核心体验，但又能有效卡住“生产力”** 的功能点：
+
+---
+
+### 🔒 差异化能力矩阵 (Feature Gating Matrix)
+
+| 功能点 | 👶 未激活 (Trial) | 👑 已激活 (Beta Pro) | 限制逻辑 (Rationale) |
+| :--- | :--- | :--- | :--- |
+| **1. 导出能力** (Export) | **🚫 禁止** (或仅允许带水印图片) | **✅ 全开** (PDF, HTML, CSV) | **核心卡点**。用户可以爽快地分析，但想把漂亮的报告发给老板？请激活。这是最强的付费动力。 |
+| **2. 数据容量** (Files) | **Max 1 个文件** | **∞ 无限** | **场景卡点**。单文件足够体验 AI 的神奇；但真实的商业分析通常需要多表关联（如 订单+商品+客户）。 |
+| **3. SQL 实验室** (Lab) | **👁️ 只读** (View Only) | **✏️ 可编辑** (Edit & Run) | **专业卡点**。小白用户不在乎，但懂技术的高级用户（Power User）有极强的控制欲，为了改 SQL 他们会愿意激活。 |
+
+---
+
+### 🚀 执行建议
+
+对于现在的内测版，建议 **组合使用 1 和 2**。
+即：**未激活用户只能导入 1 个文件，且不能导出报告。**
+
+这形成了一个完美的闭环：
+1.  用户下载，导入 1 个 Excel，体验 Chat 分析 -> **哇，好用！** (Aha Moment)
+2.  用户想做关联分析 -> **被卡住** -> 去激活。
+3.  用户做好了报告想导出 PDF -> **被卡住** -> 去激活。
+
+---
+
+### 💻 代码落地指令
+
+请将以下指令发送给 **Code Agent**。
+
+***
+
+### TASK: Implement Functional Limits for Trial Users
+
+**Goal**: Enforce limits on File Import, Export, and SQL Editing based on `isActivated` status.
+
+#### Step 1: Limit File Imports (`src/renderer/src/stores/useFileStore.ts`)
+
+**Logic**: Prevent adding more files if limit reached.
+
+```typescript
+// Inside addFiles action
+addFiles: async (newFiles) => {
+  const { isActivated } = useSettingsStore.getState();
+  const currentCount = get().files.length;
+  
+  // LIMIT: Trial users max 1 file
+  if (!isActivated && currentCount + newFiles.length > 1) {
+    useToastStore.getState().addToast({
+      title: "Trial Limit Reached",
+      description: "Trial version supports only 1 file. Please activate Beta Pro.",
+      type: "warning",
+      action: { label: "Activate", onClick: () => document.dispatchEvent(new CustomEvent('open-settings', { detail: 'general' })) }
+    });
+    return; // Block
+  }
+  
+  // ... proceed with import ...
+}
+```
+
+#### Step 2: Limit Export (`src/renderer/src/components/report/ReportCanvas.tsx`)
+
+**Logic**: Disable Export buttons.
+
+```tsx
+// Inside Component
+const { isActivated } = useSettingsStore();
+
+const handleExport = (type: 'pdf' | 'html' | 'image') => {
+  if (!isActivated) {
+    useToastStore.getState().addToast({
+      title: "Pro Feature",
+      description: "Exporting reports is available in Beta Pro.",
+      type: "info",
+      action: { label: "Activate", onClick: () => document.dispatchEvent(new CustomEvent('open-settings', { detail: 'general' })) }
+    });
+    return;
+  }
+  // ... existing export logic ...
+};
+
+// Update Buttons UI to look disabled or show Lock icon
+<Button onClick={() => handleExport('pdf')} variant="outline" className="gap-2">
+  {!isActivated && <Lock className="w-3 h-3 text-zinc-400"/>}
+  Export PDF
+</Button>
+```
+
+#### Step 3: Limit SQL Lab (`src/renderer/src/components/report/SQLEditor.tsx`)
+
+**Logic**: Set Editor to readOnly.
+
+```tsx
+// Inside Component
+const { isActivated } = useSettingsStore();
+
+<Editor
+  // ...
+  readOnly={!isActivated} // Disable editing
+  className={cn(!isActivated && "opacity-80 bg-zinc-50 cursor-not-allowed")}
+/>
+
+{/* Overlay or Warning Message */}
+{!isActivated && (
+  <div className="absolute bottom-4 right-4 bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded flex items-center gap-1">
+    <Lock className="w-3 h-3"/> Read-only Mode
+  </div>
+)}
+```

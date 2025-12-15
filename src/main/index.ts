@@ -29,7 +29,7 @@ class WansanApp {
           '[Main] .env loaded result:',
           result.parsed ? Object.keys(result.parsed).join(',') : 'No keys',
           'Error:',
-          result.error
+          result.error,
         )
         console.log('[Main] OPENAI_MODEL from env:', process.env.OPENAI_MODEL)
       } catch (error) {
@@ -128,7 +128,7 @@ class WansanApp {
       // 尝试直接加载 dist/renderer/index.html
       const entry = 'dist/renderer/index.html'
       this.mainWindow.loadFile(entry).catch((e) => {
-          console.error('Failed to load local file:', entry, e)
+        console.error('Failed to load local file:', entry, e)
       })
     }
 
@@ -137,9 +137,9 @@ class WansanApp {
       this.mainWindow?.show()
       setDockIcon()
 
-      // if (isDev()) {
-      //   this.mainWindow?.webContents.openDevTools()
-      // }
+      if (isDev()) {
+        this.mainWindow?.webContents.openDevTools()
+      }
     })
 
     // 窗口关闭事件

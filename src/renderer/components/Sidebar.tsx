@@ -16,6 +16,8 @@ interface SidebarProps {
   onImportData?: () => void
 }
 
+const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+
 export function Sidebar(_props: SidebarProps) {
   const { files, addFile, updateFile, setView } = useFileStore()
   const settings = useSettingsStore()
@@ -43,7 +45,21 @@ export function Sidebar(_props: SidebarProps) {
 
       if (result.success && result.data && result.data.length > 0) {
         console.log('handleImportClick: Files selected', result.data.length)
-        for (const filePath of result.data) {
+
+        const oversizedFiles = result.data.filter(f => f.size > MAX_SIZE);
+        if (oversizedFiles.length > 0) {
+             addToast({
+                title: t('sidebar.file_too_large_title'),
+                description: t('sidebar.file_too_large_desc', { files: oversizedFiles.map(f => f.path.split('/').pop()).join(', ') }),
+                type: 'warning',
+                duration: 5000
+             });
+        }
+
+        const validFiles = result.data.filter(f => f.size <= MAX_SIZE);
+
+        for (const fileData of validFiles) {
+          const filePath = fileData.path
           const fileName = filePath.split('/').pop() || 'unknown'
           console.log('handleImportClick: Processing file', fileName)
 
@@ -57,6 +73,7 @@ export function Sidebar(_props: SidebarProps) {
               status: 'uploading',
               columns: [],
               sheetName: undefined,
+              size: fileData.size,
             })
 
             updateFile(fileId, { status: 'processing' })

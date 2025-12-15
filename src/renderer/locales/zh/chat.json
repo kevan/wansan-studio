@@ -87,5 +87,7 @@
   "auto_link_analysis_failed_title": "AI 上下文分析失败",
   "auto_link_missing_api_key_desc": "缺少 API Key。请在设置中配置您的 API 密钥。",
   "file_process_failed_title": "文件处理失败",
-  "file_process_missing_api_key_desc": "缺少 API Key。请在设置中配置您的 API 密钥以处理文件。"
+  "file_process_missing_api_key_desc": "缺少 API Key。请在设置中配置您的 API 密钥以处理文件。",
+  "file_too_large_title": "文件过大",
+  "file_too_large_desc": "超出 Beta 限制 (100MB)。已跳过文件: {{files}}"
 }

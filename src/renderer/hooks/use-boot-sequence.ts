@@ -32,7 +32,7 @@ export function useBootSequence() {
 
         // Track App Launched
         Analytics.track("app_launched", {
-          version: window.electronAPI.version.app,
+          version: __APP_VERSION__,
           platform: window.electronAPI.platform,
           // deviceId and isActivated are read from useSettingsStore within Analytics.track
         });

@@ -20,7 +20,7 @@ const mockIPC = {
   selectFiles: async () => {
     return {
       success: true,
-      data: ['mock/path/to/file1.xlsx', 'mock/path/to/file2.csv'],
+      data: [{ path: 'mock/path/to/file1.xlsx', size: 1024 }, { path: 'mock/path/to/file2.csv', size: 2048 }],
     }
   },
   parseFile: async (filePath: string) => {
@@ -76,7 +76,7 @@ declare global {
       // Removed ? to match global.d.ts
       invoke: (channel: string, ...args: any[]) => Promise<IPCResponse>
       selectFile: () => Promise<IPCResponse<string>>
-      selectFiles: () => Promise<IPCResponse<string[]>>
+      selectFiles: () => Promise<IPCResponse<{ path: string; size: number }[]>>
       parseFile: (filePath: string) => Promise<IPCResponse<any[]>>
       runSQL: (sql: string) => Promise<IPCResponse>
       getSchema: (tableName?: string) => Promise<IPCResponse>

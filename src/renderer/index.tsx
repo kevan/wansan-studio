@@ -10,6 +10,12 @@ import { useFileStore } from './stores/useFileStore'
 import { useChatStore } from './stores/useChatStore'
 import { useWorkbenchStore } from './stores/useWorkbenchStore'
 import { SETTINGS_STORAGE_KEY, useSettingsStore } from './stores/useSettingsStore'
+import { enableFetchLogger } from './utils/fetch-logger'
+
+// Enable fetch logging in development
+if (import.meta.env.DEV) {
+  enableFetchLogger()
+}
 
 // 确保 DOM 元素存在
 const container = document.getElementById('root')

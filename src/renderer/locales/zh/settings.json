@@ -60,9 +60,13 @@
     "reset_desc": "所有设置已恢复为默认值。"
   },
   "about": {
+    "title": "关于 Wansan Studio",
     "version": "Wansan Studio v{{version}}",
-    "beta_version": "v1.0.1 测试版",
-    "tagline": "本地优先的 BI 桌面应用。"
+    "beta_version": "v{{version}} 测试版",
+    "description": "本地优先的智能商业报表工具",
+    "check_update": "检查更新",
+    "website": "官网",
+    "github": "GitHub"
   },
   "onboarding": {
     "step_label": "第 {{current}} / {{total}} 步",

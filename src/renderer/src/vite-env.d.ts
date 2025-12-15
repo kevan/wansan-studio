@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+declare const __APP_VERSION__: string
+
 interface IPCResponse<T = any> {
   success: boolean
   data?: T
@@ -12,7 +14,7 @@ interface ElectronAPI {
 
   // 文件操作
   selectFile: () => Promise<IPCResponse<string>>
-  selectFiles: () => Promise<IPCResponse<string[]>>
+  selectFiles: () => Promise<IPCResponse<{ path: string; size: number }[]>>
   parseFile: (filePath: string) => Promise<IPCResponse<any>>
 
   // 数据库操作
