@@ -26,31 +26,19 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      # [CRITICAL] Generate Icons Script
-      # Since we don't commit generated icons to git, generate them on CI
-#      - name: Generate Icons
-#        run: node scripts/generate-icons.cjs
-        # If your script requires 'png2icons', ensure it is in devDependencies
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Build Frontend
-        run: npm run build
-
       - name: Build Electron App (Mac)
         if: matrix.os == 'macos-latest'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Force skip signing
           CSC_IDENTITY_AUTO_DISCOVERY: false
-        run: npm run build:mac
+        run: npm run dist:mac:all
 
       - name: Build Electron App (Windows)
         if: matrix.os == 'windows-latest'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run build:win
+        run: npm run dist:win
 
       - name: Upload Artifacts to Release
         uses: softprops/action-gh-release@v1
