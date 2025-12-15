@@ -109,7 +109,7 @@ function PageGrid({ pageIndex, width, scale, isA4 }: PageGridProps) {
         style={{ height: '100%' }}
       >
         {pageReports.map(report => (
-          <div key={report.id}>
+          <div key={report.id} data-grid={report.layout}>
             <ContextMenu>
               <ContextMenuTrigger className="w-full h-full">
                 <div className="relative h-full w-full">
@@ -219,7 +219,7 @@ function ScreenGrid({ width, scale }: { width: number; scale: number }) {
       style={{ minHeight: '100vh', height: '100%' }}
     >
       {flatReports.map(report => (
-        <div key={report.id}>
+        <div key={report.id} data-grid={report.layout}>
           <div className="relative h-full w-full">
             <ReportCard
               report={report}
