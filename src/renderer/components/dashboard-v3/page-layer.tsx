@@ -5,7 +5,7 @@ export const PAGE_WIDTH_PX = 794
 export const PAGE_HEIGHT_PX = 1123
 export const PAGE_GAP_PX = 20
 export const GRID_ROW_HEIGHT = 30
-export const ROWS_PER_PAGE = 38 // (1123 / 30) floor
+export const ROWS_PER_PAGE = 37 // floor(1123 / 30)
 
 interface PageLayerProps {
   isA4: boolean

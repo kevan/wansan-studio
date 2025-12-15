@@ -191,7 +191,10 @@ export const useWorkbenchStore = create<WorkbenchState>()(
 
             // Respect 12-column grid and keep positive dimensions
             w = Math.min(12, Math.max(1, w))
-            h = Math.max(1, h)
+            // Ensure height doesn't exceed the safe content area of a single page
+            const SAFE_ROWS =
+              ROWS_PER_PAGE - Math.ceil(FOOTER_HEIGHT_PX / GRID_ROW_HEIGHT)
+            h = Math.min(Math.max(1, h), SAFE_ROWS)
 
             // Find insertion point
             let targetPageIndex = 0
@@ -214,11 +217,6 @@ export const useWorkbenchStore = create<WorkbenchState>()(
                 targetY = (lastReport.layout.y ?? 0) + (lastReport.layout.h ?? 0)
               }
             }
-
-            // Check if it fits on current page (with footer buffer)
-            // ROWS_PER_PAGE is total rows. Safe content area is roughly ROWS_PER_PAGE - 3 (footer)
-            const SAFE_ROWS =
-              ROWS_PER_PAGE - Math.ceil(FOOTER_HEIGHT_PX / GRID_ROW_HEIGHT)
 
             if (targetY + h > SAFE_ROWS) {
               targetPageIndex++
