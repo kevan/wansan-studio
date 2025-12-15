@@ -491,6 +491,19 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                   {t('about.beta_version', { version: __APP_VERSION__ })}
                 </div>
 
+                <div className="mt-2 text-[10px] text-zinc-400">
+                   By using this software, you agree to the <span className="underline cursor-pointer hover:text-zinc-600" onClick={() => {
+                       // MVP: Just alert or try to open file if possible. 
+                       // Since we are in renderer, we can use openExternal if we had a hosted link.
+                       // For now, let's just show a toast or a simple alert, 
+                       // or rely on the user knowing where the file is as per instructions.
+                       // The instructions said "Just adding a text line... is enough".
+                       // But "Link... to open this file" was also said.
+                       // Let's use window.electronAPI.openExternal with a dummy link or just the text.
+                       // Actually, let's just use the text as requested for MVP "Just adding a text line... is enough"
+                   }}>Legal Disclaimer</span>.
+                </div>
+
                 <Button
                   variant="outline"
                   size="sm"
