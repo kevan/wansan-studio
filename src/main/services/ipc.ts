@@ -361,7 +361,7 @@ export function setupIPC(
 
         if (filePath) {
           await fs.writeFile(filePath, content, 'utf-8')
-          return { success: true }
+          return { success: true, filePath }
         }
         return { success: false, error: 'Cancelled' }
       } catch (error) {

@@ -13,14 +13,17 @@ import {
   Sparkles,
   Loader2,
   Bug,
+  Lock,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { useFileStore } from '../../stores/useFileStore'
 import { useChatStore } from '../../stores/useChatStore'
 import { useToastStore } from '../../stores/useToastStore'
+import { useSettingsStore } from '../../stores/useSettingsStore'
 import type { ChatMessage } from '../ChatInterface'
 import { useTranslation } from 'react-i18next'
 import { exportDebugLog } from '../../utils/debug-exporter'
+import { generateMarkdown } from '../../utils/markdown-exporter'
 
 interface MagicInputProps {
   onSubmit: (value: string) => void
@@ -65,7 +68,53 @@ export function MagicInput({
   const files = useFileStore(state => state.files)
   const isRestoring = useFileStore(state => state.isRestoring)
   const suggestedPrompts = useFileStore(state => state.suggestedPrompts)
+  const { isActivated } = useSettingsStore()
   const { t } = useTranslation('chat')
+  const { t: tCommon } = useTranslation('common')
+
+  const handleExportMarkdown = async () => {
+    if (!isActivated) {
+      addToast({
+        title: tCommon('pro_feature_title'),
+        description: tCommon('pro_feature_export_markdown_desc'),
+        type: 'info',
+      })
+      return
+    }
+
+    try {
+      addToast({
+        title: t('export_triggered'),
+        description: t('export_desc'),
+        type: 'info',
+        duration: 2000,
+      })
+      
+      const content = generateMarkdown(messages)
+      const fileName = `Chat_Export_${new Date().toISOString().slice(0, 10)}.md`
+      
+      // @ts-ignore
+      const result = await window.electronAPI.saveFile(content, 'md', fileName)
+      
+      if (result.success) {
+        addToast({
+          title: 'Export Successful', // TODO: Add i18n key
+          // @ts-ignore
+          description: `Saved to ${result.filePath}`,
+          type: 'success',
+        })
+      } else if (result.error !== 'Cancelled') {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      console.error('Export failed', error)
+      addToast({
+        title: 'Export Failed', // TODO: Add i18n key
+        description: String(error),
+        type: 'error',
+      })
+    }
+  }
 
   const readyTables = useMemo(
     () => files.filter(f => f.status === 'ready'),
@@ -126,17 +175,13 @@ export function MagicInput({
       {
         id: 'export',
         label: t('export_markdown'),
-        icon: Download,
+        icon: isActivated ? Download : Lock,
         action: () => {
-          addToast({
-            title: t('export_triggered'),
-            description: t('export_desc'),
-            type: 'info',
-            duration: 3000,
-          })
+          handleExportMarkdown()
           setPopoverOpen(false)
           setValue('')
         },
+        className: !isActivated ? 'text-zinc-400' : ''
       },
       {
         id: 'debug',
@@ -155,7 +200,7 @@ export function MagicInput({
         c.id.includes(commandQuery) ||
         c.label.toLowerCase().includes(commandQuery)
     )
-  }, [value, commandQuery, t, resetChat, addToast])
+  }, [value, commandQuery, t, resetChat, addToast, messages, handleExportMarkdown, isActivated])
 
   // 6. Filtered Prompts for Command Mode
   const filteredCommandPrompts = useMemo(() => {
@@ -205,12 +250,7 @@ export function MagicInput({
           addToast({ title: t('chat_cleared'), type: 'info', duration: 2500 })
         }
         if (cmd === 'export') {
-          addToast({
-            title: t('export_triggered'),
-            description: t('export_desc'),
-            type: 'info',
-            duration: 3000,
-          })
+          handleExportMarkdown()
         }
         if (cmd === 'debug') {
           await exportDebugLog()

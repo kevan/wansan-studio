@@ -173,7 +173,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
-      <DialogContent className="max-w-[700px] h-[80vh] flex flex-col p-0 gap-0">
+      <DialogContent aria-describedby={undefined} className="max-w-[700px] h-[80vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 py-4 border-b shrink-0">
           <DialogTitle>{t('settings.title')}</DialogTitle>
         </DialogHeader>

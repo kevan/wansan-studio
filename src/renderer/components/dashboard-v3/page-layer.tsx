@@ -19,7 +19,7 @@ export function PageLayer({ isA4, pageCount }: PageLayerProps) {
 
   return (
     <div
-      className="pointer-events-none absolute inset-0 z-0 flex flex-col"
+      className="pointer-events-none absolute inset-0 z-0 flex flex-col hide-on-export"
       style={{ gap: `${PAGE_GAP_PX}px` }}
     >
       {Array.from({ length: pageCount }).map((_, i) => (
