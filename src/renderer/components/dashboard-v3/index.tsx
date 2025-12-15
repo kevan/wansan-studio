@@ -1,7 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
 
-import { PAGE_GAP_PX, PAGE_HEIGHT_PX, PAGE_WIDTH_PX } from './page-layer'
+import {
+  PAGE_GAP_PX,
+  PAGE_HEIGHT_PX,
+  PAGE_WIDTH_PX,
+  SCREEN_WIDTH_PX,
+} from './page-layer'
 import { GridLayer } from './grid-layer'
 import { PageLayer } from './page-layer'
 import { LayoutScenario, useWorkbenchStore } from '@/stores/useWorkbenchStore'
@@ -123,8 +128,8 @@ export function DashboardCanvasV3() {
       ? pageCount * PAGE_HEIGHT_PX + Math.max(0, pageCount - 1) * PAGE_GAP_PX
       : undefined
 
-  const gridWidth = isA4 ? PAGE_WIDTH_PX : 1200
-  const activeScale = isA4 ? zoom / 100 : 1.0
+  const gridWidth = isA4 ? PAGE_WIDTH_PX : SCREEN_WIDTH_PX
+  const activeScale = zoom / 100
 
   return (
     <div
@@ -137,21 +142,17 @@ export function DashboardCanvasV3() {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      <div
-        className={`flex min-h-min flex-col ${
-          isA4 ? 'items-center' : 'w-full'
-        }`}
-      >
+      <div className="flex min-h-min flex-col items-center">
         <div
           id="dashboard-export-root"
           className="relative w-full transition-transform duration-200"
           style={{
-            transform: isA4 ? `scale(${activeScale})` : undefined,
+            transform: `scale(${activeScale})`,
             transformOrigin: 'top center',
-            width: isA4 ? `${PAGE_WIDTH_PX}px` : '100%',
+            width: `${gridWidth}px`,
             minHeight: isA4
               ? `${totalHeightPx ?? PAGE_HEIGHT_PX}px`
-              : '100%',
+              : '100vh',
           }}
         >
           <PageLayer isA4={isA4} pageCount={pageCount} />

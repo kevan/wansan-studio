@@ -14,6 +14,7 @@ import {
   PAGE_GAP_PX,
   PAGE_HEIGHT_PX,
   PAGE_WIDTH_PX,
+  SCREEN_WIDTH_PX,
   ROWS_PER_PAGE,
   GRID_MARGIN_Y,
 } from './page-layer'
@@ -240,22 +241,10 @@ export function GridLayer({ width, height, isA4, scale }: GridLayerProps) {
   const pageCount = useWorkbenchStore(state => state.pageCount)
 
   useEffect(() => {
-    const measureWidth = () => {
-      if (isA4) {
-        setGridWidth(PAGE_WIDTH_PX)
-        return
-      }
-      const measured = containerRef.current?.clientWidth
-      setGridWidth(measured && measured > 0 ? measured : width)
-    }
-    const handler = debounce(measureWidth, 150)
-    measureWidth()
-    window.addEventListener('resize', handler)
-    return () => {
-      window.removeEventListener('resize', handler)
-      handler.cancel()
-    }
-  }, [isA4, width])
+    // In both A4 and Screen Simulation mode, we use fixed widths
+    const targetWidth = isA4 ? PAGE_WIDTH_PX : SCREEN_WIDTH_PX
+    setGridWidth(targetWidth)
+  }, [isA4])
 
   if (!isA4) {
     return (

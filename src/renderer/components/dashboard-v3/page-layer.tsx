@@ -2,6 +2,7 @@ import React from 'react'
 import logo from '@/src/assets/logo.png'
 
 export const PAGE_WIDTH_PX = 794
+export const SCREEN_WIDTH_PX = 1920
 export const PAGE_HEIGHT_PX = 1123
 export const PAGE_GAP_PX = 20
 export const GRID_ROW_HEIGHT = 30
