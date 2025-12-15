@@ -15,6 +15,7 @@ import {
   PAGE_HEIGHT_PX,
   PAGE_WIDTH_PX,
   ROWS_PER_PAGE,
+  GRID_MARGIN_Y,
 } from './page-layer'
 
 import 'react-grid-layout/css/styles.css'
@@ -23,7 +24,7 @@ import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } 
 import { ArrowDown, ArrowUp } from 'lucide-react'
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
-const GRID_MARGIN: [number, number] = [20, 20]
+const GRID_MARGIN: [number, number] = [20, GRID_MARGIN_Y]
 
 interface GridLayerProps {
   width: number

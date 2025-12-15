@@ -7,6 +7,7 @@ import {
   PAGE_GAP_PX,
   PAGE_HEIGHT_PX,
   ROWS_PER_PAGE,
+  GRID_MARGIN_Y,
 } from '@/components/dashboard-v3/page-layer'
 import type { AIAnalysisResult } from '@shared/types'
 
@@ -191,9 +192,13 @@ export const useWorkbenchStore = create<WorkbenchState>()(
 
             // Respect 12-column grid and keep positive dimensions
             w = Math.min(12, Math.max(1, w))
-            // Ensure height doesn't exceed the safe content area of a single page
-            const SAFE_ROWS =
-              ROWS_PER_PAGE - Math.ceil(FOOTER_HEIGHT_PX / GRID_ROW_HEIGHT)
+            // Check if it fits on current page (with footer buffer)
+            // Use effective row height (row + margin) for calculation
+            const EFFECTIVE_ROW_HEIGHT = GRID_ROW_HEIGHT + GRID_MARGIN_Y
+            const SAFE_ROWS = Math.floor(
+              (PAGE_HEIGHT_PX - FOOTER_HEIGHT_PX) / EFFECTIVE_ROW_HEIGHT
+            )
+
             h = Math.min(Math.max(1, h), SAFE_ROWS)
 
             // Find insertion point
@@ -214,9 +219,21 @@ export const useWorkbenchStore = create<WorkbenchState>()(
 
               if (lastReport) {
                 targetPageIndex = lastReport.pageIndex || 0
-                targetY = (lastReport.layout.y ?? 0) + (lastReport.layout.h ?? 0)
+                targetY =
+                  (lastReport.layout.y ?? 0) + (lastReport.layout.h ?? 0)
               }
             }
+            console.log(
+              'pinReport',
+              'w:',
+              w,
+              'h:',
+              h,
+              'SAFE_ROWS:',
+              SAFE_ROWS,
+              'targetY',
+              targetY
+            )
 
             if (targetY + h > SAFE_ROWS) {
               targetPageIndex++
