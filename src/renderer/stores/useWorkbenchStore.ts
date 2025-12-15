@@ -255,17 +255,37 @@ export const useWorkbenchStore = create<WorkbenchState>()(
         updateLayout: layouts =>
           set(state => {
             const layoutMap = new Map(layouts.map(l => [l.i, l]))
-            return {
-              pinnedReports: state.pinnedReports.map(r => {
-                const newLayout = layoutMap.get(r.id)
-                if (newLayout) {
-                  return {
-                    ...r,
-                    layout: { ...r.layout, ...newLayout },
-                  }
+            const nextPinnedReports = state.pinnedReports.map(r => {
+              const newLayout = layoutMap.get(r.id)
+              if (newLayout) {
+                return {
+                  ...r,
+                  layout: { ...r.layout, ...newLayout },
                 }
-                return r
-              }),
+              }
+              return r
+            })
+
+            let nextPageCount = state.pageCount
+            if (state.canvasConfig.layout === 'a4') {
+              const maxGridY = nextPinnedReports.reduce((max, item) => {
+                const y = Number.isFinite(item.layout?.y)
+                  ? (item.layout.y as number)
+                  : 0
+                const h = Number.isFinite(item.layout?.h)
+                  ? (item.layout.h as number)
+                  : 0
+                return Math.max(max, y + h)
+              }, 0)
+              const contentPx = maxGridY * GRID_ROW_HEIGHT
+              const blockPx = PAGE_HEIGHT_PX + PAGE_GAP_PX
+              const needed = blockPx > 0 ? Math.ceil(contentPx / blockPx) : 1
+              nextPageCount = Math.max(1, needed)
+            }
+
+            return {
+              pinnedReports: nextPinnedReports,
+              pageCount: nextPageCount,
             }
           }),
         removeReport: reportId =>

@@ -152,6 +152,7 @@ export function DashboardCanvasV3() {
             width={gridWidth}
             isA4={isA4}
             height={isA4 ? totalHeightPx : undefined}
+            scale={zoom / 100}
           />
         </div>
       </div>

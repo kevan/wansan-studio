@@ -26,6 +26,7 @@ interface GridLayerProps {
   width: number
   height?: number
   isA4: boolean
+  scale: number
 }
 
 const ROWS_PER_PAGE_VISUAL = Math.floor(PAGE_HEIGHT_PX / GRID_ROW_HEIGHT) // ~38 rows
@@ -49,7 +50,7 @@ const adjustLayoutForGaps = (layout: Layout[]): Layout[] =>
     return newItem
   })
 
-export function GridLayer({ width, height, isA4 }: GridLayerProps) {
+export function GridLayer({ width, height, isA4, scale }: GridLayerProps) {
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const updateLayout = useWorkbenchStore(state => state.updateLayout)
   const removeReport = useWorkbenchStore(state => state.removeReport)
@@ -174,6 +175,7 @@ export function GridLayer({ width, height, isA4 }: GridLayerProps) {
 
       <ResponsiveGridLayout
         className="bg-transparent"
+        transformScale={scale}
         layouts={layouts}
         breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
         cols={{ lg: 12, md: 12, sm: 12, xs: 4, xxs: 2 }}
