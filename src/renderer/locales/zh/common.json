@@ -98,6 +98,11 @@
   "relationships_root": "关联关系",
   "data_detail": "数据详情",
   "value": "数值",
+  "default_report_title": "数据报表",
+  "no_chart_data": "暂无图表数据",
+  "showing_n_of_total": "显示前 {{n}} 条，共 {{total}} 条数据",
+  "data_summary": "数据摘要",
+  "data_visualization": "数据可视化",
 
   "sidebar": {
     "electron_api_unavailable": "Electron API 不可用",

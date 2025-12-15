@@ -218,6 +218,7 @@ export function A4Chart({
   style,
 }: A4ChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const { t } = useTranslation('common')
 
   useEffect(() => {
     const handler = () => requestAnimationFrame(() => {})
@@ -329,7 +330,7 @@ export function A4Chart({
       />
       {!isRenderable && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-zinc-500">
-          No chart data
+          {t('no_chart_data')}
         </div>
       )}
     </div>
@@ -356,10 +357,12 @@ export function A4DataTable({
   maxRows = 20,
   className = '',
 }: A4DataTableProps) {
+  const { t } = useTranslation('common')
+
   if (!data || data.length === 0) {
     return (
       <div className={`text-center py-8 text-gray-500 ${className}`}>
-        暂无数据
+        {t('no_data')}
       </div>
     )
   }
@@ -403,7 +406,7 @@ export function A4DataTable({
 
       {hasMore && (
         <div className="mt-3 text-center text-sm text-gray-500">
-          显示前 {maxRows} 条，共 {data.length} 条数据
+          {t('showing_n_of_total', { n: maxRows, total: data.length })}
         </div>
       )}
     </div>
@@ -440,17 +443,19 @@ export function A4ReportLayout({
   logo,
   className = '',
 }: A4ReportLayoutProps) {
+  const { t } = useTranslation('common')
+
   return (
     <A4Canvas className={className}>
       <A4Header title={title} subtitle={subtitle} logo={logo} />
 
       {summary && (
-        <A4Section title="数据摘要">
+        <A4Section title={t('data_summary')}>
           <A4Summary content={summary} insights={insights} />
         </A4Section>
       )}
 
-      <A4Section title="数据可视化">
+      <A4Section title={t('data_visualization')}>
         <A4Chart
           type={chartType}
           title={chartTitle}
@@ -460,7 +465,7 @@ export function A4ReportLayout({
       </A4Section>
 
       {tableData && tableData.length > 0 && (
-        <A4Section title="数据明细">
+        <A4Section title={t('data_detail')}>
           <A4DataTable data={tableData} />
         </A4Section>
       )}

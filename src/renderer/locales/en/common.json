@@ -98,6 +98,11 @@
   "relationships_root": "Relationships",
   "data_detail": "Data Detail",
   "value": "Value",
+  "default_report_title": "Data Report",
+  "no_chart_data": "No chart data",
+  "showing_n_of_total": "Showing first {{n}} of {{total}} rows",
+  "data_summary": "Data Summary",
+  "data_visualization": "Visualization",
 
   "sidebar": {
     "electron_api_unavailable": "Electron API unavailable",
