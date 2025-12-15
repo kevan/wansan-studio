@@ -76,6 +76,7 @@ interface WorkbenchState {
     updates: Partial<AIAnalysisResult['visualization']>
   ) => void
   updateLayout: (layouts: Layout[]) => void
+  updateGlobalLayout: (layouts: Layout[]) => void
   moveWidgetToPage: (reportId: string, targetPageIndex: number) => void
   setLayoutScenario: (scenario: LayoutScenario) => void
   setCanvasConfig: (updates: Partial<WorkbenchState['canvasConfig']>) => void
@@ -310,6 +311,35 @@ export const useWorkbenchStore = create<WorkbenchState>()(
             })
 
             // Recalculate page count based on max pageIndex present
+            const maxPageIndex = nextPinnedReports.reduce(
+              (max, r) => Math.max(max, r.pageIndex || 0),
+              0
+            )
+
+            return {
+              pinnedReports: nextPinnedReports,
+              pageCount: Math.max(state.pageCount, maxPageIndex + 1),
+            }
+          }),
+        updateGlobalLayout: layouts =>
+          set(state => {
+            const layoutMap = new Map(layouts.map(l => [l.i, l]))
+            const nextPinnedReports = state.pinnedReports.map(r => {
+              const globalLayout = layoutMap.get(r.id)
+              if (globalLayout) {
+                const globalY = globalLayout.y
+                const pageIndex = Math.floor(globalY / ROWS_PER_PAGE)
+                const localY = globalY % ROWS_PER_PAGE
+                return {
+                  ...r,
+                  pageIndex,
+                  layout: { ...r.layout, ...globalLayout, y: localY },
+                }
+              }
+              return r
+            })
+
+            // Recalculate page count
             const maxPageIndex = nextPinnedReports.reduce(
               (max, r) => Math.max(max, r.pageIndex || 0),
               0
