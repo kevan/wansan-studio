@@ -62,7 +62,9 @@
   "about": {
     "version": "Wansan Studio v{{version}}",
     "beta_version": "v{{version}} Beta",
-    "tagline": "Local-first BI desktop app."
+    "tagline": "Local-first BI desktop app.",
+    "disclaimer_prefix": "By using this software, you agree to the ",
+    "disclaimer_link": "Legal Disclaimer"
   },
   "debug_export_button": "Export Debug Logs",
   "onboarding": {

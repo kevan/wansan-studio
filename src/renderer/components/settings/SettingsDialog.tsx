@@ -36,6 +36,7 @@ import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import { AI_PROVIDERS, type AIProviderKey } from '@/src/lib/constants'
 import { exportDebugLog } from '../../utils/debug-exporter'
+import { DISCLAIMER_TEXT } from '../../lib/legal-text'
 
 type VerifyStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -52,6 +53,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>('idle')
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false)
+  const [showDisclaimer, setShowDisclaimer] = useState(false)
   const [activeTab, setActiveTab] = useState('ai')
   const [licenseCode, setLicenseCode] = useState('')
 
@@ -492,16 +494,13 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                 </div>
 
                 <div className="mt-2 text-[10px] text-zinc-400">
-                   By using this software, you agree to the <span className="underline cursor-pointer hover:text-zinc-600" onClick={() => {
-                       // MVP: Just alert or try to open file if possible. 
-                       // Since we are in renderer, we can use openExternal if we had a hosted link.
-                       // For now, let's just show a toast or a simple alert, 
-                       // or rely on the user knowing where the file is as per instructions.
-                       // The instructions said "Just adding a text line... is enough".
-                       // But "Link... to open this file" was also said.
-                       // Let's use window.electronAPI.openExternal with a dummy link or just the text.
-                       // Actually, let's just use the text as requested for MVP "Just adding a text line... is enough"
-                   }}>Legal Disclaimer</span>.
+                   {t('about.disclaimer_prefix')} 
+                   <span 
+                     className="underline cursor-pointer hover:text-zinc-600" 
+                     onClick={() => setShowDisclaimer(true)}
+                   >
+                     {t('about.disclaimer_link')}
+                   </span>.
                 </div>
 
                 <Button
@@ -519,6 +518,18 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      {/* Disclaimer Dialog */}
+      <Dialog open={showDisclaimer} onOpenChange={setShowDisclaimer}>
+        <DialogContent className="max-w-[600px] max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{t('about.disclaimer_link')}</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto p-4 border rounded-md bg-zinc-50 text-sm whitespace-pre-wrap leading-relaxed">
+            {DISCLAIMER_TEXT}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }
