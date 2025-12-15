@@ -81,7 +81,7 @@ export function DashboardHeader() {
     try {
       const dataUrl = await toPng(node, {
         pixelRatio: 2,
-        backgroundColor: '#f4f4f5',
+        backgroundColor: '#ffffff',
         filter: el =>
           !el.classList?.contains('card-controls') &&
           !el.classList?.contains('hide-on-export'),
@@ -110,7 +110,7 @@ export function DashboardHeader() {
         const ctx = canvas.getContext('2d')
 
         if (ctx) {
-            ctx.fillStyle = '#f4f4f5'
+            ctx.fillStyle = '#ffffff'
             ctx.fillRect(0, 0, canvas.width, canvas.height)
             ctx.drawImage(img, 0, 0)
             
@@ -152,8 +152,8 @@ export function DashboardHeader() {
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = pdf.internal.pageSize.getHeight()
 
-      // Reserve space for footer (Watermark style)
-      const footerHeightMM = 8
+      // Reserve space for footer only in Screen mode (A4 uses Overlay)
+      const footerHeightMM = isA4 ? 0 : 8
       const contentHeightMM = pdfHeight - footerHeightMM
 
       // Dynamic slice height based on available content area aspect ratio
