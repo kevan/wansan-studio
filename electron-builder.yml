@@ -28,12 +28,16 @@ mac:
   category: public.app-category.business
 
 win:
-  target: nsis
+  target:
+    - nsis
+    - portable  # [ADD THIS] Generates a standalone .exe
   icon: resources/icon.ico
 
 nsis:
   oneClick: false
+  perMachine: false # Install to AppData (No Admin rights needed)
   allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: true
 
 linux:
   icon: resources/icon.png
