@@ -100,6 +100,7 @@ class WansanApp {
       y: bounds.y,
       minWidth: 1024,
       minHeight: 600,
+      autoHideMenuBar: true,
       ...(isDev() && process.platform !== 'darwin'
         ? { icon: devWindowIconPath }
         : {}),
