@@ -6,11 +6,14 @@ import {
   GRID_ROW_HEIGHT,
   PAGE_GAP_PX,
   PAGE_HEIGHT_PX,
+  ROWS_PER_PAGE,
 } from '@/components/dashboard-v3/page-layer'
 import type { AIAnalysisResult } from '@shared/types'
 
 export type CanvasLayout = 'a4' | 'screen'
 export type Language = 'en' | 'zh'
+
+const FOOTER_HEIGHT_PX = 80
 
 const getDefaultLanguage = (): Language => {
   if (typeof navigator !== 'undefined') {
@@ -44,6 +47,7 @@ export interface ReportWidget {
   sourceMessageId: string
   reportData: ReportData
   layout: Layout
+  pageIndex: number // 0-based index for A4 pagination
 }
 
 export type LayoutScenario = 'default' | 'print' | 'large' | 'ppt' | 'email'
@@ -71,6 +75,7 @@ interface WorkbenchState {
     updates: Partial<AIAnalysisResult['visualization']>
   ) => void
   updateLayout: (layouts: Layout[]) => void
+  moveWidgetToPage: (reportId: string, targetPageIndex: number) => void
   setLayoutScenario: (scenario: LayoutScenario) => void
   setCanvasConfig: (updates: Partial<WorkbenchState['canvasConfig']>) => void
   setPageCount: (count: number) => void
@@ -118,20 +123,11 @@ export const useWorkbenchStore = create<WorkbenchState>()(
             pageCount:
               updates.layout === 'a4' && state.canvasConfig.layout !== 'a4'
                 ? (() => {
-                    const maxGridY = state.pinnedReports.reduce((max, item) => {
-                      const y = Number.isFinite(item.layout?.y)
-                        ? (item.layout.y as number)
-                        : 0
-                      const h = Number.isFinite(item.layout?.h)
-                        ? (item.layout.h as number)
-                        : 0
-                      return Math.max(max, y + h)
-                    }, 0)
-                    const contentPx = maxGridY * GRID_ROW_HEIGHT
-                    const blockPx = PAGE_HEIGHT_PX + PAGE_GAP_PX
-                    const needed =
-                      blockPx > 0 ? Math.ceil(contentPx / blockPx) : 1
-                    return Math.max(state.pageCount, needed || 1)
+                    const maxPageIndex = state.pinnedReports.reduce(
+                      (max, item) => Math.max(max, item.pageIndex || 0),
+                      0
+                    )
+                    return Math.max(state.pageCount, maxPageIndex + 1)
                   })()
                 : state.pageCount,
           })),
@@ -197,11 +193,39 @@ export const useWorkbenchStore = create<WorkbenchState>()(
             w = Math.min(12, Math.max(1, w))
             h = Math.max(1, h)
 
-            const maxY = state.pinnedReports.reduce(
-              (max, item) =>
-                Math.max(max, (item.layout?.y ?? 0) + (item.layout?.h ?? 0)),
-              0
-            )
+            // Find insertion point
+            let targetPageIndex = 0
+            let targetY = 0
+
+            if (state.pinnedReports.length > 0) {
+              // Find the report with the highest pageIndex, then highest y
+              const lastReport = [...state.pinnedReports].sort((a, b) => {
+                const pageDiff = (b.pageIndex || 0) - (a.pageIndex || 0)
+                if (pageDiff !== 0) return pageDiff
+                return (
+                  (b.layout.y ?? 0) +
+                  (b.layout.h ?? 0) -
+                  ((a.layout.y ?? 0) + (a.layout.h ?? 0))
+                )
+              })[0]
+
+              if (lastReport) {
+                targetPageIndex = lastReport.pageIndex || 0
+                targetY = (lastReport.layout.y ?? 0) + (lastReport.layout.h ?? 0)
+              }
+            }
+
+            // Check if it fits on current page (with footer buffer)
+            // ROWS_PER_PAGE is total rows. Safe content area is roughly ROWS_PER_PAGE - 3 (footer)
+            const SAFE_ROWS =
+              ROWS_PER_PAGE - Math.ceil(FOOTER_HEIGHT_PX / GRID_ROW_HEIGHT)
+
+            if (targetY + h > SAFE_ROWS) {
+              targetPageIndex++
+              targetY = 0
+            }
+
+            const newPageCount = Math.max(state.pageCount, targetPageIndex + 1)
 
             return {
               pinnedReports: [
@@ -216,12 +240,14 @@ export const useWorkbenchStore = create<WorkbenchState>()(
                   layout: {
                     i: id,
                     x: 0,
-                    y: maxY, // Put at bottom just after last item
+                    y: targetY,
                     w,
                     h,
                   },
+                  pageIndex: targetPageIndex,
                 },
               ],
+              pageCount: newPageCount,
             }
           }),
         updateReportTitle: (reportId, newTitle) =>
@@ -255,6 +281,8 @@ export const useWorkbenchStore = create<WorkbenchState>()(
         updateLayout: layouts =>
           set(state => {
             const layoutMap = new Map(layouts.map(l => [l.i, l]))
+            // Note: This update assumes layouts are from a specific page grid
+            // and does NOT change pageIndex. Cross-page moves happen via moveWidgetToPage.
             const nextPinnedReports = state.pinnedReports.map(r => {
               const newLayout = layoutMap.get(r.id)
               if (newLayout) {
@@ -266,26 +294,43 @@ export const useWorkbenchStore = create<WorkbenchState>()(
               return r
             })
 
-            let nextPageCount = state.pageCount
-            if (state.canvasConfig.layout === 'a4') {
-              const maxGridY = nextPinnedReports.reduce((max, item) => {
-                const y = Number.isFinite(item.layout?.y)
-                  ? (item.layout.y as number)
-                  : 0
-                const h = Number.isFinite(item.layout?.h)
-                  ? (item.layout.h as number)
-                  : 0
-                return Math.max(max, y + h)
-              }, 0)
-              const contentPx = maxGridY * GRID_ROW_HEIGHT
-              const blockPx = PAGE_HEIGHT_PX + PAGE_GAP_PX
-              const needed = blockPx > 0 ? Math.ceil(contentPx / blockPx) : 1
-              nextPageCount = Math.max(1, needed)
-            }
+            // Recalculate page count based on max pageIndex present
+            const maxPageIndex = nextPinnedReports.reduce(
+              (max, r) => Math.max(max, r.pageIndex || 0),
+              0
+            )
 
             return {
               pinnedReports: nextPinnedReports,
-              pageCount: nextPageCount,
+              pageCount: Math.max(state.pageCount, maxPageIndex + 1),
+            }
+          }),
+        moveWidgetToPage: (reportId, targetPageIndex) =>
+          set(state => {
+            const report = state.pinnedReports.find(r => r.id === reportId)
+            if (!report) return state
+
+            // Basic collision avoidance: put at bottom of target page
+            // (A smarter implementation would try to keep x/y if possible)
+            const reportsOnTargetPage = state.pinnedReports.filter(
+              r => r.pageIndex === targetPageIndex && r.id !== reportId
+            )
+            const maxY = reportsOnTargetPage.reduce(
+              (max, r) => Math.max(max, (r.layout.y ?? 0) + (r.layout.h ?? 0)),
+              0
+            )
+
+            return {
+              pinnedReports: state.pinnedReports.map(r =>
+                r.id === reportId
+                  ? {
+                      ...r,
+                      pageIndex: targetPageIndex,
+                      layout: { ...r.layout, y: maxY },
+                    }
+                  : r
+              ),
+              pageCount: Math.max(state.pageCount, targetPageIndex + 1),
             }
           }),
         removeReport: reportId =>
@@ -306,8 +351,29 @@ export const useWorkbenchStore = create<WorkbenchState>()(
       }),
       onRehydrateStorage: () => state => {
         if (!state) return
-        workbenchRehydrateSet?.({
-          pinnedReports: state.pinnedReports.map(report => ({
+
+        // Migration: Convert old global-Y coordinates to PageIndex + Local-Y
+        const migratedReports = state.pinnedReports.map(report => {
+          if (report.pageIndex === undefined) {
+            // Heuristic migration
+            const globalY = report.layout.y as number
+            const pageIndex = Math.floor(globalY / ROWS_PER_PAGE)
+            const localY = globalY % ROWS_PER_PAGE
+            return {
+              ...report,
+              pageIndex,
+              layout: { ...report.layout, y: localY },
+              reportData: {
+                ...report.reportData,
+                timestamp: report.reportData.timestamp
+                  ? typeof report.reportData.timestamp === 'number'
+                    ? report.reportData.timestamp
+                    : new Date(report.reportData.timestamp).getTime()
+                  : undefined,
+              },
+            }
+          }
+          return {
             ...report,
             reportData: {
               ...report.reportData,
@@ -317,8 +383,16 @@ export const useWorkbenchStore = create<WorkbenchState>()(
                   : new Date(report.reportData.timestamp).getTime()
                 : undefined,
             },
-          })),
+          }
+        })
+
+        workbenchRehydrateSet?.({
+          pinnedReports: migratedReports,
           language: state.language,
+          pageCount: Math.max(
+            state.pageCount,
+            ...migratedReports.map(r => (r.pageIndex || 0) + 1)
+          ),
         })
       },
     }
