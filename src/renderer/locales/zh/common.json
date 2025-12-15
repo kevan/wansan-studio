@@ -132,6 +132,13 @@
   "announcement_title": "公告",
   "announcement_important": "重要通知",
 
+  "error_boundary_title": "发生了一些错误。",
+  "error_boundary_description": "发生了一个意外错误。请尝试重新加载应用。",
+  "error_boundary_reload_button": "重新加载应用",
+  "debug_export_button": "导出诊断信息",
+  "debug_export_command": "导出调试日志",
+  "debug_export_success_toast": "调试日志已导出",
+
   "settings_title": "设置",
   "settings_tab_ai": "AI 模型",
   "settings_tab_general": "通用",

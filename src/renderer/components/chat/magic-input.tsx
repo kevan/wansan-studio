@@ -12,6 +12,7 @@ import {
   Square,
   Sparkles,
   Loader2,
+  Bug,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { useFileStore } from '../../stores/useFileStore'
@@ -19,6 +20,7 @@ import { useChatStore } from '../../stores/useChatStore'
 import { useToastStore } from '../../stores/useToastStore'
 import type { ChatMessage } from '../ChatInterface'
 import { useTranslation } from 'react-i18next'
+import { exportDebugLog } from '../../utils/debug-exporter'
 
 interface MagicInputProps {
   onSubmit: (value: string) => void
@@ -123,6 +125,17 @@ export function MagicInput({
           setPopoverOpen(false)
           setValue('')
         }
+      },
+      {
+        id: 'debug',
+        label: t('debug_export_command'),
+        icon: Bug,
+        action: async () => {
+          setPopoverOpen(false)
+          setValue('')
+          await exportDebugLog()
+          addToast({ title: t('debug_export_success_toast'), type: 'success' })
+        }
       }
     ]
     return cmds.filter(c => c.id.includes(commandQuery) || c.label.toLowerCase().includes(commandQuery))
@@ -162,19 +175,23 @@ export function MagicInput({
     textareaRef.current?.focus()
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const trimmed = value.trim()
     if (!trimmed || loading) return
 
     if (trimmed.startsWith('/')) {
       const cmd = trimmed.slice(1).toLowerCase()
-      if (['clear', 'export'].includes(cmd)) {
+      if (['clear', 'export', 'debug'].includes(cmd)) {
          if (cmd === 'clear') { 
             resetChat()
             addToast({ title: t('chat_cleared'), type: 'info', duration: 2500 })
          }
          if (cmd === 'export') { 
             addToast({ title: t('export_triggered'), description: t('export_desc'), type: 'info', duration: 3000 })
+         }
+         if (cmd === 'debug') {
+            await exportDebugLog()
+            addToast({ title: t('debug_export_success_toast'), type: 'success' })
          }
          setValue('')
          return

@@ -132,6 +132,13 @@
   "announcement_title": "Announcement",
   "announcement_important": "Important",
 
+  "error_boundary_title": "Something went wrong.",
+  "error_boundary_description": "An unexpected error occurred. Please try reloading the app.",
+  "error_boundary_reload_button": "Reload App",
+  "debug_export_button": "Export Diagnostic Info",
+  "debug_export_command": "Export Debug Log",
+  "debug_export_success_toast": "Debug log exported",
+
   "settings_title": "Settings",
   "settings_tab_ai": "AI Model",
   "settings_tab_general": "General",

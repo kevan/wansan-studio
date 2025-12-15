@@ -21,6 +21,8 @@ import type { AIConfig } from '@shared/types'
 import { useBootSequence } from './hooks/use-boot-sequence'
 import { useRemoteConfig } from './hooks/use-remote-config'
 import { UpdateModal } from './components/update-modal'
+import { GlobalErrorHandler } from './components/system/GlobalErrorHandler'
+import { ErrorBoundary } from './components/system/ErrorBoundary'
 
 const LAYOUT_STORAGE_KEY = 'wansan-layout'
 
@@ -228,9 +230,11 @@ function App() {
   // }
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
-      <Toaster />
-      <UpdateModal />
+    <ErrorBoundary>
+      <GlobalErrorHandler />
+      <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
+        <Toaster />
+        <UpdateModal />
       {/* Global Window Header */}
       <header
         className="h-12 border-b border-zinc-200 flex items-center justify-between px-4 shrink-0 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur draggable z-50"
@@ -398,6 +402,7 @@ function App() {
         />
       )}
     </div>
+  </ErrorBoundary>
   )
 }
 

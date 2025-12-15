@@ -111,6 +111,7 @@ declare global {
       exportReport: (payload: any) => Promise<IPCResponse>
       resetDB: () => Promise<IPCResponse>
       saveImage: (dataUrl: string, name?: string) => Promise<IPCResponse>
+      saveFile: (content: string, extension: string, name: string) => Promise<IPCResponse<boolean>>
       openExternal: (url: string) => Promise<IPCResponse>
       getPathForFile: (file: File) => string;
       windowControl: (

@@ -8,6 +8,7 @@ import {
   Key,
   Settings2,
   Sparkles,
+  Bug,
 } from 'lucide-react'
 
 import {
@@ -34,6 +35,7 @@ import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import { AI_PROVIDERS, type AIProviderKey } from '@/src/lib/constants'
+import { exportDebugLog } from '../../utils/debug-exporter'
 
 type VerifyStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -486,6 +488,10 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
               <section className="text-center py-4">
                 <div className="font-semibold text-sm">Wansan Studio</div>
                 <div className="text-xs text-muted-foreground">{t('about.beta_version', { version: __APP_VERSION__ })}</div>
+
+                <Button variant="outline" size="sm" onClick={exportDebugLog} className="mt-4 gap-2">
+                  <Bug className="w-4 h-4"/> {t('debug_export_button')}
+                </Button>
               </section>
 
               <div className="h-10" />

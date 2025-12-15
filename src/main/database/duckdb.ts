@@ -43,13 +43,13 @@ export class DatabaseService {
     try {
       // Resolve the path to the WASM bundle
       let DUCKDB_DIST = path.dirname(require.resolve('@duckdb/duckdb-wasm'))
-      
+
       // [FIX] If packaged, point to the unpacked directory (physical path)
       // This is crucial for WASM loading to work correctly with asarUnpack
       if (app.isPackaged) {
         DUCKDB_DIST = DUCKDB_DIST.replace('app.asar', 'app.asar.unpacked')
       }
-      
+
       console.log('DUCKDB_DIST:', DUCKDB_DIST)
 
       // Bundle paths - Node.js uses generic wasm files, not node-specific ones
@@ -112,6 +112,7 @@ export class DatabaseService {
         const arrowTable = this.conn.query(sql)
         // Convert Arrow table to JSON and sanitize for IPC
         return arrowTable.toArray().map((row: any) => sanitizeValue(row.toJSON()))
+          .slice(0, 1000)
       } catch (error) {
         console.error('Query failed:', sql, error)
         throw error
