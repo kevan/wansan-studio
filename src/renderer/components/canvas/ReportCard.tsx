@@ -1,6 +1,12 @@
 import React, { forwardRef, useRef, useState } from 'react'
 import { DashboardWidget } from '../DashboardWidget'
-import { X, GripHorizontal, MoreVertical, FileImage, Maximize2 } from 'lucide-react'
+import {
+  X,
+  GripHorizontal,
+  MoreVertical,
+  FileImage,
+  Maximize2,
+} from 'lucide-react'
 import { toPng } from 'html-to-image'
 import { useToastStore } from '../../stores/useToastStore'
 import { cn } from '@/utils/cn'
@@ -20,13 +26,23 @@ interface ReportCardProps {
 
 export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
   (
-    { report, onRemove, onTitleChange, style, className, variant = 'dashboard', ...props },
+    {
+      report,
+      onRemove,
+      onTitleChange,
+      style,
+      className,
+      variant = 'dashboard',
+      ...props
+    },
     ref
   ) => {
     const cardRef = useRef<HTMLDivElement>(null)
     const [showMenu, setShowMenu] = useState(false)
     const addToast = useToastStore(state => state.addToast)
-    const setEditingReportId = useWorkbenchStore(state => state.setEditingReportId)
+    const setEditingReportId = useWorkbenchStore(
+      state => state.setEditingReportId
+    )
     const isDashboard = variant === 'dashboard'
 
     // Merge refs
@@ -39,21 +55,21 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
       try {
         const dataUrl = await toPng(cardRef.current, {
           backgroundColor: '#ffffff',
-          filter: (node) => {
+          filter: node => {
             // Exclude controls from the screenshot
             return (
               !node.classList?.contains('card-controls') &&
               !node.classList?.contains('hide-on-export')
             )
-          }
+          },
         })
-        
+
         // @ts-ignore
         const result = await window.electronAPI.saveImage(
           dataUrl,
           `${report.reportData.title || 'report'}.png`
         )
-        
+
         if (result.success) {
           addToast({
             title: 'Image Saved',
@@ -118,29 +134,29 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
           )}
           <div className="relative">
             <button
-               onClick={(e) => {
-                 e.stopPropagation()
-                 setShowMenu(!showMenu)
-               }}
-               onMouseDown={e => e.stopPropagation()}
-               className="p-1.5 bg-white text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 rounded-md border border-zinc-200 shadow-sm transition-colors cursor-pointer"
-               title="Options"
+              onClick={e => {
+                e.stopPropagation()
+                setShowMenu(!showMenu)
+              }}
+              onMouseDown={e => e.stopPropagation()}
+              className="p-1.5 bg-white text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 rounded-md border border-zinc-200 shadow-sm transition-colors cursor-pointer"
+              title="Options"
             >
               <MoreVertical className="w-4 h-4" />
             </button>
-            
+
             {showMenu && (
               <>
-                <div 
-                  className="fixed inset-0 z-40" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowMenu(false);
-                  }} 
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={e => {
+                    e.stopPropagation()
+                    setShowMenu(false)
+                  }}
                 />
                 <div className="absolute right-0 mt-2 w-36 bg-white rounded-md shadow-lg border border-zinc-200 py-1 z-50">
                   <button
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation()
                       handleExportImage()
                     }}
@@ -155,11 +171,11 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
           </div>
 
           <button
-          onClick={e => {
-            e.stopPropagation()
-            window.dispatchEvent(new Event('wansan:open-dashboard'))
-            onRemove()
-          }}
+            onClick={e => {
+              e.stopPropagation()
+              window.dispatchEvent(new Event('wansan:open-dashboard'))
+              onRemove()
+            }}
             onMouseDown={e => e.stopPropagation()}
             className="p-1.5 bg-white text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md border border-zinc-200 shadow-sm transition-colors cursor-pointer"
             title="Remove from Dashboard"

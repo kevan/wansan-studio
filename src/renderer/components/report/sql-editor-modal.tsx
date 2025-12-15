@@ -3,7 +3,16 @@ import Editor from 'react-simple-code-editor'
 import { highlight, languages } from 'prismjs'
 import 'prismjs/components/prism-sql'
 import 'prismjs/themes/prism.css'
-import { Play, RotateCcw, Copy, X, Check, AlignLeft, Sparkles, Lock } from 'lucide-react'
+import {
+  Play,
+  RotateCcw,
+  Copy,
+  X,
+  Check,
+  AlignLeft,
+  Sparkles,
+  Lock,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../utils/cn'
 import { format } from 'sql-formatter'
@@ -18,7 +27,13 @@ interface SqlEditorModalProps {
   onRun: (sql: string) => Promise<void>
 }
 
-export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }: SqlEditorModalProps) {
+export function SqlEditorModal({
+  isOpen,
+  onClose,
+  initialSql,
+  reasoning,
+  onRun,
+}: SqlEditorModalProps) {
   const { t } = useTranslation('analysis')
   const [sql, setSql] = useState(initialSql)
   const [isRunning, setIsRunning] = useState(false)
@@ -57,7 +72,7 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }
         title: t('sql_editor.run_success'),
         description: `${t('sql_editor.execution_time')}: ${duration}ms`,
         type: 'success',
-        duration: 3000
+        duration: 3000,
       })
     } catch (e: any) {
       setError(e.message || 'Execution failed')
@@ -94,12 +109,10 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div
         className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 bg-zinc-50">
-          <h3 className="font-semibold text-zinc-800">
-            Analysis Inspector
-          </h3>
+          <h3 className="font-semibold text-zinc-800">Analysis Inspector</h3>
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
@@ -127,13 +140,17 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }
 
           <div className="flex-1 border border-zinc-200 rounded-md overflow-hidden flex flex-col shadow-sm">
             <div className="flex items-center justify-between px-3 py-2 border-b bg-zinc-50">
-              <span className="text-xs font-bold text-zinc-500">SQL EDITOR</span>
+              <span className="text-xs font-bold text-zinc-500">
+                SQL EDITOR
+              </span>
               <button
                 onClick={handleFormat}
                 disabled={!isActivated}
                 className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-colors border border-transparent",
-                  !isActivated ? "text-zinc-400 cursor-not-allowed" : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 hover:border-zinc-300"
+                  'flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-colors border border-transparent',
+                  !isActivated
+                    ? 'text-zinc-400 cursor-not-allowed'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 hover:border-zinc-300'
                 )}
                 title="Format Code"
               >
@@ -155,13 +172,13 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }
                   minHeight: '100%',
                 }}
                 className={cn(
-                  "min-h-full",
-                  !isActivated && "opacity-80 bg-zinc-50 cursor-not-allowed"
+                  'min-h-full',
+                  !isActivated && 'opacity-80 bg-zinc-50 cursor-not-allowed'
                 )}
               />
               {!isActivated && (
                 <div className="absolute bottom-4 right-4 bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-md flex items-center gap-1.5 border border-yellow-200 shadow-sm z-10 pointer-events-none">
-                  <Lock className="w-3 h-3" /> 
+                  <Lock className="w-3 h-3" />
                   <span className="font-medium">Read-only (Pro Feature)</span>
                 </div>
               )}
@@ -181,8 +198,10 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }
               onClick={handleReset}
               disabled={!isActivated}
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors border border-transparent",
-                !isActivated ? "text-zinc-400 cursor-not-allowed" : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 hover:border-zinc-300"
+                'flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors border border-transparent',
+                !isActivated
+                  ? 'text-zinc-400 cursor-not-allowed'
+                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 hover:border-zinc-300'
               )}
             >
               <RotateCcw className="w-4 h-4" />
@@ -192,7 +211,11 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }
               onClick={handleCopy}
               className="flex items-center gap-2 px-3 py-1.5 text-sm text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 rounded-md transition-colors border border-transparent hover:border-zinc-300"
             >
-              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+              {copied ? (
+                <Check className="w-4 h-4 text-green-500" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
               {copied ? t('sql_editor.copy_success') : t('sql_editor.copy')}
             </button>
           </div>
@@ -202,8 +225,10 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }
               onClick={handleRun}
               disabled={isRunning}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-md transition-all shadow-sm",
-                isRunning ? "bg-zinc-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 hover:shadow"
+                'flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-md transition-all shadow-sm',
+                isRunning
+                  ? 'bg-zinc-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700 hover:shadow'
               )}
             >
               {isRunning ? (

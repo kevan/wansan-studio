@@ -114,7 +114,9 @@ export function A4Header({
           {showTimestamp && (
             <div className="text-right text-sm text-gray-500">
               <div>{t('generated_time')}</div>
-              <div className="font-mono">{new Date(timestamp).toLocaleString()}</div>
+              <div className="font-mono">
+                {new Date(timestamp).toLocaleString()}
+              </div>
             </div>
           )}
         </div>

@@ -116,7 +116,10 @@ export function ReportTable({
                   {row.getVisibleCells().map(cell => (
                     <td key={cell.id} className="px-4 py-2 max-w-xs">
                       <div className="truncate">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
                       </div>
                     </td>
                   ))}

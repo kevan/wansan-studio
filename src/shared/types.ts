@@ -98,4 +98,3 @@ export interface AIConfig {
   baseURL?: string
   model?: string
 }
-

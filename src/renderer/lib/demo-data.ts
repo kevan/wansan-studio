@@ -5,13 +5,19 @@ import { DEMO_DATA } from '@shared/demo-data.ts'
 
 export { DEMO_DATA } from '../../shared/demo-data'
 
-export async function loadDemoData(suggestedPrompts?: string[]): Promise<{ success: boolean; fileId?: string; error?: string }> {
+export async function loadDemoData(
+  suggestedPrompts?: string[]
+): Promise<{ success: boolean; fileId?: string; error?: string }> {
   try {
     const fileId = generateId()
     const tableName = 't_demo_superstore'
 
     // 1. 摄取到 DuckDB
-    const result = await window.electronAPI.invoke('ingest-json', tableName, DEMO_DATA)
+    const result = await window.electronAPI.invoke(
+      'ingest-json',
+      tableName,
+      DEMO_DATA
+    )
 
     if (!result.success) {
       throw new Error(result.error || 'Failed to ingest demo data')

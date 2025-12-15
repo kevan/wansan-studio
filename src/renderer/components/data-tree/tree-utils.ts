@@ -29,7 +29,7 @@ export const NODE_TYPES = {
  */
 export function buildTreeData(
   files: FileNode[],
-  relations: Relation[],
+  relations: Relation[]
 ): TreeNodeData[] {
   // 1. Build File Nodes (Data Sources)
   const fileNodes: TreeNodeData[] = files.map(file => {

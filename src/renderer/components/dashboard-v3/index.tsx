@@ -1,11 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
 
-import {
-  PAGE_GAP_PX,
-  PAGE_HEIGHT_PX,
-  PAGE_WIDTH_PX,
-} from './page-layer'
+import { PAGE_GAP_PX, PAGE_HEIGHT_PX, PAGE_WIDTH_PX } from './page-layer'
 import { GridLayer } from './grid-layer'
 import { PageLayer } from './page-layer'
 import { LayoutScenario, useWorkbenchStore } from '@/stores/useWorkbenchStore'
@@ -68,7 +64,10 @@ export function DashboardCanvasV3() {
       if (
         e.code === 'Space' &&
         !e.repeat &&
-        !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)
+        !(
+          e.target instanceof HTMLInputElement ||
+          e.target instanceof HTMLTextAreaElement
+        )
       ) {
         e.preventDefault() // Prevent page scroll
         setIsSpacePressed(true)

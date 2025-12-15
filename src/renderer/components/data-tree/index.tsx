@@ -192,7 +192,9 @@ export function DataTreeManager({
               />
             </svg>
           </div>
-          <p className="text-sm font-medium text-zinc-900">{t('no_data_sources')}</p>
+          <p className="text-sm font-medium text-zinc-900">
+            {t('no_data_sources')}
+          </p>
           <p className="text-xs text-zinc-500 mt-1 max-w-[200px]">
             {t('import_hint')}
           </p>

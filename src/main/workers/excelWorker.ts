@@ -52,7 +52,7 @@ function findHeaderRow(data: any[][]): {
   for (let i = 0; i < Math.min(data.length, 20); i++) {
     const row = data[i]
     const nonEmptyCount = row.filter(
-      cell => cell !== null && cell !== undefined && cell !== '',
+      cell => cell !== null && cell !== undefined && cell !== ''
     ).length
 
     if (
@@ -70,9 +70,10 @@ function findHeaderRow(data: any[][]): {
 }
 
 try {
-  const { fileBuffer, targetSheetName, targetTableName } = workerData as WorkerData
+  const { fileBuffer, targetSheetName, targetTableName } =
+    workerData as WorkerData
   const workbook = XLSX.read(fileBuffer, { type: 'buffer' })
-  const results: { sheetName: string, csvData: string, error?: string }[] = []
+  const results: { sheetName: string; csvData: string; error?: string }[] = []
 
   // Determine which sheets to process
   let sheetsToProcess: string[] = []
@@ -94,44 +95,47 @@ try {
 
   for (const sheetName of sheetsToProcess) {
     try {
-        const worksheet = workbook.Sheets[sheetName]
-        unmergeCells(worksheet)
+      const worksheet = workbook.Sheets[sheetName]
+      unmergeCells(worksheet)
 
-        const data: any[][] = XLSX.utils.sheet_to_json(worksheet, {
-          header: 1,
-          defval: null,
-        })
+      const data: any[][] = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1,
+        defval: null,
+      })
 
-        if (data.length === 0) {
-           // Skip empty
-           continue
-        }
+      if (data.length === 0) {
+        // Skip empty
+        continue
+      }
 
-        const { headerRowIndex, headers } = findHeaderRow(data)
-        const normalizedHeaders = normalizeHeaders(headers)
+      const { headerRowIndex, headers } = findHeaderRow(data)
+      const normalizedHeaders = normalizeHeaders(headers)
 
-        const dataRows = data.slice(headerRowIndex + 1)
-        const csvData = [normalizedHeaders, ...dataRows]
-          .map(row =>
-            row
-              .map(cell => {
-                const strCell = String(
-                  cell === null || cell === undefined ? '' : cell,
-                )
-                return `"${strCell.replace(/"/g, '""')}"`
-              })
-              .join(','),
-          )
-          .join('\n')
-        
-        results.push({ sheetName, csvData })
+      const dataRows = data.slice(headerRowIndex + 1)
+      const csvData = [normalizedHeaders, ...dataRows]
+        .map(row =>
+          row
+            .map(cell => {
+              const strCell = String(
+                cell === null || cell === undefined ? '' : cell
+              )
+              return `"${strCell.replace(/"/g, '""')}"`
+            })
+            .join(',')
+        )
+        .join('\n')
+
+      results.push({ sheetName, csvData })
     } catch (e: any) {
-        results.push({ sheetName, csvData: '', error: e.message })
+      results.push({ sheetName, csvData: '', error: e.message })
     }
   }
-  
-  parentPort?.postMessage({ success: true, data: results, allSheetsCount: workbook.SheetNames.length })
 
+  parentPort?.postMessage({
+    success: true,
+    data: results,
+    allSheetsCount: workbook.SheetNames.length,
+  })
 } catch (error: any) {
   parentPort?.postMessage({ success: false, error: error.message })
 }

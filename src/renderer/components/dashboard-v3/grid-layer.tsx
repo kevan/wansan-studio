@@ -1,10 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import debounce from 'lodash.debounce'
-import { Responsive, WidthProvider, type Layout, type Layouts } from 'react-grid-layout'
+import {
+  Responsive,
+  WidthProvider,
+  type Layout,
+  type Layouts,
+} from 'react-grid-layout'
 
 import { ReportCard } from '@/components/canvas/ReportCard'
 import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
-import { GRID_ROW_HEIGHT, PAGE_GAP_PX, PAGE_HEIGHT_PX, PAGE_WIDTH_PX } from './page-layer'
+import {
+  GRID_ROW_HEIGHT,
+  PAGE_GAP_PX,
+  PAGE_HEIGHT_PX,
+  PAGE_WIDTH_PX,
+} from './page-layer'
 
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
@@ -81,7 +91,10 @@ export function GridLayer({ width, height, isA4 }: GridLayerProps) {
   }, [pinnedReports])
 
   const layoutMap = useMemo(
-    () => new Map<string, Layout>(pinnedReports.map(report => [report.id, report.layout])),
+    () =>
+      new Map<string, Layout>(
+        pinnedReports.map(report => [report.id, report.layout])
+      ),
     [pinnedReports]
   )
 
@@ -120,11 +133,16 @@ export function GridLayer({ width, height, isA4 }: GridLayerProps) {
   const pageBreaks = useMemo(() => {
     if (!showGuideLines) return []
     const maxRow = pinnedReports.reduce((acc, report) => {
-      const y = Number.isFinite(report.layout?.y) ? (report.layout?.y as number) : 0
-      const h = Number.isFinite(report.layout?.h) ? (report.layout?.h as number) : 0
+      const y = Number.isFinite(report.layout?.y)
+        ? (report.layout?.y as number)
+        : 0
+      const h = Number.isFinite(report.layout?.h)
+        ? (report.layout?.h as number)
+        : 0
       return Math.max(acc, y + h)
     }, 0)
-    const estimatedHeight = maxRow * GRID_ROW_HEIGHT + Math.max(0, maxRow - 1) * GRID_MARGIN[1]
+    const estimatedHeight =
+      maxRow * GRID_ROW_HEIGHT + Math.max(0, maxRow - 1) * GRID_MARGIN[1]
     const requiredPages = Math.max(
       1,
       Math.ceil(estimatedHeight / (PAGE_HEIGHT_PX + PAGE_GAP_PX))
@@ -183,12 +201,17 @@ export function GridLayer({ width, height, isA4 }: GridLayerProps) {
         }}
       >
         {pinnedReports.map(report => (
-          <div key={report.id} data-grid={layoutMap.get(report.id) ?? report.layout}>
+          <div
+            key={report.id}
+            data-grid={layoutMap.get(report.id) ?? report.layout}
+          >
             <div className="relative h-full">
               <ReportCard
                 report={report}
                 onRemove={() => removeReport(report.id)}
-                onTitleChange={newTitle => updateReportTitle(report.id, newTitle)}
+                onTitleChange={newTitle =>
+                  updateReportTitle(report.id, newTitle)
+                }
                 className="h-full w-full"
               />
             </div>

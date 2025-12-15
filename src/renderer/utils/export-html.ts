@@ -286,26 +286,28 @@ export async function exportDashboardToHtml(reports: ReportWidget[]) {
     }
     return ay - by
   })
-  const dataJson = JSON.stringify(sortedReports.map(r => ({
-    title: r.reportData.title,
-    subtitle: r.reportData.subtitle,
-    summary: r.reportData.summary,
-    insights: r.reportData.insights,
-    vizConfig: r.reportData.vizConfig,
-    data: r.reportData.tableData,
-    chartType: r.reportData.chartType,
-    layout: r.layout
-  })))
+  const dataJson = JSON.stringify(
+    sortedReports.map(r => ({
+      title: r.reportData.title,
+      subtitle: r.reportData.subtitle,
+      summary: r.reportData.summary,
+      insights: r.reportData.insights,
+      vizConfig: r.reportData.vizConfig,
+      data: r.reportData.tableData,
+      chartType: r.reportData.chartType,
+      layout: r.layout,
+    }))
+  )
 
   // 2. Inject Data
   const finalHtml = HTML_TEMPLATE.replace('__DATA_PLACEHOLDER__', dataJson)
 
   // 3. Save File via Electron IPC
   try {
-      const fileName = `Report_${new Date().toISOString().split('T')[0]}.html`
-      await (window.electronAPI as any).saveFile(finalHtml, 'html', fileName)
+    const fileName = `Report_${new Date().toISOString().split('T')[0]}.html`
+    await (window.electronAPI as any).saveFile(finalHtml, 'html', fileName)
   } catch (err) {
-      console.error('Failed to save HTML report', err)
-      throw err
+    console.error('Failed to save HTML report', err)
+    throw err
   }
 }

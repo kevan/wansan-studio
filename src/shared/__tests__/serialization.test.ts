@@ -56,8 +56,9 @@ describe('Serialization - CSV/JSON Robustness', () => {
     expect(keys.length).toBeGreaterThan(0)
 
     // If keys were truncated, we expect the special marker
-    if (keys.length > 8) { // MAX_KEYS in serialization.ts is 8
-       // but Object.keys on the result includes the '...' key if added
+    if (keys.length > 8) {
+      // MAX_KEYS in serialization.ts is 8
+      // but Object.keys on the result includes the '...' key if added
     }
 
     // We can just check that it's an object as expected

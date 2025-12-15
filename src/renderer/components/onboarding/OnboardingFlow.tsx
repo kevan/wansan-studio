@@ -2,7 +2,12 @@ import { useState } from 'react'
 import { Languages } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from '@/components/ui/select'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { useTranslation } from 'react-i18next'
 import { AI_PROVIDERS, type AIProviderKey } from '@/src/lib/constants'
@@ -45,7 +50,9 @@ export function OnboardingFlow() {
                 onClick={() => setLanguageAndContinue('en')}
                 className="rounded-xl border border-border bg-card hover:bg-accent transition-colors p-6 text-left"
               >
-                <div className="text-lg font-semibold text-foreground">English</div>
+                <div className="text-lg font-semibold text-foreground">
+                  English
+                </div>
                 <div className="mt-1 text-sm text-muted-foreground">
                   Continue in English
                 </div>
@@ -55,7 +62,9 @@ export function OnboardingFlow() {
                 onClick={() => setLanguageAndContinue('zh')}
                 className="rounded-xl border border-border bg-card hover:bg-accent transition-colors p-6 text-left"
               >
-                <div className="text-lg font-semibold text-foreground">简体中文</div>
+                <div className="text-lg font-semibold text-foreground">
+                  简体中文
+                </div>
                 <div className="mt-1 text-sm text-muted-foreground">
                   使用中文继续
                 </div>
@@ -75,10 +84,14 @@ export function OnboardingFlow() {
               </Button>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t('ai.provider_label')}</label>
+              <label className="text-sm font-medium">
+                {t('ai.provider_label')}
+              </label>
               <Select
                 value={settings.provider}
-                onValueChange={value => settings.setProvider(value as AIProviderKey)}
+                onValueChange={value =>
+                  settings.setProvider(value as AIProviderKey)
+                }
               >
                 <SelectTrigger>
                   <span className="text-sm text-zinc-700 truncate">
@@ -92,10 +105,18 @@ export function OnboardingFlow() {
                   </span>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="openai">{t('ai.provider_openai')}</SelectItem>
-                  <SelectItem value="deepseek">{t('ai.provider_deepseek')}</SelectItem>
-                  <SelectItem value="moonshot">{t('ai.provider_moonshot')}</SelectItem>
-                  <SelectItem value="custom">{t('ai.provider_custom')}</SelectItem>
+                  <SelectItem value="openai">
+                    {t('ai.provider_openai')}
+                  </SelectItem>
+                  <SelectItem value="deepseek">
+                    {t('ai.provider_deepseek')}
+                  </SelectItem>
+                  <SelectItem value="moonshot">
+                    {t('ai.provider_moonshot')}
+                  </SelectItem>
+                  <SelectItem value="custom">
+                    {t('ai.provider_custom')}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -106,7 +127,9 @@ export function OnboardingFlow() {
               <Input
                 type="password"
                 value={settings.apiKey}
-                onChange={e => settings.updateSettings({ apiKey: e.target.value })}
+                onChange={e =>
+                  settings.updateSettings({ apiKey: e.target.value })
+                }
                 placeholder="sk-..."
               />
               {providerConfig.getKeyUrl ? (
@@ -137,24 +160,36 @@ export function OnboardingFlow() {
               </label>
               <Input
                 value={settings.baseUrl}
-                onChange={e => settings.updateSettings({ baseUrl: e.target.value })}
+                onChange={e =>
+                  settings.updateSettings({ baseUrl: e.target.value })
+                }
                 placeholder="https://api.openai.com/v1"
                 readOnly={settings.provider !== 'custom'}
-                className={settings.provider !== 'custom' ? 'bg-muted text-muted-foreground' : undefined}
+                className={
+                  settings.provider !== 'custom'
+                    ? 'bg-muted text-muted-foreground'
+                    : undefined
+                }
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t('ai.model_label')}</label>
+              <label className="text-sm font-medium">
+                {t('ai.model_label')}
+              </label>
               {settings.provider === 'custom' ? (
                 <Input
                   value={settings.model}
-                  onChange={e => settings.updateSettings({ model: e.target.value })}
+                  onChange={e =>
+                    settings.updateSettings({ model: e.target.value })
+                  }
                   placeholder={t('ai.custom_model_placeholder')}
                 />
               ) : (
                 <Select
                   value={settings.model}
-                  onValueChange={value => settings.updateSettings({ model: value })}
+                  onValueChange={value =>
+                    settings.updateSettings({ model: value })
+                  }
                 >
                   <SelectTrigger>
                     <span className="text-sm text-zinc-700 truncate">
@@ -179,14 +214,20 @@ export function OnboardingFlow() {
 
         {step === 'finish' && (
           <div className="space-y-3">
-            <h2 className="text-xl font-semibold text-foreground">You are all set!</h2>
-            <p className="text-muted-foreground">{t('onboarding.finish_body')}</p>
+            <h2 className="text-xl font-semibold text-foreground">
+              You are all set!
+            </h2>
+            <p className="text-muted-foreground">
+              {t('onboarding.finish_body')}
+            </p>
           </div>
         )}
 
         {step === 'setup' ? (
           <div className="flex items-center justify-end pt-2">
-            <Button onClick={() => setStep('finish')}>{t('onboarding.next')}</Button>
+            <Button onClick={() => setStep('finish')}>
+              {t('onboarding.next')}
+            </Button>
           </div>
         ) : null}
 

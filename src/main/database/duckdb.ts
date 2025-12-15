@@ -69,11 +69,7 @@ export class DatabaseService {
 
       console.log('Creating DuckDB (Blocking)...')
       // Use the factory function createDuckDB from blocking API
-      this.db = await duckdb.createDuckDB(
-        bundles,
-        logger,
-        duckdb.NODE_RUNTIME
-      )
+      this.db = await duckdb.createDuckDB(bundles, logger, duckdb.NODE_RUNTIME)
       console.log('Created successfully')
 
       // Instantiate the bindings
@@ -111,7 +107,9 @@ export class DatabaseService {
       try {
         const arrowTable = this.conn.query(sql)
         // Convert Arrow table to JSON and sanitize for IPC
-        return arrowTable.toArray().map((row: any) => sanitizeValue(row.toJSON()))
+        return arrowTable
+          .toArray()
+          .map((row: any) => sanitizeValue(row.toJSON()))
           .slice(0, 1000)
       } catch (error) {
         console.error('Query failed:', sql, error)
@@ -152,7 +150,10 @@ export class DatabaseService {
                 columns: columns || [],
               }
             } catch (error) {
-              console.error(`Failed to get schema for table ${tableName}:`, error)
+              console.error(
+                `Failed to get schema for table ${tableName}:`,
+                error
+              )
               return {
                 tableName,
                 description: 'Error fetching schema',

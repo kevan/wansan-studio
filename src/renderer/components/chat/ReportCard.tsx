@@ -1,11 +1,5 @@
 import React, { useState } from 'react'
-import {
-  Pin,
-  Sparkles,
-  RefreshCw,
-  Code,
-  Settings2,
-} from 'lucide-react'
+import { Pin, Sparkles, RefreshCw, Code, Settings2 } from 'lucide-react'
 import { DashboardWidget } from '../DashboardWidget'
 import { ReportData, useWorkbenchStore } from '../../stores/useWorkbenchStore'
 import { useChatStore } from '../../stores/useChatStore'
@@ -43,7 +37,9 @@ export function ReportCard({
 
   const handlePinToggle = () => {
     if (isPinned) {
-      const pinnedReport = pinnedReports.find(r => r.sourceMessageId === messageId)
+      const pinnedReport = pinnedReports.find(
+        r => r.sourceMessageId === messageId
+      )
       if (pinnedReport) {
         removeReport(pinnedReport.id)
       }
@@ -84,7 +80,9 @@ export function ReportCard({
         {/* Timestamp & Latency */}
         <div className="flex items-center gap-2">
           <span className="text-[10px] text-zinc-400 tabular-nums">
-            {message.timestamp ? new Date(message.timestamp).toLocaleString() : ''}
+            {message.timestamp
+              ? new Date(message.timestamp).toLocaleString()
+              : ''}
           </span>
 
           {/* Execution Latency Badge */}
@@ -139,10 +137,17 @@ export function ReportCard({
           {/* Pin Button */}
           <button
             onClick={handlePinToggle}
-            className={cn('p-1.5 rounded-md transition-colors hover:bg-zinc-200')}
+            className={cn(
+              'p-1.5 rounded-md transition-colors hover:bg-zinc-200'
+            )}
             title={isPinned ? t('unpin_from_canvas') : t('pin_to_canvas')}
           >
-            <Pin className={cn('w-4 h-4', isPinned ? 'fill-current text-orange-600' : 'text-zinc-500')} />
+            <Pin
+              className={cn(
+                'w-4 h-4',
+                isPinned ? 'fill-current text-orange-600' : 'text-zinc-500'
+              )}
+            />
           </button>
         </div>
       </div>

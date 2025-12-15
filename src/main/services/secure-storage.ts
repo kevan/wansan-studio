@@ -13,8 +13,8 @@ export function secureSet(key: string, value: string): boolean {
       store.set(key, encrypted.toString('base64')) // Using base64 for storage
       return true
     } else {
-        console.warn('safeStorage is not available. Key was not saved:', key)
-        return false
+      console.warn('safeStorage is not available. Key was not saved:', key)
+      return false
     }
   } catch (error) {
     console.error('secureSet error:', error)
@@ -27,12 +27,12 @@ export function secureGet(key: string): string | null {
     if (safeStorage.isEncryptionAvailable()) {
       const stored = store.get(key) as string
       if (!stored) return null
-      
+
       const buffer = Buffer.from(stored, 'base64')
       const decrypted = safeStorage.decryptString(buffer)
       return decrypted
     }
-     return null
+    return null
   } catch (error) {
     console.error('secureGet error:', error)
     return null

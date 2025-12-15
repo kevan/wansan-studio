@@ -68,7 +68,7 @@ describe('Engine Robustness & Integration', () => {
     XLSX.utils.book_append_sheet(
       wbOrders,
       XLSX.utils.aoa_to_sheet(ordersData),
-      'Orders',
+      'Orders'
     )
     XLSX.writeFile(wbOrders, ORDERS_FILE_PATH)
 
@@ -82,7 +82,7 @@ describe('Engine Robustness & Integration', () => {
     XLSX.utils.book_append_sheet(
       wbCustomers,
       XLSX.utils.aoa_to_sheet(custData),
-      'Customers',
+      'Customers'
     )
     XLSX.writeFile(wbCustomers, CUSTOMERS_FILE_PATH)
 
@@ -125,7 +125,15 @@ describe('Engine Robustness & Integration', () => {
     const userQuery = '按日期统计销售额总和，并展示趋势'
     let aiResult
     try {
-      aiResult = await generateAnalysis(openai, userQuery, [schema], [], undefined, undefined, 'zh')
+      aiResult = await generateAnalysis(
+        openai,
+        userQuery,
+        [schema],
+        [],
+        undefined,
+        undefined,
+        'zh'
+      )
     } catch (error) {
       console.warn(
         'Skipping AI test due to OpenAI connection error:',
@@ -178,14 +186,14 @@ describe('Engine Robustness & Integration', () => {
     const ordersResult = await ingestExcelFile(
       await fs.readFile(ORDERS_FILE_PATH),
       dbService,
-      'orders.xlsx',
+      'orders.xlsx'
     )
     ordersSchema = ordersResult[0]
 
     const customersResult = await ingestExcelFile(
       await fs.readFile(CUSTOMERS_FILE_PATH),
       dbService,
-      'customers.xlsx',
+      'customers.xlsx'
     )
     customersSchema = customersResult[0]
 
@@ -193,13 +201,16 @@ describe('Engine Robustness & Integration', () => {
     let relationships: any[] = []
     let suggestedPrompts: any[] = []
     try {
-      const result = await analyzeContext(openai, [ordersSchema, customersSchema])
+      const result = await analyzeContext(openai, [
+        ordersSchema,
+        customersSchema,
+      ])
       relationships = result.relationships
       suggestedPrompts = result.suggestedPrompts
     } catch (error) {
       console.warn(
         'Skipping AI relationship test due to OpenAI connection error:',
-        error instanceof Error ? error.message : error,
+        error instanceof Error ? error.message : error
       )
       return
     }
@@ -211,7 +222,7 @@ describe('Engine Robustness & Integration', () => {
     const rel = relationships.find(
       s =>
         (s.sourceColumn === 'customer_id' && s.targetColumn === 'id') ||
-        (s.sourceColumn === 'id' && s.targetColumn === 'customer_id'),
+        (s.sourceColumn === 'id' && s.targetColumn === 'customer_id')
     )
     expect(rel).toBeDefined()
     // Use toBeGreaterThanOrEqual(0.5) to be slightly more lenient but still strict
@@ -234,7 +245,7 @@ describe('Engine Robustness & Integration', () => {
     ).catch(error => {
       console.warn(
         'Skipping AI multi-table generation test due to OpenAI connection error:',
-        error instanceof Error ? error.message : error,
+        error instanceof Error ? error.message : error
       )
       return null
     })
@@ -255,7 +266,11 @@ describe('Engine Robustness & Integration', () => {
     // DuckDB WASM returns DecimalBigNum objects, need to convert
     const results = data.map(row => ({
       region: row.region,
-      amount: Number(row.total_amount || row.amount || row[Object.keys(row).find(k => k !== 'region')!])
+      amount: Number(
+        row.total_amount ||
+          row.amount ||
+          row[Object.keys(row).find(k => k !== 'region')!]
+      ),
     }))
 
     const north = results.find(r => r.region === 'North')

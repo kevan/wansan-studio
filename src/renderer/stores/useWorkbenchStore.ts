@@ -2,7 +2,11 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Layout } from 'react-grid-layout'
 import { createBigIntStorage } from '@shared/serialization.ts'
-import { GRID_ROW_HEIGHT, PAGE_GAP_PX, PAGE_HEIGHT_PX } from '@/components/dashboard-v3/page-layer'
+import {
+  GRID_ROW_HEIGHT,
+  PAGE_GAP_PX,
+  PAGE_HEIGHT_PX,
+} from '@/components/dashboard-v3/page-layer'
 import type { AIAnalysisResult } from '@shared/types'
 
 export type CanvasLayout = 'a4' | 'screen'
@@ -55,7 +59,11 @@ interface WorkbenchState {
   pageCount: number
   editingReportId: string | null
   language: Language
-  pinReport: (messageId: string, reportData: ReportData, timestamp?: number) => void
+  pinReport: (
+    messageId: string,
+    reportData: ReportData,
+    timestamp?: number
+  ) => void
   removeReport: (reportId: string) => void
   updateReportTitle: (reportId: string, newTitle: string) => void
   updateReportConfig: (
@@ -72,11 +80,17 @@ interface WorkbenchState {
   reset: () => void
 }
 
-let workbenchRehydrateSet: ((partial: Partial<WorkbenchState>) => void) | null = null
+let workbenchRehydrateSet: ((partial: Partial<WorkbenchState>) => void) | null =
+  null
 
 const initialWorkbenchState: Pick<
   WorkbenchState,
-  'pinnedReports' | 'layoutScenario' | 'canvasConfig' | 'pageCount' | 'editingReportId' | 'language'
+  | 'pinnedReports'
+  | 'layoutScenario'
+  | 'canvasConfig'
+  | 'pageCount'
+  | 'editingReportId'
+  | 'language'
 > = {
   pinnedReports: [],
   layoutScenario: 'default',
@@ -105,24 +119,32 @@ export const useWorkbenchStore = create<WorkbenchState>()(
               updates.layout === 'a4' && state.canvasConfig.layout !== 'a4'
                 ? (() => {
                     const maxGridY = state.pinnedReports.reduce((max, item) => {
-                      const y = Number.isFinite(item.layout?.y) ? (item.layout.y as number) : 0
-                      const h = Number.isFinite(item.layout?.h) ? (item.layout.h as number) : 0
+                      const y = Number.isFinite(item.layout?.y)
+                        ? (item.layout.y as number)
+                        : 0
+                      const h = Number.isFinite(item.layout?.h)
+                        ? (item.layout.h as number)
+                        : 0
                       return Math.max(max, y + h)
                     }, 0)
                     const contentPx = maxGridY * GRID_ROW_HEIGHT
                     const blockPx = PAGE_HEIGHT_PX + PAGE_GAP_PX
-                    const needed = blockPx > 0 ? Math.ceil(contentPx / blockPx) : 1
+                    const needed =
+                      blockPx > 0 ? Math.ceil(contentPx / blockPx) : 1
                     return Math.max(state.pageCount, needed || 1)
                   })()
                 : state.pageCount,
           })),
         setPageCount: count => set({ pageCount: Math.max(1, count) }),
-        incrementPageCount: () => set(state => ({ pageCount: state.pageCount + 1 })),
+        incrementPageCount: () =>
+          set(state => ({ pageCount: state.pageCount + 1 })),
         setLanguage: lang => set({ language: lang }),
         pinReport: (messageId, reportData, timestamp) =>
           set(state => {
             // Check if already pinned to avoid duplicates for the same message
-            if (state.pinnedReports.some(r => r.sourceMessageId === messageId)) {
+            if (
+              state.pinnedReports.some(r => r.sourceMessageId === messageId)
+            ) {
               return state
             }
 
@@ -176,7 +198,8 @@ export const useWorkbenchStore = create<WorkbenchState>()(
             h = Math.max(1, h)
 
             const maxY = state.pinnedReports.reduce(
-              (max, item) => Math.max(max, (item.layout?.y ?? 0) + (item.layout?.h ?? 0)),
+              (max, item) =>
+                Math.max(max, (item.layout?.y ?? 0) + (item.layout?.h ?? 0)),
               0
             )
 
@@ -186,7 +209,10 @@ export const useWorkbenchStore = create<WorkbenchState>()(
                 {
                   id,
                   sourceMessageId: messageId,
-                  reportData: { ...reportData, timestamp: timestamp ?? reportData.timestamp },
+                  reportData: {
+                    ...reportData,
+                    timestamp: timestamp ?? reportData.timestamp,
+                  },
                   layout: {
                     i: id,
                     x: 0,

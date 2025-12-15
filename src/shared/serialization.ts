@@ -190,15 +190,19 @@ export function formatForDisplay(value: any): string {
 
     // 2. Format numbers (add commas, limit decimals)
     // Use maximumFractionDigits: 4 to avoid overly long floats but keep reasonable precision
-    return new Intl.NumberFormat('en-US', { 
-      maximumFractionDigits: 4 
+    return new Intl.NumberFormat('en-US', {
+      maximumFractionDigits: 4,
     }).format(value)
   }
 
   // If string looks like a date, try formatting it (e.g., '2023-01-01')
-  if (typeof value === 'string' && !isNaN(Date.parse(value)) && value.length > 10) {
-     // Simple heuristic: don't aggressive format short strings like "2023"
-     try {
+  if (
+    typeof value === 'string' &&
+    !isNaN(Date.parse(value)) &&
+    value.length > 10
+  ) {
+    // Simple heuristic: don't aggressive format short strings like "2023"
+    try {
       return new Date(value).toLocaleString()
     } catch {
       return value

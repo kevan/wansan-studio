@@ -93,7 +93,8 @@ export function SchemaEditor() {
                 </span>
                 {currentFile.lastModified && (
                   <span className="text-xs text-zinc-400">
-                    {t('last_updated')}: {new Date(currentFile.lastModified).toLocaleString()}
+                    {t('last_updated')}:{' '}
+                    {new Date(currentFile.lastModified).toLocaleString()}
                   </span>
                 )}
               </div>
@@ -106,7 +107,9 @@ export function SchemaEditor() {
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-[40px] z-30 bg-white shadow-sm">
                 <tr className="text-xs font-semibold text-zinc-500 uppercase tracking-wider bg-white">
-                  <th className="px-6 py-3 w-1/3 border-b">{t('field_name')}</th>
+                  <th className="px-6 py-3 w-1/3 border-b">
+                    {t('field_name')}
+                  </th>
                   <th className="px-6 py-3 w-1/4 border-b">{t('format')}</th>
                   <th className="px-6 py-3 border-b">{t('preview')}</th>
                 </tr>
@@ -123,8 +126,7 @@ export function SchemaEditor() {
                       r =>
                         (r.fileAId === currentFile.id &&
                           r.columnA === col.name) ||
-                        (r.fileBId === currentFile.id &&
-                          r.columnB === col.name)
+                        (r.fileBId === currentFile.id && r.columnB === col.name)
                     )}
                   />
                 ))}
@@ -218,7 +220,8 @@ function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
 
       {/* Preview */}
       <td className="px-4 py-3">
-        {Array.isArray(column.sampleValues) && column.sampleValues.length > 0 ? (
+        {Array.isArray(column.sampleValues) &&
+        column.sampleValues.length > 0 ? (
           <div className="flex gap-1 flex-wrap text-xs text-muted-foreground">
             {column.sampleValues.map((val, i) => {
               const displayValue = formatDisplayValue(val, column.type)

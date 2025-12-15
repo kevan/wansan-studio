@@ -26,7 +26,7 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
   const [isLoadingDemo, setIsLoadingDemo] = useState(false)
 
   const allowedExtensions = ['.xlsx', '.xls', '.csv', '.json']
-  const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+  const MAX_SIZE = 100 * 1024 * 1024 // 100MB
 
   // 处理单个文件
   const processFile = async (
@@ -106,17 +106,19 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
           path: fileData.path,
           name: fileData.path.split('/').pop() || 'unknown',
           size: fileData.size,
-        }));
+        }))
 
-        const oversizedFiles = filesToProcess.filter(f => f.size > MAX_SIZE);
-        const validSizeFiles = filesToProcess.filter(f => f.size <= MAX_SIZE);
+        const oversizedFiles = filesToProcess.filter(f => f.size > MAX_SIZE)
+        const validSizeFiles = filesToProcess.filter(f => f.size <= MAX_SIZE)
 
         if (oversizedFiles.length > 0) {
-            addToast({
-                title: t('file_too_large_title'),
-                description: t('file_too_large_desc', { files: oversizedFiles.map(f => f.name).join(', ') }),
-                type: "warning"
-            });
+          addToast({
+            title: t('file_too_large_title'),
+            description: t('file_too_large_desc', {
+              files: oversizedFiles.map(f => f.name).join(', '),
+            }),
+            type: 'warning',
+          })
         }
 
         await processFiles(validSizeFiles)
@@ -153,15 +155,17 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
 
     const droppedFiles = Array.from(e.dataTransfer.files)
 
-    const oversizedFiles = droppedFiles.filter(f => f.size > MAX_SIZE);
-    const validSizeFiles = droppedFiles.filter(f => f.size <= MAX_SIZE);
+    const oversizedFiles = droppedFiles.filter(f => f.size > MAX_SIZE)
+    const validSizeFiles = droppedFiles.filter(f => f.size <= MAX_SIZE)
 
     if (oversizedFiles.length > 0) {
-        addToast({
-            title: t('file_too_large_title'),
-            description: t('file_too_large_desc', { files: oversizedFiles.map(f => f.name).join(', ') }),
-            type: "warning"
-        });
+      addToast({
+        title: t('file_too_large_title'),
+        description: t('file_too_large_desc', {
+          files: oversizedFiles.map(f => f.name).join(', '),
+        }),
+        type: 'warning',
+      })
     }
 
     // 过滤支持的文件类型
@@ -206,7 +210,10 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
       console.error('Load demo data error:', error)
       addToast({
         title: t('demo_error_title'),
-        description: error instanceof Error ? error.message : t('unknown_error', 'Unknown error'),
+        description:
+          error instanceof Error
+            ? error.message
+            : t('unknown_error', 'Unknown error'),
         type: 'error',
       })
     } finally {
@@ -266,9 +273,7 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
             <h2 className="text-xl font-semibold text-zinc-900 mb-2">
               {t('file_drag_title')}
             </h2>
-            <p className="text-zinc-500 mb-4">
-              {t('file_drag_subtitle')}
-            </p>
+            <p className="text-zinc-500 mb-4">{t('file_drag_subtitle')}</p>
 
             {/* 支持的格式 */}
             <div className="flex items-center justify-center gap-3 text-xs text-zinc-400">
@@ -282,14 +287,16 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
               <div className="flex flex-col items-center gap-3 w-full max-w-xs mx-auto">
                 <div className="flex items-center gap-2 w-full">
                   <Separator className="flex-1" />
-                  <span className="text-xs text-zinc-400 uppercase tracking-wide">{t('demo_or_start_with', 'or start with')}</span>
+                  <span className="text-xs text-zinc-400 uppercase tracking-wide">
+                    {t('demo_or_start_with', 'or start with')}
+                  </span>
                   <Separator className="flex-1" />
                 </div>
 
                 <Button
                   variant="outline"
                   className="w-full gap-2 bg-white hover:bg-zinc-50 border-zinc-200 text-zinc-700 hover:text-zinc-900"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation()
                     handleLoadDemoData()
                   }}

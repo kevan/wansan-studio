@@ -20,7 +20,10 @@ const mockIPC = {
   selectFiles: async () => {
     return {
       success: true,
-      data: [{ path: 'mock/path/to/file1.xlsx', size: 1024 }, { path: 'mock/path/to/file2.csv', size: 2048 }],
+      data: [
+        { path: 'mock/path/to/file1.xlsx', size: 1024 },
+        { path: 'mock/path/to/file2.csv', size: 2048 },
+      ],
     }
   },
   parseFile: async (filePath: string) => {
@@ -31,7 +34,11 @@ const mockIPC = {
     }
   },
   // ...
-  reIngestFile: async (filePath: string, tableName: string, sheetName?: string) => {
+  reIngestFile: async (
+    filePath: string,
+    tableName: string,
+    sheetName?: string
+  ) => {
     console.log(`Mock reIngestFile: ${filePath} ${sheetName || ''}`)
     return { success: true, data: { lastModified: Date.now(), newColumns: [] } }
   },
@@ -62,7 +69,9 @@ const mockIPC = {
     console.log('Mock openExternal', url)
     return { success: true }
   },
-  windowControl: (action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize') => {
+  windowControl: (
+    action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
+  ) => {
     console.log('Mock windowControl', action)
   },
   platform: 'darwin', // Mock platform
@@ -94,7 +103,10 @@ declare global {
         error: string,
         schemas: any[]
       ) => Promise<IPCResponse>
-      analyzeContext: (schemas: any[], language?: 'en' | 'zh') => Promise<IPCResponse>
+      analyzeContext: (
+        schemas: any[],
+        language?: 'en' | 'zh'
+      ) => Promise<IPCResponse>
       getAIConfig: () => Promise<IPCResponse>
       setAIConfig: (config: any) => Promise<IPCResponse>
       clearAIConfig: () => Promise<IPCResponse>
@@ -111,9 +123,13 @@ declare global {
       exportReport: (payload: any) => Promise<IPCResponse>
       resetDB: () => Promise<IPCResponse>
       saveImage: (dataUrl: string, name?: string) => Promise<IPCResponse>
-      saveFile: (content: string, extension: string, name: string) => Promise<IPCResponse<boolean>>
+      saveFile: (
+        content: string,
+        extension: string,
+        name: string
+      ) => Promise<IPCResponse<boolean>>
       openExternal: (url: string) => Promise<IPCResponse>
-      getPathForFile: (file: File) => string;
+      getPathForFile: (file: File) => string
       windowControl: (
         action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
       ) => void
@@ -254,7 +270,11 @@ export const useContextAnalysis = () => {
       const { schemas, language } = Array.isArray(params)
         ? { schemas: params, language: undefined }
         : params
-      const response = await getIpc().invoke('analyze-context', schemas, language)
+      const response = await getIpc().invoke(
+        'analyze-context',
+        schemas,
+        language
+      )
       if (!response.success) {
         throw new Error(response.error || 'Failed to analyze context')
       }

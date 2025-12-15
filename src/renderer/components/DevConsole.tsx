@@ -14,9 +14,7 @@ interface DevConsoleProps {
 }
 
 // 生产环境不渲染
-export function DevConsole({
-                             defaultOpen = false,
-                           }: DevConsoleProps) {
+export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
   if (!isDev) return null
 
   const [isOpen, setIsOpen] = useState(defaultOpen)
@@ -38,24 +36,24 @@ export function DevConsole({
 
     const createLogger =
       (type: LogEntry['type']) =>
-        (...args: unknown[]) => {
-          originalConsole[type](...args)
-          const message = args
-            .map(arg =>
-              typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg),
-            )
-            .join(' ')
+      (...args: unknown[]) => {
+        originalConsole[type](...args)
+        const message = args
+          .map(arg =>
+            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+          )
+          .join(' ')
 
-          setLogs(prev => [
-            ...prev.slice(-99),
-            {
-              id: ++logIdRef.current,
-              type,
-              message,
-              timestamp: new Date(),
-            },
-          ])
-        }
+        setLogs(prev => [
+          ...prev.slice(-99),
+          {
+            id: ++logIdRef.current,
+            type,
+            message,
+            timestamp: new Date(),
+          },
+        ])
+      }
 
     console.log = createLogger('log')
     console.warn = createLogger('warn')

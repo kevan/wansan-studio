@@ -33,9 +33,13 @@ export function Toaster() {
             <div className="flex items-start gap-3 px-4 py-3">
               <div className="flex-shrink-0 pt-0.5">{iconMap[toast.type]}</div>
               <div className="flex-1 text-left">
-                <p className="text-sm font-semibold text-zinc-900">{toast.title}</p>
+                <p className="text-sm font-semibold text-zinc-900">
+                  {toast.title}
+                </p>
                 {toast.description && (
-                  <p className="mt-1 text-xs text-zinc-600">{toast.description}</p>
+                  <p className="mt-1 text-xs text-zinc-600">
+                    {toast.description}
+                  </p>
                 )}
               </div>
               <button

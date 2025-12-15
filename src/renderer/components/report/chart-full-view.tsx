@@ -12,9 +12,13 @@ import { useTranslation } from 'react-i18next'
 
 export function ChartFullView() {
   const editingReportId = useWorkbenchStore(state => state.editingReportId)
-  const setEditingReportId = useWorkbenchStore(state => state.setEditingReportId)
+  const setEditingReportId = useWorkbenchStore(
+    state => state.setEditingReportId
+  )
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
-  const updateReportConfig = useWorkbenchStore(state => state.updateReportConfig)
+  const updateReportConfig = useWorkbenchStore(
+    state => state.updateReportConfig
+  )
   const updateReportTitle = useWorkbenchStore(state => state.updateReportTitle)
   const { t } = useTranslation('common')
 
@@ -24,7 +28,9 @@ export function ChartFullView() {
   )
 
   const [localType, setLocalType] = useState<ReportData['chartType']>('bar')
-  const [localConfig, setLocalConfig] = useState<ReportData['vizConfig'] | undefined>(undefined)
+  const [localConfig, setLocalConfig] = useState<
+    ReportData['vizConfig'] | undefined
+  >(undefined)
   const [localTitle, setLocalTitle] = useState('')
 
   useEffect(() => {
@@ -69,9 +75,7 @@ export function ChartFullView() {
   const showTable =
     data.length > 0 &&
     !isBigNumber &&
-    (effectiveType === 'table' ||
-      !localConfig?.x_axis ||
-      !localConfig?.y_axis)
+    (effectiveType === 'table' || !localConfig?.x_axis || !localConfig?.y_axis)
 
   const handleSave = () => {
     if (!report) return
@@ -96,29 +100,29 @@ export function ChartFullView() {
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
       <div className="relative flex h-[80vh] w-[80vw] max-w-6xl rounded-xl border border-zinc-200 bg-white shadow-2xl overflow-hidden">
         <div className="flex flex-1 flex-col">
-            <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3">
-              <input
-                className="w-full max-w-lg border-none text-lg font-semibold text-zinc-900 outline-none focus:ring-0"
-                value={localTitle}
-                onChange={e => setLocalTitle(e.target.value)}
-              />
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setEditingReportId(null)}
-                  className="inline-flex items-center gap-2 rounded-md border border-zinc-200 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100"
-                >
-                  <X className="h-4 w-4" />
-                  {t('close')}
-                </button>
-                <button
-                  onClick={handleSave}
-                  className="inline-flex items-center gap-2 rounded-md bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-600"
-                >
-                  <Save className="h-4 w-4" />
-                  {t('save')}
-                </button>
-              </div>
+          <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3">
+            <input
+              className="w-full max-w-lg border-none text-lg font-semibold text-zinc-900 outline-none focus:ring-0"
+              value={localTitle}
+              onChange={e => setLocalTitle(e.target.value)}
+            />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setEditingReportId(null)}
+                className="inline-flex items-center gap-2 rounded-md border border-zinc-200 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100"
+              >
+                <X className="h-4 w-4" />
+                {t('close')}
+              </button>
+              <button
+                onClick={handleSave}
+                className="inline-flex items-center gap-2 rounded-md bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-600"
+              >
+                <Save className="h-4 w-4" />
+                {t('save')}
+              </button>
             </div>
+          </div>
 
           <div className="flex flex-1 overflow-hidden">
             <div className="flex-1 p-5">
@@ -131,19 +135,25 @@ export function ChartFullView() {
                   />
                 )}
 
-                {!isBigNumber && effectiveType !== 'table' && effectiveType !== 'kpi' && (
-                  <A4Chart
-                    type={effectiveType}
-                    title={localTitle}
-                    data={data}
-                    config={localConfig}
-                    className="h-full w-full"
-                  />
-                )}
+                {!isBigNumber &&
+                  effectiveType !== 'table' &&
+                  effectiveType !== 'kpi' && (
+                    <A4Chart
+                      type={effectiveType}
+                      title={localTitle}
+                      data={data}
+                      config={localConfig}
+                      className="h-full w-full"
+                    />
+                  )}
 
                 {showTable && (
                   <div className="h-full w-full overflow-auto">
-                    <ReportTable data={data} columns={columns} variant="dashboard" />
+                    <ReportTable
+                      data={data}
+                      columns={columns}
+                      variant="dashboard"
+                    />
                   </div>
                 )}
 
@@ -155,7 +165,9 @@ export function ChartFullView() {
               </div>
             </div>
 
-            <div className={cn('w-[320px] border-l border-zinc-200 bg-white p-4')}>
+            <div
+              className={cn('w-[320px] border-l border-zinc-200 bg-white p-4')}
+            >
               <div className="mb-3 text-sm font-semibold text-zinc-700">
                 Visualization Controls
               </div>

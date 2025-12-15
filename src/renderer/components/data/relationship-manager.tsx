@@ -48,7 +48,7 @@ export function RelationshipManager() {
     setForm(prev => {
       const sourceFileId = readyFiles.some(f => f.id === prev.sourceFileId)
         ? prev.sourceFileId
-        : readyFiles[0]?.id ?? ''
+        : (readyFiles[0]?.id ?? '')
 
       const targetFallback =
         readyFiles.find(f => f.id !== sourceFileId)?.id ?? sourceFileId
@@ -73,7 +73,12 @@ export function RelationshipManager() {
   }, [getColumns, readyFiles])
 
   const handleLink = () => {
-    if (!form.sourceFileId || !form.targetFileId || !form.sourceColumn || !form.targetColumn) {
+    if (
+      !form.sourceFileId ||
+      !form.targetFileId ||
+      !form.sourceColumn ||
+      !form.targetColumn
+    ) {
       return
     }
 
@@ -127,12 +132,16 @@ export function RelationshipManager() {
                       <span className="font-semibold">
                         {getFileNameById(rel.fileAId)}
                       </span>
-                      <span className="text-xs text-zinc-400">({rel.columnA})</span>
+                      <span className="text-xs text-zinc-400">
+                        ({rel.columnA})
+                      </span>
                       <Link2 className="w-4 h-4 text-indigo-500" />
                       <span className="font-semibold">
                         {getFileNameById(rel.fileBId)}
                       </span>
-                      <span className="text-xs text-zinc-400">({rel.columnB})</span>
+                      <span className="text-xs text-zinc-400">
+                        ({rel.columnB})
+                      </span>
                     </div>
                     <button
                       onClick={() => removeRelation(rel.id)}
@@ -156,7 +165,9 @@ export function RelationshipManager() {
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs text-zinc-400">{t('source_table')}</label>
+                <label className="text-xs text-zinc-400">
+                  {t('source_table')}
+                </label>
                 <Select
                   value={form.sourceFileId}
                   onValueChange={value =>
@@ -184,7 +195,9 @@ export function RelationshipManager() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-zinc-400">{t('join_column')}</label>
+                <label className="text-xs text-zinc-400">
+                  {t('join_column')}
+                </label>
                 <Select
                   value={form.sourceColumn}
                   onValueChange={value =>
@@ -213,7 +226,9 @@ export function RelationshipManager() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs text-zinc-400">{t('target_table')}</label>
+                <label className="text-xs text-zinc-400">
+                  {t('target_table')}
+                </label>
                 <Select
                   value={form.targetFileId}
                   onValueChange={value =>
@@ -241,7 +256,9 @@ export function RelationshipManager() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-zinc-400">{t('join_column')}</label>
+                <label className="text-xs text-zinc-400">
+                  {t('join_column')}
+                </label>
                 <Select
                   value={form.targetColumn}
                   onValueChange={value =>

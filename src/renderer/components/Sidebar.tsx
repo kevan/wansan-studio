@@ -16,7 +16,7 @@ interface SidebarProps {
   onImportData?: () => void
 }
 
-const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_SIZE = 100 * 1024 * 1024 // 100MB
 
 export function Sidebar(_props: SidebarProps) {
   const { files, addFile, updateFile, setView } = useFileStore()
@@ -46,17 +46,21 @@ export function Sidebar(_props: SidebarProps) {
       if (result.success && result.data && result.data.length > 0) {
         console.log('handleImportClick: Files selected', result.data.length)
 
-        const oversizedFiles = result.data.filter(f => f.size > MAX_SIZE);
+        const oversizedFiles = result.data.filter(f => f.size > MAX_SIZE)
         if (oversizedFiles.length > 0) {
-             addToast({
-                title: t('sidebar.file_too_large_title'),
-                description: t('sidebar.file_too_large_desc', { files: oversizedFiles.map(f => f.path.split('/').pop()).join(', ') }),
-                type: 'warning',
-                duration: 5000
-             });
+          addToast({
+            title: t('sidebar.file_too_large_title'),
+            description: t('sidebar.file_too_large_desc', {
+              files: oversizedFiles
+                .map(f => f.path.split('/').pop())
+                .join(', '),
+            }),
+            type: 'warning',
+            duration: 5000,
+          })
         }
 
-        const validFiles = result.data.filter(f => f.size <= MAX_SIZE);
+        const validFiles = result.data.filter(f => f.size <= MAX_SIZE)
 
         for (const fileData of validFiles) {
           const filePath = fileData.path
@@ -83,127 +87,137 @@ export function Sidebar(_props: SidebarProps) {
               fileName,
               parseResults
             )
-            
-            const results = Array.isArray(parseResults) ? parseResults : [parseResults]
+
+            const results = Array.isArray(parseResults)
+              ? parseResults
+              : [parseResults]
             let placeholderUsed = false
 
             // [NEW LIMIT CHECK: MULTI-SHEET]
             if (!settings.isActivated && results.length > 1) {
-                addToast({
-                    title: t('sidebar.trial_limit_multi_sheet_title'),
-                    description: t('sidebar.trial_limit_multi_sheet_desc'),
-                    type: 'warning',
-                });
-                // Remove the placeholder file if already added, to clean up UI
-                if (fileId) {
-                  useFileStore.getState().removeFile(fileId); // This needs the store ref
-                }
-                continue; // Skip this file and proceed to next
+              addToast({
+                title: t('sidebar.trial_limit_multi_sheet_title'),
+                description: t('sidebar.trial_limit_multi_sheet_desc'),
+                type: 'warning',
+              })
+              // Remove the placeholder file if already added, to clean up UI
+              if (fileId) {
+                useFileStore.getState().removeFile(fileId) // This needs the store ref
+              }
+              continue // Skip this file and proceed to next
             }
 
             for (const res of results) {
-                 // Check for duplicates (excluding the placeholder itself)
-                 const isDuplicate = useFileStore.getState().files.some(f => 
-                     f.id !== fileId && 
-                     f.path === filePath && 
-                     f.sheetName === res.sheetName
-                 )
-
-                 if (isDuplicate) {
-                     console.warn(`Skipping duplicate sheet: ${res.sheetName || 'default'}`)
-                     continue
-                 }
-
-                // 从 preview 数据中提取每列的样本值
-                const columns = (res.schema?.columns || []).map(
-                  (
-                    col: { name: string; type: string; nullable: boolean },
-                    colIndex: number
-                  ) => {
-                    // preview 可能是 [[header...], [row1...], ...] 或 [{col: val}, ...]
-                    const preview = res.preview || []
-                    const sampleValues: string[] = []
-
-                    // 如果是对象数组格式 (CSV 解析结果)
-                    if (
-                      preview.length > 0 &&
-                      typeof preview[0] === 'object' &&
-                      !Array.isArray(preview[0])
-                    ) {
-                      for (const row of preview.slice(0, 5)) {
-                        const val = row[col.name]
-                        if (
-                          val !== null &&
-                          val !== undefined &&
-                          val !== '' &&
-                          sampleValues.length < 3
-                        ) {
-                          sampleValues.push(String(val))
-                        }
-                      }
-                    } else if (Array.isArray(preview[0])) {
-                      // 如果是二维数组格式 (Excel 解析结果)，跳过第一行（表头）
-                      for (const row of preview.slice(1, 6)) {
-                        const val = row[colIndex]
-                        if (
-                          val !== null &&
-                          val !== undefined &&
-                          val !== '' &&
-                          sampleValues.length < 3
-                        ) {
-                          sampleValues.push(String(val))
-                        }
-                      }
-                    }
-
-                    return {
-                      ...col,
-                      sampleValues,
-                    }
-                  }
+              // Check for duplicates (excluding the placeholder itself)
+              const isDuplicate = useFileStore
+                .getState()
+                .files.some(
+                  f =>
+                    f.id !== fileId &&
+                    f.path === filePath &&
+                    f.sheetName === res.sheetName
                 )
 
-                const fileData = {
-                  name: res.sheetName ? `${fileName} - ${res.sheetName}` : fileName,
-                  status: 'ready' as const,
-                  tableName: res.tableName,
-                  sheetName: res.sheetName,
-                  columns,
-                  rowCount: res.rowCount,
-                }
+              if (isDuplicate) {
+                console.warn(
+                  `Skipping duplicate sheet: ${res.sheetName || 'default'}`
+                )
+                continue
+              }
 
-                if (!placeholderUsed) {
-                   updateFile(fileId, fileData)
-                   placeholderUsed = true
-                } else {
-                   try {
-                       addFile({
-                           ...fileData,
-                           path: filePath
-                       })
-                   } catch (e) {
-                       console.warn("Failed to add sheet", e)
-                   }
+              // 从 preview 数据中提取每列的样本值
+              const columns = (res.schema?.columns || []).map(
+                (
+                  col: { name: string; type: string; nullable: boolean },
+                  colIndex: number
+                ) => {
+                  // preview 可能是 [[header...], [row1...], ...] 或 [{col: val}, ...]
+                  const preview = res.preview || []
+                  const sampleValues: string[] = []
+
+                  // 如果是对象数组格式 (CSV 解析结果)
+                  if (
+                    preview.length > 0 &&
+                    typeof preview[0] === 'object' &&
+                    !Array.isArray(preview[0])
+                  ) {
+                    for (const row of preview.slice(0, 5)) {
+                      const val = row[col.name]
+                      if (
+                        val !== null &&
+                        val !== undefined &&
+                        val !== '' &&
+                        sampleValues.length < 3
+                      ) {
+                        sampleValues.push(String(val))
+                      }
+                    }
+                  } else if (Array.isArray(preview[0])) {
+                    // 如果是二维数组格式 (Excel 解析结果)，跳过第一行（表头）
+                    for (const row of preview.slice(1, 6)) {
+                      const val = row[colIndex]
+                      if (
+                        val !== null &&
+                        val !== undefined &&
+                        val !== '' &&
+                        sampleValues.length < 3
+                      ) {
+                        sampleValues.push(String(val))
+                      }
+                    }
+                  }
+
+                  return {
+                    ...col,
+                    sampleValues,
+                  }
                 }
+              )
+
+              const fileData = {
+                name: res.sheetName
+                  ? `${fileName} - ${res.sheetName}`
+                  : fileName,
+                status: 'ready' as const,
+                tableName: res.tableName,
+                sheetName: res.sheetName,
+                columns,
+                rowCount: res.rowCount,
+              }
+
+              if (!placeholderUsed) {
+                updateFile(fileId, fileData)
+                placeholderUsed = true
+              } else {
+                try {
+                  addFile({
+                    ...fileData,
+                    path: filePath,
+                  })
+                } catch (e) {
+                  console.warn('Failed to add sheet', e)
+                }
+              }
             }
 
             if (!placeholderUsed && fileId) {
-                // All sheets were duplicates or no sheets found
-                // If results were empty, it's an error?
-                if (results.length === 0) {
-                     updateFile(fileId, { status: 'error', error: 'No data found' })
-                } else {
-                     // All duplicates
-                     useFileStore.getState().removeFile(fileId)
-                     addToast({
-                        title: t('sidebar.duplicate_file_skipped_title'),
-                        description: t('sidebar.duplicate_file_skipped_desc', { fileName }),
-                        type: 'warning',
-                        duration: 4000
-                     })
-                }
+              // All sheets were duplicates or no sheets found
+              // If results were empty, it's an error?
+              if (results.length === 0) {
+                updateFile(fileId, { status: 'error', error: 'No data found' })
+              } else {
+                // All duplicates
+                useFileStore.getState().removeFile(fileId)
+                addToast({
+                  title: t('sidebar.duplicate_file_skipped_title'),
+                  description: t('sidebar.duplicate_file_skipped_desc', {
+                    fileName,
+                  }),
+                  type: 'warning',
+                  duration: 4000,
+                })
+              }
             }
-
           } catch (error) {
             console.error(
               'handleImportClick: Error processing file',
@@ -326,7 +340,8 @@ export function Sidebar(_props: SidebarProps) {
             // Common Base
             'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700',
             // Conditional Tint
-            !settings.isActivated && "hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10"
+            !settings.isActivated &&
+              'hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10'
           )}
         >
           {settings.isActivated ? (

@@ -26,7 +26,8 @@ const electronAPI = {
     relations: any[],
     context?: { lastSql: string; lastQuery: string },
     language?: 'en' | 'zh'
-  ) => ipcRenderer.invoke('ask-ai', query, schemas, relations, context, language),
+  ) =>
+    ipcRenderer.invoke('ask-ai', query, schemas, relations, context, language),
   fixSQL: (originalSql: string, error: string, schemas: any[]) =>
     ipcRenderer.invoke('ask-ai-fix', originalSql, error, schemas),
   analyzeContext: (schemas: any[], language?: 'en' | 'zh') =>
@@ -45,7 +46,8 @@ const electronAPI = {
   exportPDF: (data: any) => ipcRenderer.invoke('export-pdf', data),
   saveImage: (dataUrl: string, name?: string) =>
     ipcRenderer.invoke('save-image', dataUrl, name),
-  saveFile: (content: string, extension: string, name: string) => ipcRenderer.invoke('save-file', content, extension, name),
+  saveFile: (content: string, extension: string, name: string) =>
+    ipcRenderer.invoke('save-file', content, extension, name),
   exportReport: (payload: {
     type: 'pdf' | 'html' | 'png'
     title: string
@@ -54,12 +56,14 @@ const electronAPI = {
 
   // 系统信息
   getDeviceId: () => ipcRenderer.invoke('get-device-id'),
-  secureSet: (key: string, value: string) => ipcRenderer.invoke('secure-set', key, value),
+  secureSet: (key: string, value: string) =>
+    ipcRenderer.invoke('secure-set', key, value),
   secureGet: (key: string) => ipcRenderer.invoke('secure-get', key),
   platform: process.platform,
   version: process.versions,
-  windowControl: (action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize') =>
-    ipcRenderer.send('window-control', action),
+  windowControl: (
+    action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
+  ) => ipcRenderer.send('window-control', action),
 
   // Open external URLs in user's default browser
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),

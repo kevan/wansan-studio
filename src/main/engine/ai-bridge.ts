@@ -1,6 +1,10 @@
 import { OpenAI } from 'openai'
 import { z } from 'zod'
-import { ContextAnalysisResult, RelationSuggestion, TableSchema } from '@shared/types.ts'
+import {
+  ContextAnalysisResult,
+  RelationSuggestion,
+  TableSchema,
+} from '@shared/types.ts'
 import { isDev } from '../utils/env'
 import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources'
 import { safeStringify, parse } from '@shared/serialization.ts'
@@ -21,11 +25,14 @@ const AIGenerationSchema = z.object({
   sql: z.string(),
   title: z.string().optional(),
   summary: z.string().optional(),
-  viz_type: z.enum(['bar', 'line', 'pie', 'table', 'scatter', 'kpi']).optional(),
+  viz_type: z
+    .enum(['bar', 'line', 'pie', 'table', 'scatter', 'kpi'])
+    .optional(),
   viz_config: z
     .object({
       x_axis: z.string().nullable().optional(),
-      y_axis: z.union([z.string(), z.array(z.string())])
+      y_axis: z
+        .union([z.string(), z.array(z.string())])
         .nullable()
         .optional(),
       series_name: z.string().optional(),
@@ -210,7 +217,6 @@ Structure:
 }
 `
 
-
 const RelationSuggestionSchema = z.object({
   sourceTable: z.string(),
   sourceColumn: z.string(),
@@ -224,7 +230,6 @@ const ContextAnalysisResultSchema = z.object({
   relationships: z.array(RelationSuggestionSchema),
   suggestedPrompts: z.array(z.string().max(60)),
 })
-
 
 function serializeSchemas(schemas: TableSchema[]): string {
   return schemas
@@ -244,7 +249,11 @@ function serializeSchemas(schemas: TableSchema[]): string {
             lower.includes('money')
           )
             hint += ' [Money/Metric]'
-          if (lower.includes('date') || lower.includes('time') || lower.includes('日期'))
+          if (
+            lower.includes('date') ||
+            lower.includes('time') ||
+            lower.includes('日期')
+          )
             hint += ' [Time]'
 
           const samples =
@@ -270,13 +279,13 @@ export async function generateAnalysis(
   relations: RelationSuggestion[],
   context?: { lastSql: string; lastQuery: string },
   model?: string,
-  language: 'en' | 'zh' = 'en',
+  language: 'en' | 'zh' = 'en'
 ): Promise<AIGenerationOutput> {
   if (isDev()) {
     // Use a custom replacer to handle BigInt serialization
     console.log(
       'generateAnalysis pre request - schemas:',
-      safeStringify(schemas, 2),
+      safeStringify(schemas, 2)
     )
     console.log('generateAnalysis context:', context)
   }
@@ -286,11 +295,11 @@ export async function generateAnalysis(
   const relationsContext =
     relations.length > 0
       ? relations
-        .map(
-          r =>
-            `- Table "${r.sourceTable}" can act as Fact Table, joining to Dimension Table "${r.targetTable}" via: ON "${r.sourceTable}"."${r.sourceColumn}" = "${r.targetTable}"."${r.targetColumn}"`,
-        )
-        .join('\n')
+          .map(
+            r =>
+              `- Table "${r.sourceTable}" can act as Fact Table, joining to Dimension Table "${r.targetTable}" via: ON "${r.sourceTable}"."${r.sourceColumn}" = "${r.targetTable}"."${r.targetColumn}"`
+          )
+          .join('\n')
       : 'No specific relationships defined. Infer joins if necessary based on column names.'
 
   let contextSection = ''
@@ -323,10 +332,7 @@ ${contextSection}
 ### 🤖 YOUR RESPONSE (JSON)`
   const modelToUse = getModelToUse(model)
 
-  const languageNote =
-    language === 'zh'
-      ? 'Chinese (Simplified)'
-      : 'English'
+  const languageNote = language === 'zh' ? 'Chinese (Simplified)' : 'English'
 
   const body: ChatCompletionCreateParamsNonStreaming = {
     model: modelToUse,
@@ -360,7 +366,7 @@ OUTPUT RULE: The "summary", "title", "reasoning", and "suggestions" fields MUST 
   } catch (error) {
     console.error('Failed to parse or validate AI response:', error)
     throw new Error(
-      `AI returned invalid JSON or structure. Raw response: ${resultJson}`,
+      `AI returned invalid JSON or structure. Raw response: ${resultJson}`
     )
   }
 }
@@ -372,22 +378,19 @@ export async function analyzeContext(
   openai: OpenAI,
   schemas: TableSchema[],
   model?: string,
-  language: 'en' | 'zh' = 'en',
+  language: 'en' | 'zh' = 'en'
 ): Promise<ContextAnalysisResult> {
   if (isDev()) {
     // Use a custom replacer to handle BigInt serialization
     console.log(
       'analyzeContext pre request - schemas:',
-      safeStringify(schemas, 2),
+      safeStringify(schemas, 2)
     )
   }
 
   const schemaContext = serializeSchemas(schemas)
 
-  const languageNote =
-    language === 'zh'
-      ? 'Chinese (Simplified)'
-      : 'English'
+  const languageNote = language === 'zh' ? 'Chinese (Simplified)' : 'English'
 
   const userPrompt = `### 📂 DATABASE SCHEMA
 The following table schemas are available. Please analyze them.
@@ -430,10 +433,10 @@ OUTPUT RULE: The "suggestedPrompts" MUST be written in ${languageNote}.`,
   } catch (error) {
     console.error(
       'Failed to parse or validate AI response for context analysis:',
-      error,
+      error
     )
     throw new Error(
-      `AI returned invalid JSON or structure for context analysis. Raw response: ${resultJson}`,
+      `AI returned invalid JSON or structure for context analysis. Raw response: ${resultJson}`
     )
   }
 }
@@ -448,7 +451,7 @@ export async function fixSQL(
   originalSql: string,
   errorMessage: string,
   schemas: TableSchema[],
-  model?: string,
+  model?: string
 ): Promise<{ sql: string; reasoning: string }> {
   const schemaContext = serializeSchemas(schemas)
 

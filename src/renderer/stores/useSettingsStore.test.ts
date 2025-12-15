@@ -44,7 +44,9 @@ describe('useSettingsStore', () => {
 
   it('updates settings via patch', async () => {
     const { useSettingsStore } = await import('./useSettingsStore')
-    useSettingsStore.getState().updateSettings({ model: 'gpt-4o-mini', language: 'en' })
+    useSettingsStore
+      .getState()
+      .updateSettings({ model: 'gpt-4o-mini', language: 'en' })
     const state = useSettingsStore.getState()
     expect(state.model).toBe('gpt-4o-mini')
     expect(state.language).toBe('en')
@@ -57,7 +59,8 @@ describe('useSettingsStore', () => {
   })
 
   it('persists to storage key', async () => {
-    const { useSettingsStore, SETTINGS_STORAGE_KEY } = await import('./useSettingsStore')
+    const { useSettingsStore, SETTINGS_STORAGE_KEY } =
+      await import('./useSettingsStore')
     useSettingsStore.getState().updateSettings({ apiKey: 'sk-test' })
     const raw = localStorage.getItem(SETTINGS_STORAGE_KEY)
     expect(raw).toBeTruthy()

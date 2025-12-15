@@ -17,7 +17,7 @@ import type {
 
 export function setupIPC(
   databaseService: DatabaseService,
-  aiService: AIService,
+  aiService: AIService
 ) {
   const fileService = new FileService(databaseService)
 
@@ -60,7 +60,9 @@ export function setupIPC(
     try {
       const result = await dialog.showOpenDialog({
         properties: ['openFile'],
-        filters: [{ name: 'Data Files', extensions: ['xlsx', 'xls', 'csv', 'json'] }],
+        filters: [
+          { name: 'Data Files', extensions: ['xlsx', 'xls', 'csv', 'json'] },
+        ],
       })
 
       if (result.canceled) {
@@ -78,17 +80,21 @@ export function setupIPC(
     try {
       const result = await dialog.showOpenDialog({
         properties: ['openFile', 'multiSelections'],
-        filters: [{ name: 'Data Files', extensions: ['xlsx', 'xls', 'csv', 'json'] }],
+        filters: [
+          { name: 'Data Files', extensions: ['xlsx', 'xls', 'csv', 'json'] },
+        ],
       })
 
       if (result.canceled) {
         return { success: false, error: 'User cancelled' }
       }
 
-      const filesWithStats = await Promise.all(result.filePaths.map(async (filePath) => {
-        const stats = await fs.stat(filePath);
-        return { path: filePath, size: stats.size };
-      }));
+      const filesWithStats = await Promise.all(
+        result.filePaths.map(async filePath => {
+          const stats = await fs.stat(filePath)
+          return { path: filePath, size: stats.size }
+        })
+      )
 
       return { success: true, data: filesWithStats }
     } catch (error) {
@@ -133,7 +139,7 @@ export function setupIPC(
       schemas: TableSchema[],
       relations: RelationSuggestion[],
       context?: { lastSql: string; lastQuery: string },
-      language?: 'en' | 'zh',
+      language?: 'en' | 'zh'
     ) => {
       try {
         const result = await aiService.generatePlan(
@@ -141,7 +147,7 @@ export function setupIPC(
           schemas,
           relations,
           context,
-          language,
+          language
         )
         return { success: true, data: result }
       } catch (error) {
@@ -151,7 +157,7 @@ export function setupIPC(
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
-    },
+    }
   )
 
   // AI 修复 SQL
@@ -161,7 +167,7 @@ export function setupIPC(
       _event,
       originalSql: string,
       error: string,
-      schemas: TableSchema[],
+      schemas: TableSchema[]
     ) => {
       try {
         const result = await aiService.fixQuery(originalSql, error, schemas)
@@ -173,7 +179,7 @@ export function setupIPC(
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
-    },
+    }
   )
 
   // AI 分析上下文 (关系 + 提示词)
@@ -190,7 +196,7 @@ export function setupIPC(
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
-    },
+    }
   )
 
   // 获取 AI 配置
@@ -262,7 +268,7 @@ export function setupIPC(
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
-    },
+    }
   )
 
   // 重新摄取文件
@@ -270,7 +276,11 @@ export function setupIPC(
     're-ingest-file',
     async (_event, filePath: string, tableName: string, sheetName?: string) => {
       try {
-        const result = await fileService.reIngestFile(filePath, tableName, sheetName)
+        const result = await fileService.reIngestFile(
+          filePath,
+          tableName,
+          sheetName
+        )
         return { success: true, data: result }
       } catch (error) {
         console.error('Re-ingest file error:', error)
@@ -279,7 +289,7 @@ export function setupIPC(
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
-    },
+    }
   )
 
   // 摄取 JSON 数据（用于 Demo 数据）
@@ -296,7 +306,7 @@ export function setupIPC(
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
-    },
+    }
   )
 
   // 清空数据库
@@ -314,49 +324,55 @@ export function setupIPC(
   })
 
   // 保存图片
-  ipcMain.handle('save-image', async (_event, dataUrl: string, name?: string) => {
-    try {
-      const { filePath } = await dialog.showSaveDialog({
-        defaultPath: name || 'image.png',
-        filters: [{ name: 'Images', extensions: ['png'] }],
-      })
+  ipcMain.handle(
+    'save-image',
+    async (_event, dataUrl: string, name?: string) => {
+      try {
+        const { filePath } = await dialog.showSaveDialog({
+          defaultPath: name || 'image.png',
+          filters: [{ name: 'Images', extensions: ['png'] }],
+        })
 
-      if (filePath) {
-        const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '')
-        await fs.writeFile(filePath, base64Data, 'base64')
-        return { success: true }
-      }
-      return { success: false, error: 'Cancelled' }
-    } catch (error) {
-      console.error('Save image error:', error)
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        if (filePath) {
+          const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '')
+          await fs.writeFile(filePath, base64Data, 'base64')
+          return { success: true }
+        }
+        return { success: false, error: 'Cancelled' }
+      } catch (error) {
+        console.error('Save image error:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
       }
     }
-  })
+  )
 
   // 保存通用文件 (HTML, Text, etc)
-  ipcMain.handle('save-file', async (_event, content: string, extension: string, name: string) => {
-    try {
-      const { filePath } = await dialog.showSaveDialog({
-        defaultPath: name,
-        filters: [{ name: 'Files', extensions: [extension] }],
-      })
+  ipcMain.handle(
+    'save-file',
+    async (_event, content: string, extension: string, name: string) => {
+      try {
+        const { filePath } = await dialog.showSaveDialog({
+          defaultPath: name,
+          filters: [{ name: 'Files', extensions: [extension] }],
+        })
 
-      if (filePath) {
-        await fs.writeFile(filePath, content, 'utf-8')
-        return { success: true }
-      }
-      return { success: false, error: 'Cancelled' }
-    } catch (error) {
-      console.error('Save file error:', error)
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        if (filePath) {
+          await fs.writeFile(filePath, content, 'utf-8')
+          return { success: true }
+        }
+        return { success: false, error: 'Cancelled' }
+      } catch (error) {
+        console.error('Save file error:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
       }
     }
-  })
+  )
 
   // 删除表
   ipcMain.handle('delete-table', async (event, tableName: string) => {
@@ -384,7 +400,7 @@ export function setupIPC(
         layoutOptions?: { isA4?: boolean; landscape?: boolean }
         clip?: { x: number; y: number; width: number; height: number }
         dpr?: number
-      },
+      }
     ) => {
       const win = BrowserWindow.fromWebContents(event.sender)
       if (!win) {
@@ -429,7 +445,7 @@ export function setupIPC(
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
-    },
+    }
   )
 
   console.log('IPC handlers registered and updated successfully')

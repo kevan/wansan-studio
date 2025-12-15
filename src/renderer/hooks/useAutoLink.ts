@@ -71,7 +71,8 @@ export function useAutoLink() {
         // 4. Notify User
         addToast({
           title: 'Analyzing Data Context',
-          description: 'AI is analyzing your data structure and relationships...',
+          description:
+            'AI is analyzing your data structure and relationships...',
           type: 'info',
           duration: 3000,
         })
@@ -92,7 +93,11 @@ export function useAutoLink() {
 
         // Process Relationships (only if we have multiple files)
         let addedCount = 0
-        if (relationships && Array.isArray(relationships) && filesToUse.length > 1) {
+        if (
+          relationships &&
+          Array.isArray(relationships) &&
+          filesToUse.length > 1
+        ) {
           relationships.forEach((suggestion: RelationSuggestion) => {
             if (suggestion.confidence > 0.8) {
               const fileA = filesToUse.find(
@@ -143,7 +148,8 @@ export function useAutoLink() {
 
         addToast({
           title: 'Analysis Complete',
-          description: `${promptMsg} ${relationMsg}`.trim() || 'Analysis finished.',
+          description:
+            `${promptMsg} ${relationMsg}`.trim() || 'Analysis finished.',
           type: 'success',
         })
       } catch (error) {

@@ -13,13 +13,8 @@ interface MainContentProps {
   onCloseStyleTest?: () => void
 }
 
-export function MainContent({
-}: MainContentProps) {
-  const {
-    files,
-    activeView,
-    setView,
-  } = useFileStore()
+export function MainContent({}: MainContentProps) {
+  const { files, activeView, setView } = useFileStore()
   const { t } = useTranslation('common')
 
   const readyFiles = files.filter(f => f.status === 'ready')

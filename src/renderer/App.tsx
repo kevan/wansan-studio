@@ -4,8 +4,19 @@ import { MainContent } from './components/MainContent'
 import { DevConsole } from './components/DevConsole'
 import { isDev } from './utils/env'
 import { Toaster } from './components/ui/toaster'
-import { ImperativePanelHandle, Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
-import { MonitorPlay, PanelLeft, PanelRightClose, PanelRightOpen, RotateCcw } from 'lucide-react'
+import {
+  ImperativePanelHandle,
+  Panel,
+  PanelGroup,
+  PanelResizeHandle,
+} from 'react-resizable-panels'
+import {
+  MonitorPlay,
+  PanelLeft,
+  PanelRightClose,
+  PanelRightOpen,
+  RotateCcw,
+} from 'lucide-react'
 import { DashboardCanvasV3 } from './components/dashboard-v3'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { cn } from '@/utils/cn'
@@ -30,10 +41,14 @@ const loadLayoutPrefs = () => {
   try {
     const raw = localStorage.getItem(LAYOUT_STORAGE_KEY)
     if (!raw) return { rightCollapsed: true, rightSize: 50 }
-    const parsed = JSON.parse(raw) as { rightCollapsed?: boolean; rightSize?: number }
+    const parsed = JSON.parse(raw) as {
+      rightCollapsed?: boolean
+      rightSize?: number
+    }
 
     // 确保 rightSize 有合理的值（> 0）
-    const rightSize = (parsed.rightSize && parsed.rightSize > 0) ? parsed.rightSize : 50
+    const rightSize =
+      parsed.rightSize && parsed.rightSize > 0 ? parsed.rightSize : 50
 
     return {
       rightCollapsed: parsed.rightCollapsed ?? true,
@@ -51,7 +66,9 @@ function App() {
   const [isChatCollapsed, setIsChatCollapsed] = useState(false)
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
   const initialLayout = loadLayoutPrefs()
-  const [isRightCollapsed, setIsRightCollapsed] = useState(initialLayout.rightCollapsed)
+  const [isRightCollapsed, setIsRightCollapsed] = useState(
+    initialLayout.rightCollapsed
+  )
   const [rightPanelSize, setRightPanelSize] = useState(initialLayout.rightSize)
   const [isPresentationMode, setIsPresentationMode] = useState(false)
   const language = useWorkbenchStore(state => state.language)
@@ -70,7 +87,7 @@ function App() {
     const syncAIConfig = async () => {
       // First load sensitive data (API Key) from secure storage
       await useSettingsStore.getState().loadSensitiveData()
-      
+
       const settings = useSettingsStore.getState()
       if (settings.apiKey) {
         const config: AIConfig = {
@@ -88,7 +105,6 @@ function App() {
     }
     syncAIConfig()
   }, [])
-
 
   // 处理导入数据 - 触发文件选择或其他导入方式
   const handleImportData = useCallback(() => {
@@ -132,7 +148,6 @@ function App() {
     }
   }
 
-
   const togglePresentation = () => {
     const left = leftPanelRef.current
     const middle = middlePanelRef.current
@@ -164,7 +179,7 @@ function App() {
       JSON.stringify({
         rightCollapsed: isRightCollapsed,
         rightSize: rightPanelSize || 50,
-      }),
+      })
     )
   }, [isRightCollapsed, rightPanelSize])
 
@@ -189,14 +204,17 @@ function App() {
       setIsRightCollapsed(false)
     }
     window.addEventListener('wansan:open-dashboard', handleOpenDashboard)
-    return () => window.removeEventListener('wansan:open-dashboard', handleOpenDashboard)
+    return () =>
+      window.removeEventListener('wansan:open-dashboard', handleOpenDashboard)
   }, [rightPanelSize])
 
   useEffect(() => {
     const maybeOpenOnMaximize = () => {
       const isMaximized =
-        window.innerWidth >= (window.screen.availWidth ?? window.innerWidth) - 2 &&
-        window.innerHeight >= (window.screen.availHeight ?? window.innerHeight) - 2
+        window.innerWidth >=
+          (window.screen.availWidth ?? window.innerWidth) - 2 &&
+        window.innerHeight >=
+          (window.screen.availHeight ?? window.innerHeight) - 2
       if (isMaximized && isRightCollapsed) {
         window.dispatchEvent(new Event('wansan:open-dashboard'))
       }
@@ -235,174 +253,175 @@ function App() {
       <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
         <Toaster />
         <UpdateModal />
-      {/* Global Window Header */}
-      <header
-        className="h-12 border-b border-zinc-200 flex items-center justify-between px-4 shrink-0 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur draggable z-50"
-        onDoubleClick={handleHeaderDoubleClick}
-      >
-        {/* LEFT ZONE */}
-        <div className="flex items-center gap-4 pl-16 non-draggable shrink-0">
-          <button
-            className={`h-8 w-8 rounded-md border border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200 transition-colors ${isLeftCollapsed ? 'text-zinc-400' : ''}`}
-            onClick={toggleLeft}
-            title={t('toggle_data_tree')}
-          >
-            <PanelLeft className="h-4 w-4 mx-auto" />
-          </button>
-          <div className="h-4 w-px bg-zinc-300 dark:bg-zinc-700" />
-          {/* Logo Image */}
-          <div className="flex items-center gap-2">
-            <img src={logo} className="h-6 w-6 rounded-md " alt="Wansan Studio" />
-            <span className="text-sm font-semibold text-zinc-900">Wansan Studio</span>
-          </div>
-        </div>
-        {/* MIDDLE DRAG SPACER */}
-        <div
-          className="flex-1 h-full draggable"
+        {/* Global Window Header */}
+        <header
+          className="h-12 border-b border-zinc-200 flex items-center justify-between px-4 shrink-0 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur draggable z-50"
           onDoubleClick={handleHeaderDoubleClick}
-        />
-        {/* RIGHT ZONE */}
-        <div className="flex items-center gap-2 non-draggable shrink-0">
-          {!isRightCollapsed && (
+        >
+          {/* LEFT ZONE */}
+          <div className="flex items-center gap-4 pl-16 non-draggable shrink-0">
             <button
-              className={`h-8 gap-2 px-3 rounded-md border border-transparent text-xs font-medium flex items-center transition-colors ${
-                isPresentationMode
-                  ? 'bg-zinc-800 text-white'
-                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-              }`}
-              onClick={togglePresentation}
+              className={`h-8 w-8 rounded-md border border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200 transition-colors ${isLeftCollapsed ? 'text-zinc-400' : ''}`}
+              onClick={toggleLeft}
+              title={t('toggle_data_tree')}
+            >
+              <PanelLeft className="h-4 w-4 mx-auto" />
+            </button>
+            <div className="h-4 w-px bg-zinc-300 dark:bg-zinc-700" />
+            {/* Logo Image */}
+            <div className="flex items-center gap-2">
+              <img
+                src={logo}
+                className="h-6 w-6 rounded-md "
+                alt="Wansan Studio"
+              />
+              <span className="text-sm font-semibold text-zinc-900">
+                Wansan Studio
+              </span>
+            </div>
+          </div>
+          {/* MIDDLE DRAG SPACER */}
+          <div
+            className="flex-1 h-full draggable"
+            onDoubleClick={handleHeaderDoubleClick}
+          />
+          {/* RIGHT ZONE */}
+          <div className="flex items-center gap-2 non-draggable shrink-0">
+            {!isRightCollapsed && (
+              <button
+                className={`h-8 gap-2 px-3 rounded-md border border-transparent text-xs font-medium flex items-center transition-colors ${
+                  isPresentationMode
+                    ? 'bg-zinc-800 text-white'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
+                }`}
+                onClick={togglePresentation}
+                title={isPresentationMode ? t('exit') : t('present')}
+              >
+                {isPresentationMode ? (
+                  <RotateCcw className="h-3.5 w-3.5" />
+                ) : (
+                  <MonitorPlay className="h-3.5 w-3.5" />
+                )}
+                <span className="hidden sm:inline">
+                  {isPresentationMode ? t('exit') : t('present')}
+                </span>
+              </button>
+            )}
+
+            {!isRightCollapsed && <div className="h-4 w-[1px] bg-zinc-200" />}
+
+            <button
+              className={cn(
+                'h-8 gap-2 px-3 rounded-md border text-xs font-medium flex items-center transition-colors',
+                isRightCollapsed
+                  ? 'bg-black text-white border-black hover:bg-zinc-800'
+                  : 'border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200'
+              )}
+              onClick={toggleRight}
               title={
-                isPresentationMode
-                  ? t('exit')
-                  : t('present')
+                isRightCollapsed ? t('show_dashboard') : t('hide_dashboard')
               }
             >
-              {isPresentationMode ? (
-                <RotateCcw className="h-3.5 w-3.5" />
+              {isRightCollapsed ? (
+                <PanelRightOpen className="h-3.5 w-3.5" />
               ) : (
-                <MonitorPlay className="h-3.5 w-3.5" />
+                <PanelRightClose className="h-3.5 w-3.5" />
               )}
               <span className="hidden sm:inline">
-                {isPresentationMode ? t('exit') : t('present')}
+                {isRightCollapsed ? t('show_dashboard') : t('hide_dashboard')}
               </span>
             </button>
-          )}
-
-          {!isRightCollapsed && <div className="h-4 w-[1px] bg-zinc-200" />}
-
-          <button
-            className={cn(
-              'h-8 gap-2 px-3 rounded-md border text-xs font-medium flex items-center transition-colors',
-              isRightCollapsed
-                ? 'bg-black text-white border-black hover:bg-zinc-800'
-                : 'border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200',
-            )}
-            onClick={toggleRight}
-            title={isRightCollapsed ? t('show_dashboard') : t('hide_dashboard')}
-          >
-            {isRightCollapsed ? (
-              <PanelRightOpen className="h-3.5 w-3.5" />
-            ) : (
-              <PanelRightClose className="h-3.5 w-3.5" />
-            )}
-            <span className="hidden sm:inline">
-              {isRightCollapsed ? t('show_dashboard') : t('hide_dashboard')}
-            </span>
-          </button>
-        </div>
-      </header>
-
-      <PanelGroup direction="horizontal" className="flex-1">
-        {/* 左侧 Sidebar */}
-        <Panel
-          ref={leftPanelRef}
-          defaultSize={20}
-          minSize={15}
-          maxSize={20}
-          collapsible
-          collapsedSize={0}
-          onCollapse={() => setIsLeftCollapsed(true)}
-          onExpand={() => setIsLeftCollapsed(false)}
-          className={`border-r border-zinc-200 bg-zinc-50 dark:bg-zinc-900/50 transition-all duration-300 ${isLeftCollapsed ? 'min-w-0 border-none' : ''}`}
-        >
-          <div className="h-full flex flex-col bg-zinc-50 dark:bg-zinc-900/50">
-            <div className="flex-1 overflow-y-auto">
-              <Sidebar onImportData={handleImportData} />
-            </div>
           </div>
-        </Panel>
+        </header>
 
-        <PanelResizeHandle className="w-1 bg-zinc-100 hover:bg-zinc-300 transition-colors" />
-
-        {/* 主画布区域 - Chat/Workspace */}
-        <Panel
-          ref={middlePanelRef}
-          defaultSize={30}
-          minSize={0}
-          collapsible
-          collapsedSize={0}
-          onCollapse={() => setIsChatCollapsed(true)}
-          onResize={size => setIsChatCollapsed(size < 5)}
-          className={`bg-white dark:bg-zinc-950 transition-all duration-500 ${isPresentationMode ? 'min-w-0 border-none' : ''}`}
-        >
-          <main className="wansan-canvas h-full flex flex-col relative bg-white dark:bg-zinc-950 transition-colors">
-            <MainContent />
-          </main>
-        </Panel>
-
-        <PanelResizeHandle className="w-1 bg-zinc-100 hover:bg-zinc-300 transition-colors" />
-
-        {/* 右侧 Report Canvas */}
-        <Panel
-          defaultSize={isRightCollapsed ? 0 : rightPanelSize}
-          minSize={0}
-          ref={rightPanelRef}
-          collapsible
-          collapsedSize={0}
-          onCollapse={() => setIsRightCollapsed(true)}
-          onExpand={() => setIsRightCollapsed(false)}
-          onResize={size => {
-            if (size > 1) {
-              setRightPanelSize(size)
-            }
-          }}
-          className={`bg-zinc-100/60 dark:bg-zinc-900 transition-all duration-300 ${isRightCollapsed ? 'min-w-0' : ''}`}
-        >
-          <div className="h-full w-full flex flex-col bg-zinc-100/60 dark:bg-zinc-900">
-            {!isPresentationMode && (
-              <div className="draggable shrink-0 border-b bg-white/50 backdrop-blur">
-                <div className="non-draggable">
-                  <DashboardHeader />
-                </div>
+        <PanelGroup direction="horizontal" className="flex-1">
+          {/* 左侧 Sidebar */}
+          <Panel
+            ref={leftPanelRef}
+            defaultSize={20}
+            minSize={15}
+            maxSize={20}
+            collapsible
+            collapsedSize={0}
+            onCollapse={() => setIsLeftCollapsed(true)}
+            onExpand={() => setIsLeftCollapsed(false)}
+            className={`border-r border-zinc-200 bg-zinc-50 dark:bg-zinc-900/50 transition-all duration-300 ${isLeftCollapsed ? 'min-w-0 border-none' : ''}`}
+          >
+            <div className="h-full flex flex-col bg-zinc-50 dark:bg-zinc-900/50">
+              <div className="flex-1 overflow-y-auto">
+                <Sidebar onImportData={handleImportData} />
               </div>
-            )}
-            <div
-              className={cn(
-                'flex-1 w-full overflow-hidden transition-all',
-                isPresentationMode ? 'p-0' : 'p-1',
+            </div>
+          </Panel>
+
+          <PanelResizeHandle className="w-1 bg-zinc-100 hover:bg-zinc-300 transition-colors" />
+
+          {/* 主画布区域 - Chat/Workspace */}
+          <Panel
+            ref={middlePanelRef}
+            defaultSize={30}
+            minSize={0}
+            collapsible
+            collapsedSize={0}
+            onCollapse={() => setIsChatCollapsed(true)}
+            onResize={size => setIsChatCollapsed(size < 5)}
+            className={`bg-white dark:bg-zinc-950 transition-all duration-500 ${isPresentationMode ? 'min-w-0 border-none' : ''}`}
+          >
+            <main className="wansan-canvas h-full flex flex-col relative bg-white dark:bg-zinc-950 transition-colors">
+              <MainContent />
+            </main>
+          </Panel>
+
+          <PanelResizeHandle className="w-1 bg-zinc-100 hover:bg-zinc-300 transition-colors" />
+
+          {/* 右侧 Report Canvas */}
+          <Panel
+            defaultSize={isRightCollapsed ? 0 : rightPanelSize}
+            minSize={0}
+            ref={rightPanelRef}
+            collapsible
+            collapsedSize={0}
+            onCollapse={() => setIsRightCollapsed(true)}
+            onExpand={() => setIsRightCollapsed(false)}
+            onResize={size => {
+              if (size > 1) {
+                setRightPanelSize(size)
+              }
+            }}
+            className={`bg-zinc-100/60 dark:bg-zinc-900 transition-all duration-300 ${isRightCollapsed ? 'min-w-0' : ''}`}
+          >
+            <div className="h-full w-full flex flex-col bg-zinc-100/60 dark:bg-zinc-900">
+              {!isPresentationMode && (
+                <div className="draggable shrink-0 border-b bg-white/50 backdrop-blur">
+                  <div className="non-draggable">
+                    <DashboardHeader />
+                  </div>
+                </div>
               )}
-            >
               <div
                 className={cn(
-                  'h-full w-full bg-white dark:bg-black transition-all',
-                  !isPresentationMode && 'rounded-lg border border-zinc-200 shadow-sm',
+                  'flex-1 w-full overflow-hidden transition-all',
+                  isPresentationMode ? 'p-0' : 'p-1'
                 )}
               >
-                <DashboardCanvasV3 />
+                <div
+                  className={cn(
+                    'h-full w-full bg-white dark:bg-black transition-all',
+                    !isPresentationMode &&
+                      'rounded-lg border border-zinc-200 shadow-sm'
+                  )}
+                >
+                  <DashboardCanvasV3 />
+                </div>
               </div>
             </div>
-          </div>
-        </Panel>
-      </PanelGroup>
+          </Panel>
+        </PanelGroup>
 
-      {/* 开发模式调试控制台 */}
-      {isDev && (
-        <DevConsole
-          defaultOpen={false}
-        />
-      )}
-    </div>
-  </ErrorBoundary>
+        {/* 开发模式调试控制台 */}
+        {isDev && <DevConsole defaultOpen={false} />}
+      </div>
+    </ErrorBoundary>
   )
 }
 

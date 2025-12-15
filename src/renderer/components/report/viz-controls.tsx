@@ -29,7 +29,11 @@ interface VizControlsProps {
   onChange: (updates: Partial<AIAnalysisResult['visualization']>) => void
 }
 
-const chartTypeOptions: Array<{ value: VizType; label: string; icon: React.ComponentType<any> }> = [
+const chartTypeOptions: Array<{
+  value: VizType
+  label: string
+  icon: React.ComponentType<any>
+}> = [
   { value: 'bar', label: 'chart_bar', icon: BarChart3 },
   { value: 'line', label: 'chart_line', icon: LineChart },
   { value: 'pie', label: 'chart_pie', icon: PieChart },
@@ -70,7 +74,10 @@ export function VizControls({
   useEffect(() => {
     if (!open) return
     const handleClickOutside = (event: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(event.target as Node)
+      ) {
         setOpen(false)
       }
     }
@@ -80,12 +87,7 @@ export function VizControls({
 
   const handleChartTypeChange = (type: VizType) => {
     // Use adaptChartConfig to intelligently map configuration when switching chart types
-    const adapted = adaptChartConfig(
-      type,
-      vizType,
-      vizConfig,
-      data || []
-    )
+    const adapted = adaptChartConfig(type, vizType, vizConfig, data || [])
     onChange(adapted)
   }
 
@@ -155,7 +157,7 @@ export function VizControls({
           style={{
             top: '50%',
             left: '50%',
-            transform: 'translate(-50%, -50%)'
+            transform: 'translate(-50%, -50%)',
           }}
           onClick={e => e.stopPropagation()}
         >

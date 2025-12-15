@@ -32,35 +32,35 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
-    
+
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
- 
+
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
- 
+
     /* PRIMARY is BLACK (Zinc-900) */
     --primary: 240 5.9% 10%;
     --primary-foreground: 0 0% 98%;
- 
+
     /* SECONDARY is Light Gray */
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
- 
+
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
- 
+
     --accent: 240 4.8% 95.9%;
     --accent-foreground: 240 5.9% 10%;
- 
+
     /* DESTRUCTIVE is RED (Not Orange) */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
- 
+
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
     --ring: 240 10% 3.9%; /* Focus ring is black */
- 
+
     --radius: 0.5rem;
   }
 
@@ -296,8 +296,8 @@ body.printing #report-canvas-paper {
   transform: none !important;
   z-index: 9999;
   -webkit-print-color-adjust: exact !important;
-   overflow: visible !important;
-   transform-origin: top left !important;
+  overflow: visible !important;
+  transform-origin: top left !important;
 }
 
 body.printing .shadow-sm,
@@ -379,7 +379,7 @@ body.printing .shadow {
    ================================ */
 
 /* Remove heavier shadows on second row and beyond in the canvas */
-#report-canvas-content .react-grid-item:nth-child(n+2) > div {
+#report-canvas-content .react-grid-item:nth-child(n + 2) > div {
   box-shadow: none !important;
 }
 
@@ -411,7 +411,10 @@ body.printing .shadow {
   }
 
   /* Reset layout constraints */
-  body, html, #root, .App {
+  body,
+  html,
+  #root,
+  .App {
     height: auto !important;
     width: 100% !important;
     overflow: visible !important;
@@ -432,7 +435,7 @@ body.printing .shadow {
   }
 
   #root > div {
-     display: block !important;
+    display: block !important;
   }
 
   /* Force Report Canvas to be visible and full screen */
@@ -467,13 +470,13 @@ body.printing .shadow {
     box-shadow: none !important;
     border: 1px solid #e4e4e7 !important;
   }
-  
+
   /* Ensure widgets inside are visible */
   .dashboard-widget {
     height: auto !important;
     min-height: 300px !important;
   }
-  
+
   .no-break {
     break-inside: avoid;
     page-break-inside: avoid;

@@ -4,7 +4,15 @@ import { ReportCard } from './chat/ReportCard'
 import { ErrorCard } from './chat/error-card'
 import { EmptyState } from './chat/empty-state'
 import { MagicInput } from './chat/magic-input'
-import { User, Bot, Sparkles, GitBranch, Brain, Zap, Trash2 } from 'lucide-react'
+import {
+  User,
+  Bot,
+  Sparkles,
+  GitBranch,
+  Brain,
+  Zap,
+  Trash2,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useChatStore } from '../stores/useChatStore'
 import { format } from 'sql-formatter'
@@ -84,7 +92,11 @@ export function ChatInterface({
       <div className="flex-1 overflow-y-auto p-4 pb-0 space-y-6">
         {messages.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center pb-0">
-            <EmptyState onSelectPrompt={handleQuerySubmit} isChatLoading={isChatLoading} isRestoring={isRestoring} />
+            <EmptyState
+              onSelectPrompt={handleQuerySubmit}
+              isChatLoading={isChatLoading}
+              isRestoring={isRestoring}
+            />
           </div>
         ) : (
           messages.map(message => (
@@ -126,7 +138,9 @@ export function ChatInterface({
 
                   {/* Delete Button */}
                   {message.type !== 'user' &&
-                    !['thinking', 'planning', 'executing'].includes(message.status || '') && (
+                    !['thinking', 'planning', 'executing'].includes(
+                      message.status || ''
+                    ) && (
                       <button
                         onClick={() => removeMessage(message.id)}
                         className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-red-50"
@@ -161,16 +175,21 @@ export function ChatInterface({
                           ) : (
                             <Zap className="h-4 w-4" />
                           )}
-                          {message.status === 'thinking' && t('status_thinking')}
-                          {message.status === 'planning' && t('status_planning')}
-                          {message.status === 'executing' && t('status_executing')}
+                          {message.status === 'thinking' &&
+                            t('status_thinking')}
+                          {message.status === 'planning' &&
+                            t('status_planning')}
+                          {message.status === 'executing' &&
+                            t('status_executing')}
                         </div>
                         {message.planSql && (
                           <pre className="mt-2 max-h-48 overflow-y-auto rounded-md bg-white/80 p-3 text-xs text-zinc-800 border border-indigo-100 font-mono leading-relaxed scrollbar-thin">
                             <code className="whitespace-pre-wrap block">
                               {(() => {
                                 try {
-                                  return format(message.planSql, { language: 'postgresql' })
+                                  return format(message.planSql, {
+                                    language: 'postgresql',
+                                  })
                                 } catch (e) {
                                   return message.planSql
                                 }
@@ -218,7 +237,7 @@ export function ChatInterface({
                                       }
                                     }}
                                     disabled={isChatLoading || isRestoring}
-                                    className={`px-3 py-1.5 rounded-full bg-white border text-xs shadow-sm ${ (isChatLoading || isRestoring) ? 'border-zinc-100 text-zinc-400 cursor-not-allowed' : 'border-zinc-200 text-zinc-600 hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700 transition-colors'}`}
+                                    className={`px-3 py-1.5 rounded-full bg-white border text-xs shadow-sm ${isChatLoading || isRestoring ? 'border-zinc-100 text-zinc-400 cursor-not-allowed' : 'border-zinc-200 text-zinc-600 hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700 transition-colors'}`}
                                   >
                                     {suggestion}
                                   </button>

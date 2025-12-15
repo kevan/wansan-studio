@@ -49,7 +49,9 @@ export function MagicInput({
   const [cursorPosition, setCursorPosition] = useState(0)
   const [mention, setMention] = useState<MentionState>({ active: false })
   const [mentionIndex, setMentionIndex] = useState(0)
-  const [triggerType, setTriggerType] = useState<'table' | 'command' | null>(null)
+  const [triggerType, setTriggerType] = useState<'table' | 'command' | null>(
+    null
+  )
   const [popoverOpen, setPopoverOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -65,7 +67,10 @@ export function MagicInput({
   const suggestedPrompts = useFileStore(state => state.suggestedPrompts)
   const { t } = useTranslation('chat')
 
-  const readyTables = useMemo(() => files.filter(f => f.status === 'ready'), [files])
+  const readyTables = useMemo(
+    () => files.filter(f => f.status === 'ready'),
+    [files]
+  )
 
   const replyMessage = messages.find(m => m.id === replyToId)
   const replyPreview =
@@ -94,7 +99,9 @@ export function MagicInput({
     const q = mention.query.toLowerCase()
     return readyTables
       .filter(file => (file.name || '').toLowerCase().includes(q))
-      .map(file => file.name || file.tableName || `table_${file.id.slice(0, 6)}`)
+      .map(
+        file => file.name || file.tableName || `table_${file.id.slice(0, 6)}`
+      )
   }, [mention, readyTables])
 
   // 4. Command Query (content after /)
@@ -103,7 +110,7 @@ export function MagicInput({
   // 5. Filtered Commands
   const filteredCommands = useMemo(() => {
     if (!value.startsWith('/')) return []
-    
+
     const cmds = [
       {
         id: 'clear',
@@ -114,17 +121,22 @@ export function MagicInput({
           addToast({ title: t('chat_cleared'), type: 'info', duration: 2500 })
           setPopoverOpen(false)
           setValue('')
-        }
+        },
       },
       {
         id: 'export',
         label: t('export_markdown'),
         icon: Download,
         action: () => {
-          addToast({ title: t('export_triggered'), description: t('export_desc'), type: 'info', duration: 3000 })
+          addToast({
+            title: t('export_triggered'),
+            description: t('export_desc'),
+            type: 'info',
+            duration: 3000,
+          })
           setPopoverOpen(false)
           setValue('')
-        }
+        },
       },
       {
         id: 'debug',
@@ -135,16 +147,22 @@ export function MagicInput({
           setValue('')
           await exportDebugLog()
           addToast({ title: t('debug_export_success_toast'), type: 'success' })
-        }
-      }
+        },
+      },
     ]
-    return cmds.filter(c => c.id.includes(commandQuery) || c.label.toLowerCase().includes(commandQuery))
+    return cmds.filter(
+      c =>
+        c.id.includes(commandQuery) ||
+        c.label.toLowerCase().includes(commandQuery)
+    )
   }, [value, commandQuery, t, resetChat, addToast])
 
   // 6. Filtered Prompts for Command Mode
   const filteredCommandPrompts = useMemo(() => {
     if (!value.startsWith('/')) return []
-    return allPrompts.filter(p => p.toLowerCase().includes(commandQuery)).slice(0, 10)
+    return allPrompts
+      .filter(p => p.toLowerCase().includes(commandQuery))
+      .slice(0, 10)
   }, [value, allPrompts, commandQuery])
 
   // Combined list for navigation in command mode
@@ -182,19 +200,24 @@ export function MagicInput({
     if (trimmed.startsWith('/')) {
       const cmd = trimmed.slice(1).toLowerCase()
       if (['clear', 'export', 'debug'].includes(cmd)) {
-         if (cmd === 'clear') { 
-            resetChat()
-            addToast({ title: t('chat_cleared'), type: 'info', duration: 2500 })
-         }
-         if (cmd === 'export') { 
-            addToast({ title: t('export_triggered'), description: t('export_desc'), type: 'info', duration: 3000 })
-         }
-         if (cmd === 'debug') {
-            await exportDebugLog()
-            addToast({ title: t('debug_export_success_toast'), type: 'success' })
-         }
-         setValue('')
-         return
+        if (cmd === 'clear') {
+          resetChat()
+          addToast({ title: t('chat_cleared'), type: 'info', duration: 2500 })
+        }
+        if (cmd === 'export') {
+          addToast({
+            title: t('export_triggered'),
+            description: t('export_desc'),
+            type: 'info',
+            duration: 3000,
+          })
+        }
+        if (cmd === 'debug') {
+          await exportDebugLog()
+          addToast({ title: t('debug_export_success_toast'), type: 'success' })
+        }
+        setValue('')
+        return
       }
     }
 
@@ -207,7 +230,8 @@ export function MagicInput({
     const match = before.match(/(?:^|\s)@([\w\-]*)$/)
     if (!match) return { active: false }
     const query = match[1] || ''
-    const start = match.index !== undefined ? match.index + match[0].indexOf('@') : caret
+    const start =
+      match.index !== undefined ? match.index + match[0].indexOf('@') : caret
     return { active: true, start, query }
   }
 
@@ -221,7 +245,9 @@ export function MagicInput({
       }
       if (e.key === 'ArrowUp') {
         e.preventDefault()
-        setMentionIndex(i => (i - 1 + filteredTables.length) % filteredTables.length)
+        setMentionIndex(
+          i => (i - 1 + filteredTables.length) % filteredTables.length
+        )
         return
       }
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -245,16 +271,18 @@ export function MagicInput({
       }
       if (e.key === 'ArrowUp') {
         e.preventDefault()
-        setMentionIndex(i => (i - 1 + commandListItems.length) % commandListItems.length)
+        setMentionIndex(
+          i => (i - 1 + commandListItems.length) % commandListItems.length
+        )
         return
       }
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault()
         const item = commandListItems[mentionIndex]
         if (typeof item === 'string') {
-            insertPrompt(item)
+          insertPrompt(item)
         } else {
-            item.action()
+          item.action()
         }
         return
       }
@@ -277,14 +305,14 @@ export function MagicInput({
     setMentionIndex(0)
 
     const lastChar = value[value.length - 1]
-    
+
     // Priority 1: Table Mention (@)
     if (lastChar === '@' || nextMention.active) {
       setTriggerType('table')
       setPopoverOpen(true)
       return
-    } 
-    
+    }
+
     // Priority 2: Commands (/) - Now includes prompts
     if (value.startsWith('/')) {
       setTriggerType('command')
@@ -315,15 +343,14 @@ export function MagicInput({
 
   return (
     <div className={cn('relative w-full flex justify-center', className)}>
-      <div
-        ref={containerRef}
-        className="relative w-full max-w-2xl"
-      >
+      <div ref={containerRef} className="relative w-full max-w-2xl">
         {replyToId && replyMessage && (
           <div className="absolute -top-12 left-4 right-4 bg-zinc-50 border border-b-0 rounded-t-2xl px-3 py-2 text-xs flex items-center justify-between z-[55] shadow-sm">
             <div className="flex items-center gap-2 text-zinc-600 min-w-0">
               <CornerDownRight className="h-3 w-3" />
-              <span className="font-medium text-zinc-700">Refining Analysis:</span>
+              <span className="font-medium text-zinc-700">
+                Refining Analysis:
+              </span>
               <span className="truncate max-w-[240px] italic">
                 {replyPreview}
               </span>
@@ -388,28 +415,29 @@ export function MagicInput({
                       {cmd.label}
                     </button>
                   ))}
-                  
-                  {filteredCommands.length > 0 && filteredCommandPrompts.length > 0 && (
-                    <div className="h-px bg-zinc-100 my-1 mx-2" />
-                  )}
+
+                  {filteredCommands.length > 0 &&
+                    filteredCommandPrompts.length > 0 && (
+                      <div className="h-px bg-zinc-100 my-1 mx-2" />
+                    )}
 
                   {filteredCommandPrompts.map((prompt, idx) => {
                     // Adjust index based on commands length
                     const realIdx = idx + filteredCommands.length
                     return (
-                        <button
+                      <button
                         key={prompt}
                         className={cn(
-                            'w-full text-left px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors',
-                            realIdx === mentionIndex
+                          'w-full text-left px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors',
+                          realIdx === mentionIndex
                             ? 'bg-indigo-50 text-indigo-900'
                             : 'hover:bg-zinc-50 text-zinc-700'
                         )}
                         onClick={() => insertPrompt(prompt)}
-                        >
+                      >
                         <Sparkles className="w-4 h-4 text-indigo-500 flex-shrink-0" />
                         <span className="truncate">{prompt}</span>
-                        </button>
+                      </button>
                     )
                   })}
                 </>
@@ -436,7 +464,9 @@ export function MagicInput({
               disabled={loading || isRestoring}
             />
             <div className="flex items-center justify-between text-[11px] text-zinc-400 mt-1">
-              <span>{isRestoring ? 'Restoring session...' : t('input_hint')}</span>
+              <span>
+                {isRestoring ? 'Restoring session...' : t('input_hint')}
+              </span>
               <span className="font-mono text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded">
                 {t('table_count', { count: readyTables.length })}
               </span>

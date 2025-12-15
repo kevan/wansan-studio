@@ -30,7 +30,10 @@ import { useSettingsStore } from '@/stores/useSettingsStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
-import { PAGE_GAP_PX, PAGE_HEIGHT_PX } from '@/components/dashboard-v3/page-layer'
+import {
+  PAGE_GAP_PX,
+  PAGE_HEIGHT_PX,
+} from '@/components/dashboard-v3/page-layer'
 import { useTranslation } from 'react-i18next'
 import { Analytics } from '../../services/analytics'
 
@@ -56,12 +59,12 @@ export function DashboardHeader() {
 
   const handleExport = async (type: 'pdf' | 'png') => {
     if (!isActivated) {
-        addToast({
-            title: t('pro_feature_title'),
-            description: t('pro_feature_export_desc'),
-            type: 'info',
-        });
-        return;
+      addToast({
+        title: t('pro_feature_title'),
+        description: t('pro_feature_export_desc'),
+        type: 'info',
+      })
+      return
     }
 
     const node = document.getElementById('dashboard-export-root')
@@ -86,13 +89,13 @@ export function DashboardHeader() {
       const fileName = `${canvasConfig.title || 'Report'}.${type === 'png' ? 'png' : 'pdf'}`
 
       if (type === 'png') {
-        Analytics.track('export_clicked', { format: 'png' });
+        Analytics.track('export_clicked', { format: 'png' })
         await window.electronAPI?.saveImage(dataUrl, fileName)
         return
       }
 
       if (type === 'pdf') {
-        Analytics.track('export_clicked', { format: 'pdf' });
+        Analytics.track('export_clicked', { format: 'pdf' })
       }
 
       const img = new Image()
@@ -129,7 +132,17 @@ export function DashboardHeader() {
         if (i > 0) pdf.addPage()
         const srcY = i * (sliceHeight + gapHeight)
         ctx.clearRect(0, 0, canvas.width, canvas.height)
-        ctx.drawImage(img, 0, srcY, img.width, sliceHeight, 0, 0, canvas.width, canvas.height)
+        ctx.drawImage(
+          img,
+          0,
+          srcY,
+          img.width,
+          sliceHeight,
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        )
         const sliceData = canvas.toDataURL('image/png')
         pdf.addImage(sliceData, 'PNG', 0, 0, pdfWidth, pdfHeight)
       }
@@ -169,7 +182,8 @@ export function DashboardHeader() {
             <ZoomOut className="h-3.5 w-3.5 text-zinc-500" />
           </Button>
           <span className="text-xs w-10 text-center font-medium tabular-nums text-zinc-600 whitespace-nowrap">
-            {canvasConfig.zoom}{isA4 ? '' : '%'}
+            {canvasConfig.zoom}
+            {isA4 ? '' : '%'}
           </span>
           <Button
             variant="ghost"
@@ -222,7 +236,9 @@ export function DashboardHeader() {
                 <Monitor className="h-3.5 w-3.5" />
               )}
               <span className="hidden sm:inline">
-                {canvasConfig.layout === 'a4' ? t('layout_print') : t('layout_screen')}
+                {canvasConfig.layout === 'a4'
+                  ? t('layout_print')
+                  : t('layout_screen')}
               </span>
               <ChevronDown className="h-3 w-3 opacity-50" />
             </Button>
@@ -249,7 +265,11 @@ export function DashboardHeader() {
               size="sm"
               className="h-8 gap-2 bg-black hover:bg-zinc-800 text-white shadow-sm"
             >
-              {!isActivated ? <Lock className="h-3.5 w-3.5 text-yellow-400" /> : <Download className="h-3.5 w-3.5" />}
+              {!isActivated ? (
+                <Lock className="h-3.5 w-3.5 text-yellow-400" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
               <span>{t('export')}</span>
             </Button>
           </DropdownMenuTrigger>

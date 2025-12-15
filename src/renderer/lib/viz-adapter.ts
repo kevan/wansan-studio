@@ -12,7 +12,9 @@ type VizType = 'bar' | 'line' | 'pie' | 'scatter' | 'table' | 'area' | 'kpi'
 /**
  * Categorizes chart types into groups for conversion logic
  */
-function getChartCategory(type: VizType): 'cartesian' | 'radial' | 'tabular' | 'kpi' {
+function getChartCategory(
+  type: VizType
+): 'cartesian' | 'radial' | 'tabular' | 'kpi' {
   const cartesianTypes = ['bar', 'line', 'area', 'scatter']
   const radialTypes = ['pie']
   const tabularTypes = ['table']
@@ -43,7 +45,8 @@ export function adaptChartConfig(
   data: Array<Record<string, any>>
 ): { type: Exclude<VizType, 'area'>; config?: VizConfig } {
   // Convert 'area' to 'line' for compatibility
-  const targetType: Exclude<VizType, 'area'> = newType === 'area' ? 'line' : newType
+  const targetType: Exclude<VizType, 'area'> =
+    newType === 'area' ? 'line' : newType
 
   const oldCategory = oldType ? getChartCategory(oldType) : 'cartesian'
   const newCategory = getChartCategory(targetType)
@@ -225,8 +228,8 @@ export function buildEChartsOption(
   const yAxes = Array.isArray(y_axis)
     ? y_axis.filter(Boolean)
     : y_axis
-    ? [y_axis]
-    : []
+      ? [y_axis]
+      : []
 
   const hasData = Array.isArray(data) && data.length > 0
   const hasAxes = !!x_axis && yAxes.length > 0
@@ -236,20 +239,20 @@ export function buildEChartsOption(
     return {}
   }
 
-  const xData = data.map((item) => item[x_axis])
+  const xData = data.map(item => item[x_axis])
 
   const baseSeries: echarts.SeriesOption[] =
     type === 'scatter'
-      ? yAxes.map((key) => ({
+      ? yAxes.map(key => ({
           name: series_name || key,
           type: 'scatter',
-          data: data.map((item) => [item[x_axis], item[key]]),
+          data: data.map(item => [item[x_axis], item[key]]),
           emphasis: { focus: 'series' },
         }))
-      : yAxes.map((key) => ({
+      : yAxes.map(key => ({
           name: series_name || key,
           type: (type === 'area' ? 'line' : type) as any,
-          data: data.map((item) => item[key]),
+          data: data.map(item => item[key]),
           areaStyle: type === 'area' ? {} : undefined,
           itemStyle: {
             color: '#4F46E5', // Indigo-600
@@ -288,7 +291,7 @@ export function buildEChartsOption(
           name: series_name || yAxes[0],
           type: 'pie',
           radius: '50%',
-          data: data.map((item) => ({
+          data: data.map(item => ({
             value: item[yAxes[0]],
             name: item[x_axis],
           })),
@@ -322,7 +325,12 @@ function isValidTimestamp(value: any): boolean {
  * Extracts chart type from ECharts option
  */
 export function extractChartType(option: EChartsOption): VizType | undefined {
-  if (!option || !option.series || !Array.isArray(option.series) || option.series.length === 0) {
+  if (
+    !option ||
+    !option.series ||
+    !Array.isArray(option.series) ||
+    option.series.length === 0
+  ) {
     return undefined
   }
 

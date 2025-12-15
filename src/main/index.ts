@@ -29,7 +29,7 @@ class WansanApp {
           '[Main] .env loaded result:',
           result.parsed ? Object.keys(result.parsed).join(',') : 'No keys',
           'Error:',
-          result.error,
+          result.error
         )
         console.log('[Main] OPENAI_MODEL from env:', process.env.OPENAI_MODEL)
       } catch (error) {
@@ -76,8 +76,12 @@ class WansanApp {
 
     const setDockIcon = () => {
       if (!isDev() || process.platform !== 'darwin') return
-      const icnsIcon = nativeImage.createFromPath(join(resourcesDir, 'icon.icns'))
-      const pngFallback = nativeImage.createFromPath(join(resourcesDir, 'icon.png'))
+      const icnsIcon = nativeImage.createFromPath(
+        join(resourcesDir, 'icon.icns')
+      )
+      const pngFallback = nativeImage.createFromPath(
+        join(resourcesDir, 'icon.png')
+      )
       const iconToUse = !icnsIcon.isEmpty() ? icnsIcon : pngFallback
       if (iconToUse.isEmpty()) return
       try {
@@ -127,7 +131,7 @@ class WansanApp {
       // 在生产环境中，loadFile 默认相对于 app.getAppPath() (即 app.asar)
       // 尝试直接加载 dist/renderer/index.html
       const entry = 'dist/renderer/index.html'
-      this.mainWindow.loadFile(entry).catch((e) => {
+      this.mainWindow.loadFile(entry).catch(e => {
         console.error('Failed to load local file:', entry, e)
       })
     }

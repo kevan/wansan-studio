@@ -33,30 +33,30 @@ export function Select({ value, onValueChange, children }: SelectProps) {
   )
 }
 
-interface SelectTriggerProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface SelectTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   className?: string
   children?: React.ReactNode
 }
 
-export const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
-  ({ className, children, ...props }, ref) => {
-    return (
-      <DropdownMenuTrigger asChild>
-        <button
-          ref={ref}
-          className={cn(
-            'flex w-full items-center justify-between rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition-colors hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-zinc-300',
-            className
-          )}
-          {...props}
-        >
-          {children}
-        </button>
-      </DropdownMenuTrigger>
-    )
-  }
-)
+export const SelectTrigger = React.forwardRef<
+  HTMLButtonElement,
+  SelectTriggerProps
+>(({ className, children, ...props }, ref) => {
+  return (
+    <DropdownMenuTrigger asChild>
+      <button
+        ref={ref}
+        className={cn(
+          'flex w-full items-center justify-between rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition-colors hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-zinc-300',
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </button>
+    </DropdownMenuTrigger>
+  )
+})
 SelectTrigger.displayName = 'SelectTrigger'
 
 interface SelectValueProps {

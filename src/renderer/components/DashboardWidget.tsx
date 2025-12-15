@@ -132,9 +132,9 @@ export function DashboardWidget({
                 value={Object.values(tableData[0])[0]}
                 label={Object.keys(tableData[0])[0]}
                 variant={variant}
-                />
-              </div>
-            )}
+              />
+            </div>
+          )}
 
           {/* Fallback to Data Table (Hide if Big Number is shown) */}
           {shouldShowTable && (
@@ -200,16 +200,16 @@ export function DashboardWidget({
           chartType !== 'kpi' &&
           vizConfig?.x_axis &&
           vizConfig?.y_axis && (
-          <div className="h-[250px] w-full px-4 pb-4 pt-2">
-            <A4Chart
-              type={chartType}
-              title={chartTitle}
-              data={tableData}
-              config={vizConfig}
-              className="h-full w-full"
-            />
-          </div>
-        )}
+            <div className="h-[250px] w-full px-4 pb-4 pt-2">
+              <A4Chart
+                type={chartType}
+                title={chartTitle}
+                data={tableData}
+                config={vizConfig}
+                className="h-full w-full"
+              />
+            </div>
+          )}
 
         {/* Big Number Mode */}
         {showBigNumber && (
@@ -218,9 +218,9 @@ export function DashboardWidget({
               value={Object.values(tableData[0])[0]}
               label={Object.keys(tableData[0])[0]}
               variant={variant}
-              />
-            </div>
-          )}
+            />
+          </div>
+        )}
 
         {/* Data Table */}
         {shouldShowTable && (

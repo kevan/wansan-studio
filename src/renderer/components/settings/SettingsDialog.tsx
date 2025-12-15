@@ -194,10 +194,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
           </div>
 
           {/* TAB: AI */}
-          <TabsContent
-            value="ai"
-            className="flex-1 overflow-y-auto px-6 py-4"
-          >
+          <TabsContent value="ai" className="flex-1 overflow-y-auto px-6 py-4">
             <div className="flex flex-col gap-8">
               {/* SECTION 1: AI ENGINE */}
               <section>
@@ -218,8 +215,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                     >
                       <SelectTrigger>
                         <span className="text-sm text-zinc-700 truncate">
-                          {providerLabel ||
-                            t('ai.select_provider_placeholder')}
+                          {providerLabel || t('ai.select_provider_placeholder')}
                         </span>
                       </SelectTrigger>
                       <SelectContent>
@@ -272,11 +268,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                             if (window.electronAPI?.openExternal) {
                               void window.electronAPI.openExternal(url)
                             } else {
-                              window.open(
-                                url,
-                                '_blank',
-                                'noopener,noreferrer'
-                              )
+                              window.open(url, '_blank', 'noopener,noreferrer')
                             }
                           }}
                           rel="noreferrer"
@@ -392,7 +384,9 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                         : 'bg-yellow-100 text-yellow-700'
                     )}
                   >
-                    {settings.isActivated ? t('license.pro_active') : t('license.trial_mode')}
+                    {settings.isActivated
+                      ? t('license.pro_active')
+                      : t('license.trial_mode')}
                   </span>
                 </div>
 
@@ -407,9 +401,15 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                     <Button
                       onClick={() => {
                         if (settings.activateLicense(licenseCode)) {
-                          addToast({ title: t('license.activated_success_title'), type: 'success' })
+                          addToast({
+                            title: t('license.activated_success_title'),
+                            type: 'success',
+                          })
                         } else {
-                          addToast({ title: t('license.invalid_code_title'), type: 'error' })
+                          addToast({
+                            title: t('license.invalid_code_title'),
+                            type: 'error',
+                          })
                         }
                       }}
                     >
@@ -487,10 +487,17 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
               {/* 3. ABOUT */}
               <section className="text-center py-4">
                 <div className="font-semibold text-sm">Wansan Studio</div>
-                <div className="text-xs text-muted-foreground">{t('about.beta_version', { version: __APP_VERSION__ })}</div>
+                <div className="text-xs text-muted-foreground">
+                  {t('about.beta_version', { version: __APP_VERSION__ })}
+                </div>
 
-                <Button variant="outline" size="sm" onClick={exportDebugLog} className="mt-4 gap-2">
-                  <Bug className="w-4 h-4"/> {t('debug_export_button')}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportDebugLog}
+                  className="mt-4 gap-2"
+                >
+                  <Bug className="w-4 h-4" /> {t('debug_export_button')}
                 </Button>
               </section>
 

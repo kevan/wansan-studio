@@ -8,17 +8,17 @@ import { Analytics } from '../services/analytics'
 export type SettingsLanguage = 'en' | 'zh'
 
 export interface RemoteConfig {
-  min_version?: string;
-  latest_version?: string;
-  download_url?: string;
-  beta_code?: string;
+  min_version?: string
+  latest_version?: string
+  download_url?: string
+  beta_code?: string
   announcement?: {
-    id: string;
-    text: string | { [lang: string]: string }; 
-    link?: string;
-    level?: 'info' | 'warning';
-  } | null;
-  features?: Record<string, boolean>;
+    id: string
+    text: string | { [lang: string]: string }
+    link?: string
+    level?: 'info' | 'warning'
+  } | null
+  features?: Record<string, boolean>
 }
 
 export interface SettingsState {
@@ -42,7 +42,14 @@ export interface SettingsState {
     patch: Partial<
       Omit<
         SettingsState,
-        'setProvider' | 'updateSettings' | 'completeOnboarding' | 'resetSettings' | 'activateLicense' | 'loadSensitiveData' | 'setRemoteConfig' | 'dismissAnnouncement'
+        | 'setProvider'
+        | 'updateSettings'
+        | 'completeOnboarding'
+        | 'resetSettings'
+        | 'activateLicense'
+        | 'loadSensitiveData'
+        | 'setRemoteConfig'
+        | 'dismissAnnouncement'
       >
     >
   ) => void
@@ -57,14 +64,21 @@ const getProviderDefaults = (provider: AIProviderKey) => {
 }
 
 const detectDefaultLanguage = (): 'en' | 'zh' => {
-  const lang = navigator.language || 'en';
+  const lang = navigator.language || 'en'
   // Match 'zh', 'zh-CN', 'zh-TW' -> 'zh'
-  return lang.toLowerCase().startsWith('zh') ? 'zh' : 'en';
-};
+  return lang.toLowerCase().startsWith('zh') ? 'zh' : 'en'
+}
 
 const initialSettingsState: Omit<
   SettingsState,
-  'setProvider' | 'updateSettings' | 'completeOnboarding' | 'resetSettings' | 'activateLicense' | 'loadSensitiveData' | 'setRemoteConfig' | 'dismissAnnouncement'
+  | 'setProvider'
+  | 'updateSettings'
+  | 'completeOnboarding'
+  | 'resetSettings'
+  | 'activateLicense'
+  | 'loadSensitiveData'
+  | 'setRemoteConfig'
+  | 'dismissAnnouncement'
 > = {
   provider: 'openai',
   apiKey: '',
@@ -87,15 +101,15 @@ export const useSettingsStore = create<SettingsState>()(
         try {
           const res = await window.electronAPI.secureGet('apiKey')
           if (res.success && res.data) {
-             set({ apiKey: res.data })
-             // Also update main process config
-             const current = get()
-             const aiConfig: AIConfig = {
-               apiKey: res.data,
-               baseURL: current.baseUrl,
-               model: current.model,
-             }
-             void window.electronAPI.setAIConfig(aiConfig)
+            set({ apiKey: res.data })
+            // Also update main process config
+            const current = get()
+            const aiConfig: AIConfig = {
+              apiKey: res.data,
+              baseURL: current.baseUrl,
+              model: current.model,
+            }
+            void window.electronAPI.setAIConfig(aiConfig)
           }
         } catch (e) {
           console.error('Failed to load sensitive data', e)
@@ -107,34 +121,43 @@ export const useSettingsStore = create<SettingsState>()(
         const currentSettings = get()
         const aiConfig: AIConfig = {
           apiKey: currentSettings.apiKey,
-          baseURL: defaults.baseUrl, 
-          model: defaults.model, 
+          baseURL: defaults.baseUrl,
+          model: defaults.model,
         }
         void window.electronAPI.setAIConfig(aiConfig)
       },
       activateLicense: (code: string) => {
         const { validBetaCodes, remoteConfig } = get()
         const normalizedCode = code.trim().toUpperCase()
-        
+
         // Check dynamic list
         if (validBetaCodes.includes(normalizedCode)) {
           set({ isActivated: true })
-          Analytics.track('beta_activated', { code_prefix: normalizedCode.substring(0, 4) })
+          Analytics.track('beta_activated', {
+            code_prefix: normalizedCode.substring(0, 4),
+          })
           return true
         }
-        
+
         // Check remote config beta_code
-        if (remoteConfig.beta_code && remoteConfig.beta_code.toUpperCase() === normalizedCode) {
-            set({ isActivated: true })
-            Analytics.track('beta_activated', { code_prefix: normalizedCode.substring(0, 4) })
-            return true
+        if (
+          remoteConfig.beta_code &&
+          remoteConfig.beta_code.toUpperCase() === normalizedCode
+        ) {
+          set({ isActivated: true })
+          Analytics.track('beta_activated', {
+            code_prefix: normalizedCode.substring(0, 4),
+          })
+          return true
         }
-        
+
         // Fallback hardcoded check
         if (['WANSAN-BETA', 'INTERNAL-TEST'].includes(normalizedCode)) {
-           set({ isActivated: true })
-           Analytics.track('beta_activated', { code_prefix: normalizedCode.substring(0, 4) })
-           return true
+          set({ isActivated: true })
+          Analytics.track('beta_activated', {
+            code_prefix: normalizedCode.substring(0, 4),
+          })
+          return true
         }
 
         return false
@@ -148,22 +171,26 @@ export const useSettingsStore = create<SettingsState>()(
 
           if (nextProvider && nextProvider !== state.provider) {
             const defaults = getProviderDefaults(nextProvider)
-            nextState = { ...state, ...patch, provider: nextProvider, ...defaults }
+            nextState = {
+              ...state,
+              ...patch,
+              provider: nextProvider,
+              ...defaults,
+            }
           }
 
           if ((patch as Partial<SettingsState>).apiKey !== undefined) {
-             const newKey = (patch as Partial<SettingsState>).apiKey
-             if (newKey !== undefined) {
-                void window.electronAPI.secureSet('apiKey', newKey)
-             }
+            const newKey = (patch as Partial<SettingsState>).apiKey
+            if (newKey !== undefined) {
+              void window.electronAPI.secureSet('apiKey', newKey)
+            }
           }
 
-          const aiSettingsChanged = (
+          const aiSettingsChanged =
             (patch as Partial<SettingsState>).apiKey !== undefined ||
             (patch as Partial<SettingsState>).baseUrl !== undefined ||
             (patch as Partial<SettingsState>).model !== undefined ||
             nextProvider !== undefined
-          )
 
           if (aiSettingsChanged) {
             const aiConfig: AIConfig = {
@@ -180,7 +207,7 @@ export const useSettingsStore = create<SettingsState>()(
       resetSettings: () => {
         set({ ...initialSettingsState })
         void window.electronAPI.secureSet('apiKey', '')
-        
+
         const defaults = getProviderDefaults('openai')
         const aiConfig: AIConfig = {
           apiKey: '',
@@ -194,7 +221,7 @@ export const useSettingsStore = create<SettingsState>()(
       name: SETTINGS_STORAGE_KEY,
       storage: createBigIntStorage(),
       version: 3,
-      partialize: (state) => {
+      partialize: state => {
         const { apiKey, ...rest } = state
         return rest
       },

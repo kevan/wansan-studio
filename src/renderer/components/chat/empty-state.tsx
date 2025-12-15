@@ -1,5 +1,11 @@
 import React from 'react'
-import { Sparkles, BarChart3, PieChart, TrendingUp, Lightbulb } from 'lucide-react'
+import {
+  Sparkles,
+  BarChart3,
+  PieChart,
+  TrendingUp,
+  Lightbulb,
+} from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { useFileStore } from '../../stores/useFileStore'
 import { useTranslation } from 'react-i18next'
@@ -52,7 +58,11 @@ const STARTER_PROMPTS = [
   },
 ]
 
-export function EmptyState({ onSelectPrompt, isChatLoading, isRestoring }: EmptyStateProps) {
+export function EmptyState({
+  onSelectPrompt,
+  isChatLoading,
+  isRestoring,
+}: EmptyStateProps) {
   const suggestedPrompts = useFileStore(state => state.suggestedPrompts)
   const { t } = useTranslation('chat')
 
@@ -79,9 +89,7 @@ export function EmptyState({ onSelectPrompt, isChatLoading, isRestoring }: Empty
         <h2 className="text-2xl font-semibold text-zinc-900 mb-2">
           {t('empty_title')}
         </h2>
-        <p className="text-znic-500 max-w-md mx-auto">
-          {t('empty_subtitle')}
-        </p>
+        <p className="text-znic-500 max-w-md mx-auto">{t('empty_subtitle')}</p>
       </div>
 
       {/* Prompts Grid */}
@@ -96,10 +104,10 @@ export function EmptyState({ onSelectPrompt, isChatLoading, isRestoring }: Empty
             }}
             disabled={isChatLoading || isRestoring}
             className={cn(
-              "group flex items-start gap-4 p-4 rounded-xl border transition-all duration-200 text-left",
+              'group flex items-start gap-4 p-4 rounded-xl border transition-all duration-200 text-left',
               isChatLoading || isRestoring
-                ? "border-zinc-100 bg-white cursor-not-allowed"
-                : "border-zinc-200 bg-white hover:border-orange-200 hover:shadow-md"
+                ? 'border-zinc-100 bg-white cursor-not-allowed'
+                : 'border-zinc-200 bg-white hover:border-orange-200 hover:shadow-md'
             )}
           >
             <div
