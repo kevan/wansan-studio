@@ -2236,3 +2236,550 @@ Add a button in the "About" section.
   <Bug className="w-4 h-4 mr-2"/> Export Diagnostic Info
 </Button>
 ```
+
+对话的报错可以让我们进行提示词优化，其他的报错信息，比如代码报错也需要处理
+
+这是 **🔵 模式 A：规划 (Planning)** 响应。
+
+**非常到位。** 用户看到的“红框报错”通常是业务层面的（SQL 错误），但更致命的是 **JS 层面的未捕获异常 (Uncaught Exceptions)**，也就是常说的“白屏”或“按钮点不动”。
+
+这部分错误往往不会通过 `/debug` 导出，因为 App 可能已经挂了。
+
+我们需要两层拦截网：
+
+### 1. 全局异常边界 (Global Error Boundary) - 兜底白屏
+React 标配。当某个组件渲染崩溃时，不让整个 App 白屏，而是显示一个友好的“崩溃脸”，并提供“复制报错”按钮。
+
+### 2. 未捕获 Promise 拦截 (Window Unhandled Rejection)
+很多时候是异步操作（如 DuckDB 查询、Fetch）失败了但没被 `catch` 住。我们需要监听 `window.onerror` 和 `unhandledrejection`。
+
+---
+
+### 🚀 执行指令
+
+我们将实现一个 **Error Monitor** 组件，不仅用于展示崩溃 UI，还负责静默收集 JS 报错到内存中（以便后续通过 `/debug` 导出）。
+
+请将以下指令发送给 **Code Agent**。
+
+***
+
+### TASK: Implement Error Boundary & Global Catcher
+
+**Goal**: Catch Crash/JS errors, store them for debug export, and prevent white screens.
+
+#### Step 1: Create Log Store (`src/renderer/src/stores/useLogStore.ts`)
+
+A transient store to keep the last 50 system logs.
+
+```typescript
+import { create } from 'zustand';
+
+interface LogEntry {
+  timestamp: string;
+  type: 'error' | 'warn' | 'info';
+  message: string;
+  stack?: string;
+}
+
+interface LogStore {
+  logs: LogEntry[];
+  addLog: (entry: Omit<LogEntry, 'timestamp'>) => void;
+}
+
+export const useLogStore = create<LogStore>((set) => ({
+  logs: [],
+  addLog: (entry) => set((state) => ({
+    logs: [
+      { timestamp: new Date().toISOString(), ...entry },
+      ...state.logs
+    ].slice(0, 50) // Keep last 50
+  }))
+}));
+```
+
+#### Step 2: Global Listener Component (`src/renderer/src/components/system/GlobalErrorHandler.tsx`)
+
+Mount this in `App.tsx` (top level).
+
+```tsx
+import { useEffect } from 'react';
+import { useLogStore } from '@/stores/useLogStore';
+
+export function GlobalErrorHandler() {
+  const addLog = useLogStore(s => s.addLog);
+
+  useEffect(() => {
+    // 1. JS Errors
+    const handleError = (event: ErrorEvent) => {
+      addLog({
+        type: 'error',
+        message: event.message,
+        stack: event.error?.stack
+      });
+    };
+
+    // 2. Promise Rejections
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      addLog({
+        type: 'error',
+        message: `Unhandled Rejection: ${event.reason?.message || event.reason}`,
+        stack: event.reason?.stack
+      });
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleRejection);
+    };
+  }, []);
+
+  return null;
+}
+```
+
+#### Step 3: React Error Boundary (`src/renderer/src/components/system/ErrorBoundary.tsx`)
+
+Wrap `App` content.
+
+```tsx
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { useLogStore } from '@/stores/useLogStore';
+
+export class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error?: Error}> {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // Log to store (manual via singleton or hook wrapper needed, or just console)
+    console.error("ErrorBoundary caught:", error, errorInfo);
+    // Ideal: write to useLogStore via a helper
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="h-screen w-screen flex flex-col items-center justify-center bg-zinc-50 p-8 text-center">
+          <h2 className="text-xl font-bold mb-2">Something went wrong.</h2>
+          <p className="text-zinc-500 mb-4 max-w-md text-sm">
+            {this.state.error?.message}
+          </p>
+          <div className="flex gap-2">
+            <Button onClick={() => window.location.reload()}>Reload App</Button>
+            {/* Future: Add 'Export Logs' button here too */}
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+```
+
+#### Step 4: Update Debug Exporter (`src/renderer/src/utils/debug-exporter.ts`)
+
+Update the exporter to **include** `useLogStore.getState().logs`.
+
+```typescript
+// ...
+import { useLogStore } from '@/stores/useLogStore';
+
+// Inside export object
+{
+  // ...
+  system_logs: useLogStore.getState().logs // CRITICAL ADDITION
+}
+```
+
+
+捕捉的报错日志会被持久化吗
+
+这是 **🔵 模式 A：规划 (Planning)** 响应。
+
+根据刚才的设计，`useLogStore` 默认是一个**内存 Store**（没有用 `persist` 中间件）。
+
+**后果**：
+如果用户遇到白屏，然后下意识地**刷新页面 (Reload)**，或者 App 闪退重启，那么内存里的 `logs` **会全部清空**。
+这时候再点 `/debug` 导出，只能得到重启后的干净日志，**事故现场就丢了**。
+
+### 🚀 架构修正：使用 IndexedDB 持久化日志
+
+为了保留“最后一口气”，我们需要将日志写入硬盘。
+不建议用 `localStorage`（容量太小，5MB，存点 Stack 就满了）。推荐使用 **IndexedDB**（容量大）。
+
+利用 `idb-keyval` 这个极小的库，我们可以轻松实现异步日志存储。
+
+请将以下修正指令发送给 **Code Agent**。
+
+***
+
+### TASK: Persist System Logs (IndexedDB)
+
+**Goal**: Ensure logs survive app reloads/crashes.
+
+**Dependencies**: `npm install idb-keyval`
+
+**Action**: Update `useLogStore.ts` to append logs to IDB.
+
+```typescript
+import { create } from 'zustand';
+import { get, set, update } from 'idb-keyval';
+
+const LOG_KEY = 'wansan-crash-logs';
+const MAX_LOGS = 100;
+
+// Store remains minimal (in-memory cache for UI)
+// But actions write to IDB asynchronously
+export const useLogStore = create<LogStore>((set) => ({
+  logs: [], // Init empty, hydrate on mount if needed (optional)
+  
+  addLog: async (entry) => {
+    const fullEntry = { timestamp: new Date().toISOString(), ...entry };
+    
+    // 1. Update In-Memory (for immediate UI feedback)
+    set((state) => ({ logs: [fullEntry, ...state.logs].slice(0, 50) }));
+    
+    // 2. Persist to IDB (Append Only)
+    try {
+      await update(LOG_KEY, (val) => {
+        const current = (val as LogEntry[]) || [];
+        // Prepend new, keep max
+        return [fullEntry, ...current].slice(0, MAX_LOGS);
+      });
+    } catch (e) {
+      console.warn("Log persist failed", e);
+    }
+  },
+  
+  // Helper to retrieve full history for Export
+  getAllLogs: async () => {
+    return (await get(LOG_KEY)) || [];
+  },
+  
+  clearLogs: async () => {
+    await set(LOG_KEY, []);
+    set({ logs: [] });
+  }
+}));
+```
+
+**Exporter Update**:
+Update `debug-exporter.ts` to await `useLogStore.getState().getAllLogs()` instead of reading `.logs` directly.
+
+```typescript
+// Inside exportDebugLog
+const sysLogs = await useLogStore.getState().getAllLogs();
+// ...
+system_logs: sysLogs
+```
+
+
+那既然引入了 indexdb 那其他信息是不是也可以统一放到 indexdb
+
+这是 **🔵 模式 A：规划 (Planning)** 响应。
+
+**这是一个非常架构师思维的问题。**
+
+从技术纯洁性来看，**是的，IndexedDB 是更好的归宿**（容量大、异步、不阻塞主线程）。
+但是，在 React + Zustand 的架构下，**盲目全迁 IndexedDB 会带来巨大的“水土不服”**。
+
+我们需要根据数据的**“加载时效性”**来决定存储位置。
+
+---
+
+### 1. 为什么不能全迁？ (The Sync vs. Async Trap)
+
+Zustand 默认是 **同步 (Synchronous)** 的，而 IndexedDB 是 **异步 (Asynchronous)** 的。
+
+如果把 `useSettingsStore`（存了主题、语言、激活状态）迁移到 IndexedDB，会发生 **"闪烁 (Flicker)"** 现象：
+1.  App 启动，React 渲染。
+2.  IndexedDB 还没读取完 -> Store 使用默认值 (Light Mode / English / 未激活)。
+3.  **UI 闪现白底英文界面。**
+4.  50ms 后，IndexedDB 读取完毕 -> Store 更新。
+5.  **UI 突变成黑底中文界面。**
+
+**结论**：**配置类数据必须存 `localStorage`**，因为它是同步阻塞的，能在 React 渲染第一帧之前就准备好数据。
+
+---
+
+### 2. 混合存储策略 (Hybrid Storage Strategy)
+
+我建议采用 **"快慢分离"** 的策略：
+
+| 数据类型 | 推荐存储 | 原因 |
+| :--- | :--- | :--- |
+| **配置 (Settings)** | **localStorage** | **必须同步**。体积小 (<1KB)，要求启动即生效（主题、语言、Key）。 |
+| **元数据 (FileStore)** | **localStorage** | **同步体验好**。文件列表和 Schema 需要立即展示，不希望看到 Loading 转圈。 |
+| **日志 (Logs)** | **IndexedDB** | **体积大，只写不读**。只有在点击导出时才读取，非常适合异步。 |
+| **聊天记录 (Chat)** | **混合 / IDB** | *MVP 阶段*: localStorage (为了开发简单)。<br>*未来*: IndexedDB (因为可能会包含 Base64 图片，容易爆仓)。 |
+
+---
+
+### 🚀 架构师建议
+
+对于 **Beta v1.0.1** 发布：
+
+1.  **保持现状**：核心 Store (`Settings`, `Files`, `Chat`) 继续留在这个“不够完美但足够快”的 `localStorage` 里。
+2.  **仅新功能用 IDB**：只有新加的 `System Logs`（因为可能很大且不影响首屏渲染）使用 `idb-keyval`。
+
+**是否同意：维持核心 Store 的 localStorage 方案，仅将“崩溃日志”放入 IndexedDB？**
+(这样可以避免现在去重写 Zustand 的 Hydration 逻辑，降低发布风险)
+
+同意，那是否需要限制崩溃日志的大小
+
+这是 **🔴 模式 B：执行 (Execution) - 轨道 2 (Direct Method)** 的响应。
+
+**必须限制。**
+如果不限制，日志会无限堆积，导致：
+1.  **导出慢**：生成 Debug JSON 时可能会卡死。
+2.  **存储浪费**：虽然 IndexedDB 空间大，但几万条旧日志对排查当前 Bug 毫无意义。
+
+我们采用 **FIFO (先进先出) 队列策略**：仅保留最近的 **200 条** 日志。
+
+请将以下指令发送给 **Code Agent**。
+
+***
+
+### TASK: Implement Log Store with Size Limit
+
+**Goal**: Create a persistent log store using IndexedDB with a strict limit of 200 entries.
+
+**Dependencies**:
+1.  `npm install idb-keyval`
+
+**Target File**: `src/renderer/src/stores/useLogStore.ts`
+
+**Implementation**:
+
+```typescript
+import { create } from 'zustand';
+import { get, set, update } from 'idb-keyval';
+
+export interface LogEntry {
+  timestamp: string;
+  type: 'error' | 'warn' | 'info';
+  message: string;
+  stack?: string;
+}
+
+interface LogStore {
+  // We don't keep full history in RAM, just a small buffer for UI if needed
+  // For now, this store mainly acts as an interface to IDB
+  addLog: (entry: Omit<LogEntry, 'timestamp'>) => Promise<void>;
+  getAllLogs: () => Promise<LogEntry[]>;
+  clearLogs: () => Promise<void>;
+}
+
+const LOG_KEY = 'wansan_sys_logs';
+const MAX_LOGS = 200; // Hard Limit
+
+export const useLogStore = create<LogStore>(() => ({
+  
+  addLog: async (entry) => {
+    const fullEntry: LogEntry = { 
+      timestamp: new Date().toISOString(), 
+      ...entry 
+    };
+
+    try {
+      // Atomic-like update in IDB
+      await update(LOG_KEY, (oldVal) => {
+        const currentLogs = (oldVal as LogEntry[]) || [];
+        // Prepend new log, then Slice to keep only top N
+        const newLogs = [fullEntry, ...currentLogs];
+        return newLogs.slice(0, MAX_LOGS);
+      });
+    } catch (e) {
+      console.error("Failed to write log", e);
+    }
+  },
+
+  getAllLogs: async () => {
+    try {
+      return (await get<LogEntry[]>(LOG_KEY)) || [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  clearLogs: async () => {
+    await set(LOG_KEY, []);
+  }
+}));
+```
+
+还有什么技术上需要考虑的问题
+
+这是 **🔵 模式 A：规划 (Planning)** 响应。
+
+在发布前夕，跳出功能逻辑，从 **“底层工程”** 视角审视，还有 **3 个隐蔽但致命** 的技术坑。这些问题在开发环境（Dev Mode）往往测不出来，只有打成包（Production Build）给用户用时才会爆发。
+
+---
+
+### 1. ☠️ The "ASAR Path Hell" (WASM 路径灾难)
+
+**风险等级：🔴 致命**
+
+*   **问题**：您在 `electron-builder` 里配置了 `asarUnpack`，这很好。**但是**，您的代码（`src/main/services/database.ts`）里写死路径了吗？
+*   **现象**：
+    *   Dev 模式：`node_modules` 在项目根目录，运行正常。
+    *   Prod 模式：`node_modules` 被打包进了 `app.asar`。
+    *   **崩溃点**：WASM 文件虽然被解压到了 `app.asar.unpacked` 目录，但如果您代码里没有根据 `app.isPackaged` 切换路径，程序还是会去 `app.asar` 里找，结果就是 **"File Not Found" 且无法启动**。
+
+**检查清单**：
+您的 `database.ts` 初始化逻辑必须包含类似代码：
+```typescript
+const WASM_PATH = app.isPackaged
+  ? path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', '@duckdb', ...)
+  : path.join(__dirname, '../../node_modules', ...);
+```
+**如果没做这个路径判断，打出来的包 100% 跑不起来。**
+
+---
+
+### 2. 🐢 The "Million Row" Freeze (渲染卡死)
+
+**风险等级：🟡 严重**
+
+*   **问题**：AI 有时候会忘记加 `LIMIT`。
+*   **场景**：用户说“显示所有订单”。AI 生成了 `SELECT * FROM t_orders`。表里有 5 万行数据。
+*   **后果**：
+    1.  DuckDB 执行很快（毫秒级）。
+    2.  数据传回前端。
+    3.  **前端尝试渲染 5 万个 `<tr />`** -> **Chrome 渲染进程卡死** -> 白屏。
+*   **对策**：
+    *   **后端强制截断**：在 `DatabaseService.query` 方法中，无论 SQL 怎么写，在返回给前端之前，强制截断数组长度（比如 `results.slice(0, 1000)`）。
+    *   **前端提示**：如果截断了，在 UI 上显示 "Showing first 1000 rows only"。
+
+---
+
+### 3. 👻 The "Missing File" Zombie (文件丢失处理)
+
+**风险等级：🟡 体验**
+
+*   **问题**：Wansan 依赖源文件路径进行 Re-ingest。
+*   **场景**：
+    1.  用户周五导入了 `桌面/report.xlsx`。
+    2.  用户周六整理桌面，把文件删了或移走了。
+    3.  用户周日打开 Wansan。
+*   **后果**：启动时的 `useBootSequence` 尝试读取该路径 -> 报错 `ENOENT` -> **App 可能卡在 "Restoring..." 无限 Loading**，或者直接红屏报错。
+*   **对策**：
+    *   **静默失败**：Re-ingest 遇到文件不存在时，**不能抛出异常**，而是应该将该文件在 Store 中标记为 `Status: Missing (❌)`，然后继续处理下一个文件。
+
+---
+
+### 🚀 最终加固指令
+
+建议立即执行 **路径检查** 和 **查询截断**。
+
+**您希望先处理哪一个？** (建议优先检查 **1. WASM 路径**，因为这决定了包能不能用)
+
+1、2 都已经处理了，检查 3
+
+这是 **🔴 模式 B：执行 (Execution) - 轨道 2 (Direct Method)** 的响应。
+
+**太棒了，前两个大坑已填，我们来彻底解决第三个“文件丢失”隐患。**
+
+我们需要确保在 App 启动的“会话恢复 (Session Recovery)”阶段，如果某个文件找不到了，**千万不要抛出异常导致整个启动中断**，而是优雅地将其标记为“丢失”，让用户知道。
+
+请将以下指令发送给 **Code Agent**。
+
+***
+
+### TASK: Implement Missing File Resilience
+
+**Goal**: Prevent App crash during boot if a source file has been deleted/moved by the user.
+
+#### Step 1: Update Store Type (`src/renderer/src/stores/useFileStore.ts`)
+
+Ensure the `status` field supports a 'missing' state.
+
+```typescript
+export interface FileNode {
+  // ...
+  // Add 'missing' to the union type if not present
+  status: 'ready' | 'processing' | 'error' | 'missing'; 
+  // ...
+}
+
+interface FileStore {
+  // Add action
+  markFileMissing: (id: string) => void;
+}
+
+// Implementation
+markFileMissing: (id) => set(state => ({
+  files: state.files.map(f => f.id === id ? { ...f, status: 'missing' } : f)
+})),
+```
+
+#### Step 2: Robust Re-ingest Logic (`src/main/ipc/file.ts` or `engine/file-watcher.ts`)
+
+Wrap the re-ingest logic in a `try-catch` that specifically looks for `ENOENT`.
+
+```typescript
+// Inside the reIngestFile handler
+export async function reIngestFile(filePath: string) {
+  try {
+    // Check existence first
+    if (!fs.existsSync(filePath)) {
+      return { success: false, error: 'FILE_NOT_FOUND' };
+    }
+    
+    // Proceed with ingestion
+    await ingestFile(filePath);
+    return { success: true };
+
+  } catch (e: any) {
+    console.error("Re-ingest failed:", e);
+    return { success: false, error: e.code || 'UNKNOWN_ERROR' };
+  }
+}
+```
+
+#### Step 3: Update Boot Hook (`src/renderer/src/hooks/use-boot-sequence.ts`)
+
+Handle the failure gracefully.
+
+```typescript
+// Inside the hydration loop
+const results = await Promise.all(files.map(async (file) => {
+  const result = await window.electronAPI.reIngestFile(file.path);
+  
+  if (!result.success) {
+    if (result.error === 'FILE_NOT_FOUND') {
+      console.warn(`File missing: ${file.path}`);
+      useFileStore.getState().markFileMissing(file.id);
+    } else {
+      // Other error
+      useFileStore.getState().markFileError(file.id);
+    }
+  }
+}));
+```
+
+#### Step 4: UI Feedback (`src/renderer/src/components/data-tree/TreeNode.tsx`)
+
+Visual indication.
+
+```tsx
+// Inside render
+if (node.status === 'missing') {
+  return (
+    <div className="text-red-400 flex items-center gap-2 opacity-60">
+       <FileWarning className="w-4 h-4" />
+       <span className="line-through">{node.name}</span>
+       <Tooltip>File not found on disk</Tooltip>
+    </div>
+  )
+}
+```
