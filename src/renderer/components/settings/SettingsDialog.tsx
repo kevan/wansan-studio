@@ -515,6 +515,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
         <DialogContent className="max-w-[600px] max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{t('about.disclaimer_link')}</DialogTitle>
+            <DialogDescription>{t('about.disclaimer_dialog_description')}</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6 border rounded-md bg-white">
             <SimpleMarkdown content={disclaimerText} />
