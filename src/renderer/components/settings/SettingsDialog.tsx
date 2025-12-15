@@ -53,7 +53,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>('idle')
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false)
-  const [showDisclaimer, setShowDisclaimer] = useState(false)
+  const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('ai')
   const [licenseCode, setLicenseCode] = useState('')
 
@@ -497,7 +497,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                    {t('about.disclaimer_prefix')} 
                    <span 
                      className="underline cursor-pointer hover:text-zinc-600" 
-                     onClick={() => setShowDisclaimer(true)}
+                     onClick={() => setIsDisclaimerOpen(true)}
                    >
                      {t('about.disclaimer_link')}
                    </span>.
@@ -520,7 +520,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
       </DialogContent>
 
       {/* Disclaimer Dialog */}
-      <Dialog open={showDisclaimer} onOpenChange={setShowDisclaimer}>
+      <Dialog open={isDisclaimerOpen} onOpenChange={setIsDisclaimerOpen}>
         <DialogContent className="max-w-[600px] max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{t('about.disclaimer_link')}</DialogTitle>
