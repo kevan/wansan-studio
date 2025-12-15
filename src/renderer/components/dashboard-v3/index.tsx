@@ -124,6 +124,7 @@ export function DashboardCanvasV3() {
       : undefined
 
   const gridWidth = isA4 ? PAGE_WIDTH_PX : 1200
+  const activeScale = isA4 ? zoom / 100 : 1.0
 
   return (
     <div
@@ -136,17 +137,21 @@ export function DashboardCanvasV3() {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      <div className="flex min-h-min flex-col items-center">
+      <div
+        className={`flex min-h-min flex-col ${
+          isA4 ? 'items-center' : 'w-full'
+        }`}
+      >
         <div
           id="dashboard-export-root"
           className="relative w-full transition-transform duration-200"
           style={{
-            transform: `scale(${zoom / 100})`,
-            transformOrigin: isA4 ? 'top center' : 'top left',
-            width: isA4 ? `${PAGE_WIDTH_PX}px` : `${100 / (zoom / 100)}%`,
+            transform: isA4 ? `scale(${activeScale})` : undefined,
+            transformOrigin: 'top center',
+            width: isA4 ? `${PAGE_WIDTH_PX}px` : '100%',
             minHeight: isA4
               ? `${totalHeightPx ?? PAGE_HEIGHT_PX}px`
-              : `${100 / (zoom / 100)}%`,
+              : '100%',
           }}
         >
           <PageLayer isA4={isA4} pageCount={pageCount} />
@@ -154,7 +159,7 @@ export function DashboardCanvasV3() {
             width={gridWidth}
             isA4={isA4}
             height={isA4 ? totalHeightPx : undefined}
-            scale={zoom / 100}
+            scale={activeScale}
           />
         </div>
       </div>
