@@ -13,7 +13,7 @@ import type { AIAnalysisResult } from '@shared/types'
 export type CanvasLayout = 'a4' | 'screen'
 export type Language = 'en' | 'zh'
 
-const FOOTER_HEIGHT_PX = 80
+const FOOTER_HEIGHT_PX = 70
 
 const getDefaultLanguage = (): Language => {
   if (typeof navigator !== 'undefined') {

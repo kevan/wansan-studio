@@ -111,7 +111,7 @@ function PageGrid({ pageIndex, width, scale, isA4 }: PageGridProps) {
         containerPadding={GRID_MARGIN}
         draggableHandle=".drag-handle"
         compactType={null} // Free layout inside page
-        preventCollision={!isA4} // Allow overlap? Usually false for dashboards. Let's keep preventCollision=true (default is false)
+        preventCollision={true} // Prevent items from overlapping
         // Actually for free layout usually compactType=null and preventCollision=true to mimic "placing"
         // But RGL default preventCollision=false means items push each other. That's good.
         // Let's stick to standard dashboard behavior: items push each other down.
