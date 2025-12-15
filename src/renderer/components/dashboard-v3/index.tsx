@@ -129,7 +129,8 @@ export function DashboardCanvasV3() {
       : undefined
 
   const gridWidth = isA4 ? PAGE_WIDTH_PX : SCREEN_WIDTH_PX
-  const activeScale = zoom / 100
+  // Force 1.0 scale for Screen mode to show actual size (1920px) with scrollbars if needed
+  const activeScale = isA4 ? zoom / 100 : 1.0
 
   return (
     <div
