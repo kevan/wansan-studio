@@ -9,6 +9,7 @@ import {
   ZoomOut,
   Plus,
   Minus,
+  Lock,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -25,6 +26,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { CanvasLayout, useWorkbenchStore } from '@/stores/useWorkbenchStore'
+import { useSettingsStore } from '@/stores/useSettingsStore'
+import { useToastStore } from '@/stores/useToastStore'
 import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 import { PAGE_GAP_PX, PAGE_HEIGHT_PX } from '@/components/dashboard-v3/page-layer'
@@ -39,6 +42,8 @@ export function DashboardHeader() {
   const layoutScenario = useWorkbenchStore(state => state.layoutScenario)
   const isA4 = canvasConfig.layout === 'a4'
   const { t } = useTranslation('common')
+  const { isActivated } = useSettingsStore()
+  const addToast = useToastStore(state => state.addToast)
 
   const updateConfig = (key: keyof typeof canvasConfig, value: unknown) => {
     setCanvasConfig({ [key]: value } as Partial<typeof canvasConfig>)
@@ -50,6 +55,15 @@ export function DashboardHeader() {
   }
 
   const handleExport = async (type: 'pdf' | 'png') => {
+    if (!isActivated) {
+        addToast({
+            title: t('pro_feature_title'),
+            description: t('pro_feature_export_desc'),
+            type: 'info',
+        });
+        return;
+    }
+
     const node = document.getElementById('dashboard-export-root')
     if (!node) {
       console.warn('dashboard-export-root not found for export')
@@ -235,7 +249,7 @@ export function DashboardHeader() {
               size="sm"
               className="h-8 gap-2 bg-black hover:bg-zinc-800 text-white shadow-sm"
             >
-              <Download className="h-3.5 w-3.5" />
+              {!isActivated ? <Lock className="h-3.5 w-3.5 text-yellow-400" /> : <Download className="h-3.5 w-3.5" />}
               <span>{t('export')}</span>
             </Button>
           </DropdownMenuTrigger>

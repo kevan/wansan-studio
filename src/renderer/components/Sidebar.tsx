@@ -87,6 +87,20 @@ export function Sidebar(_props: SidebarProps) {
             const results = Array.isArray(parseResults) ? parseResults : [parseResults]
             let placeholderUsed = false
 
+            // [NEW LIMIT CHECK: MULTI-SHEET]
+            if (!settings.isActivated && results.length > 1) {
+                addToast({
+                    title: t('sidebar.trial_limit_multi_sheet_title'),
+                    description: t('sidebar.trial_limit_multi_sheet_desc'),
+                    type: 'warning',
+                });
+                // Remove the placeholder file if already added, to clean up UI
+                if (fileId) {
+                  useFileStore.getState().removeFile(fileId); // This needs the store ref
+                }
+                continue; // Skip this file and proceed to next
+            }
+
             for (const res of results) {
                  // Check for duplicates (excluding the placeholder itself)
                  const isDuplicate = useFileStore.getState().files.some(f => 

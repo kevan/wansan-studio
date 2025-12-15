@@ -103,6 +103,11 @@
   "showing_n_of_total": "Showing first {{n}} of {{total}} rows",
   "data_summary": "Data Summary",
   "data_visualization": "Visualization",
+  "trial_limit_reached_title": "Trial Limit Reached",
+  "trial_limit_file_desc": "Trial version supports only 1 file. Please activate Pro for unlimited files.",
+  "pro_feature_title": "Pro Feature",
+  "pro_feature_export_desc": "Exporting reports is available in Pro version.",
+  "pro_feature_sqllab_desc": "SQL Editor is available in Pro version.",
 
   "sidebar": {
     "electron_api_unavailable": "Electron API unavailable",
@@ -115,7 +120,9 @@
     "trial_mode": "TRIAL MODE",
     "unlock_full_access": "Unlock Full Access",
     "file_too_large_title": "File Too Large",
-    "file_too_large_desc": "Exceeded Beta limit (100MB). Skipped: {{files}}"
+    "file_too_large_desc": "Exceeded Beta limit (100MB). Skipped: {{files}}",
+    "trial_limit_multi_sheet_title": "Trial Limit Reached",
+    "trial_limit_multi_sheet_desc": "Trial version does not support multiple Excel sheets. Please activate Pro for full access."
   },
 
   "update_modal_title": "Critical Update Required",

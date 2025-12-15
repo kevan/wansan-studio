@@ -3,11 +3,12 @@ import Editor from 'react-simple-code-editor'
 import { highlight, languages } from 'prismjs'
 import 'prismjs/components/prism-sql'
 import 'prismjs/themes/prism.css'
-import { Play, RotateCcw, Copy, X, Check, AlignLeft, Sparkles } from 'lucide-react'
+import { Play, RotateCcw, Copy, X, Check, AlignLeft, Sparkles, Lock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../utils/cn'
 import { format } from 'sql-formatter'
 import { useToastStore } from '@/stores/useToastStore'
+import { useSettingsStore } from '@/stores/useSettingsStore'
 
 interface SqlEditorModalProps {
   isOpen: boolean
@@ -24,6 +25,7 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const addToast = useToastStore(state => state.addToast)
+  const { isActivated } = useSettingsStore()
 
   // Auto-format SQL when modal opens
   useEffect(() => {
@@ -128,7 +130,11 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }
               <span className="text-xs font-bold text-zinc-500">SQL EDITOR</span>
               <button
                 onClick={handleFormat}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 rounded-md transition-colors border border-transparent hover:border-zinc-300"
+                disabled={!isActivated}
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-colors border border-transparent",
+                  !isActivated ? "text-zinc-400 cursor-not-allowed" : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 hover:border-zinc-300"
+                )}
                 title="Format Code"
               >
                 <AlignLeft className="h-3 w-3" />
@@ -141,14 +147,24 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }
                 onValueChange={setSql}
                 highlight={code => highlight(code, languages.sql, 'sql')}
                 padding={16}
+                readOnly={!isActivated}
                 style={{
                   fontFamily: '"Fira Code", "Fira Mono", monospace',
                   fontSize: 14,
                   backgroundColor: '#f9f9f9',
                   minHeight: '100%',
                 }}
-                className="min-h-full"
+                className={cn(
+                  "min-h-full",
+                  !isActivated && "opacity-80 bg-zinc-50 cursor-not-allowed"
+                )}
               />
+              {!isActivated && (
+                <div className="absolute bottom-4 right-4 bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-md flex items-center gap-1.5 border border-yellow-200 shadow-sm z-10 pointer-events-none">
+                  <Lock className="w-3 h-3" /> 
+                  <span className="font-medium">Read-only (Pro Feature)</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -163,7 +179,11 @@ export function SqlEditorModal({ isOpen, onClose, initialSql, reasoning, onRun }
           <div className="flex gap-2">
             <button
               onClick={handleReset}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 rounded-md transition-colors border border-transparent hover:border-zinc-300"
+              disabled={!isActivated}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors border border-transparent",
+                !isActivated ? "text-zinc-400 cursor-not-allowed" : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 hover:border-zinc-300"
+              )}
             >
               <RotateCcw className="w-4 h-4" />
               {t('sql_editor.reset')}

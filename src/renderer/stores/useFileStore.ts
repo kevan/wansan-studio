@@ -3,6 +3,9 @@ import { persist } from 'zustand/middleware'
 import type { ColumnSchema, FileNode, SyncStatus } from '@shared/types.ts'
 import { createBigIntStorage } from '@shared/serialization.ts'
 import { Analytics } from '../services/analytics'
+import { useSettingsStore } from './useSettingsStore'
+import { useToastStore } from './useToastStore'
+import i18n from '../i18n'
 
 // Re-export shared types for other components to use
 export type { ColumnSchema, FileNode, SyncStatus }
@@ -144,6 +147,19 @@ export const useFileStore = create<ProjectState>()(
       setProjectName: name => set({ projectName: name }),
 
       addFile: file => {
+        // [LIMIT CHECK]
+        const { isActivated } = useSettingsStore.getState();
+        const currentCount = get().files.length;
+        
+        if (!isActivated && currentCount >= 1) {
+            useToastStore.getState().addToast({
+                title: i18n.t('trial_limit_reached_title', { ns: 'common' }),
+                description: i18n.t('trial_limit_file_desc', { ns: 'common' }),
+                type: 'warning',
+            });
+            throw new Error(i18n.t('trial_limit_reached_title', { ns: 'common' }));
+        }
+
         const existing = get().files.find(f => f.path === file.path && f.sheetName === file.sheetName)
         if (existing) {
           throw new Error(`File "${file.name}" is already imported.`)

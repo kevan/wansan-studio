@@ -103,6 +103,11 @@
   "showing_n_of_total": "显示前 {{n}} 条，共 {{total}} 条数据",
   "data_summary": "数据摘要",
   "data_visualization": "数据可视化",
+  "trial_limit_reached_title": "达到试用限制",
+  "trial_limit_file_desc": "试用版最多支持 1 个文件。请激活专业版以解锁无限文件。",
+  "pro_feature_title": "专业版功能",
+  "pro_feature_export_desc": "导出报表仅在专业版可用。",
+  "pro_feature_sqllab_desc": "SQL 编辑器仅在专业版可用。",
 
   "sidebar": {
     "electron_api_unavailable": "Electron API 不可用",
@@ -115,7 +120,9 @@
     "trial_mode": "试用模式",
     "unlock_full_access": "解锁完整版",
     "file_too_large_title": "文件过大",
-    "file_too_large_desc": "超出 Beta 限制 (100MB)。已跳过文件: {{files}}"
+    "file_too_large_desc": "超出 Beta 限制 (100MB)。已跳过文件: {{files}}",
+    "trial_limit_multi_sheet_title": "达到试用限制",
+    "trial_limit_multi_sheet_desc": "试用版不支持导入多张 Excel 工作表。请激活专业版以解锁完整功能。"
   },
 
   "update_modal_title": "需要重要更新",
