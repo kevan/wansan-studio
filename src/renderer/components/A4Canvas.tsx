@@ -1,42 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Edit2 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
-import { formatForDisplay } from '@shared/serialization'
-
-interface A4CanvasProps {
-  children: React.ReactNode
-  title?: string
-  className?: string
-  showPrintStyles?: boolean
-}
-
-export function A4Canvas({
-  children,
-  title = '数据报表',
-  className = '',
-  showPrintStyles = false,
-}: A4CanvasProps) {
-  return (
-    <div className={`flex justify-center ${className}`}>
-      {/* A4 纸容器 - 210mm x 297mm 比例 (约 1:1.414) */}
-      <div
-        className={`
-          bg-white shadow-lg border border-gray-200 
-          w-full max-w-4xl
-          ${showPrintStyles ? 'print:shadow-none print:border-none' : ''}
-        `}
-        style={{
-          aspectRatio: '210 / 297', // A4 纸比例
-          minHeight: '800px', // 最小高度确保内容可见
-        }}
-      >
-        {/* 页面内容 */}
-        <div className="h-full flex flex-col p-8 print:p-6">{children}</div>
-      </div>
-    </div>
-  )
-}
+import { ReportChart } from './report/ReportChart'
 
 // A4 画布的各个区域组件
 interface A4HeaderProps {
@@ -125,38 +91,6 @@ export function A4Header({
   )
 }
 
-interface A4SectionProps {
-  title?: string
-  children: React.ReactNode
-  className?: string
-}
-
-export function A4Section({ title, children, className = '' }: A4SectionProps) {
-  return (
-    <section className={`mb-6 ${className}`}>
-      {title && (
-        <h2 className="text-lg font-semibold text-gray-800 mb-3 border-l-4 border-orange-500 pl-3">
-          {title}
-        </h2>
-      )}
-      <div>{children}</div>
-    </section>
-  )
-}
-
-export function A4Footer({ className = '' }: { className?: string }) {
-  return (
-    <footer
-      className={`mt-auto pt-4 border-t border-gray-200 text-center ${className}`}
-    >
-      <div className="text-xs text-gray-400">
-        {useTranslation('common').t('generated_by')}{' '}
-        <span className="font-semibold text-orange-600">Wansan Studio</span>
-      </div>
-    </footer>
-  )
-}
-
 // 数据摘要组件
 interface A4SummaryProps {
   content: string
@@ -192,8 +126,6 @@ export function A4Summary({
     </div>
   )
 }
-
-import { ReportChart } from './report/ReportChart'
 
 // ... (previous imports)
 
@@ -336,143 +268,5 @@ export function A4Chart({
         </div>
       )}
     </div>
-  )
-}
-
-// ... (other components)
-
-// 数据表格组件
-interface A4DataTableProps {
-  data: Array<Record<string, any>>
-  maxRows?: number
-  className?: string
-}
-
-interface A4DataTableProps {
-  data: Array<Record<string, any>>
-  maxRows?: number
-  className?: string
-}
-
-export function A4DataTable({
-  data,
-  maxRows = 20,
-  className = '',
-}: A4DataTableProps) {
-  const { t } = useTranslation('common')
-
-  if (!data || data.length === 0) {
-    return (
-      <div className={`text-center py-8 text-gray-500 ${className}`}>
-        {t('no_data')}
-      </div>
-    )
-  }
-
-  const displayData = data.slice(0, maxRows)
-  const columns = Object.keys(data[0])
-  const hasMore = data.length > maxRows
-
-  return (
-    <div className={className}>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="bg-gray-50">
-              {columns.map(column => (
-                <th
-                  key={column}
-                  className="px-3 py-2 text-left font-medium text-gray-700 border-b border-gray-200"
-                >
-                  {column}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {displayData.map((row, index) => (
-              <tr key={index} className="hover:bg-gray-50">
-                {columns.map(column => (
-                  <td
-                    key={column}
-                    className="px-3 py-2 text-gray-900 border-b border-gray-100"
-                  >
-                    {formatForDisplay(row[column])}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {hasMore && (
-        <div className="mt-3 text-center text-sm text-gray-500">
-          {t('showing_n_of_total', { n: maxRows, total: data.length })}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// 预设的 A4 报表布局
-interface A4ReportLayoutProps {
-  title: string
-  subtitle?: string
-  summary?: string
-  insights?: string[]
-  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi'
-  chartTitle?: string
-  tableData?: Array<Record<string, any>>
-  vizConfig?: {
-    x_axis?: string | null
-    y_axis?: string | string[] | null
-    series_name?: string
-  }
-  logo?: string
-  className?: string
-}
-
-export function A4ReportLayout({
-  title,
-  subtitle,
-  summary,
-  insights,
-  chartType = 'bar',
-  chartTitle,
-  tableData,
-  vizConfig,
-  logo,
-  className = '',
-}: A4ReportLayoutProps) {
-  const { t } = useTranslation('common')
-
-  return (
-    <A4Canvas className={className}>
-      <A4Header title={title} subtitle={subtitle} logo={logo} />
-
-      {summary && (
-        <A4Section title={t('data_summary')}>
-          <A4Summary content={summary} insights={insights} />
-        </A4Section>
-      )}
-
-      <A4Section title={t('data_visualization')}>
-        <A4Chart
-          type={chartType}
-          title={chartTitle}
-          data={tableData}
-          config={vizConfig}
-        />
-      </A4Section>
-
-      {tableData && tableData.length > 0 && (
-        <A4Section title={t('data_detail')}>
-          <A4DataTable data={tableData} />
-        </A4Section>
-      )}
-
-      <A4Footer />
-    </A4Canvas>
   )
 }
