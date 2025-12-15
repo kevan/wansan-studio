@@ -28,8 +28,8 @@ jobs:
 
       # [CRITICAL] Generate Icons Script
       # Since we don't commit generated icons to git, generate them on CI
-      - name: Generate Icons
-        run: node scripts/generate-icons.js
+#      - name: Generate Icons
+#        run: node scripts/generate-icons.cjs
         # If your script requires 'png2icons', ensure it is in devDependencies
 
       - name: Typecheck
