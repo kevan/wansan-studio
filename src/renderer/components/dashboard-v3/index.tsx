@@ -135,8 +135,8 @@ export function DashboardCanvasV3({
       : undefined
 
   const gridWidth = isA4 ? PAGE_WIDTH_PX : SCREEN_WIDTH_PX
-  // Force 1.0 scale for Screen mode OR Presentation mode to show actual size
-  const activeScale = isA4 && !isPresentationMode ? zoom / 100 : 1.0
+  // Allow zooming in both modes, but force 1.0 in Presentation Mode
+  const activeScale = isPresentationMode ? 1.0 : zoom / 100
 
   return (
     <div

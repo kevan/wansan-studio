@@ -170,36 +170,34 @@ export function DashboardHeader() {
       {/* RIGHT: Actions */}
       <div className="flex items-center gap-2">
         {/* View Options Group */}
-        {isA4 && (
-          <div className="flex items-center bg-zinc-100 rounded-md p-0.5 border">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 rounded-sm"
-              onClick={() =>
-                updateConfig('zoom', Math.max(50, canvasConfig.zoom - 10))
-              }
-            >
-              <ZoomOut className="h-3.5 w-3.5 text-zinc-500" />
-            </Button>
-            <span className="text-xs w-10 text-center font-medium tabular-nums text-zinc-600 whitespace-nowrap">
-              {canvasConfig.zoom}
-              {isA4 ? '' : '%'}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 rounded-sm"
-              onClick={() =>
-                updateConfig('zoom', Math.min(200, canvasConfig.zoom + 10))
-              }
-            >
-              <ZoomIn className="h-3.5 w-3.5 text-zinc-500" />
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center bg-zinc-100 rounded-md p-0.5 border">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 rounded-sm"
+            onClick={() =>
+              updateConfig('zoom', Math.max(50, canvasConfig.zoom - 10))
+            }
+          >
+            <ZoomOut className="h-3.5 w-3.5 text-zinc-500" />
+          </Button>
+          <span className="text-xs w-10 text-center font-medium tabular-nums text-zinc-600 whitespace-nowrap">
+            {canvasConfig.zoom}
+            {isA4 ? '' : '%'}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 rounded-sm"
+            onClick={() =>
+              updateConfig('zoom', Math.min(200, canvasConfig.zoom + 10))
+            }
+          >
+            <ZoomIn className="h-3.5 w-3.5 text-zinc-500" />
+          </Button>
+        </div>
 
-        {isA4 && <Separator orientation="vertical" className="h-6 mx-1" />}
+        <Separator orientation="vertical" className="h-6 mx-1" />
 
         {isA4 && (
           <div className="flex items-center bg-zinc-100 rounded-md p-0.5 border mr-2">
