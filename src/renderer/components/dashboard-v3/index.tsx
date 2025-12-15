@@ -12,7 +12,13 @@ import { PageLayer } from './page-layer'
 import { LayoutScenario, useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { ChartFullView } from '@/components/report/chart-full-view'
 
-export function DashboardCanvasV3() {
+interface DashboardCanvasV3Props {
+  isPresentationMode?: boolean
+}
+
+export function DashboardCanvasV3({
+  isPresentationMode = false,
+}: DashboardCanvasV3Props) {
   const canvasConfig = useWorkbenchStore(state => state.canvasConfig)
   const setCanvasConfig = useWorkbenchStore(state => state.setCanvasConfig)
   const layoutScenario = useWorkbenchStore(state => state.layoutScenario)
@@ -129,8 +135,8 @@ export function DashboardCanvasV3() {
       : undefined
 
   const gridWidth = isA4 ? PAGE_WIDTH_PX : SCREEN_WIDTH_PX
-  // Force 1.0 scale for Screen mode to show actual size (1920px) with scrollbars if needed
-  const activeScale = isA4 ? zoom / 100 : 1.0
+  // Force 1.0 scale for Screen mode OR Presentation mode to show actual size
+  const activeScale = isA4 && !isPresentationMode ? zoom / 100 : 1.0
 
   return (
     <div

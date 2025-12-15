@@ -411,7 +411,7 @@ function App() {
                       'rounded-lg border border-zinc-200 shadow-sm'
                   )}
                 >
-                  <DashboardCanvasV3 />
+                  <DashboardCanvasV3 isPresentationMode={isPresentationMode} />
                 </div>
               </div>
             </div>
