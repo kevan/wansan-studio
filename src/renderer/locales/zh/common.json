@@ -185,5 +185,15 @@
   "onboarding_finish_body": "工作区已准备就绪，导入数据后即可开始提问分析。",
   "onboarding_back": "上一步",
   "onboarding_next": "下一步",
-  "onboarding_start": "开始使用 Wansan"
+  "onboarding_start": "开始使用 Wansan",
+  "preview_data": "预览数据",
+  "reload_data": "重新加载数据",
+  "remove_file": "移除文件",
+  "rename_alias": "重命名别名",
+  "change_type": "修改类型",
+  "type_boolean": "布尔值",
+  "delete_relationship": "删除关联",
+  "folder_actions_na": "文件夹操作 (不可用)",
+  "file_missing_tooltip": "磁盘上找不到文件",
+  "part_of_relationship": "属于关联的一部分"
 }

@@ -185,5 +185,15 @@
   "onboarding_finish_body": "Your workspace is ready. Import data and start asking questions.",
   "onboarding_back": "Back",
   "onboarding_next": "Next",
-  "onboarding_start": "Start using Wansan"
+  "onboarding_start": "Start using Wansan",
+  "preview_data": "Preview Data",
+  "reload_data": "Reload Data",
+  "remove_file": "Remove File",
+  "rename_alias": "Rename Alias",
+  "change_type": "Change Type",
+  "type_boolean": "Boolean",
+  "delete_relationship": "Delete Relationship",
+  "folder_actions_na": "Folder Actions (N/A)",
+  "file_missing_tooltip": "File not found on disk",
+  "part_of_relationship": "Part of a relationship"
 }

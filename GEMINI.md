@@ -112,3 +112,4 @@ You MUST follow this strict **Dual-Mode Protocol**. Do not write code unless ask
 - Updated `SchemaEditor.tsx` to handle numeric string timestamps (e.g., "1735689600000") by attempting conversion to Number before parsing with Date.
 - Removed manual `sanitizeValue` and `sanitizeFile` from `src/renderer/stores/useFileStore.ts`, allowing `createBigIntStorage` to handle BigInt serialization natively and preventing unnecessary conversion to Number.
 - Restored and enhanced schema preprocessing in `src/main/services/ai.ts` (`preprocessSchemas`). This ensures that even if the Store contains raw timestamps, the AI receives human-readable ISO date strings for better context understanding in `generatePlan`, `fixQuery`, and `getContextAnalysis`.
+- Localized `TreeNode` component's context menu items and tooltips (Data Tree), adding new keys to `common.json` for both English and Chinese.

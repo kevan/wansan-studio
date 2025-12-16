@@ -288,7 +288,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
           {/* Label */}
           <span
             className={`truncate flex-1 ${isMissing ? 'line-through text-red-400 opacity-80' : ''}`}
-            title={isMissing ? 'File not found on disk' : undefined}
+            title={isMissing ? t('file_missing_tooltip') : undefined}
           >
             {data.name}
           </span>
@@ -300,7 +300,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
             </span>
           )}
           {data.isForeignKey && (
-            <span className="ml-1" title="Part of a relationship">
+            <span className="ml-1" title={t('part_of_relationship')}>
               <Link2 className="w-3 h-3 text-indigo-400" />
             </span>
           )}
@@ -313,7 +313,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
           <>
             <ContextMenuItem onClick={handlePreviewFile}>
               <Eye className="w-4 h-4 mr-2" />
-              Preview Data
+              {t('preview_data')}
             </ContextMenuItem>
             <ContextMenuItem
               onClick={handleReload}
@@ -322,7 +322,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
               <RefreshCw
                 className={`w-4 h-4 mr-2 ${reIngest.isPending ? 'animate-spin' : ''}`}
               />
-              Reload Data
+              {t('reload_data')}
             </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem
@@ -330,7 +330,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
               className="text-rose-600 focus:text-rose-600 focus:bg-rose-50"
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              Remove File
+              {t('remove_file')}
             </ContextMenuItem>
           </>
         )}
@@ -339,31 +339,31 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
           <>
             <ContextMenuItem onClick={handleRenameAlias}>
               <Pencil className="w-4 h-4 mr-2" />
-              Rename Alias
+              {t('rename_alias')}
             </ContextMenuItem>
             <ContextMenuSub>
               <ContextMenuSubTrigger>
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Change Type
+                {t('change_type')}
               </ContextMenuSubTrigger>
               <ContextMenuSubContent className="w-32">
                 <ContextMenuItem
                   onClick={() => handleColumnTypeChange('VARCHAR')}
                 >
-                  <Type className="w-4 h-4 mr-2" /> Text
+                  <Type className="w-4 h-4 mr-2" /> {t('format_text')}
                 </ContextMenuItem>
                 <ContextMenuItem
                   onClick={() => handleColumnTypeChange('DOUBLE')}
                 >
-                  <Hash className="w-4 h-4 mr-2" /> Number
+                  <Hash className="w-4 h-4 mr-2" /> {t('format_number')}
                 </ContextMenuItem>
                 <ContextMenuItem onClick={() => handleColumnTypeChange('DATE')}>
-                  <Calendar className="w-4 h-4 mr-2" /> Date
+                  <Calendar className="w-4 h-4 mr-2" /> {t('format_date')}
                 </ContextMenuItem>
                 <ContextMenuItem
                   onClick={() => handleColumnTypeChange('BOOLEAN')}
                 >
-                  <ToggleLeft className="w-4 h-4 mr-2" /> Boolean
+                  <ToggleLeft className="w-4 h-4 mr-2" /> {t('type_boolean')}
                 </ContextMenuItem>
               </ContextMenuSubContent>
             </ContextMenuSub>
@@ -376,13 +376,13 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
             className="text-rose-600 focus:text-rose-600 focus:bg-rose-50"
           >
             <X className="w-4 h-4 mr-2" />
-            Delete Relationship
+            {t('delete_relationship')}
           </ContextMenuItem>
         )}
 
         {data.type === 'folder' && (
           <ContextMenuItem disabled className="text-zinc-400">
-            Folder Actions (N/A)
+            {t('folder_actions_na')}
           </ContextMenuItem>
         )}
       </ContextMenuContent>
