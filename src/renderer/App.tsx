@@ -34,6 +34,7 @@ import { useRemoteConfig } from './hooks/use-remote-config'
 import { UpdateModal } from './components/update-modal'
 import { GlobalErrorHandler } from './components/system/GlobalErrorHandler'
 import { ErrorBoundary } from './components/system/ErrorBoundary'
+import { usePlatform } from './hooks/useIPC'
 
 const LAYOUT_STORAGE_KEY = 'wansan-layout'
 
@@ -81,6 +82,7 @@ function App() {
   const middlePanelRef = useRef<ImperativePanelHandle>(null)
   const rightPanelRef = useRef<ImperativePanelHandle>(null)
   const { t } = useTranslation('common')
+  const { data: platform } = usePlatform()
 
   // Sync AI config to main process on startup
   useEffect(() => {
@@ -259,7 +261,12 @@ function App() {
           onDoubleClick={handleHeaderDoubleClick}
         >
           {/* LEFT ZONE */}
-          <div className="flex items-center gap-4 pl-16 non-draggable shrink-0">
+          <div
+            className={cn(
+              'flex items-center gap-4 non-draggable shrink-0',
+              platform === 'darwin' ? 'pl-16' : 'pl-4'
+            )}
+          >
             <button
               className={`h-8 w-8 rounded-md border border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200 transition-colors ${isLeftCollapsed ? 'text-zinc-400' : ''}`}
               onClick={toggleLeft}
