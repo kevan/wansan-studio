@@ -108,6 +108,8 @@ class WansanApp {
         nodeIntegration: false,
         contextIsolation: true,
         preload: join(app.getAppPath(), 'dist/preload/index.cjs'),
+        // [CRITICAL] Disable DevTools in Production
+        devTools: !app.isPackaged,
       },
       titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
       show: false, // 先隐藏，加载完成后再显示
@@ -141,10 +143,6 @@ class WansanApp {
     this.mainWindow.once('ready-to-show', () => {
       this.mainWindow?.show()
       setDockIcon()
-
-      if (isDev()) {
-        this.mainWindow?.webContents.openDevTools()
-      }
     })
 
     // 窗口关闭事件
