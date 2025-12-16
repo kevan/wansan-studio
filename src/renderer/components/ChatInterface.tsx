@@ -4,6 +4,7 @@ import { ReportCard } from './chat/ReportCard'
 import { ErrorCard } from './chat/error-card'
 import { EmptyState } from './chat/empty-state'
 import { MagicInput } from './chat/magic-input'
+import { TypewriterBlock } from './ui/typewriter-block'
 import {
   User,
   Bot,
@@ -167,8 +168,8 @@ export function ChatInterface({
                       </div>
                     )}
                     {message.status && message.status !== 'error' && (
-                      <div className="mb-3 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-sm text-indigo-800 animate-pulse">
-                        <div className="flex items-center gap-2 font-medium">
+                      <div className="mb-3">
+                        <div className="mb-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-sm text-indigo-800 animate-pulse flex items-center gap-2 font-medium">
                           {message.status === 'planning' ||
                           message.status === 'thinking' ? (
                             <Brain className="h-4 w-4" />
@@ -182,21 +183,39 @@ export function ChatInterface({
                           {message.status === 'executing' &&
                             t('status_executing')}
                         </div>
-                        {message.planSql && (
-                          <pre className="mt-2 max-h-48 overflow-y-auto rounded-md bg-white/80 p-3 text-xs text-zinc-800 border border-indigo-100 font-mono leading-relaxed scrollbar-thin">
-                            <code className="whitespace-pre-wrap block">
-                              {(() => {
-                                try {
-                                  return format(message.planSql, {
-                                    language: 'postgresql',
-                                  })
-                                } catch (e) {
-                                  return message.planSql
-                                }
-                              })()}
-                            </code>
-                          </pre>
-                        )}
+
+                        {(message.status === 'planning' ||
+                          message.status === 'executing') &&
+                          message.planSql && (
+                            <div className="bg-zinc-50 p-4 rounded-lg border border-zinc-200 mt-2">
+                              <div className="text-xs font-bold text-zinc-400 mb-2 flex items-center gap-2">
+                                <Bot className="w-3 h-3" /> AI PLAN
+                              </div>
+
+                              {/* Typing Reasoning */}
+                              {message.planReasoning && (
+                                <TypewriterBlock
+                                  content={message.planReasoning}
+                                  className="text-zinc-600 mb-4 italic"
+                                />
+                              )}
+
+                              {/* Typing SQL */}
+                              <div className="bg-zinc-900 text-green-400 p-3 rounded-md overflow-x-auto">
+                                <TypewriterBlock
+                                  content={(() => {
+                                    try {
+                                      return format(message.planSql, {
+                                        language: 'postgresql',
+                                      })
+                                    } catch (e) {
+                                      return message.planSql
+                                    }
+                                  })()}
+                                />
+                              </div>
+                            </div>
+                          )}
                       </div>
                     )}
 
