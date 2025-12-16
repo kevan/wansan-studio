@@ -91,3 +91,17 @@ You MUST follow this strict **Dual-Mode Protocol**. Do not write code unless ask
 *   Chat interface for "Text-to-SQL".
 *   Basic Dashboard/Report generation.
 *   PDF Export.
+
+## Gemini Added Memories
+- Added multilingual support (i18n) to Sidebar and SettingsDialog components, creating new keys in common.json and settings.json.
+- The project uses react-i18next with namespaces 'common' and 'settings' for localization.
+- Implemented gesture support (Zoom: Ctrl+Wheel, Pan: Space+Drag) in DashboardCanvasV3.
+- Fixed A4 dashboard scrolling issue by changing transform origin to 'top left' and using an explicitly sized wrapper with margin: auto.
+- Fixed A4 dashboard zoom overflow issue in DashboardCanvasV3 by using origin-top-left and a proxy wrapper div with scaled dimensions.
+- 每次任务完成后执行一次 type-check
+- 每次任务完成后，处理多语言适配
+- ElectronAPI 类型定义在 useIPC.ts
+- Implemented Markdown export functionality for chat history, restricted to Pro users. Added 'hide-on-export' class to PageLayer to clean up A4 exports. Fixed DialogContent accessibility warning in SettingsDialog.
+- Added support email (jin4074@gmail.com) to Settings > About section with mailto link functionality.
+- Changed default AI provider to DeepSeek in useSettingsStore. Added support email (jin4074@gmail.com) to Settings dialog.
+- Changed ReportCard UI to show controls only on hover. Adjusted A4 layout rows to 27 to fix overflow.
