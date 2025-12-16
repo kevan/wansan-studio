@@ -7,7 +7,7 @@ export const PAGE_HEIGHT_PX = 1123
 export const PAGE_GAP_PX = 20
 export const GRID_ROW_HEIGHT = 30
 export const GRID_MARGIN_Y = 10
-export const ROWS_PER_PAGE = 28 // floor(1123 / (30 + 10))
+export const ROWS_PER_PAGE = 27 // 28 rows causes overflow (1130px > 1123px)
 
 interface PageLayerProps {
   isA4: boolean

@@ -105,14 +105,13 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
         {/* Controls */}
         <div
           className={cn(
-            'absolute top-2 right-2 transition-opacity z-30 flex gap-2 card-controls',
-            isDashboard ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            'absolute top-2 right-2 transition-opacity z-30 flex gap-2 card-controls opacity-0 group-hover:opacity-100'
           )}
         >
           {isDashboard && (
             <button
               type="button"
-              className="drag-handle flex h-8 w-8 items-center justify-center rounded-md border border-dashed border-zinc-200 bg-white/90 text-zinc-400 shadow-sm opacity-0 transition hover:text-zinc-600 group-hover:opacity-100 cursor-grab active:cursor-grabbing"
+              className="drag-handle flex h-8 w-8 items-center justify-center rounded-md border border-dashed border-zinc-200 bg-white/90 text-zinc-400 shadow-sm transition hover:text-zinc-600 cursor-grab active:cursor-grabbing"
               title="Drag to rearrange"
             >
               <GripHorizontal className="w-4 h-4" />

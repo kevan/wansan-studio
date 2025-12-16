@@ -378,6 +378,16 @@ body.printing .shadow {
    Shadow tweaks for PDF/print
    ================================ */
 
+/* Resizable Handle visibility on hover */
+.react-resizable-handle {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.group:hover .react-resizable-handle {
+  opacity: 1;
+}
+
 /* Remove heavier shadows on second row and beyond in the canvas */
 #report-canvas-content .react-grid-item:nth-child(n + 2) > div {
   box-shadow: none !important;
