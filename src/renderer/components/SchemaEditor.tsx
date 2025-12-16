@@ -165,7 +165,13 @@ function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
       lowerType.includes('timestamp')
     ) {
       try {
-        const date = new Date(value)
+        let dateVal = value
+        // 如果是数字字符串，转换为数字
+        if (typeof value === 'string' && /^\d+$/.test(value)) {
+          dateVal = Number(value)
+        }
+
+        const date = new Date(dateVal)
         // 只有有效日期才格式化
         if (!isNaN(date.getTime())) {
           return date.toLocaleString()

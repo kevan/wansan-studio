@@ -105,3 +105,10 @@ You MUST follow this strict **Dual-Mode Protocol**. Do not write code unless ask
 - Added support email (jin4074@gmail.com) to Settings > About section with mailto link functionality.
 - Changed default AI provider to DeepSeek in useSettingsStore. Added support email (jin4074@gmail.com) to Settings dialog.
 - Changed ReportCard UI to show controls only on hover. Adjusted A4 layout rows to 27 to fix overflow.
+- Refactored `parseCSVFile`, `parseJsonFile`, and `parseExcelFile` in `src/main/services/file.ts` to use consistent schema fetching (`PRAGMA table_info`) and sampling (`getSampleValues`) logic.
+- Implemented `inferTypeFromSemanticName` in `src/main/services/file.ts` to override numeric types (INT, BIGINT, etc.) to `TIMESTAMP` if column names suggest date/time (e.g., "created_at", "time").
+- Updated `processSampleValue` in `src/shared/serialization.ts` to prioritize `columnType` checking over generic BigInt stringification. This ensures that BigInt timestamps are correctly formatted as ISO strings instead of raw numeric strings, fixing the date display issue in the frontend.
+- Updated `formatDateValue` in `src/shared/serialization.ts` to explicitly handle `bigint` inputs AND numeric string inputs (e.g. "1735689600000"). This fixes the issue where AI context was receiving raw timestamp strings instead of formatted dates.
+- Updated `SchemaEditor.tsx` to handle numeric string timestamps (e.g., "1735689600000") by attempting conversion to Number before parsing with Date.
+- Removed manual `sanitizeValue` and `sanitizeFile` from `src/renderer/stores/useFileStore.ts`, allowing `createBigIntStorage` to handle BigInt serialization natively and preventing unnecessary conversion to Number.
+- Restored and enhanced schema preprocessing in `src/main/services/ai.ts` (`preprocessSchemas`). This ensures that even if the Store contains raw timestamps, the AI receives human-readable ISO date strings for better context understanding in `generatePlan`, `fixQuery`, and `getContextAnalysis`.

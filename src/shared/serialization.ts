@@ -144,7 +144,7 @@ export function summarizeJson(value: any, depth = 0): any {
 
 /**
  * Standardize Date/Time values to ISO string
- * Handles Date objects, number timestamps, and parseable strings
+ * Handles Date objects, number/bigint timestamps, and parseable strings
  */
 export function formatDateValue(val: any): string | null {
   if (val === null || val === undefined) return null
@@ -155,10 +155,19 @@ export function formatDateValue(val: any): string | null {
     dateObj = val
   } else if (typeof val === 'number') {
     dateObj = new Date(val)
+  } else if (typeof val === 'bigint') {
+    // Convert BigInt to number for Date constructor
+    // Note: Precision loss possible for extremely large values, but safe for standard timestamps
+    dateObj = new Date(Number(val))
   } else if (typeof val === 'string') {
-    const d = new Date(val)
-    if (!isNaN(d.getTime())) {
-      dateObj = d
+    // Check if string is a numeric timestamp
+    if (/^\d+$/.test(val)) {
+      dateObj = new Date(Number(val))
+    } else {
+      const d = new Date(val)
+      if (!isNaN(d.getTime())) {
+        dateObj = d
+      }
     }
   }
 
@@ -217,12 +226,8 @@ export function formatForDisplay(value: any): string {
  * Handles: BigInt, Date (ISO), JSON summarization, and string truncation
  */
 export function processSampleValue(val: any, columnType?: string): any {
-  // Handle BigInt
-  if (typeof val === 'bigint') {
-    return val.toString()
-  }
-
   // Handle Date/Time Types if columnType is provided
+  // Priority: Check this BEFORE generic BigInt stringification
   if (columnType) {
     const lowerType = columnType.toLowerCase()
     if (
@@ -233,6 +238,11 @@ export function processSampleValue(val: any, columnType?: string): any {
       const formattedDate = formatDateValue(val)
       if (formattedDate) return formattedDate
     }
+  }
+
+  // Handle BigInt (Generic fallback)
+  if (typeof val === 'bigint') {
+    return val.toString()
   }
 
   // Handle Float: keep 4 decimal places

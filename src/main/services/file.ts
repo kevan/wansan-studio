@@ -10,67 +10,47 @@ import {
 import { DEMO_DATA } from '../../shared/demo-data'
 import { ReloadResult, ColumnSchema, ColumnType } from '../../shared/types'
 
-// Intelligent Time Anchor Detection
-function findTimeAnchor(columns: ColumnSchema[]): string | null {
-  // Priority 1: True Date/Timestamp Types (Inferred by DuckDB)
-  const typeMatch = columns.find(col => {
-    const type = (col.type || '').toUpperCase()
-    return type.includes('DATE') || type.includes('TIMESTAMP')
-  })
-  if (typeMatch) return typeMatch.name
+// Helper to infer TIMESTAMP type from column name if DuckDB detects it as number
+function inferTypeFromSemanticName(name: string, currentType: string): string {
+  const lowerName = name.toLowerCase()
+  const lowerType = currentType.toLowerCase()
 
-  // Priority 2: Semantic Naming (Fall back for Strings)
-  const keywords = [
-    'date',
-    'time',
-    'year',
-    'month',
-    'day',
-    '日期',
-    '时间',
-    '年份',
-    'created_at',
-    'updated_at',
-  ]
-  const nameMatch = columns.find(col =>
-    keywords.some(kw => (col.name || '').toLowerCase().includes(kw))
-  )
+  // If already a date/time type, keep it
+  if (
+    lowerType.includes('date') ||
+    lowerType.includes('time') ||
+    lowerType.includes('timestamp')
+  ) {
+    return currentType
+  }
 
-  return nameMatch ? nameMatch.name : null
+  // If it's a numeric type, and name looks like a timestamp
+  if (
+    lowerType.includes('int') ||
+    lowerType.includes('double') ||
+    lowerType.includes('float') ||
+    lowerType.includes('decimal') ||
+    lowerType.includes('number')
+  ) {
+    const keywords = [
+      'time',
+      'date',
+      'created_at',
+      'updated_at',
+      'timestamp',
+      '日期',
+      '时间',
+    ]
+    if (keywords.some(kw => lowerName.includes(kw))) {
+      return 'TIMESTAMP'
+    }
+  }
+
+  return currentType
 }
 
 export class FileService {
   constructor(private databaseService: DatabaseService) {}
-
-  private async ingestCSVWithFallback(
-    filePath: string,
-    tableName: string
-  ): Promise<void> {
-    const normalizedPath = filePath.replace(/\\/g, '/')
-    const createWithAuto = `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${normalizedPath}', SAMPLE_SIZE=-1)`
-    try {
-      await this.databaseService.query(createWithAuto)
-      return
-    } catch (error) {
-      console.warn('read_csv_auto failed, retrying with manual options', error)
-      // Clear any partial table before retrying
-      await this.databaseService.query(`DROP TABLE IF EXISTS "${tableName}"`)
-      const createWithDefaults = `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv('${normalizedPath}', HEADER=TRUE, DELIM=',')`
-      try {
-        await this.databaseService.query(createWithDefaults)
-        return
-      } catch (fallbackError) {
-        console.error('CSV ingestion failed after fallback', fallbackError)
-        throw new Error(
-          `Failed to parse CSV file: ${
-            fallbackError instanceof Error
-              ? fallbackError.message
-              : 'Unknown error'
-          }`
-        )
-      }
-    }
-  }
 
   async parseFile(filePath: string) {
     console.log('parseFile', filePath)
@@ -89,34 +69,6 @@ export class FileService {
     }
   }
 
-  private async enrichSchemaWithSamples(tableName: string, schema: any) {
-    if (!schema.columns) return schema
-
-    const timeAnchor = findTimeAnchor(schema.columns)
-    const sourceTable = timeAnchor
-      ? `(SELECT * FROM "${tableName}" ORDER BY "${timeAnchor}" DESC LIMIT 1000)`
-      : `"${tableName}"`
-
-    for (const col of schema.columns) {
-      try {
-        const query = `
-          SELECT DISTINCT "${col.name}"::VARCHAR as val 
-          FROM ${sourceTable} 
-          WHERE "${col.name}" IS NOT NULL 
-          LIMIT 3
-        `
-
-        const rows = await this.databaseService.query(query)
-        col.sampleValues = rows.map((r: any) => r.val)
-      } catch (error) {
-        console.warn(`Failed to sample ${col.name}`, error)
-        col.sampleValues = []
-      }
-    }
-
-    return schema
-  }
-
   private async parseExcelFile(filePath: string) {
     try {
       const fileBuffer = await fs.readFile(filePath)
@@ -130,17 +82,6 @@ export class FileService {
       const results = []
 
       for (const schemaItem of schemas) {
-        // Post-ingestion queries to get additional info
-        let schema = await this.databaseService.getSchema(schemaItem.tableName)
-        if (schemaItem.description) {
-          schema.description = schemaItem.description
-        }
-
-        schema = await this.enrichSchemaWithSamples(
-          schemaItem.tableName,
-          schema
-        )
-
         const preview = await this.databaseService.query(
           `SELECT * FROM "${schemaItem.tableName}" LIMIT 5`
         )
@@ -149,37 +90,23 @@ export class FileService {
         )
 
         // Try to extract sheet name from description if it matches format "File - Sheet"
-        // This is a bit hacky, but consistent with ingestion.ts logic
         let sheetName: string | undefined
         if (schemaItem.description && schemaItem.description.includes(' - ')) {
           const parts = schemaItem.description.split(' - ')
           if (parts.length > 1) {
             sheetName = parts.slice(1).join(' - ')
           }
-        } else if (schemas.length === 1) {
-          // Single sheet, maybe don't set sheetName explicitly or set to 'Sheet1' if we can't determine?
-          // Actually ingestion.ts doesn't return sheetName in Schema, only description.
-          // We can proceed without sheetName or infer it if we want.
         }
 
         results.push({
           tableName: schemaItem.tableName,
-          schema,
+          schema: schemaItem,
           rowCount: countResult[0].count,
           preview,
           sheetName,
         })
       }
 
-      // Return array or single object if only 1?
-      // To be consistent and allow frontend to iterate, array is better.
-      // But for backward compatibility with other file types (CSV/JSON) which return single object...
-      // I should probably wrap CSV/JSON in array too or make frontend handle both.
-      // Let's make parseFile always return array?
-      // No, parseCSVFile returns single object.
-      // If I change parseFile return type, I need to standardize.
-
-      // Let's return array for Excel, and update frontend to handle Array | Object.
       return results
     } catch (error) {
       throw new Error(
@@ -203,11 +130,35 @@ export class FileService {
         `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${tempCsvName}', SAMPLE_SIZE=-1, auto_detect=true)`
       )
 
-      // Get schema and preview data
-      let schema = await this.databaseService.getSchema(tableName)
-      schema.description = fileName
+      // Fetch schema using PRAGMA table_info for consistency
+      const columnsResult = await this.databaseService.query(
+        `PRAGMA table_info('${tableName}');`
+      )
 
-      schema = await this.enrichSchemaWithSamples(tableName, schema)
+      const columns: ColumnSchema[] = []
+      for (const col of columnsResult) {
+        // Apply semantic type inference
+        const finalType = inferTypeFromSemanticName(col.name, col.type)
+
+        const sampleValues = await getSampleValues(
+          this.databaseService,
+          tableName,
+          col.name,
+          finalType
+        )
+        columns.push({
+          name: col.name,
+          safeName: col.name,
+          type: finalType as ColumnType,
+          sampleValues,
+        })
+      }
+
+      const schema = {
+        tableName,
+        description: fileName,
+        columns,
+      }
 
       const preview = await this.databaseService.query(
         `SELECT * FROM "${tableName}" LIMIT 5`
@@ -216,7 +167,6 @@ export class FileService {
         `SELECT COUNT(*) as count FROM "${tableName}"`
       )
 
-      // Wrap in array for consistency?
       return [
         {
           tableName,
@@ -247,11 +197,35 @@ export class FileService {
         `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${tempJsonName}', format='auto', auto_detect=true)`
       )
 
-      // Get schema and preview data
-      let schema = await this.databaseService.getSchema(tableName)
-      schema.description = fileName
+      // Fetch schema using PRAGMA table_info for consistency
+      const columnsResult = await this.databaseService.query(
+        `PRAGMA table_info('${tableName}');`
+      )
 
-      schema = await this.enrichSchemaWithSamples(tableName, schema)
+      const columns: ColumnSchema[] = []
+      for (const col of columnsResult) {
+        // Apply semantic type inference
+        const finalType = inferTypeFromSemanticName(col.name, col.type)
+
+        const sampleValues = await getSampleValues(
+          this.databaseService,
+          tableName,
+          col.name,
+          finalType
+        )
+        columns.push({
+          name: col.name,
+          safeName: col.name,
+          type: finalType as ColumnType,
+          sampleValues,
+        })
+      }
+
+      const schema = {
+        tableName,
+        description: fileName,
+        columns,
+      }
 
       const preview = await this.databaseService.query(
         `SELECT * FROM "${tableName}" LIMIT 5`
@@ -347,17 +321,20 @@ export class FileService {
       )
 
       for (const col of columnsResult) {
+        // Apply semantic type inference
+        const finalType = inferTypeFromSemanticName(col.name, col.type)
+
         const sampleValues = await getSampleValues(
           this.databaseService,
           tableName,
           col.name,
-          col.type
+          finalType
         )
 
         columns.push({
           name: col.name,
           safeName: col.name,
-          type: col.type as ColumnType,
+          type: finalType as ColumnType,
           sampleValues,
         })
       }
@@ -380,17 +357,20 @@ export class FileService {
       )
 
       for (const col of columnsResult) {
+        // Apply semantic type inference
+        const finalType = inferTypeFromSemanticName(col.name, col.type)
+
         const sampleValues = await getSampleValues(
           this.databaseService,
           tableName,
           col.name,
-          col.type
+          finalType
         )
 
         columns.push({
           name: col.name,
           safeName: col.name,
-          type: col.type as ColumnType,
+          type: finalType as ColumnType,
           sampleValues,
         })
       }

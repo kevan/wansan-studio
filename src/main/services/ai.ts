@@ -69,6 +69,18 @@ export class AIService {
     return this.openai
   }
 
+  private preprocessSchemas(schemas: TableSchema[]): TableSchema[] {
+    return schemas.map(schema => ({
+      ...schema,
+      columns: schema.columns.map(col => ({
+        ...col,
+        sampleValues: (col.sampleValues || []).map(val =>
+          processSampleValue(val, col.type)
+        ),
+      })),
+    }))
+  }
+
   /**
    * Generates an analysis plan (SQL + viz config) without executing it.
    */
@@ -80,10 +92,14 @@ export class AIService {
     language: 'en' | 'zh' = 'en'
   ): Promise<AIAnalysisResult> {
     const client = this.requireOpenAI()
+    
+    // Preprocess schemas to ensure sample values are formatted (e.g. Dates)
+    const processedSchemas = this.preprocessSchemas(schemas)
+
     const aiResult = await generateAnalysis(
       client,
       userQuery,
-      schemas,
+      processedSchemas,
       relations,
       context,
       this.model,
@@ -123,7 +139,11 @@ export class AIService {
     // Note: Need to update imports at the top of the file
     const { fixSQL } = await import('../engine/ai-bridge')
     const client = this.requireOpenAI()
-    return fixSQL(client, originalSql, error, schemas, this.model)
+    
+    // Also preprocess schemas for fixQuery context
+    const processedSchemas = this.preprocessSchemas(schemas)
+    
+    return fixSQL(client, originalSql, error, processedSchemas, this.model)
   }
 
   /**
@@ -135,16 +155,8 @@ export class AIService {
   ): Promise<ContextAnalysisResult> {
     const client = this.requireOpenAI()
 
-    // Process sample values in schemas to handle BigInt, format dates, and truncate/summarize
-    const processedSchemas = schemas.map(schema => ({
-      ...schema,
-      columns: schema.columns.map(col => ({
-        ...col,
-        sampleValues: (col.sampleValues || []).map(val =>
-          processSampleValue(val, col.type)
-        ),
-      })),
-    }))
+    // Preprocess schemas to ensure sample values are formatted
+    const processedSchemas = this.preprocessSchemas(schemas)
 
     return analyzeContext(client, processedSchemas, this.model, language)
   }

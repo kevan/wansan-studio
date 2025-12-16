@@ -119,27 +119,6 @@ const initialState = {
   isRestoring: false,
 }
 
-const sanitizeValue = (value: any) => {
-  // 处理 bigint
-  if (typeof value === 'bigint') return Number(value)
-  // 处理 Date 对象
-  if (value instanceof Date) return value.getTime()
-  // 返回原值
-  return value
-}
-
-const sanitizeFile = (file: FileNode): FileNode => ({
-  ...file,
-  columns: file.columns.map(col => ({
-    ...col,
-    sampleValues: (col.sampleValues || []).map(sanitizeValue),
-  })),
-  rowCount: sanitizeValue(file.rowCount),
-  size: sanitizeValue(file.size),
-  lastModified: sanitizeValue(file.lastModified),
-  createdAt: sanitizeValue(file.createdAt),
-})
-
 export const useFileStore = create<ProjectState>()(
   persist(
     (set, get) => ({
@@ -384,7 +363,7 @@ export const useFileStore = create<ProjectState>()(
       storage: createBigIntStorage(),
       partialize: state => ({
         projectName: state.projectName,
-        files: state.files.map(sanitizeFile),
+        files: state.files,
         relations: state.relations,
         activeView: state.activeView,
         suggestedPrompts: state.suggestedPrompts,
