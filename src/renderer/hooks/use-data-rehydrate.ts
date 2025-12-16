@@ -59,6 +59,7 @@ export function useDataRehydrate() {
             const result = await reIngestFile({
               filePath: file.path,
               tableName: file.tableName,
+              sheetName: file.sheetName,
             })
             if (cancelled) return
             reloadFile(file.id, result)
