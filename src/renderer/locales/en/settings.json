@@ -65,7 +65,9 @@
     "tagline": "Local-first BI desktop app.",
     "disclaimer_prefix": "By using this software, you agree to the ",
     "disclaimer_link": "Legal Disclaimer",
-    "disclaimer_dialog_description": "Please read the full legal disclaimer before using the software."
+    "disclaimer_dialog_description": "Please read the full legal disclaimer before using the software.",
+    "contact_support": "Contact Support",
+    "support_email": "jin4074@gmail.com"
   },
   "debug_export_button": "Export Debug Logs",
   "onboarding": {

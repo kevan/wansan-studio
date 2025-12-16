@@ -69,7 +69,9 @@
     "github": "GitHub",
     "disclaimer_prefix": "使用本软件即代表您已同意",
     "disclaimer_link": "免责声明",
-    "disclaimer_dialog_description": "在使用本软件前，请仔细阅读完整的免责声明。"
+    "disclaimer_dialog_description": "在使用本软件前，请仔细阅读完整的免责声明。",
+    "contact_support": "联系支持",
+    "support_email": "jin4074@gmail.com"
   },
   "debug_export_button": "导出调试日志",
   "onboarding": {

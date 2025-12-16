@@ -1,15 +1,15 @@
 export const AI_PROVIDERS = {
-  openai: {
-    name: 'OpenAI',
-    baseUrl: 'https://api.openai.com/v1',
-    models: ['gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo'],
-    getKeyUrl: 'https://platform.openai.com/api-keys',
-  },
   deepseek: {
     name: 'DeepSeek (深度求索)',
     baseUrl: 'https://api.deepseek.com',
     models: ['deepseek-chat', 'deepseek-coder'],
     getKeyUrl: 'https://platform.deepseek.com/api_keys',
+  },
+  openai: {
+    name: 'OpenAI',
+    baseUrl: 'https://api.openai.com/v1',
+    models: ['gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo'],
+    getKeyUrl: 'https://platform.openai.com/api-keys',
   },
   moonshot: {
     name: 'Moonshot (Kimi)',

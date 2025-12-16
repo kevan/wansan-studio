@@ -88,9 +88,9 @@ const initialSettingsState: Omit<
   | 'setRemoteConfig'
   | 'dismissAnnouncement'
 > = {
-  provider: 'openai',
+  provider: 'deepseek',
   apiKey: '',
-  ...getProviderDefaults('openai'),
+  ...getProviderDefaults('deepseek'),
   language: detectDefaultLanguage(),
   hasCompletedOnboarding: false,
   isActivated: false,

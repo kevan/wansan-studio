@@ -495,6 +495,24 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                    </span>.
                 </div>
 
+                <div className="mt-4 text-xs text-zinc-500">
+                  {t('about.contact_support')}:{' '}
+                  <a
+                    href={`mailto:${t('about.support_email')}`}
+                    className="text-indigo-600 hover:underline"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (window.electronAPI?.openExternal) {
+                        void window.electronAPI.openExternal(`mailto:${t('about.support_email')}`);
+                      } else {
+                        window.open(`mailto:${t('about.support_email')}`);
+                      }
+                    }}
+                  >
+                    {t('about.support_email')}
+                  </a>
+                </div>
+
                 <Button
                   variant="outline"
                   size="sm"
