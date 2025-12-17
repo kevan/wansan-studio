@@ -45,6 +45,7 @@ interface ProjectState extends ProjectData {
   // 5. File Actions (Global)
   addFile: (file: FileNode) => void
   removeFile: (id: string) => void
+  replaceFile: (fileId: string, newPath: string) => Promise<void>
 
   // 6. IO
   loadProject: (data: ProjectData) => void
@@ -307,6 +308,64 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set(state => ({
       files: state.files.filter(f => f.id !== id),
     })),
+
+  replaceFile: async (fileId: string, newPath: string) => {
+    const file = get().files.find(f => f.id === fileId)
+    if (!file) return
+
+    try {
+        set(state => ({
+            files: state.files.map(f => f.id === fileId ? { ...f, status: 'processing' } : f)
+        }))
+
+        // 1. Trigger Backend Re-ingest
+        // We assume reIngestFile exists on electronAPI
+        const result = await window.electronAPI.reIngestFile(newPath, file.tableName, file.sheetName)
+        
+        if (!result.success || !result.data) {
+             throw new Error(result.error || 'Re-ingest failed')
+        }
+
+        const { lastModified, newColumns } = result.data
+
+        // 2. Fetch new row count
+        // We use runSQL to count rows
+        let rowCount = 0
+        try {
+            const countRes = await window.electronAPI.runSQL(`SELECT COUNT(*) as c FROM "${file.tableName}"`)
+            if (countRes.success && countRes.data && countRes.data.length > 0) {
+                // DuckDB returns BigInt for count usually, verify
+                const c = countRes.data[0].c
+                rowCount = typeof c === 'bigint' ? Number(c) : Number(c)
+            }
+        } catch (e) {
+            console.warn('Failed to fetch row count after replace', e)
+        }
+
+        // 3. Update Store
+        set(state => ({
+            files: state.files.map(f => f.id === fileId ? { 
+                ...f, 
+                path: newPath, 
+                lastModified: lastModified || Date.now(),
+                columns: newColumns,
+                rowCount: rowCount,
+                status: 'ready',
+                error: undefined
+            } : f)
+        }))
+
+    } catch (error: any) {
+        console.error('replaceFile failed', error)
+        set(state => ({
+            files: state.files.map(f => f.id === fileId ? { 
+                ...f, 
+                status: 'error',
+                error: error.message || 'Failed to replace file'
+            } : f)
+        }))
+    }
+  },
 
   loadProject: (data: ProjectData) => set({ ...data }),
 

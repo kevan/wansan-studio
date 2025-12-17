@@ -72,8 +72,8 @@ export function Sidebar(_props: SidebarProps) {
       </div>
 
       {/* Footer */}
-      <div className="p-2 mt-auto border-t border-zinc-200 dark:border-zinc-800 flex flex-col gap-2 bg-zinc-50 dark:bg-zinc-900 z-10">
-        {viewMode === 'sessions' && (
+      {viewMode === 'sessions' && (
+        <div className="p-2 mt-auto border-t border-zinc-200 dark:border-zinc-800 flex flex-col gap-2 bg-zinc-50 dark:bg-zinc-900 z-10">
           <Button
             variant="outline"
             className="w-full justify-start gap-2 h-10 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
@@ -82,70 +82,70 @@ export function Sidebar(_props: SidebarProps) {
             <Database className="w-4 h-4" />
             <span>{t('data_assets', 'Data Assets')}</span>
           </Button>
-        )}
 
-        {/* Status Card & Settings (Shared) */}
-        <div
-          onClick={() =>
-            document.dispatchEvent(
-              new CustomEvent('open-settings', { detail: 'general' })
-            )
-          }
-          className={cn(
-            'relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all border group',
-            'bg-white dark:bg-black/20 border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700',
-            !settings.isActivated &&
-              'hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10'
-          )}
-        >
-          {settings.isActivated ? (
-            <>
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-yellow-50 border border-yellow-100">
-                <Crown className="w-4 h-4 text-yellow-600 fill-yellow-600" />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-bold text-zinc-700 dark:text-zinc-200 truncate">
-                  {t('sidebar.pro_active')}
-                </span>
-                <span className="text-[10px] text-zinc-400 truncate">
-                  {t('sidebar.license_active')}
-                </span>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-50 border border-indigo-100 group-hover:bg-indigo-100 group-hover:scale-105 transition-all">
-                <Sparkles className="w-4 h-4 text-indigo-600" />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-bold text-zinc-700 dark:text-zinc-200 group-hover:text-indigo-700 truncate">
-                  {t('sidebar.trial_mode')}
-                </span>
-                <span className="text-[10px] text-zinc-400 group-hover:text-indigo-500/80 truncate">
-                  {t('sidebar.unlock_full_access')}
-                </span>
-              </div>
-            </>
-          )}
+          {/* Status Card & Settings (Shared) */}
+          <div
+            onClick={() =>
+              document.dispatchEvent(
+                new CustomEvent('open-settings', { detail: 'general' })
+              )
+            }
+            className={cn(
+              'relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all border group',
+              'bg-white dark:bg-black/20 border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700',
+              !settings.isActivated &&
+                'hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10'
+            )}
+          >
+            {settings.isActivated ? (
+              <>
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-yellow-50 border border-yellow-100">
+                  <Crown className="w-4 h-4 text-yellow-600 fill-yellow-600" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-bold text-zinc-700 dark:text-zinc-200 truncate">
+                    {t('sidebar.pro_active')}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 truncate">
+                    {t('sidebar.license_active')}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-50 border border-indigo-100 group-hover:bg-indigo-100 group-hover:scale-105 transition-all">
+                  <Sparkles className="w-4 h-4 text-indigo-600" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-bold text-zinc-700 dark:text-zinc-200 group-hover:text-indigo-700 truncate">
+                    {t('sidebar.trial_mode')}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 group-hover:text-indigo-500/80 truncate">
+                    {t('sidebar.unlock_full_access')}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+
+          <SettingsDialog
+            trigger={
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 text-zinc-500 hover:text-foreground h-8"
+                onClick={() =>
+                  document.dispatchEvent(
+                    new CustomEvent('open-settings', { detail: 'ai' })
+                  )
+                }
+              >
+                <Settings className="w-4 h-4" />
+                <span className="text-xs">{t('settings')}</span>
+              </Button>
+            }
+          />
         </div>
-
-        <SettingsDialog
-          trigger={
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 text-zinc-500 hover:text-foreground h-8"
-              onClick={() =>
-                document.dispatchEvent(
-                  new CustomEvent('open-settings', { detail: 'ai' })
-                )
-              }
-            >
-              <Settings className="w-4 h-4" />
-              <span className="text-xs">{t('settings')}</span>
-            </Button>
-          }
-        />
-      </div>
+      )}
     </aside>
   )
 }

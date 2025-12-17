@@ -99,6 +99,8 @@ export interface ProjectState {
     result: { lastModified: number; newColumns: ColumnSchema[] }
   ) => number // Returns dropped relations count
 
+  replaceFile: (fileId: string, newPath: string) => Promise<void>
+
   // 重置
   reset: () => void
 }
@@ -354,6 +356,88 @@ export const useFileStore = create<ProjectState>()(
           }
         })
         return droppedRelationsCount
+      },
+
+      replaceFile: async (fileId, newPath) => {
+        const file = get().files.find(f => f.id === fileId)
+        if (!file) return
+
+        try {
+          // Optimistic update status
+          set(state => ({
+            files: state.files.map(f =>
+              f.id === fileId ? { ...f, status: 'processing' } : f
+            ),
+          }))
+
+          // 1. Re-ingest
+          const result = await window.electronAPI.reIngestFile(
+            newPath,
+            file.tableName,
+            file.sheetName
+          )
+
+          if (!result.success || !result.data) {
+            throw new Error(result.error || 'Re-ingest failed')
+          }
+
+          const { lastModified, newColumns } = result.data
+
+          // 2. Get Row Count
+          let rowCount = 0
+          try {
+            const countRes = await window.electronAPI.runSQL(
+              `SELECT COUNT(*) as c FROM "${file.tableName}"`
+            )
+            if (
+              countRes.success &&
+              countRes.data &&
+              countRes.data.length > 0
+            ) {
+              const c = countRes.data[0].c
+              rowCount = Number(c)
+            }
+          } catch (e) {
+            console.warn('Failed to fetch row count after replace', e)
+          }
+
+          // 3. Update Store
+          // Reuse reloadFile logic for column merging?
+          // reloadFile returns dropped count, but updates state internally.
+          // But reloadFile does NOT update path.
+          // So we should manually update or call reloadFile then update path.
+          // Calling reloadFile is better to preserve user column configs.
+          
+          get().reloadFile(fileId, { lastModified, newColumns })
+
+          set(state => ({
+            files: state.files.map(f =>
+              f.id === fileId
+                ? {
+                    ...f,
+                    path: newPath,
+                    rowCount,
+                    status: 'ready',
+                    error: undefined,
+                  }
+                : f
+            ),
+          }))
+        } catch (error: any) {
+          console.error('replaceFile failed', error)
+          set(state => ({
+            files: state.files.map(f =>
+              f.id === fileId
+                ? {
+                    ...f,
+                    status: 'error',
+                    error: error.message || 'Failed to replace file',
+                  }
+                : f
+            ),
+          }))
+          throw error // Propagate to caller for Toast
+        }
       },
 
       reset: () => set(initialState),

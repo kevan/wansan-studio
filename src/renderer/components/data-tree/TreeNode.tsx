@@ -53,6 +53,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
     setView,
     removeRelation,
     updateColumn,
+    replaceFile,
     files,
   } = useFileStore()
   const { addToast } = useToastStore()
@@ -158,6 +159,25 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
       type: 'info',
       duration: 2000,
     })
+  }
+
+  const handleReplaceFile = async () => {
+    if (!data.fileId) return
+    if (!window.electronAPI) return
+
+    const result = await window.electronAPI.selectFile()
+    if (result.success && result.data && typeof result.data === 'string') {
+        const loadingToast = addToast({ title: t('replacing_file'), type: 'info', duration: 0 })
+        try {
+            await replaceFile(data.fileId, result.data)
+            addToast({ title: t('file_replaced'), type: 'success', duration: 2000 })
+        } catch (e) {
+            addToast({ title: t('replace_failed'), description: String(e), type: 'error' })
+        } finally {
+            // Dismiss loading toast if possible, or let it timeout? 
+            // Current toast store doesn't support dismiss by ID easily.
+        }
+    }
   }
 
   const handleReload = async () => {
@@ -314,6 +334,10 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
             <ContextMenuItem onClick={handlePreviewFile}>
               <Eye className="w-4 h-4 mr-2" />
               {t('preview_data')}
+            </ContextMenuItem>
+            <ContextMenuItem onClick={handleReplaceFile}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              {t('replace_data_source')}
             </ContextMenuItem>
             <ContextMenuItem
               onClick={handleReload}
