@@ -1,0 +1,29 @@
+import type { Layout } from 'react-grid-layout'
+
+export interface ReportData {
+  title: string
+  subtitle?: string
+  summary?: string
+  insights?: string[]
+  sql?: string
+  reasoning?: string
+  suggestions?: string[]
+  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi'
+  chartTitle?: string
+  tableData?: Array<Record<string, any>>
+  columns?: string[]
+  vizConfig?: {
+    x_axis?: string | null
+    y_axis?: string | string[] | null
+    series_name?: string
+  }
+  timestamp?: number
+}
+
+export interface ReportWidget {
+  id: string
+  sourceMessageId: string
+  reportData: ReportData
+  layout: Layout
+  pageIndex: number // 0-based index for A4 pagination
+}
