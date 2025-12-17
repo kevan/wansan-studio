@@ -10,10 +10,12 @@ export interface Session {
   createdAt: number;
   lastModified: number;
   messages: Message[];
+  replyToId?: string;
   dashboard: {
     widgets: ReportWidget[];
     layoutMode: 'a4' | 'screen';
     pageCount: number;
+    zoom: number;
   };
 }
 

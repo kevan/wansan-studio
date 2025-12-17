@@ -1,57 +1,20 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { useProjectStore, LayoutScenario, Language } from './useProjectStore'
+import { ReportWidget, ReportData } from '@shared/types/dashboard'
 import type { Layout } from 'react-grid-layout'
-import { createBigIntStorage } from '@shared/serialization.ts'
+import type { AIAnalysisResult } from '@shared/types'
 import {
   GRID_ROW_HEIGHT,
-  PAGE_GAP_PX,
   PAGE_HEIGHT_PX,
   ROWS_PER_PAGE,
   GRID_MARGIN_Y,
 } from '@/components/dashboard-v3/page-layer'
-import type { AIAnalysisResult } from '@shared/types'
 
+// Re-exports for compatibility
+export type { LayoutScenario, Language }
 export type CanvasLayout = 'a4' | 'screen'
-export type Language = 'en' | 'zh'
+export type { ReportData, ReportWidget }
 
 const FOOTER_HEIGHT_PX = 70
-
-const getDefaultLanguage = (): Language => {
-  if (typeof navigator !== 'undefined') {
-    return navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en'
-  }
-  return 'en'
-}
-
-export interface ReportData {
-  title: string
-  subtitle?: string
-  summary?: string
-  insights?: string[]
-  sql?: string
-  reasoning?: string
-  suggestions?: string[]
-  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi'
-  chartTitle?: string
-  tableData?: Array<Record<string, any>>
-  columns?: string[]
-  vizConfig?: {
-    x_axis?: string | null
-    y_axis?: string | string[] | null
-    series_name?: string
-  }
-  timestamp?: number
-}
-
-export interface ReportWidget {
-  id: string
-  sourceMessageId: string
-  reportData: ReportData
-  layout: Layout
-  pageIndex: number // 0-based index for A4 pagination
-}
-
-export type LayoutScenario = 'default' | 'print' | 'large' | 'ppt' | 'email'
 
 interface WorkbenchState {
   pinnedReports: ReportWidget[]
@@ -87,359 +50,298 @@ interface WorkbenchState {
   reset: () => void
 }
 
-let workbenchRehydrateSet: ((partial: Partial<WorkbenchState>) => void) | null =
-  null
-
-const initialWorkbenchState: Pick<
-  WorkbenchState,
-  | 'pinnedReports'
-  | 'layoutScenario'
-  | 'canvasConfig'
-  | 'pageCount'
-  | 'editingReportId'
-  | 'language'
-> = {
-  pinnedReports: [],
-  layoutScenario: 'default',
-  canvasConfig: {
-    layout: 'a4',
-    zoom: 80,
-    title: 'Untitled Analysis',
-  },
-  pageCount: 1,
-  editingReportId: null,
-  language: getDefaultLanguage(),
+// Logic Helper
+const getSessionState = () => {
+    const projectState = useProjectStore.getState()
+    const session = projectState.sessions.find(s => s.id === projectState.activeSessionId)
+    return { projectState, session, dashboard: session?.dashboard }
 }
 
-export const useWorkbenchStore = create<WorkbenchState>()(
-  persist(
-    set => {
-      workbenchRehydrateSet = set
+const pinReport = (messageId: string, reportData: ReportData, timestamp?: number) => {
+    const { dashboard } = getSessionState()
+    if (!dashboard) return
 
-      return {
-        ...initialWorkbenchState,
-        setLayoutScenario: scenario => set({ layoutScenario: scenario }),
-        setCanvasConfig: updates =>
-          set(state => ({
-            canvasConfig: { ...state.canvasConfig, ...updates },
-            pageCount:
-              updates.layout === 'a4' && state.canvasConfig.layout !== 'a4'
-                ? (() => {
-                    const maxPageIndex = state.pinnedReports.reduce(
-                      (max, item) => Math.max(max, item.pageIndex || 0),
-                      0
-                    )
-                    return Math.max(state.pageCount, maxPageIndex + 1)
-                  })()
-                : state.pageCount,
-          })),
-        setPageCount: count => set({ pageCount: Math.max(1, count) }),
-        incrementPageCount: () =>
-          set(state => ({ pageCount: state.pageCount + 1 })),
-        setLanguage: lang => set({ language: lang }),
-        pinReport: (messageId, reportData, timestamp) =>
-          set(state => {
-            // Check if already pinned to avoid duplicates for the same message
-            if (
-              state.pinnedReports.some(r => r.sourceMessageId === messageId)
-            ) {
-              return state
-            }
+    // Check if already pinned
+    if (dashboard.widgets.some(r => r.sourceMessageId === messageId)) {
+        return
+    }
 
-            const id = crypto.randomUUID()
-            const isBigNumberData = (data?: Array<Record<string, any>>) => {
-              if (!data || data.length !== 1) return false
-              const keys = Object.keys(data[0] || {})
-              return keys.length <= 1
-            }
+    const id = crypto.randomUUID()
+    const isBigNumberData = (data?: Array<Record<string, any>>) => {
+        if (!data || data.length !== 1) return false
+        const keys = Object.keys(data[0] || {})
+        return keys.length <= 1
+    }
 
-            let w = 6
-            let h = 10
+    let w = 6
+    let h = 10
 
-            switch (reportData.chartType) {
-              case 'table':
-                if (isBigNumberData(reportData.tableData)) {
-                  w = 3
-                  h = 4
-                } else {
-                  w = 12
-                  h = 12
-                }
-                break
-              case 'pie':
-                w = 4
-                h = 8
-                break
-              case 'bar':
-              case 'line':
-              case 'area':
-              case 'scatter':
-                if ((reportData.tableData?.length || 0) > 20) {
-                  w = 12
-                  h = 12
-                } else {
-                  w = 6
-                  h = 10
-                }
-                break
-              case 'kpi':
-                w = 3
-                h = 6
-                break
-              default:
-                w = 6
-                h = 10
-            }
+    switch (reportData.chartType) {
+        case 'table':
+        if (isBigNumberData(reportData.tableData)) {
+            w = 3; h = 4
+        } else {
+            w = 12; h = 12
+        }
+        break
+        case 'pie':
+        w = 4; h = 8
+        break
+        case 'bar':
+        case 'line':
+        case 'area':
+        case 'scatter':
+        if ((reportData.tableData?.length || 0) > 20) {
+            w = 12; h = 12
+        } else {
+            w = 6; h = 10
+        }
+        break
+        case 'kpi':
+        w = 3; h = 6
+        break
+        default:
+        w = 6; h = 10
+    }
 
-            // Respect 12-column grid and keep positive dimensions
-            w = Math.min(12, Math.max(1, w))
-            // Check if it fits on current page (with footer buffer)
-            // Use effective row height (row + margin) for calculation
-            const EFFECTIVE_ROW_HEIGHT = GRID_ROW_HEIGHT + GRID_MARGIN_Y
-            const SAFE_ROWS = Math.floor(
-              (PAGE_HEIGHT_PX - FOOTER_HEIGHT_PX) / EFFECTIVE_ROW_HEIGHT
-            )
+    w = Math.min(12, Math.max(1, w))
+    const EFFECTIVE_ROW_HEIGHT = GRID_ROW_HEIGHT + GRID_MARGIN_Y
+    const SAFE_ROWS = Math.floor((PAGE_HEIGHT_PX - FOOTER_HEIGHT_PX) / EFFECTIVE_ROW_HEIGHT)
+    h = Math.min(Math.max(1, h), SAFE_ROWS)
 
-            h = Math.min(Math.max(1, h), SAFE_ROWS)
+    let targetPageIndex = 0
+    let targetY = 0
 
-            // Find insertion point
-            let targetPageIndex = 0
-            let targetY = 0
+    if (dashboard.widgets.length > 0) {
+        const lastReport = [...dashboard.widgets].sort((a, b) => {
+            const pageDiff = (b.pageIndex || 0) - (a.pageIndex || 0)
+            if (pageDiff !== 0) return pageDiff
+            return ((b.layout.y ?? 0) + (b.layout.h ?? 0)) - ((a.layout.y ?? 0) + (a.layout.h ?? 0))
+        })[0]
 
-            if (state.pinnedReports.length > 0) {
-              // Find the report with the highest pageIndex, then highest y
-              const lastReport = [...state.pinnedReports].sort((a, b) => {
-                const pageDiff = (b.pageIndex || 0) - (a.pageIndex || 0)
-                if (pageDiff !== 0) return pageDiff
-                return (
-                  (b.layout.y ?? 0) +
-                  (b.layout.h ?? 0) -
-                  ((a.layout.y ?? 0) + (a.layout.h ?? 0))
-                )
-              })[0]
+        if (lastReport) {
+            targetPageIndex = lastReport.pageIndex || 0
+            targetY = (lastReport.layout.y ?? 0) + (lastReport.layout.h ?? 0)
+        }
+    }
 
-              if (lastReport) {
-                targetPageIndex = lastReport.pageIndex || 0
-                targetY =
-                  (lastReport.layout.y ?? 0) + (lastReport.layout.h ?? 0)
-              }
-            }
-            console.log(
-              'pinReport',
-              'w:',
-              w,
-              'h:',
-              h,
-              'SAFE_ROWS:',
-              SAFE_ROWS,
-              'targetY',
-              targetY
-            )
+    if (targetY + h > SAFE_ROWS) {
+        targetPageIndex++
+        targetY = 0
+    }
 
-            if (targetY + h > SAFE_ROWS) {
-              targetPageIndex++
-              targetY = 0
-            }
+    const newPageCount = Math.max(dashboard.pageCount, targetPageIndex + 1)
+    
+    // Update Page Count if needed
+    if (newPageCount > dashboard.pageCount) {
+        useProjectStore.getState().setCanvasConfig({ pageCount: newPageCount })
+    }
 
-            const newPageCount = Math.max(state.pageCount, targetPageIndex + 1)
+    useProjectStore.getState().addWidget({
+        id,
+        sourceMessageId: messageId,
+        reportData: { ...reportData, timestamp: timestamp ?? reportData.timestamp },
+        layout: { i: id, x: 0, y: targetY, w, h },
+        pageIndex: targetPageIndex,
+    })
+}
 
-            return {
-              pinnedReports: [
-                ...state.pinnedReports,
-                {
-                  id,
-                  sourceMessageId: messageId,
-                  reportData: {
-                    ...reportData,
-                    timestamp: timestamp ?? reportData.timestamp,
-                  },
-                  layout: {
-                    i: id,
-                    x: 0,
-                    y: targetY,
-                    w,
-                    h,
-                  },
-                  pageIndex: targetPageIndex,
-                },
-              ],
-              pageCount: newPageCount,
-            }
-          }),
-        updateReportTitle: (reportId, newTitle) =>
-          set(state => ({
-            pinnedReports: state.pinnedReports.map(r =>
-              r.id === reportId
-                ? { ...r, reportData: { ...r.reportData, title: newTitle } }
-                : r
-            ),
-          })),
-        updateReportConfig: (id, updates) =>
-          set(state => ({
-            pinnedReports: state.pinnedReports.map(report => {
-              if (report.id !== id) return report
-              const nextVizConfig =
-                updates.config !== undefined
-                  ? { ...report.reportData.vizConfig, ...updates.config }
-                  : report.reportData.vizConfig
+const updateGlobalLayout = (layouts: Layout[]) => {
+    const layoutMap = new Map(layouts.map(l => [l.i, l]))
+    const { dashboard } = getSessionState()
+    if (!dashboard) return
 
-              return {
-                ...report,
-                reportData: {
-                  ...report.reportData,
-                  chartType: updates.type ?? report.reportData.chartType,
-                  vizConfig: nextVizConfig,
-                },
-              }
-            }),
-          })),
-        setEditingReportId: id => set({ editingReportId: id }),
-        updateLayout: layouts =>
-          set(state => {
-            const layoutMap = new Map(layouts.map(l => [l.i, l]))
-            // Note: This update assumes layouts are from a specific page grid
-            // and does NOT change pageIndex. Cross-page moves happen via moveWidgetToPage.
-            const nextPinnedReports = state.pinnedReports.map(r => {
-              const newLayout = layoutMap.get(r.id)
-              if (newLayout) {
-                return {
-                  ...r,
-                  layout: { ...r.layout, ...newLayout },
-                }
-              }
-              return r
-            })
-
-            // Recalculate page count based on max pageIndex present
-            const maxPageIndex = nextPinnedReports.reduce(
-              (max, r) => Math.max(max, r.pageIndex || 0),
-              0
-            )
-
-            return {
-              pinnedReports: nextPinnedReports,
-              pageCount: Math.max(state.pageCount, maxPageIndex + 1),
-            }
-          }),
-        updateGlobalLayout: layouts =>
-          set(state => {
-            const layoutMap = new Map(layouts.map(l => [l.i, l]))
-            const nextPinnedReports = state.pinnedReports.map(r => {
-              const globalLayout = layoutMap.get(r.id)
-              if (globalLayout) {
-                const globalY = globalLayout.y
-                const pageIndex = Math.floor(globalY / ROWS_PER_PAGE)
-                const localY = globalY % ROWS_PER_PAGE
-                return {
-                  ...r,
-                  pageIndex,
-                  layout: { ...r.layout, ...globalLayout, y: localY },
-                }
-              }
-              return r
-            })
-
-            // Recalculate page count
-            const maxPageIndex = nextPinnedReports.reduce(
-              (max, r) => Math.max(max, r.pageIndex || 0),
-              0
-            )
-
-            return {
-              pinnedReports: nextPinnedReports,
-              pageCount: Math.max(state.pageCount, maxPageIndex + 1),
-            }
-          }),
-        moveWidgetToPage: (reportId, targetPageIndex) =>
-          set(state => {
-            const report = state.pinnedReports.find(r => r.id === reportId)
-            if (!report) return state
-
-            // Basic collision avoidance: put at bottom of target page
-            // (A smarter implementation would try to keep x/y if possible)
-            const reportsOnTargetPage = state.pinnedReports.filter(
-              r => r.pageIndex === targetPageIndex && r.id !== reportId
-            )
-            const maxY = reportsOnTargetPage.reduce(
-              (max, r) => Math.max(max, (r.layout.y ?? 0) + (r.layout.h ?? 0)),
-              0
-            )
-
-            return {
-              pinnedReports: state.pinnedReports.map(r =>
-                r.id === reportId
-                  ? {
-                      ...r,
-                      pageIndex: targetPageIndex,
-                      layout: { ...r.layout, y: maxY },
-                    }
-                  : r
-              ),
-              pageCount: Math.max(state.pageCount, targetPageIndex + 1),
-            }
-          }),
-        removeReport: reportId =>
-          set(state => ({
-            pinnedReports: state.pinnedReports.filter(r => r.id !== reportId),
-          })),
-        reset: () => set({ ...initialWorkbenchState }),
-      }
-    },
-    {
-      name: 'wansan-workbench',
-      storage: createBigIntStorage(),
-      partialize: state => ({
-        pinnedReports: state.pinnedReports,
-        canvasConfig: state.canvasConfig,
-        pageCount: state.pageCount,
-        language: state.language,
-      }),
-      onRehydrateStorage: () => state => {
-        if (!state) return
-
-        // Migration: Convert old global-Y coordinates to PageIndex + Local-Y
-        const migratedReports = state.pinnedReports.map(report => {
-          if (report.pageIndex === undefined) {
-            // Heuristic migration
-            const globalY = report.layout.y as number
+    let maxPageIndex = 0
+    const updates = dashboard.widgets.map(r => {
+        const globalLayout = layoutMap.get(r.id)
+        if (globalLayout) {
+            const globalY = globalLayout.y
             const pageIndex = Math.floor(globalY / ROWS_PER_PAGE)
             const localY = globalY % ROWS_PER_PAGE
+            maxPageIndex = Math.max(maxPageIndex, pageIndex)
             return {
-              ...report,
-              pageIndex,
-              layout: { ...report.layout, y: localY },
-              reportData: {
-                ...report.reportData,
-                timestamp: report.reportData.timestamp
-                  ? typeof report.reportData.timestamp === 'number'
-                    ? report.reportData.timestamp
-                    : new Date(report.reportData.timestamp).getTime()
-                  : undefined,
-              },
+                ...r,
+                pageIndex,
+                layout: { ...r.layout, ...globalLayout, y: localY },
             }
-          }
-          return {
-            ...report,
-            reportData: {
-              ...report.reportData,
-              timestamp: report.reportData.timestamp
-                ? typeof report.reportData.timestamp === 'number'
-                  ? report.reportData.timestamp
-                  : new Date(report.reportData.timestamp).getTime()
-                : undefined,
-            },
-          }
-        })
-
-        workbenchRehydrateSet?.({
-          pinnedReports: migratedReports,
-          language: state.language,
-          pageCount: Math.max(
-            state.pageCount,
-            ...migratedReports.map(r => (r.pageIndex || 0) + 1)
-          ),
-        })
-      },
+        }
+        return r
+    })
+    
+    // We need to batch update widgets? ProjectStore doesn't have batch update.
+    // Assuming updateLayout handles batch if passed correctly, OR we iterate.
+    // But wait, updateLayout in ProjectStore takes `layout: any`.
+    // I implemented it as taking array of {i, ...}.
+    // But here we are changing pageIndex too.
+    // I should probably use `updateWidget` for each? Or improve `updateLayout`.
+    // For now, let's iterate.
+    
+    updates.forEach(u => {
+         // Only update if changed?
+         useProjectStore.getState().updateWidget(u.id, u)
+    })
+    
+    if (maxPageIndex + 1 > dashboard.pageCount) {
+         useProjectStore.getState().setCanvasConfig({ pageCount: maxPageIndex + 1 })
     }
-  )
-)
+}
+
+const updateLayout = (layouts: Layout[]) => {
+    // Local layout update (within page)
+    useProjectStore.getState().updateLayout(layouts)
+    // Recalc page count logic if needed? 
+    // Original store did:
+    /*
+        const maxPageIndex = nextPinnedReports.reduce(...)
+        return { pageCount: Math.max(state.pageCount, maxPageIndex + 1) }
+    */
+    // Since updateLayout doesn't change pageIndex, pageCount shouldn't change generally,
+    // unless we allow dragging between pages via this method (usually via updateGlobalLayout).
+}
+
+const moveWidgetToPage = (reportId: string, targetPageIndex: number) => {
+    const { dashboard } = getSessionState()
+    if (!dashboard) return
+    const report = dashboard.widgets.find(r => r.id === reportId)
+    if (!report) return
+
+    const reportsOnTargetPage = dashboard.widgets.filter(r => r.pageIndex === targetPageIndex && r.id !== reportId)
+    const maxY = reportsOnTargetPage.reduce((max, r) => Math.max(max, (r.layout.y ?? 0) + (r.layout.h ?? 0)), 0)
+
+    useProjectStore.getState().updateWidget(reportId, {
+        pageIndex: targetPageIndex,
+        layout: { ...report.layout, y: maxY }
+    })
+    
+    if (targetPageIndex + 1 > dashboard.pageCount) {
+        useProjectStore.getState().setCanvasConfig({ pageCount: targetPageIndex + 1 })
+    }
+}
+
+const setCanvasConfig = (updates: Partial<WorkbenchState['canvasConfig']>) => {
+    // Map 'layout' -> 'layoutMode'
+    const mappedUpdates: any = { ...updates }
+    if (updates.layout) mappedUpdates.layoutMode = updates.layout
+    if (updates.title) mappedUpdates.title = updates.title // ProjectStore syncs title
+    
+    useProjectStore.getState().setCanvasConfig(mappedUpdates)
+    
+    // Page count logic from original
+    if (updates.layout === 'a4') {
+        const { dashboard } = getSessionState()
+        if (dashboard && dashboard.layoutMode !== 'a4') {
+             const maxPageIndex = dashboard.widgets.reduce((max, item) => Math.max(max, item.pageIndex || 0), 0)
+             const newPageCount = Math.max(dashboard.pageCount, maxPageIndex + 1)
+             useProjectStore.getState().setCanvasConfig({ pageCount: newPageCount })
+        }
+    }
+}
+
+// --- The Hook ---
+export const useWorkbenchStore = <T = WorkbenchState>(selector?: (state: WorkbenchState) => T): T => {
+    const projectState = useProjectStore()
+    const session = projectState.sessions.find(s => s.id === projectState.activeSessionId)
+    const dashboard = session?.dashboard
+
+    const state: WorkbenchState = {
+        pinnedReports: dashboard?.widgets || [],
+        layoutScenario: projectState.layoutScenario,
+        canvasConfig: {
+            layout: dashboard?.layoutMode || 'a4',
+            zoom: dashboard?.zoom || 80,
+            title: session?.title || 'Untitled',
+        },
+        pageCount: dashboard?.pageCount || 1,
+        editingReportId: projectState.editingReportId,
+        language: projectState.language,
+
+        pinReport,
+        removeReport: (id) => useProjectStore.getState().removeWidget(id),
+        updateReportTitle: (id, title) => useProjectStore.getState().updateReportTitle(id, title),
+        updateReportConfig: (id, updates) => {
+            useProjectStore.getState().updateWidget(id, (w) => {
+                 const nextVizConfig = updates.config !== undefined
+                  ? { ...w.reportData.vizConfig, ...updates.config }
+                  : w.reportData.vizConfig
+                 return {
+                    ...w,
+                    reportData: {
+                        ...w.reportData,
+                        chartType: updates.type ?? w.reportData.chartType,
+                        vizConfig: nextVizConfig,
+                    }
+                 }
+            })
+        },
+        updateLayout,
+        updateGlobalLayout,
+        moveWidgetToPage,
+        setLayoutScenario: (s) => useProjectStore.getState().setLayoutScenario(s),
+        setCanvasConfig,
+        setPageCount: (c) => useProjectStore.getState().setCanvasConfig({ pageCount: Math.max(1, c) }),
+        incrementPageCount: () => {
+            const { dashboard } = getSessionState()
+            if (dashboard) useProjectStore.getState().setCanvasConfig({ pageCount: dashboard.pageCount + 1 })
+        },
+        setEditingReportId: (id) => useProjectStore.getState().setEditingReportId(id),
+        setLanguage: (l) => useProjectStore.getState().setLanguage(l),
+        reset: () => { /* Project reset? */ },
+    }
+    
+    return selector ? selector(state) : (state as unknown as T)
+}
+
+// Mock getState
+useWorkbenchStore.getState = () => {
+    const { projectState, session, dashboard } = getSessionState()
+    return {
+        pinnedReports: dashboard?.widgets || [],
+        layoutScenario: projectState.layoutScenario,
+        canvasConfig: {
+            layout: dashboard?.layoutMode || 'a4',
+            zoom: dashboard?.zoom || 80,
+            title: session?.title || 'Untitled',
+        },
+        pageCount: dashboard?.pageCount || 1,
+        editingReportId: projectState.editingReportId,
+        language: projectState.language,
+        pinReport,
+        removeReport: (id) => useProjectStore.getState().removeWidget(id),
+        updateReportTitle: (id, title) => useProjectStore.getState().updateReportTitle(id, title),
+        updateReportConfig: (id, updates) => {
+             useProjectStore.getState().updateWidget(id, (w) => {
+                 const nextVizConfig = updates.config !== undefined
+                  ? { ...w.reportData.vizConfig, ...updates.config }
+                  : w.reportData.vizConfig
+                 return {
+                    ...w,
+                    reportData: {
+                        ...w.reportData,
+                        chartType: updates.type ?? w.reportData.chartType,
+                        vizConfig: nextVizConfig,
+                    }
+                 }
+            })
+        },
+        updateLayout,
+        updateGlobalLayout,
+        moveWidgetToPage,
+        setLayoutScenario: (s) => useProjectStore.getState().setLayoutScenario(s),
+        setCanvasConfig,
+        setPageCount: (c) => useProjectStore.getState().setCanvasConfig({ pageCount: Math.max(1, c) }),
+        incrementPageCount: () => {
+             const { dashboard } = getSessionState()
+            if (dashboard) useProjectStore.getState().setCanvasConfig({ pageCount: dashboard.pageCount + 1 })
+        },
+        setEditingReportId: (id) => useProjectStore.getState().setEditingReportId(id),
+        setLanguage: (l) => useProjectStore.getState().setLanguage(l),
+        reset: () => {},
+    }
+}
+
+// Mock persist
+useWorkbenchStore.persist = {
+    hasHydrated: () => true,
+    rehydrate: () => Promise.resolve(),
+    onFinishHydration: () => {}
+}

@@ -35,6 +35,7 @@ import { UpdateModal } from './components/update-modal'
 import { GlobalErrorHandler } from './components/system/GlobalErrorHandler'
 import { ErrorBoundary } from './components/system/ErrorBoundary'
 import { usePlatform } from './hooks/useIPC'
+import { useProjectInit } from './hooks/use-project-init'
 
 const LAYOUT_STORAGE_KEY = 'wansan-layout'
 
@@ -64,6 +65,7 @@ function App() {
   useBootSequence()
   useRemoteConfig()
   useDataRehydrate()
+  useProjectInit()
   const [isChatCollapsed, setIsChatCollapsed] = useState(false)
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
   const initialLayout = loadLayoutPrefs()
