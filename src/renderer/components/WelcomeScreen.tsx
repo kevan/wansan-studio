@@ -49,17 +49,43 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
       updateFile(fileId, { status: 'processing' })
 
       // 解析文件
-      const parseResult = await parseFileMutation.mutateAsync(filePath)
+      const result = await parseFileMutation.mutateAsync(filePath)
+      const parseResults = Array.isArray(result) ? result : [result]
 
-      // 更新文件信息
+      if (parseResults.length === 0) {
+        throw new Error('No data found in file')
+      }
+
+      // Handle the first result (update the placeholder file we created)
+      const firstResult = parseResults[0]
       updateFile(fileId, {
         status: 'ready',
-        tableName: parseResult.tableName,
-        columns: parseResult.schema?.columns || [],
-        rowCount: parseResult.rowCount,
+        tableName: firstResult.tableName,
+        sheetName: firstResult.sheetName,
+        columns: firstResult.schema?.columns || [],
+        rowCount: firstResult.rowCount,
       })
 
-      onDataImported?.(parseResult.tableName)
+      // Handle additional results (e.g. extra sheets)
+      for (let i = 1; i < parseResults.length; i++) {
+        const res = parseResults[i]
+        try {
+          addFile({
+            name: fileName,
+            path: filePath,
+            tableName: res.tableName,
+            sheetName: res.sheetName,
+            status: 'ready',
+            size: fileSize,
+            columns: res.schema?.columns || [],
+            rowCount: res.rowCount,
+          })
+        } catch (e) {
+          console.warn('Skipping duplicate or invalid sheet:', res.sheetName, e)
+        }
+      }
+
+      onDataImported?.(firstResult.tableName)
       return true
     } catch (error) {
       // 更新状态为 error
@@ -154,6 +180,7 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
     setIsDragging(false)
 
     const droppedFiles = Array.from(e.dataTransfer.files)
+    console.log('handleDrop', droppedFiles)
 
     const oversizedFiles = droppedFiles.filter(f => f.size > MAX_SIZE)
     const validSizeFiles = droppedFiles.filter(f => f.size <= MAX_SIZE)
