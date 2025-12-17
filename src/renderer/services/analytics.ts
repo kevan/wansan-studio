@@ -4,6 +4,12 @@ const API_ENDPOINT = 'https://api.wansan.app/v1/ingest'
 
 export const Analytics = {
   track: async (event: string, properties: Record<string, any> = {}) => {
+    // Skip in development
+    if (import.meta.env.DEV) {
+      console.log(`[Analytics] ${event}`, properties)
+      return
+    }
+
     try {
       const { deviceId, isActivated } = useSettingsStore.getState()
 
