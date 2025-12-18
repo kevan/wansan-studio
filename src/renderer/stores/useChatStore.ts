@@ -174,7 +174,7 @@ const sendMessage = async (
 ) => {
     const { messages, replyToId } = getSessionState()
     const fileState = useFileStore.getState()
-    const language = languageOverride || useWorkbenchStore.getState().language || 'en'
+    const language = languageOverride || useSettingsStore.getState().language || 'en'
     const readyFiles = fileState.files.filter(f => f.status === 'ready')
     const startTime = Date.now()
     const { provider } = useSettingsStore.getState()
@@ -363,7 +363,7 @@ const sendMessage = async (
 const retryMessage = async (messageId: string, originalQuery: string) => {
     const { messages } = getSessionState()
     const fileState = useFileStore.getState()
-    const language = useWorkbenchStore.getState().language || 'en'
+    const language = useSettingsStore.getState().language || 'en'
     const readyFiles = fileState.files.filter(f => f.status === 'ready')
     const startTime = Date.now()
 
