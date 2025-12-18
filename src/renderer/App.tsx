@@ -25,6 +25,7 @@ import { useTranslation } from 'react-i18next'
 import i18n from './i18n'
 import { useWorkbenchStore } from './stores/useWorkbenchStore'
 import { useSettingsStore } from './stores/useSettingsStore'
+import { useProjectStore } from './stores/useProjectStore'
 import { useChatStore } from './stores/useChatStore'
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow'
 import logo from './src/assets/logo.png'
@@ -87,6 +88,15 @@ function App() {
   const rightPanelRef = useRef<ImperativePanelHandle>(null)
   const { t } = useTranslation('common')
   const { data: platform } = usePlatform()
+  const [isStoreReady, setIsStoreReady] = useState(false)
+
+  useEffect(() => {
+    const unsub = useProjectStore.persist.onFinishHydration(() => setIsStoreReady(true))
+    if (useProjectStore.persist.hasHydrated()) {
+      setIsStoreReady(true)
+    }
+    return unsub
+  }, [])
 
   // Sync AI config to main process on startup
   useEffect(() => {
@@ -190,10 +200,10 @@ function App() {
   }, [isRightCollapsed, rightPanelSize])
 
   useEffect(() => {
-    if (language && i18n.language !== language) {
+    if (isStoreReady && language && i18n.language !== language) {
       void i18n.changeLanguage(language)
     }
-  }, [language])
+  }, [language, isStoreReady])
 
   // Reset loading state on app startup to fix zombie loading states
   useEffect(() => {
