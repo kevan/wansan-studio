@@ -67,6 +67,12 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
   }, [settings.remoteConfig])
 
   useEffect(() => {
+    if (settings.language && i18n.language !== settings.language) {
+      i18n.changeLanguage(settings.language)
+    }
+  }, [settings.language, i18n])
+
+  useEffect(() => {
     const handleOpenSettings = (e: Event) => {
       setIsOpen(true)
       const detail = (e as CustomEvent).detail
