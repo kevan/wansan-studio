@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Download,
   ChevronDown,
@@ -10,6 +11,7 @@ import {
   Plus,
   Minus,
   Lock,
+  RefreshCw,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -27,6 +29,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { CanvasLayout, useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { useSettingsStore } from '@/stores/useSettingsStore'
+import { useProjectStore } from '@/stores/useProjectStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
@@ -48,6 +51,22 @@ export function DashboardHeader() {
   const { t } = useTranslation('common')
   const { isActivated } = useSettingsStore()
   const addToast = useToastStore(state => state.addToast)
+  const refreshSessionWidgets = useProjectStore(state => state.refreshSessionWidgets)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefresh = async () => {
+    if (isRefreshing) return
+    setIsRefreshing(true)
+    try {
+      await refreshSessionWidgets()
+      addToast({ title: t('reload_success'), type: 'success' })
+    } catch (e) {
+      console.error(e)
+      addToast({ title: t('reload_failed'), type: 'error' })
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
 
   const updateConfig = (key: keyof typeof canvasConfig, value: unknown) => {
     setCanvasConfig({ [key]: value } as Partial<typeof canvasConfig>)
@@ -267,6 +286,19 @@ export function DashboardHeader() {
             <ZoomIn className="h-3.5 w-3.5 text-zinc-500" />
           </Button>
         </div>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-zinc-500 hover:text-zinc-900"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          title={t('reload_data')}
+        >
+          <RefreshCw
+            className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
+          />
+        </Button>
 
         <Separator orientation="vertical" className="h-6 mx-1" />
 

@@ -23,7 +23,7 @@ export interface ReportData {
 export interface ReportWidget {
   id: string
   sourceMessageId: string
-  reportData: ReportData
+  widgetId: string
   layout: Layout
   pageIndex: number // 0-based index for A4 pagination
 }

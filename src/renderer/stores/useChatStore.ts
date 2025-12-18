@@ -79,10 +79,18 @@ const resolveMentions = (text: string) => {
 const getSessionState = () => {
   const projectState = useProjectStore.getState()
   const session = projectState.sessions.find(s => s.id === projectState.activeSessionId)
+  
+  const resolvedMessages = (session?.messages || []).map(m => {
+      if (m.widgetId && projectState.widgetRegistry[m.widgetId]) {
+          return { ...m, reportData: projectState.widgetRegistry[m.widgetId] }
+      }
+      return m
+  })
+
   return {
     projectState,
     session,
-    messages: session?.messages || [],
+    messages: resolvedMessages as ChatMessage[],
     replyToId: session?.replyToId || null,
     abortController: projectState.abortControllers[projectState.activeSessionId] || null
   }
@@ -91,13 +99,10 @@ const getSessionState = () => {
 // --- Actions Implementation ---
 
 const updateMessage = (id: string, updater: (message: ChatMessage) => ChatMessage) => {
-  const { session } = getSessionState()
-  if (!session) return
-  const msg = session.messages.find(m => m.id === id)
+  const { messages } = getSessionState()
+  const msg = messages.find(m => m.id === id)
   if (msg) {
-    // Cast strict shared Message to ChatMessage (which is looser/compatible)
-    // and back. The types are technically compatible.
-    useProjectStore.getState().updateMessage(id, updater(msg as any) as any)
+    useProjectStore.getState().updateMessage(id, updater(msg) as any)
   }
 }
 
@@ -533,7 +538,6 @@ const autoFixMessage = async (messageId: string, error: string, originalQuery?: 
 }
 
 const removeMessage = (id: string) => {
-    // In ChatStore, removing an assistant message also removed the preceding user message.
     const { messages } = getSessionState()
     const index = messages.findIndex(m => m.id === id)
     if (index === -1) return
@@ -547,28 +551,9 @@ const removeMessage = (id: string) => {
         }
     }
 
-    // Logic to update state via ProjectStore
-    const nextMessages = messages.filter(m => !idsToRemove.includes(m.id))
-    
-    // We can't batch replace messages in ProjectStore with current API.
-    // So we iterate to remove or create a new setMessages action?
-    // Current ProjectStore only has addMessage and updateMessage.
-    // It lacks removeMessage (singular) or setMessages.
-    // I should add removeMessage or just setMessages to ProjectStore.
-    // For now, I will use a trick: update messages list in session.
-    // But ProjectStore doesn't expose setMessages. 
-    // I need to add 'removeMessage' to ProjectStore. I'll do that in next step. 
-    // For now assuming it exists or I'll add it.
-    // I'll call useProjectStore.getState().updateMessageList(nextMessages) if available, 
-    // or just assume I'll add a 'removeMessage' action to ProjectStore.
-    
-    // Let's assume I'll add 'deleteMessage(id)' to ProjectStore.
     idsToRemove.forEach(mid => {
-        // useProjectStore.getState().deleteMessage(mid) // Need to implement this
+        useProjectStore.getState().deleteMessage(mid)
     })
-    
-    // For now, I'll console warn that I need to implement this.
-    console.warn('Bridge: removeMessage called, but ProjectStore needs deleteMessage action.')
 }
 
 const reset = () => {
@@ -584,9 +569,16 @@ export const useChatStore = <T = ChatStore>(selector?: (state: ChatStore) => T):
   const projectState = useProjectStore()
   const activeSession = projectState.sessions.find(s => s.id === projectState.activeSessionId)
   
+  const resolvedMessages = (activeSession?.messages || []).map(m => {
+      if (m.widgetId && projectState.widgetRegistry[m.widgetId]) {
+          return { ...m, reportData: projectState.widgetRegistry[m.widgetId] }
+      }
+      return m
+  }) as ChatMessage[]
+  
   const state: ChatStore = {
-    messages: (activeSession?.messages || []) as ChatMessage[],
-    history: (activeSession?.messages || []) as ChatMessage[], // alias
+    messages: resolvedMessages,
+    history: resolvedMessages, // alias
     replyToId: activeSession?.replyToId || null,
     abortController: projectState.abortControllers[projectState.activeSessionId] || null,
     

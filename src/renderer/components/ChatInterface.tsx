@@ -34,6 +34,7 @@ export interface ChatMessage {
   metadata?: {
     latency?: number
   }
+  widgetId?: string
   reportData?: {
     title: string
     subtitle?: string

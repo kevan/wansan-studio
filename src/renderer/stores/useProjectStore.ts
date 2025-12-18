@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { ProjectData, Session } from '@shared/types/project'
 import { Message } from '@shared/types/chat'
-import { ReportWidget } from '@shared/types/dashboard'
+import { ReportWidget, ReportData } from '@shared/types/dashboard'
 import { FileNode } from '@shared/types'
 import { Layout } from 'react-grid-layout'
 import { useFileStore } from './useFileStore'
@@ -28,15 +28,18 @@ interface ProjectState extends ProjectData {
   renameSession: (id: string, name: string) => void
 
   // 2. Chat Actions (Targeting Active Session)
-  addMessage: (msg: Message) => void
-  updateMessage: (id: string, update: Partial<Message>) => void
+  // Accepts denormalized message (with reportData) and normalizes it
+  addMessage: (msg: Message & { reportData?: ReportData }) => void
+  updateMessage: (id: string, update: Partial<Message> & { reportData?: Partial<ReportData> }) => void
+  deleteMessage: (id: string) => void
   setReplyTo: (replyToId: string | null) => void
   setAbortController: (controller: AbortController | null) => void
 
   // 3. Dashboard Actions (Targeting Active Session)
-  addWidget: (widget: ReportWidget) => void
+  addWidget: (widget: ReportWidget & { reportData?: ReportData }) => void
   removeWidget: (id: string) => void
   updateWidget: (id: string, update: Partial<ReportWidget> | ((w: ReportWidget) => ReportWidget)) => void
+  updateWidgetData: (id: string, update: Partial<ReportData>) => void
   updateLayout: (layout: any) => void
   updateReportTitle: (id: string, title: string) => void
   setCanvasConfig: (config: any) => void
@@ -47,6 +50,7 @@ interface ProjectState extends ProjectData {
   setLanguage: (lang: Language) => void
   setPendingReplace: (payload: { fileId: string; newPath: string; missing: string[] } | null) => void
   confirmReplace: () => Promise<void>
+  refreshSessionWidgets: () => Promise<void>
 
   // 5. File Actions (Global)
   addFile: (file: FileNode) => void
@@ -85,6 +89,7 @@ const initialProjectState: ProjectData = {
   relations: [],
   sessions: [],
   activeSessionId: '',
+  widgetRegistry: {},
 }
 
 export const useProjectStore = create<ProjectState>()(
@@ -99,12 +104,50 @@ export const useProjectStore = create<ProjectState>()(
 
       setPendingReplace: (payload) => set({ pendingReplace: payload }),
 
+      refreshSessionWidgets: async () => {
+          const state = get()
+          const session = state.sessions.find(s => s.id === state.activeSessionId)
+          if (!session) return
+
+          let updatedRegistry = { ...state.widgetRegistry }
+          let hasUpdates = false
+
+          await Promise.all(session.dashboard.widgets.map(async (w) => {
+             const reportData = updatedRegistry[w.widgetId]
+             if (!reportData?.sql) return
+
+             try {
+               const res = await window.electronAPI.runSQL(reportData.sql)
+               if (res.success && res.data) {
+                   updatedRegistry[w.widgetId] = {
+                       ...reportData,
+                       tableData: res.data,
+                       timestamp: Date.now()
+                   }
+                   hasUpdates = true
+               }
+             } catch (e) { 
+                 console.error('Widget refresh failed', w.id, e)
+             }
+          }))
+
+          if (hasUpdates) {
+              set({ widgetRegistry: updatedRegistry })
+          }
+      },
+
       confirmReplace: async () => {
-          const { pendingReplace, replaceFile } = get()
+          const { pendingReplace, replaceFile, refreshSessionWidgets } = get()
           if (!pendingReplace) return
           
-          await replaceFile(pendingReplace.fileId, pendingReplace.newPath, true)
+          const status = await replaceFile(pendingReplace.fileId, pendingReplace.newPath, true)
           set({ pendingReplace: null })
+          
+          if (status === 'completed') {
+              if (window.confirm("Data source updated. Refresh all charts in the active session?")) {
+                  await refreshSessionWidgets()
+              }
+          }
       },
 
       createSession: () =>
@@ -148,32 +191,72 @@ export const useProjectStore = create<ProjectState>()(
           ),
         })),
 
-      addMessage: (msg: Message) =>
-        set(state => ({
-          sessions: state.sessions.map(s =>
-            s.id === state.activeSessionId
-              ? {
-                  ...s,
-                  messages: [...s.messages, msg],
-                  lastModified: Date.now(),
-                }
-              : s
-          ),
-        })),
+      addMessage: (msg) =>
+        set(state => {
+            let nextRegistry = state.widgetRegistry
+            let nextMsg = { ...msg } as Message
 
-      updateMessage: (id: string, update: Partial<Message>) =>
-        set(state => ({
-          sessions: state.sessions.map(s =>
-            s.id === state.activeSessionId
-              ? {
-                  ...s,
-                  messages: s.messages.map(m =>
-                    m.id === id ? { ...m, ...update } : m
-                  ),
-                  lastModified: Date.now(),
+            if (msg.reportData) {
+                const widgetId = crypto.randomUUID()
+                nextRegistry = {
+                    ...nextRegistry,
+                    [widgetId]: msg.reportData
                 }
-              : s
-          ),
+                nextMsg.widgetId = widgetId
+                delete (nextMsg as any).reportData
+            }
+
+            return {
+                widgetRegistry: nextRegistry,
+                sessions: state.sessions.map(s =>
+                    s.id === state.activeSessionId
+                    ? {
+                        ...s,
+                        messages: [...s.messages, nextMsg],
+                        lastModified: Date.now(),
+                        }
+                    : s
+                ),
+            }
+        }),
+
+      updateMessage: (id, update) =>
+        set(state => {
+            const session = state.sessions.find(s => s.id === state.activeSessionId)
+            if (!session) return state
+
+            const existingMsg = session.messages.find(m => m.id === id)
+            if (!existingMsg) return state
+
+            let nextRegistry = { ...state.widgetRegistry }
+            let nextUpdate = { ...update } as Partial<Message>
+
+            if (update.reportData) {
+                const wId = existingMsg.widgetId || crypto.randomUUID()
+                const existingData = nextRegistry[wId] || ({} as ReportData)
+                nextRegistry[wId] = { ...existingData, ...update.reportData } as ReportData
+                
+                nextUpdate.widgetId = wId
+                delete (nextUpdate as any).reportData
+            }
+
+            return {
+                widgetRegistry: nextRegistry,
+                sessions: state.sessions.map(s => s.id === state.activeSessionId ? {
+                    ...s,
+                    messages: s.messages.map(m => m.id === id ? { ...m, ...nextUpdate } : m),
+                    lastModified: Date.now()
+                } : s)
+            }
+        }),
+
+      deleteMessage: (id) =>
+        set(state => ({
+            sessions: state.sessions.map(s => s.id === state.activeSessionId ? {
+                ...s,
+                messages: s.messages.filter(m => m.id !== id),
+                lastModified: Date.now()
+            } : s)
         })),
 
       setReplyTo: (replyToId: string | null) =>
@@ -198,21 +281,41 @@ export const useProjectStore = create<ProjectState>()(
           return { abortControllers: newControllers }
         }),
 
-      addWidget: (widget: ReportWidget) =>
-        set(state => ({
-          sessions: state.sessions.map(s =>
-            s.id === state.activeSessionId
-              ? {
-                  ...s,
-                  dashboard: {
-                    ...s.dashboard,
-                    widgets: [...s.dashboard.widgets, widget],
-                  },
-                  lastModified: Date.now(),
-                }
-              : s
-          ),
-        })),
+      addWidget: (widget) =>
+        set(state => {
+             let nextRegistry = state.widgetRegistry
+             let nextWidget = { ...widget } as ReportWidget
+             
+             if (widget.reportData) {
+                 // Use provided widgetId or generate new one
+                 const wId = widget.widgetId || crypto.randomUUID()
+                 
+                 // If reusing widgetId, we overwrite registry data? 
+                 // Yes, assuming the latest data is passed. 
+                 // Or we could check if it exists.
+                 // For strong consistency, updating registry with latest reportData is correct.
+                 nextRegistry = { ...nextRegistry, [wId]: widget.reportData }
+                 
+                 nextWidget.widgetId = wId
+                 delete (nextWidget as any).reportData
+             }
+             
+             return {
+                 widgetRegistry: nextRegistry,
+                 sessions: state.sessions.map(s =>
+                    s.id === state.activeSessionId
+                    ? {
+                        ...s,
+                        dashboard: {
+                            ...s.dashboard,
+                            widgets: [...s.dashboard.widgets, nextWidget],
+                        },
+                        lastModified: Date.now(),
+                        }
+                    : s
+                ),
+             }
+        }),
 
       removeWidget: (id: string) =>
         set(state => ({
@@ -252,6 +355,25 @@ export const useProjectStore = create<ProjectState>()(
             )
         })),
 
+      updateWidgetData: (id, update) =>
+        set(state => {
+            const session = state.sessions.find(s => s.id === state.activeSessionId)
+            if (!session) return state
+            const widget = session.dashboard.widgets.find(w => w.id === id)
+            if (!widget) return state
+
+            const wId = widget.widgetId
+            const currentData = state.widgetRegistry[wId] || ({} as ReportData)
+            
+            return {
+                widgetRegistry: {
+                    ...state.widgetRegistry,
+                    [wId]: { ...currentData, ...update } as ReportData
+                },
+                sessions: state.sessions.map(s => s.id === state.activeSessionId ? { ...s, lastModified: Date.now() } : s)
+            }
+        }),
+
       updateLayout: (layout: any) =>
         set(state => {
             if (Array.isArray(layout)) {
@@ -278,20 +400,23 @@ export const useProjectStore = create<ProjectState>()(
         }),
 
       updateReportTitle: (id: string, title: string) =>
-        set(state => ({
-            sessions: state.sessions.map(s =>
-                s.id === state.activeSessionId
-                ? {
-                    ...s,
-                    dashboard: {
-                        ...s.dashboard,
-                        widgets: s.dashboard.widgets.map(w => w.id === id ? { ...w, reportData: { ...w.reportData, title } } : w)
-                    },
-                    lastModified: Date.now()
-                }
-                : s
-            )
-        })),
+        set(state => {
+            // Need to update Registry
+            const session = state.sessions.find(s => s.id === state.activeSessionId)
+            if (!session) return state
+            const widget = session.dashboard.widgets.find(w => w.id === id)
+            if (!widget || !widget.widgetId) return state
+
+            const oldData = state.widgetRegistry[widget.widgetId] || {}
+            
+            return {
+                widgetRegistry: {
+                    ...state.widgetRegistry,
+                    [widget.widgetId]: { ...oldData, title }
+                },
+                sessions: state.sessions.map(s => s.id === state.activeSessionId ? { ...s, lastModified: Date.now() } : s)
+            }
+        }),
 
       setCanvasConfig: (config: any) =>
         set(state => ({
@@ -475,7 +600,7 @@ export const useProjectStore = create<ProjectState>()(
             addWidget, removeWidget, updateLayout, updateReportTitle, setCanvasConfig,
             setLayoutScenario, setEditingReportId, setLanguage,
             addFile, removeFile, loadProject, serialize, reset,
-            abortControllers, layoutScenario, editingReportId, language, pendingReplace, confirmReplace, setPendingReplace, // Exclude transient & actions
+            abortControllers, layoutScenario, editingReportId, language, pendingReplace, confirmReplace, setPendingReplace, refreshSessionWidgets, // Exclude transient & actions
             ...data 
         } = get()
         

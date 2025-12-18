@@ -7,7 +7,7 @@ import { A4Chart } from '../A4Canvas'
 import { ReportTable } from './report-table'
 import { BigNumberDisplay } from '../BigNumberDisplay'
 import { cn } from '@/utils/cn'
-import type { ReportData } from '@/stores/useWorkbenchStore'
+import type { ReportData, DenormalizedReportWidget } from '@/stores/useWorkbenchStore'
 import { useTranslation } from 'react-i18next'
 
 export function ChartFullView() {
@@ -23,7 +23,7 @@ export function ChartFullView() {
   const { t } = useTranslation('common')
 
   const report = useMemo(
-    () => pinnedReports.find(r => r.id === editingReportId),
+    () => pinnedReports.find(r => r.id === editingReportId) as DenormalizedReportWidget | undefined,
     [editingReportId, pinnedReports]
   )
 
@@ -129,7 +129,7 @@ export function ChartFullView() {
               <div className="h-full w-full rounded-lg border border-zinc-200 bg-zinc-50/60 p-4">
                 {isBigNumber && data.length > 0 && (
                   <BigNumberDisplay
-                    value={Object.values(data[0])[0]}
+                    value={Object.values(data[0])[0] as any}
                     label={Object.keys(data[0])[0]}
                     variant="dashboard"
                   />

@@ -2,6 +2,7 @@ import { useProjectStore, LayoutScenario, Language } from './useProjectStore'
 import { ReportWidget, ReportData } from '@shared/types/dashboard'
 import type { Layout } from 'react-grid-layout'
 import type { AIAnalysisResult } from '@shared/types'
+import { useMemo } from 'react'
 import {
   GRID_ROW_HEIGHT,
   PAGE_HEIGHT_PX,
@@ -14,10 +15,14 @@ export type { LayoutScenario, Language }
 export type CanvasLayout = 'a4' | 'screen'
 export type { ReportData, ReportWidget }
 
+export interface DenormalizedReportWidget extends Omit<ReportWidget, 'widgetId'> {
+  reportData: ReportData
+}
+
 const FOOTER_HEIGHT_PX = 70
 
 interface WorkbenchState {
-  pinnedReports: ReportWidget[]
+  pinnedReports: DenormalizedReportWidget[]
   layoutScenario: LayoutScenario
   canvasConfig: {
     layout: CanvasLayout
@@ -30,7 +35,8 @@ interface WorkbenchState {
   pinReport: (
     messageId: string,
     reportData: ReportData,
-    timestamp?: number
+    timestamp?: number,
+    widgetId?: string
   ) => void
   removeReport: (reportId: string) => void
   updateReportTitle: (reportId: string, newTitle: string) => void
@@ -57,7 +63,7 @@ const getSessionState = () => {
     return { projectState, session, dashboard: session?.dashboard }
 }
 
-const pinReport = (messageId: string, reportData: ReportData, timestamp?: number) => {
+const pinReport = (messageId: string, reportData: ReportData, timestamp?: number, widgetId?: string) => {
     const { dashboard } = getSessionState()
     if (!dashboard) return
 
@@ -140,6 +146,7 @@ const pinReport = (messageId: string, reportData: ReportData, timestamp?: number
     useProjectStore.getState().addWidget({
         id,
         sourceMessageId: messageId,
+        widgetId: widgetId || id,
         reportData: { ...reportData, timestamp: timestamp ?? reportData.timestamp },
         layout: { i: id, x: 0, y: targetY, w, h },
         pageIndex: targetPageIndex,
@@ -243,8 +250,17 @@ export const useWorkbenchStore = <T = WorkbenchState>(selector?: (state: Workben
     const session = projectState.sessions.find(s => s.id === projectState.activeSessionId)
     const dashboard = session?.dashboard
 
+    // Resolve reports
+    const resolvedReports = useMemo(() => (dashboard?.widgets || []).map(w => {
+        const reportData = projectState.widgetRegistry[w.widgetId]
+        if (reportData) {
+            return { ...w, reportData }
+        }
+        return w as any
+    }) as DenormalizedReportWidget[], [dashboard?.widgets, projectState.widgetRegistry])
+
     const state: WorkbenchState = {
-        pinnedReports: dashboard?.widgets || [],
+        pinnedReports: resolvedReports,
         layoutScenario: projectState.layoutScenario,
         canvasConfig: {
             layout: dashboard?.layoutMode || 'a4',
@@ -258,22 +274,23 @@ export const useWorkbenchStore = <T = WorkbenchState>(selector?: (state: Workben
         pinReport,
         removeReport: (id) => useProjectStore.getState().removeWidget(id),
         updateReportTitle: (id, title) => useProjectStore.getState().updateReportTitle(id, title),
-        updateReportConfig: (id, updates) => {
-            useProjectStore.getState().updateWidget(id, (w) => {
-                 const nextVizConfig = updates.config !== undefined
-                  ? { ...w.reportData.vizConfig, ...updates.config }
-                  : w.reportData.vizConfig
-                 return {
-                    ...w,
-                    reportData: {
-                        ...w.reportData,
-                        chartType: updates.type ?? w.reportData.chartType,
+                updateReportConfig: (id, updates) => {
+                    const { dashboard, projectState } = getSessionState()
+                    const widget = dashboard?.widgets.find(w => w.id === id)
+                    if (!widget) return
+        
+                    const currentData = projectState.widgetRegistry[widget.widgetId]
+                    if (!currentData) return
+        
+                    const nextVizConfig = updates.config !== undefined
+                        ? { ...currentData.vizConfig, ...updates.config }
+                        : currentData.vizConfig
+        
+                    useProjectStore.getState().updateWidgetData(id, {
+                        chartType: updates.type ?? currentData.chartType,
                         vizConfig: nextVizConfig,
-                    }
-                 }
-            })
-        },
-        updateLayout,
+                    })
+                },        updateLayout,
         updateGlobalLayout,
         moveWidgetToPage,
         setLayoutScenario: (s) => useProjectStore.getState().setLayoutScenario(s),
@@ -294,8 +311,18 @@ export const useWorkbenchStore = <T = WorkbenchState>(selector?: (state: Workben
 // Mock getState
 useWorkbenchStore.getState = () => {
     const { projectState, session, dashboard } = getSessionState()
+    
+    // Resolve reports
+    const resolvedReports = (dashboard?.widgets || []).map(w => {
+        const reportData = projectState.widgetRegistry[w.widgetId]
+        if (reportData) {
+            return { ...w, reportData }
+        }
+        return w as any
+    }) as DenormalizedReportWidget[]
+
     return {
-        pinnedReports: dashboard?.widgets || [],
+        pinnedReports: resolvedReports,
         layoutScenario: projectState.layoutScenario,
         canvasConfig: {
             layout: dashboard?.layoutMode || 'a4',
@@ -309,18 +336,22 @@ useWorkbenchStore.getState = () => {
         removeReport: (id) => useProjectStore.getState().removeWidget(id),
         updateReportTitle: (id, title) => useProjectStore.getState().updateReportTitle(id, title),
         updateReportConfig: (id, updates) => {
-             useProjectStore.getState().updateWidget(id, (w) => {
-                 const nextVizConfig = updates.config !== undefined
-                  ? { ...w.reportData.vizConfig, ...updates.config }
-                  : w.reportData.vizConfig
-                 return {
-                    ...w,
-                    reportData: {
-                        ...w.reportData,
-                        chartType: updates.type ?? w.reportData.chartType,
-                        vizConfig: nextVizConfig,
-                    }
-                 }
+            const { dashboard, projectState } = getSessionState()
+            const widget = dashboard?.widgets.find(w => w.id === id)
+            if (!widget) return
+
+            const currentData = projectState.widgetRegistry[widget.widgetId]
+            if (!currentData) return
+
+            const nextVizConfig = updates.config !== undefined
+                ? { ...currentData.vizConfig, ...updates.config }
+                : currentData.vizConfig
+
+            useProjectStore.getState().updateMessage(id, { 
+                reportData: {
+                    chartType: updates.type ?? currentData.chartType,
+                    vizConfig: nextVizConfig,
+                }
             })
         },
         updateLayout,

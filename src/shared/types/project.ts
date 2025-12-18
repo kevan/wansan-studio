@@ -1,5 +1,5 @@
 import { Message } from './chat';
-import { ReportWidget } from './dashboard';
+import { ReportWidget, ReportData } from './dashboard';
 import { FileNode, RelationSuggestion } from '../types';
 
 export type Relation = RelationSuggestion;
@@ -30,4 +30,5 @@ export interface ProjectData {
   relations: Relation[];   // Shared Data Logic
   sessions: Session[];     // Multi-Session Content
   activeSessionId: string;
+  widgetRegistry: Record<string, ReportData>;
 }

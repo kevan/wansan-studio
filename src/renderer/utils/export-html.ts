@@ -1,4 +1,4 @@
-import { ReportWidget } from '../stores/useWorkbenchStore'
+import { DenormalizedReportWidget } from '../stores/useWorkbenchStore'
 
 const HTML_TEMPLATE = `
 <!DOCTYPE html>
@@ -274,7 +274,7 @@ const HTML_TEMPLATE = `
 </html>
 `
 
-export async function exportDashboardToHtml(reports: ReportWidget[]) {
+export async function exportDashboardToHtml(reports: DenormalizedReportWidget[]) {
   // 1. Serialize Data
   const sortedReports = [...reports].sort((a, b) => {
     const ay = a.layout?.y ?? 0
@@ -287,16 +287,19 @@ export async function exportDashboardToHtml(reports: ReportWidget[]) {
     return ay - by
   })
   const dataJson = JSON.stringify(
-    sortedReports.map(r => ({
-      title: r.reportData.title,
-      subtitle: r.reportData.subtitle,
-      summary: r.reportData.summary,
-      insights: r.reportData.insights,
-      vizConfig: r.reportData.vizConfig,
-      data: r.reportData.tableData,
-      chartType: r.reportData.chartType,
-      layout: r.layout,
-    }))
+    sortedReports.map(r => {
+      const reportData = r.reportData || ({} as any)
+      return {
+        title: reportData.title || 'Untitled',
+        subtitle: reportData.subtitle,
+        summary: reportData.summary,
+        insights: reportData.insights,
+        vizConfig: reportData.vizConfig,
+        data: reportData.tableData,
+        chartType: reportData.chartType,
+        layout: r.layout,
+      }
+    })
   )
 
   // 2. Inject Data

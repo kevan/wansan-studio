@@ -17,5 +17,5 @@ export interface Message {
   metadata?: {
     latency?: number
   }
-  reportData?: ReportData
+  widgetId?: string
 }

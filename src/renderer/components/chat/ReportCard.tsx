@@ -45,7 +45,7 @@ export function ReportCard({
       }
     } else {
       window.dispatchEvent(new Event('wansan:open-dashboard'))
-      pinReport(messageId, reportData, message.timestamp)
+      pinReport(messageId, reportData, message.timestamp, message.widgetId)
     }
   }
 
