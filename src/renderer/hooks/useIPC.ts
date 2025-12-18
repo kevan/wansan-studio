@@ -65,6 +65,10 @@ const mockIPC = {
     console.log('Mock resetDB')
     return { success: true }
   },
+  resetApp: async () => {
+    console.log('Mock resetApp')
+    return { success: true }
+  },
   openExternal: async (url: string) => {
     console.log('Mock openExternal', url)
     return { success: true }
@@ -122,6 +126,7 @@ declare global {
       exportPDF: (data: any) => Promise<IPCResponse>
       exportReport: (payload: any) => Promise<IPCResponse>
       resetDB: () => Promise<IPCResponse>
+      resetApp: () => Promise<IPCResponse>
       saveImage: (dataUrl: string, name?: string) => Promise<IPCResponse>
       saveFile: (
         content: string,

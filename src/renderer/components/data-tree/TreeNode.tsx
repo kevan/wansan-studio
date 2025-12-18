@@ -34,6 +34,7 @@ import {
   ContextMenuTrigger,
 } from '../ui/context-menu'
 import { useFileStore } from '../../stores/useFileStore'
+import { useProjectStore } from '../../stores/useProjectStore'
 import { useToastStore } from '../../stores/useToastStore'
 import { useReIngestFile } from '../../hooks/useIPC'
 import { useTranslation } from 'react-i18next'
@@ -53,9 +54,9 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
     setView,
     removeRelation,
     updateColumn,
-    replaceFile,
     files,
   } = useFileStore()
+  const replaceFile = useProjectStore(state => state.replaceFile)
   const { addToast } = useToastStore()
   const reIngest = useReIngestFile()
   const { t } = useTranslation('common')
@@ -169,8 +170,12 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
     if (result.success && result.data && typeof result.data === 'string') {
         const loadingToast = addToast({ title: t('replacing_file'), type: 'info', duration: 0 })
         try {
-            await replaceFile(data.fileId, result.data)
-            addToast({ title: t('file_replaced'), type: 'success', duration: 2000 })
+            const status = await replaceFile(data.fileId, result.data)
+            if (status === 'completed') {
+                addToast({ title: t('file_replaced'), type: 'success', duration: 2000 })
+            } else if (status === 'error') {
+                addToast({ title: t('replace_failed'), type: 'error' })
+            }
         } catch (e) {
             addToast({ title: t('replace_failed'), description: String(e), type: 'error' })
         } finally {

@@ -323,6 +323,23 @@ export function setupIPC(
     }
   })
 
+  // 重置应用 (数据库 + 配置)
+  ipcMain.handle('reset-app', async () => {
+    try {
+      // 1. Reset Database
+      await databaseService.dropAllTables()
+      // 2. Clear AI Config
+      aiService.clearConfig()
+      return { success: true }
+    } catch (error) {
+      console.error('Reset App error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  })
+
   // 保存图片
   ipcMain.handle(
     'save-image',

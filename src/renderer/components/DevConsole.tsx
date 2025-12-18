@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { isDev } from '../utils/env'
 import i18n from '../i18n'
+import { useFileStore } from '../stores/useFileStore'
+import { useChatStore } from '../stores/useChatStore'
+import { useWorkbenchStore } from '../stores/useWorkbenchStore'
+import { useSettingsStore, SETTINGS_STORAGE_KEY } from '../stores/useSettingsStore'
+import { useProjectStore } from '../stores/useProjectStore'
+import { useTranslation } from 'react-i18next'
 
 interface LogEntry {
   id: number
@@ -24,6 +30,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
   const [language, setLanguage] = useState(i18n.language || 'en')
   const logIdRef = useRef(0)
   const logsEndRef = useRef<HTMLDivElement>(null)
+  const { t } = useTranslation('common')
 
   // 拦截 console 方法
   useEffect(() => {
@@ -74,13 +81,38 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
   }, [logs])
 
   const clearLogs = useCallback(() => setLogs([]), [])
-  const resetApp = useCallback(() => {
-    if (typeof (window as any).resetApp === 'function') {
-      ;(window as any).resetApp()
-    } else {
-      console.warn('resetApp is not available in this environment')
+  
+  const resetApp = useCallback(async () => {
+    if (!confirm(t('reset_confirm'))) return
+
+    console.log(`💥 ${t('reset_nuking')}`)
+
+    try {
+      if (window.electronAPI) {
+        console.log('🧹 Clearing Backend State (DuckDB & Config)...')
+        await window.electronAPI.resetApp()
+      }
+    } catch (e) {
+      console.error('Failed to reset backend:', e)
     }
-  }, [])
+
+    // 1. Clear LocalStorage first
+    localStorage.removeItem('wansan-files')
+    localStorage.removeItem('wansan-chat')
+    localStorage.removeItem('wansan-workbench')
+    localStorage.removeItem('wansan-project-v2')
+    localStorage.removeItem(SETTINGS_STORAGE_KEY)
+
+    // 2. Reset Zustand Stores (Memory)
+    useFileStore.getState().reset()
+    useChatStore.getState().reset()
+    useWorkbenchStore.getState().reset()
+    useSettingsStore.getState().resetSettings()
+    useProjectStore.getState().reset()
+
+    console.log('✅ App state reset complete. Reloading...')
+    window.location.reload()
+  }, [t])
 
   const printAllTables = useCallback(async () => {
     try {

@@ -6,13 +6,6 @@ import { queryClient } from './utils/queryClient'
 import App from './App'
 import './styles/globals.css'
 import './i18n'
-import { useFileStore } from './stores/useFileStore'
-import { useChatStore } from './stores/useChatStore'
-import { useWorkbenchStore } from './stores/useWorkbenchStore'
-import {
-  SETTINGS_STORAGE_KEY,
-  useSettingsStore,
-} from './stores/useSettingsStore'
 import { enableFetchLogger } from './utils/fetch-logger'
 
 // Enable fetch logging in development
@@ -40,31 +33,3 @@ root.render(
   </React.StrictMode>
 )
 
-if (import.meta.env.DEV) {
-  ;(window as any).resetApp = async () => {
-    console.log('💥 NUKING APP STATE...')
-
-    try {
-      if (window.electronAPI) {
-        console.log('🧹 Clearing DuckDB...')
-        await window.electronAPI.resetDB()
-      }
-    } catch (e) {
-      console.error('Failed to reset DB:', e)
-    }
-
-    localStorage.removeItem('wansan-files')
-    localStorage.removeItem('wansan-chat')
-    localStorage.removeItem('wansan-workbench')
-    localStorage.removeItem(SETTINGS_STORAGE_KEY)
-
-    useFileStore.getState().reset()
-    useChatStore.getState().reset()
-    useWorkbenchStore.getState().reset()
-    useSettingsStore.getState().resetSettings()
-
-    window.location.reload()
-  }
-
-  console.log("🔧 DevTools: Run 'resetApp()' to clear all state.")
-}

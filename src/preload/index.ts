@@ -18,6 +18,7 @@ const electronAPI = {
   deleteTable: (tableName: string) =>
     ipcRenderer.invoke('delete-table', tableName),
   resetDB: () => ipcRenderer.invoke('reset-db'),
+  resetApp: () => ipcRenderer.invoke('reset-app'),
 
   // AI 功能
   askAI: (
