@@ -3,6 +3,7 @@ import fs from 'fs-extra'
 import type { AIService } from './ai'
 
 export async function exportWebReport(aiService: AIService, widgets: any[]) {
+  console.log('exportWebReport,widgets:' + widgets.length)
   // 1. Prepare Payload
   const meta = widgets.map(w => {
     const reportData = w.reportData || {}
@@ -48,7 +49,12 @@ export async function exportWebReport(aiService: AIService, widgets: any[]) {
   const systemPrompt = "You are a specialized code generator for BI reports."
 
   // 3. Call AI
+  console.log('[Web Export] Calling AI with prompt:', prompt)
+  const startTime = Date.now()
   const aiResponse = await aiService.generateText(prompt, systemPrompt)
+  const duration = Date.now() - startTime
+  console.log(`[Web Export] AI Response received in ${duration}ms:`, aiResponse)
+  
   let html = aiResponse.trim()
   // Strip markdown fences if AI added them
   html = html.replace(/^```html/, '').replace(/```$/, '')

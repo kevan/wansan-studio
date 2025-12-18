@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  Loader2,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -63,6 +64,7 @@ export function DashboardHeader() {
   const addToast = useToastStore(state => state.addToast)
   const addWidget = useProjectStore(state => state.addWidget)
   const { mutateAsync: exportWebReport } = useExportWebReport()
+  const [isExportingWeb, setIsExportingWeb] = useState(false)
 
   const insertTextWidget = () => {
     const widgetId = crypto.randomUUID()
@@ -409,7 +411,11 @@ export function DashboardHeader() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50"
-              onSelect={async () => {
+              disabled={isExportingWeb}
+              onSelect={async (e) => {
+                e.preventDefault() // Prevent closing while loading
+                if (isExportingWeb) return
+                setIsExportingWeb(true)
                 try {
                   const { pinnedReports } = useWorkbenchStore.getState()
                   await exportWebReport(pinnedReports)
@@ -417,11 +423,17 @@ export function DashboardHeader() {
                 } catch (e) {
                   console.error(e)
                   addToast({ title: 'Export Failed', type: 'error' })
+                } finally {
+                  setIsExportingWeb(false)
                 }
               }}
             >
-              <Sparkles className="mr-2 h-4 w-4" />
-              AI Web Report
+              {isExportingWeb ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
+              {isExportingWeb ? 'Generating...' : 'AI Web Report'}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
