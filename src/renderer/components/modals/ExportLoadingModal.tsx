@@ -22,20 +22,30 @@ export function ExportLoadingModal({ isOpen }: { isOpen: boolean }) {
     setProgress(0)
     setStep(0)
 
-    const timer = setInterval(() => {
-      setProgress(p => {
-        if (p >= 95) return 95
-        // Accelerate at start, slow down at end
-        return p + (p < 50 ? 5 : 1)
+    // 1. Progress Bar Logic (Zeno's Paradox)
+    const progressTimer = setInterval(() => {
+      setProgress(old => {
+        // Fast at start
+        if (old < 30) return old + 2
+        // Medium
+        if (old < 70) return old + 0.5
+        // Slow crawl
+        if (old < 95) return old + 0.1
+        // Freeze
+        return 95
       })
-    }, 500)
+    }, 100)
 
+    // 2. Steps Logic (One-way)
     const stepTimer = setInterval(() => {
-      setStep(s => (s < STEPS.length - 1 ? s + 1 : s))
-    }, 4000)
+      setStep(s => {
+        if (s < STEPS.length - 1) return s + 1
+        return s // Stay at last step
+      })
+    }, 5000) // 5s per step
 
     return () => {
-      clearInterval(timer)
+      clearInterval(progressTimer)
       clearInterval(stepTimer)
     }
   }, [isOpen])
