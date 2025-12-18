@@ -216,7 +216,13 @@ export function A4Chart({
           : {
               type: 'category',
               data: xData,
-              axisLabel: { interval: 0, rotate: 30 }, // Avoid overlap
+              axisLabel: {
+                interval: 'auto',
+                hideOverlap: true,
+                rotate: 0,
+                width: 60,
+                overflow: 'truncate',
+              },
             },
       yAxis: {
         type: 'value',

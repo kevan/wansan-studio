@@ -40,7 +40,7 @@ export function Sidebar(_props: SidebarProps) {
                 {projectMeta.name}
               </h2>
             </div>
-            <div className="space-y-1 pb-2 border-b border-zinc-200/50 dark:border-zinc-800/50">
+            <div className="space-y-2 pb-2 border-b border-zinc-200/50 dark:border-zinc-800/50">
               <Button
                 onClick={() => createSession()}
                 className="w-full h-9 bg-black hover:bg-zinc-800 text-white shadow-sm justify-start px-3"
@@ -49,11 +49,11 @@ export function Sidebar(_props: SidebarProps) {
                 {t('new_session', 'New Session')}
               </Button>
               <Button
-                variant="ghost"
-                className="w-full justify-start px-3 h-9 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50"
+                variant="secondary"
+                className="w-full justify-start px-3 h-9 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 shadow-sm"
                 onClick={() => setViewMode('data')}
               >
-                <Database className="mr-2 h-4 w-4" />
+                <Database className="mr-2 h-4 w-4 text-indigo-500" />
                 {t('data_assets', 'Data Assets')}
               </Button>
             </div>

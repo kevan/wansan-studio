@@ -60,11 +60,11 @@ export function DashboardWidget({
   // Dashboard Layout (Chart focused)
   if (variant === 'dashboard') {
     return (
-      <div className={cn('flex flex-col h-full p-6 bg-white', className)}>
+      <div className={cn('flex flex-col h-full p-4 bg-white', className)}>
         <A4Header
           title={title}
           subtitle={subtitle}
-          className="mb-2 pb-2 flex-shrink-0"
+          className="mb-1 pb-2 flex-shrink-0"
           onTitleChange={onTitleChange}
           isEditable={true}
           showTimestamp={false}
@@ -111,7 +111,7 @@ export function DashboardWidget({
         />
 
         {/* Chart takes priority space */}
-        <div className="flex-1 min-h-0 w-full mb-0">
+        <div className="flex-1 min-h-0 w-full mb-0 p-2">
           {chartType !== 'table' &&
             chartType !== 'kpi' &&
             chartType !== 'text' &&
