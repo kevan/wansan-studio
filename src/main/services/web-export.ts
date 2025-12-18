@@ -2,8 +2,13 @@ import { dialog } from 'electron'
 import fs from 'fs-extra'
 import type { AIService } from './ai'
 
-export async function exportWebReport(aiService: AIService, widgets: any[]) {
-  console.log('exportWebReport,widgets:' + widgets.length)
+export async function exportWebReport(
+  aiService: AIService,
+  widgets: any[],
+  config: { title: string; theme: string }
+) {
+  const { title: reportTitle, theme } = config
+  console.log('exportWebReport,widgets:' + widgets.length, config)
   // 1. Prepare Payload
   const meta = widgets.map(w => {
     const reportData = w.reportData || {}
@@ -24,28 +29,25 @@ export async function exportWebReport(aiService: AIService, widgets: any[]) {
   }, {})
 
   // 2. Prompt AI
+  const themeInstructions = {
+    minimal: 'Clean, spacious, lots of white space, subtle gray accents.',
+    cyberpunk: 'Dark mode, neon colors (purple, cyan, pink), futuristic grid, glowing borders.',
+    corporate: 'Professional blue/navy accents, solid borders, structured business layout.'
+  }[theme as 'minimal' | 'cyberpunk' | 'corporate'] || 'Modern and clean.'
+
   const prompt = `
     You are a frontend expert. Create a single-file HTML report (using CDN for Tailwind CSS and ECharts).
     
+    REPORT TITLE: ${reportTitle}
+    VISUAL THEME: ${theme}
+    THEME STYLE GUIDE: ${themeInstructions}
+
     Layout Requirement: 
     - Responsive Grid. 
-    - Modern, clean "Apple-style" design.
+    - ${themeInstructions}
     - Use a nice font (Inter or system-ui).
-    - Include a header with "Wansan Report" and current date.
-    
-    Content: Render the following widgets: ${JSON.stringify(meta)}.
-    
-    Data Binding:
-    - DO NOT hardcode data rows in the ECharts options.
-    - Assume a global variable exists: "window.REPORT_DATA".
-    - For widget with id "abc", use "window.REPORT_DATA['abc']" as the dataset source.
-    - Handle different chart types (bar, line, pie, scatter, kpi, table) appropriately.
-    - For 'kpi' type, display a big number card.
-    - For 'table' type, render a simple HTML table (limit to top 10 rows).
-    - For 'text' type, render the desc/content as markdown or plain text.
-    
-    Output ONLY valid HTML code. No markdown fences.
-  `
+    - Include a header with "${reportTitle}" and current date.
+    ...`
 
   const systemPrompt = "You are a specialized code generator for BI reports."
 

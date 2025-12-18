@@ -51,6 +51,7 @@ import { Analytics } from '../../services/analytics'
 import logo from '@/src/assets/logo.png'
 import { useExportWebReport } from '@/hooks/useIPC'
 import { ExportLoadingModal } from '../modals/ExportLoadingModal'
+import { ExportConfigModal, type ExportConfig } from '../modals/ExportConfigModal'
 
 export function DashboardHeader() {
   const { canvasConfig, setCanvasConfig, setLayoutScenario } =
@@ -65,6 +66,22 @@ export function DashboardHeader() {
   const addWidget = useProjectStore(state => state.addWidget)
   const { mutateAsync: exportWebReport } = useExportWebReport()
   const [isExportingWeb, setIsExportingWeb] = useState(false)
+  const [isConfigOpen, setIsConfigOpen] = useState(false)
+
+  const handleConfirmExport = async (config: ExportConfig) => {
+    setIsConfigOpen(false)
+    setIsExportingWeb(true)
+    try {
+      const { pinnedReports } = useWorkbenchStore.getState()
+      await exportWebReport({ widgets: pinnedReports, config })
+      addToast({ title: t('export_success', 'Web Report Generated'), type: 'success' })
+    } catch (e) {
+      console.error(e)
+      addToast({ title: t('export_failed', 'Export Failed'), type: 'error' })
+    } finally {
+      setIsExportingWeb(false)
+    }
+  }
 
   const insertTextWidget = () => {
     const widgetId = crypto.randomUUID()
@@ -278,6 +295,12 @@ export function DashboardHeader() {
   return (
     <div className="h-14 border-b bg-white flex items-center px-4 justify-between shrink-0 z-20 relative">
       <ExportLoadingModal isOpen={isExportingWeb} />
+      <ExportConfigModal
+        isOpen={isConfigOpen}
+        onClose={() => setIsConfigOpen(false)}
+        onConfirm={handleConfirmExport}
+        defaultTitle={canvasConfig.title || 'Data Report'}
+      />
       {/* LEFT: Actions */}
       <div className="flex items-center gap-2 w-[200px]">
         <Button
@@ -413,21 +436,7 @@ export function DashboardHeader() {
             <DropdownMenuItem
               className="text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50"
               disabled={isExportingWeb}
-              onSelect={async (e) => {
-                // e.preventDefault() // No longer needed as modal handles feedback
-                if (isExportingWeb) return
-                setIsExportingWeb(true)
-                try {
-                  const { pinnedReports } = useWorkbenchStore.getState()
-                  await exportWebReport(pinnedReports)
-                  addToast({ title: 'Web Report Generated', type: 'success' })
-                } catch (e) {
-                  console.error(e)
-                  addToast({ title: 'Export Failed', type: 'error' })
-                } finally {
-                  setIsExportingWeb(false)
-                }
-              }}
+              onSelect={() => setIsConfigOpen(true)}
             >
               <Sparkles className="mr-2 h-4 w-4" />
               AI Web Report

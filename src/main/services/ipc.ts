@@ -232,9 +232,9 @@ export function setupIPC(
   })
 
   // AI Web Export
-  ipcMain.handle('export-web-report', async (_event, widgets: any[]) => {
+  ipcMain.handle('export-web-report', async (_event, widgets: any[], config: any) => {
     try {
-      const result = await exportWebReport(aiService, widgets)
+      const result = await exportWebReport(aiService, widgets, config)
       return result
     } catch (error) {
       console.error('Export web report error:', error)

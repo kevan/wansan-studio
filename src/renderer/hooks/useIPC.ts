@@ -132,7 +132,7 @@ declare global {
       secureGet: (key: string) => Promise<IPCResponse<string | null>>
       exportPDF: (data: any) => Promise<IPCResponse>
       exportReport: (payload: any) => Promise<IPCResponse>
-      exportWebReport: (widgets: any[]) => Promise<IPCResponse>
+      exportWebReport: (widgets: any[], config: any) => Promise<IPCResponse>
       resetDB: () => Promise<IPCResponse>
       resetApp: () => Promise<IPCResponse>
       saveImage: (dataUrl: string, name?: string) => Promise<IPCResponse>
@@ -425,8 +425,14 @@ export const useReIngestFile = () => {
 // AI Web 导出 Hook
 export const useExportWebReport = () => {
   return useMutation({
-    mutationFn: async (widgets: any[]) => {
-      const response = await getIpc().invoke('export-web-report', widgets)
+    mutationFn: async ({
+      widgets,
+      config,
+    }: {
+      widgets: any[]
+      config: any
+    }) => {
+      const response = await getIpc().invoke('export-web-report', widgets, config)
       if (!response.success) {
         if (response.error === 'Cancelled') return
         throw new Error(response.error || 'Failed to export web report')
