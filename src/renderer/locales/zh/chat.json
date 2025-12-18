@@ -17,6 +17,7 @@
   "no_rerun": "暂无可重跑的分析",
   "unknown_command": "未知指令",
   "unknown_command_desc": "试试 /clear、/export 或 /rerun。",
+  "command_refresh": "刷新数据",
   "export_markdown": "导出 Markdown",
   "input_hint": "Enter 发送 • Shift+Enter 换行 • @ 插入表名",
   "table_count": "{{count}} 个表",

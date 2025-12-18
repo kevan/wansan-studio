@@ -14,12 +14,14 @@ import {
   Loader2,
   Bug,
   Lock,
+  RefreshCw,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { useFileStore } from '../../stores/useFileStore'
 import { useChatStore } from '../../stores/useChatStore'
 import { useToastStore } from '../../stores/useToastStore'
 import { useSettingsStore } from '../../stores/useSettingsStore'
+import { useProjectStore } from '../../stores/useProjectStore'
 import type { ChatMessage } from '../ChatInterface'
 import { useTranslation } from 'react-i18next'
 import { exportDebugLog } from '../../utils/debug-exporter'
@@ -71,6 +73,9 @@ export function MagicInput({
   const { isActivated } = useSettingsStore()
   const { t } = useTranslation('chat')
   const { t: tCommon } = useTranslation('common')
+  const refreshSessionWidgets = useProjectStore(state => state.refreshSessionWidgets)
+  const addMessage = useProjectStore(state => state.addMessage)
+  const updateMessage = useProjectStore(state => state.updateMessage)
 
   const handleExportMarkdown = async () => {
     if (!isActivated) {
@@ -173,6 +178,40 @@ export function MagicInput({
         },
       },
       {
+        id: 'refresh',
+        label: t('command_refresh', 'Refresh Data'),
+        icon: RefreshCw,
+        action: async () => {
+          setPopoverOpen(false)
+          setValue('')
+          
+          // 1. User Message
+          addMessage({ 
+            id: crypto.randomUUID(),
+            type: 'user', 
+            content: '/refresh',
+            timestamp: Date.now()
+          } as any)
+
+          // 2. System Message
+          const systemMsgId = crypto.randomUUID()
+          addMessage({ 
+            id: systemMsgId, 
+            type: 'assistant', 
+            content: '🔄 Refreshing all charts in this session...',
+            timestamp: Date.now()
+          } as any)
+
+          // 3. Logic
+          await refreshSessionWidgets()
+
+          // 4. Update
+          updateMessage(systemMsgId, { 
+            content: '✅ **Refresh Complete.** All charts are up to date with the latest source files.' 
+          } as any)
+        }
+      },
+      {
         id: 'export',
         label: t('export_markdown'),
         icon: isActivated ? Download : Lock,
@@ -244,10 +283,36 @@ export function MagicInput({
 
     if (trimmed.startsWith('/')) {
       const cmd = trimmed.slice(1).toLowerCase()
-      if (['clear', 'export', 'debug'].includes(cmd)) {
+      if (['clear', 'export', 'debug', 'refresh'].includes(cmd)) {
         if (cmd === 'clear') {
           resetChat()
           addToast({ title: t('chat_cleared'), type: 'info', duration: 2500 })
+        }
+        if (cmd === 'refresh') {
+           // 1. User Message
+          addMessage({ 
+            id: crypto.randomUUID(),
+            type: 'user', 
+            content: '/refresh',
+            timestamp: Date.now()
+          } as any)
+
+          // 2. System Message
+          const systemMsgId = crypto.randomUUID()
+          addMessage({ 
+            id: systemMsgId, 
+            type: 'assistant', 
+            content: '🔄 Refreshing all charts in this session...',
+            timestamp: Date.now()
+          } as any)
+
+          // 3. Logic
+          await refreshSessionWidgets()
+
+          // 4. Update
+          updateMessage(systemMsgId, { 
+            content: '✅ **Refresh Complete.** All charts are up to date with the latest source files.' 
+          } as any)
         }
         if (cmd === 'export') {
           handleExportMarkdown()
