@@ -32,7 +32,6 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { useToastStore } from '@/stores/useToastStore'
-import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import { AI_PROVIDERS, type AIProviderKey } from '@/src/lib/constants'
@@ -48,7 +47,6 @@ interface SettingsDialogProps {
 
 export function SettingsDialog({ trigger }: SettingsDialogProps) {
   const settings = useSettingsStore()
-  const setWorkbenchLanguage = useWorkbenchStore(state => state.setLanguage)
   const addToast = useToastStore(state => state.addToast)
   const { t, i18n } = useTranslation('settings')
 
@@ -436,7 +434,6 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                       onValueChange={value => {
                         const lang = value === 'en' ? 'en' : 'zh'
                         settings.updateSettings({ language: lang })
-                        setWorkbenchLanguage(lang)
                       }}
                     >
                       <SelectTrigger>

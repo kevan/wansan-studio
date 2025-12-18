@@ -77,7 +77,7 @@ function App() {
   )
   const [rightPanelSize, setRightPanelSize] = useState(initialLayout.rightSize)
   const [isPresentationMode, setIsPresentationMode] = useState(false)
-  const language = useWorkbenchStore(state => state.language)
+  const language = useSettingsStore(state => state.language)
   // const hasCompletedOnboarding = useSettingsStore(
   //   state => state.hasCompletedOnboarding,
   // )
@@ -91,8 +91,8 @@ function App() {
   const [isStoreReady, setIsStoreReady] = useState(false)
 
   useEffect(() => {
-    const unsub = useProjectStore.persist.onFinishHydration(() => setIsStoreReady(true))
-    if (useProjectStore.persist.hasHydrated()) {
+    const unsub = useSettingsStore.persist.onFinishHydration(() => setIsStoreReady(true))
+    if (useSettingsStore.persist.hasHydrated()) {
       setIsStoreReady(true)
     }
     return unsub
