@@ -100,11 +100,6 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
     return config ? config.name : settings.provider
   }, [settings.provider, activeProviders])
 
-  const languageLabel =
-    settings.language === 'zh'
-      ? t('general.language_zh')
-      : t('general.language_en')
-
   const verifyConnection = useCallback(async () => {
     if (!settings.apiKey.trim()) {
       setVerifyStatus('error')
@@ -445,10 +440,9 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                       }}
                     >
                       <SelectTrigger>
-                        <span className="text-sm text-zinc-700 truncate">
-                          {languageLabel ||
-                            t('general.select_language_placeholder')}
-                        </span>
+                        <SelectValue
+                          placeholder={t('general.select_language_placeholder')}
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="zh">
