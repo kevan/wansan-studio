@@ -30,10 +30,28 @@ export function ReportCard({
   const setReplyTo = useChatStore(state => state.setReplyTo)
   const updateReportConfig = useChatStore(state => state.updateReportConfig)
   const updateMessageData = useChatStore(state => state.updateMessageData)
-  const rerunAnalysis = useChatStore(state => state.rerunAnalysis)
   const { t } = useTranslation('common')
+  const [isRerunning, setIsRerunning] = useState(false)
 
   const isPinned = pinnedReports.some(r => r.sourceMessageId === messageId)
+
+  const handleRerun = async () => {
+    if (!reportData.sql || isRerunning) return
+    setIsRerunning(true)
+    try {
+      const result = await window.electronAPI.runSQL(reportData.sql)
+      if (result.success && result.data) {
+        const columns = result.data.length > 0 ? Object.keys(result.data[0]) : []
+        updateMessageData(messageId, reportData.sql, result.data, columns)
+      } else {
+        throw new Error(result.error || 'Execution failed')
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsRerunning(false)
+    }
+  }
 
   const handlePinToggle = () => {
     if (isPinned) {
@@ -118,11 +136,14 @@ export function ReportCard({
 
           {/* Rerun Button */}
           <button
-            onClick={() => rerunAnalysis(message)}
-            className="p-1.5 rounded-md transition-colors hover:bg-zinc-200"
+            onClick={handleRerun}
+            disabled={isRerunning}
+            className="p-1.5 rounded-md transition-colors hover:bg-zinc-200 disabled:opacity-50"
             title={t('rerun_with_latest')}
           >
-            <RefreshCw className="h-4 w-4 text-zinc-500" />
+            <RefreshCw
+              className={cn('h-4 w-4 text-zinc-500', isRerunning && 'animate-spin')}
+            />
           </button>
 
           {/* Refine Button */}
