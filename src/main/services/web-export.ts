@@ -10,16 +10,34 @@ export async function exportWebReport(
   const { title: reportTitle, theme } = config
   console.log('exportWebReport,widgets:' + widgets.length, config)
 
-  // 1. Prepare Payload
-  const meta = widgets.map(w => {
+  // 1. Sort Widgets (Page -> Y -> X)
+  const sortedWidgets = [...widgets].sort((a, b) => {
+    // Page First
+    const pageA = a.pageIndex || 0
+    const pageB = b.pageIndex || 0
+    if (pageA !== pageB) return pageA - pageB
+
+    const layoutA = a.layout || { x: 0, y: 0 }
+    const layoutB = b.layout || { x: 0, y: 0 }
+    
+    // Then Y (Row)
+    if (layoutA.y !== layoutB.y) return layoutA.y - layoutB.y
+    // Then X (Column)
+    return layoutA.x - layoutB.x
+  })
+
+  // 2. Prepare Payload with Layout Hints
+  const meta = sortedWidgets.map(w => {
     const reportData = w.reportData || {}
+    const width = w.layout?.w || 12
     return {
       id: w.id,
       title: reportData.title || 'Untitled Chart',
       type: reportData.chartType,
       desc: reportData.summary || '',
       content: reportData.content || '', // For text widgets
-      vizConfig: reportData.vizConfig
+      vizConfig: reportData.vizConfig,
+      layout_hint: width >= 10 ? 'full-width' : (width >= 6 ? 'half-width' : 'compact')
     }
   })
 
@@ -28,7 +46,7 @@ export async function exportWebReport(
     return { ...acc, [w.id]: reportData.tableData || [] }
   }, {})
 
-  // 2. Define Theme System
+  // 3. Define Theme System
   const THEMES: Record<string, string> = {
     minimal: 'Minimalist: Clean, lots of white space, thin borders, monochrome palette with subtle gray accents. Primary font: Inter.',
     cyberpunk: 'Cyberpunk: Dark background (#09090b), neon neon borders (purple/cyan), glowing text effects, grid-paper background patterns. Primary font: JetBrains Mono or similar.',
@@ -37,7 +55,7 @@ export async function exportWebReport(
 
   const styleInstruction = THEMES[theme] || THEMES.minimal;
 
-  // 3. Prompt AI
+  // 4. Prompt AI
   const prompt = `
 Role: Senior Frontend Architect.
 Task: Generate a standalone single-file HTML dashboard report.
@@ -53,10 +71,13 @@ Task: Generate a standalone single-file HTML dashboard report.
 - **Layout**: 
   - Mobile: Single column.
   - Desktop: Responsive grid (2-3 columns based on card relevance).
+  - **CRITICAL**: Respect the \`layout_hint\` in metadata. 
+    - 'full-width' items MUST span the full container width (col-span-full).
+    - 'half-width' items should take 50% (or span 1 in 2-col grid).
   - Each chart must be in a card container with padding/shadow consistent with the theme.
 
 ### 3. Content Metadata
-Render ${widgets.length} widgets based on this metadata:
+Render ${meta.length} widgets based on this metadata:
 ${JSON.stringify(meta, null, 2)}
 
 ### 4. Data Binding Contract (CRITICAL)
@@ -81,13 +102,9 @@ ${JSON.stringify(meta, null, 2)}
 
   const systemPrompt = "You are a specialized code generator for BI reports."
 
-  // 4. Call AI
+  // 5. Call AI
   console.log('[Web Export] Calling AI with prompt:', prompt)
-  const startTime = Date.now()
-  const aiResponse = await aiService.generateText(prompt, systemPrompt)
-  const duration = Date.now() - startTime
-  console.log(`[Web Export] AI Response received in ${duration}ms:`, aiResponse)
-  
+
   let html = aiResponse.trim()
   // Strip markdown fences if AI added them
   html = html.replace(/^```html/, '').replace(/```$/, '')
