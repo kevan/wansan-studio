@@ -309,6 +309,41 @@ export function DashboardHeader() {
           onClick={() => {
             const widgetId = crypto.randomUUID()
             const id = crypto.randomUUID()
+            
+            // Intelligent Positioning Logic
+            const state = useProjectStore.getState()
+            const session = state.sessions.find(s => s.id === state.activeSessionId)
+            const widgets = session?.dashboard.widgets || []
+            const currentPage = pageCount - 1 // Default to last page or current focused page if we tracked it
+            
+            // Filter widgets on the target page
+            const pageWidgets = widgets.filter(w => (w.pageIndex || 0) === currentPage)
+            
+            // Find max Y + H on this page
+            let maxY = 0
+            pageWidgets.forEach(w => {
+                const bottom = w.layout.y + w.layout.h
+                if (bottom > maxY) maxY = bottom
+            })
+            
+            let targetY = maxY
+            let targetPage = currentPage
+            
+            // Check if it fits on this page (A4 Mode Only)
+            // 27 rows per page approx
+            const WIDGET_HEIGHT = 2
+            const MAX_ROWS = 27 
+            
+            if (isA4 && (targetY + WIDGET_HEIGHT > MAX_ROWS)) {
+                // Move to next page
+                targetPage = currentPage + 1
+                targetY = 0
+                // If page doesn't exist, increment page count
+                if (targetPage >= pageCount) {
+                    setPageCount(targetPage + 1)
+                }
+            }
+            
             addWidget({
               id,
               sourceMessageId: 'manual',
@@ -319,8 +354,8 @@ export function DashboardHeader() {
                 chartType: 'text',
                 timestamp: Date.now(),
               },
-              layout: { i: id, x: 0, y: Infinity, w: 12, h: 2 },
-              pageIndex: 0,
+              layout: { i: id, x: 0, y: targetY, w: 12, h: WIDGET_HEIGHT },
+              pageIndex: targetPage,
             })
           }}
         >
