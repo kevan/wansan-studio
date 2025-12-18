@@ -78,10 +78,10 @@ export function Sidebar(_props: SidebarProps) {
 
       {/* Footer */}
       {viewMode === 'sessions' && (
-        <div className="p-3 mt-auto border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 z-10">
+        <div className="p-3 mt-auto border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 backdrop-blur-sm z-10">
           <div
             onClick={() => setViewMode('data')}
-            className="mb-3 group flex items-center gap-3 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/50 hover:border-indigo-200 dark:hover:border-indigo-500/50 hover:shadow-sm cursor-pointer transition-all"
+            className="mb-1 group flex items-center gap-3 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/50 hover:border-indigo-200 dark:hover:border-indigo-500/50 hover:shadow-sm cursor-pointer transition-all"
           >
             {/* Icon Box */}
             <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center border border-indigo-100 dark:border-indigo-800 group-hover:bg-indigo-600 transition-colors">
@@ -108,26 +108,27 @@ export function Sidebar(_props: SidebarProps) {
                 new CustomEvent('open-settings', { detail: 'general' })
               )
             }
-            className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-200/50 dark:hover:bg-zinc-800 cursor-pointer transition-colors group select-none"
+            className="flex items-center gap-3 p-2 rounded-xl hover:bg-zinc-200/80 dark:hover:bg-zinc-800 cursor-pointer transition-colors group select-none"
             title={t('settings')}
           >
             {/* Avatar */}
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-sm ring-1 ring-white/20">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-sm ring-1 ring-white/20 border border-white/10">
               {username.slice(0, 2).toUpperCase()}
             </div>
 
             {/* Info */}
-            <div className="flex-1 overflow-hidden">
-              <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
+            <div className="flex-1 overflow-hidden flex flex-col justify-center">
+              <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 truncate">
                 {username}
               </div>
-              <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+              <div className="text-[10px] text-yellow-600 dark:text-yellow-500 font-medium flex items-center gap-1">
                 {settings.isActivated ? (
-                  <span className="text-yellow-600 dark:text-yellow-500 font-medium">
-                    Beta Pro
-                  </span>
+                  <>
+                    <Crown className="w-3 h-3 fill-current" />
+                    <span>{t('sidebar.pro_active', 'Pro Member')}</span>
+                  </>
                 ) : (
-                  'Trial'
+                  t('sidebar.trial_mode', 'Trial Account')
                 )}
               </div>
             </div>
