@@ -2,13 +2,6 @@ import { useState } from 'react'
 import { Plus, ArrowLeft, Database, Settings, Crown, Sparkles, Settings2, Bot, ChevronRight } from 'lucide-react'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { Button } from './ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu'
 import { useTranslation } from 'react-i18next'
 import { SettingsDialog } from './settings/SettingsDialog'
 import { cn } from '@/utils/cn'
@@ -109,80 +102,39 @@ export function Sidebar(_props: SidebarProps) {
             <ChevronRight className="w-4 h-4 text-zinc-300 dark:text-zinc-600 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-200/50 dark:hover:bg-zinc-800 cursor-pointer transition-colors group">
-                {/* Avatar */}
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-sm ring-1 ring-white/20">
-                  {username.slice(0, 2).toUpperCase()}
-                </div>
+          <div
+            onClick={() =>
+              document.dispatchEvent(
+                new CustomEvent('open-settings', { detail: 'general' })
+              )
+            }
+            className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-200/50 dark:hover:bg-zinc-800 cursor-pointer transition-colors group select-none"
+            title={t('settings')}
+          >
+            {/* Avatar */}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-sm ring-1 ring-white/20">
+              {username.slice(0, 2).toUpperCase()}
+            </div>
 
-                {/* Info */}
-                <div className="flex-1 overflow-hidden">
-                  <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
-                    {username}
-                  </div>
-                  <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
-                    {settings.isActivated ? (
-                      <span className="text-yellow-600 dark:text-yellow-500 font-medium">
-                        Beta Pro
-                      </span>
-                    ) : (
-                      'Trial'
-                    )}
-                  </div>
-                </div>
-
-                {/* Icon */}
-                <Settings className="w-4 h-4 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors" />
+            {/* Info */}
+            <div className="flex-1 overflow-hidden">
+              <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                {username}
               </div>
-            </DropdownMenuTrigger>
+              <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+                {settings.isActivated ? (
+                  <span className="text-yellow-600 dark:text-yellow-500 font-medium">
+                    Beta Pro
+                  </span>
+                ) : (
+                  'Trial'
+                )}
+              </div>
+            </div>
 
-            <DropdownMenuContent
-              align="start"
-              className="w-56"
-              side="top"
-              sideOffset={10}
-            >
-              {!settings.isActivated && (
-                <>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      document.dispatchEvent(
-                        new CustomEvent('open-settings', { detail: 'general' })
-                      )
-                    }
-                    className="text-indigo-600 dark:text-indigo-400 focus:text-indigo-700 focus:bg-indigo-50 dark:focus:bg-indigo-900/20 cursor-pointer"
-                  >
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    {t('sidebar.unlock_full_access', 'Unlock Full Access')}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              <DropdownMenuItem
-                onClick={() =>
-                  document.dispatchEvent(
-                    new CustomEvent('open-settings', { detail: 'ai' })
-                  )
-                }
-                className="cursor-pointer"
-              >
-                <Bot className="w-4 h-4 mr-2" /> {t('tabs.ai', 'AI Engine')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() =>
-                  document.dispatchEvent(
-                    new CustomEvent('open-settings', { detail: 'general' })
-                  )
-                }
-                className="cursor-pointer"
-              >
-                <Settings2 className="w-4 h-4 mr-2" />{' '}
-                {t('settings', 'Preferences')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            {/* Icon */}
+            <Settings2 className="w-4 h-4 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
 
           <SettingsDialog />
         </div>
