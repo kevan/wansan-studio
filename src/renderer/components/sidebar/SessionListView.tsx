@@ -9,6 +9,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useState } from 'react'
+import { ConfirmDialog } from '@/components/modals/ConfirmDialog'
+import { useTranslation } from 'react-i18next'
 
 export function SessionListView() {
   const sessions = useProjectStore(state => state.sessions)
@@ -16,9 +18,11 @@ export function SessionListView() {
   const switchSession = useProjectStore(state => state.switchSession)
   const deleteSession = useProjectStore(state => state.deleteSession)
   const renameSession = useProjectStore(state => state.renameSession)
+  const { t } = useTranslation('common')
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const handleRename = (id: string, currentName: string) => {
     setEditingId(id)
@@ -35,13 +39,29 @@ export function SessionListView() {
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
-    if (confirm('Are you sure you want to delete this session?')) {
-      deleteSession(id)
+    setDeleteId(id)
+  }
+
+  const confirmDelete = () => {
+    if (deleteId) {
+      deleteSession(deleteId)
+      setDeleteId(null)
     }
   }
 
   return (
-    <div className="flex flex-col gap-1 p-2">
+    <>
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title={t('delete_session_title', 'Delete Session')}
+        description={t('delete_session_desc', 'Are you sure you want to delete this session? This action cannot be undone.')}
+        onConfirm={confirmDelete}
+        confirmText={t('delete', 'Delete')}
+        cancelText={t('cancel', 'Cancel')}
+        variant="destructive"
+      />
+      <div className="flex flex-col gap-1 p-2">
       {sessions.length === 0 && (
         <div className="text-center text-xs text-zinc-400 py-4">
           No sessions yet.
@@ -109,6 +129,7 @@ export function SessionListView() {
           </DropdownMenu>
         </div>
       ))}
-    </div>
+      </div>
+    </>
   )
 }

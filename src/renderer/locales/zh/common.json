@@ -208,6 +208,8 @@
   "change_type": "修改类型",
   "type_boolean": "布尔值",
   "delete_relationship": "删除关联",
+  "delete_session_title": "删除会话",
+  "delete_session_desc": "确定要删除此会话吗？此操作无法撤销。",
   "folder_actions_na": "文件夹操作 (不可用)",
   "file_missing_tooltip": "磁盘上找不到文件",
   "part_of_relationship": "属于关联的一部分"
