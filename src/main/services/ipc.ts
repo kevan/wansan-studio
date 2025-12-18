@@ -8,6 +8,7 @@ import { executeSQL } from '../engine/executor'
 import { checkFilesConsistency } from '../engine/file-watcher'
 import { ingestJsonData } from '../engine/ingestion'
 import fs from 'fs-extra'
+import os from 'os'
 import type {
   TableSchema,
   FileNode,
@@ -257,7 +258,7 @@ export function setupIPC(
   // 获取用户信息 (OS username)
   ipcMain.handle('get-user-info', async () => {
     try {
-      const userInfo = require('os').userInfo()
+      const userInfo = os.userInfo()
       return { success: true, data: { username: userInfo.username } }
     } catch (error) {
       console.error('Get user info error:', error)
