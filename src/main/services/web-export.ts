@@ -30,9 +30,10 @@ export async function exportWebReport(
   const meta = sortedWidgets.map(w => {
     const reportData = w.reportData || {}
     const width = w.layout?.w || 12
+    const isText = reportData.chartType === 'text'
     return {
       id: w.id,
-      title: reportData.title || 'Untitled Chart',
+      title: isText ? '' : (reportData.title || 'Untitled Chart'),
       type: reportData.chartType,
       desc: reportData.summary || '',
       content: reportData.content || '', // For text widgets
