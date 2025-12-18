@@ -437,9 +437,11 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue
-                          placeholder={t('general.select_language_placeholder')}
-                        />
+                        <span className="text-sm text-zinc-700 truncate">
+                          {settings.language === 'zh'
+                            ? t('general.language_zh')
+                            : t('general.language_en')}
+                        </span>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="zh">
