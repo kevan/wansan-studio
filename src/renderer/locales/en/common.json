@@ -112,6 +112,7 @@
   "reset_confirm": "Are you sure you want to reset all app state? This action cannot be undone.",
   "reset_nuking": "Nuking app state...",
   "start_analysis": "Start Analysis",
+  "manage_sources_hint": "Click to manage sources",
   "data_sources_root": "Data Sources",
   "relationships_root": "Relationships",
   "data_detail": "Data Detail",

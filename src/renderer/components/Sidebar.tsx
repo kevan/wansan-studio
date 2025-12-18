@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, ArrowLeft, Database, Settings, Crown, Sparkles, Settings2, Bot } from 'lucide-react'
+import { Plus, ArrowLeft, Database, Settings, Crown, Sparkles, Settings2, Bot, ChevronRight } from 'lucide-react'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { Button } from './ui/button'
 import {
@@ -43,7 +43,7 @@ export function Sidebar(_props: SidebarProps) {
                 {projectMeta.name}
               </h2>
             </div>
-            <div className="space-y-2 pb-2 border-b border-zinc-200/50 dark:border-zinc-800/50">
+            <div className="space-y-4 pb-2 border-b border-zinc-200/50 dark:border-zinc-800/50">
               <Button
                 onClick={() => createSession()}
                 className="w-full h-9 bg-black hover:bg-zinc-800 text-white shadow-sm justify-start px-3"
@@ -51,14 +51,29 @@ export function Sidebar(_props: SidebarProps) {
                 <Plus className="mr-2 h-4 w-4" />
                 {t('new_session', 'New Session')}
               </Button>
-              <Button
-                variant="secondary"
-                className="w-full justify-start px-3 h-9 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 shadow-sm"
+
+              <div
                 onClick={() => setViewMode('data')}
+                className="group flex items-center gap-3 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/50 hover:border-indigo-200 dark:hover:border-indigo-500/50 hover:shadow-sm cursor-pointer transition-all"
               >
-                <Database className="mr-2 h-4 w-4 text-indigo-500" />
-                {t('data_assets', 'Data Assets')}
-              </Button>
+                {/* Icon Box */}
+                <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center border border-indigo-100 dark:border-indigo-800 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/40 transition-colors">
+                  <Database className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                </div>
+
+                {/* Text Info */}
+                <div className="flex-1 flex flex-col justify-center min-w-0">
+                  <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-200 group-hover:text-indigo-900 dark:group-hover:text-indigo-300 transition-colors">
+                    {t('data_assets', 'Data Assets')}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium group-hover:text-indigo-600/70 dark:group-hover:text-indigo-400/70 truncate transition-colors">
+                    {t('manage_sources_hint', 'Click to manage sources')}
+                  </span>
+                </div>
+
+                {/* Arrow */}
+                <ChevronRight className="w-4 h-4 text-zinc-300 dark:text-zinc-600 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
+              </div>
             </div>
           </div>
         ) : (

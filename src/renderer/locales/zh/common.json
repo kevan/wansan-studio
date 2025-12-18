@@ -112,6 +112,7 @@
   "reset_confirm": "确定要重置所有应用状态吗？此操作无法撤销。",
   "reset_nuking": "正在重置应用状态...",
   "start_analysis": "开始分析",
+  "manage_sources_hint": "点击管理数据源",
   "data_sources_root": "数据源",
   "relationships_root": "关联关系",
   "data_detail": "数据详情",
