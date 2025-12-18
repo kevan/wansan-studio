@@ -73,6 +73,9 @@ const mockIPC = {
     console.log('Mock openExternal', url)
     return { success: true }
   },
+  getUserInfo: async () => {
+    return { success: true, data: { username: 'MockUser' } }
+  },
   windowControl: (
     action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
   ) => {
@@ -133,6 +136,7 @@ declare global {
         extension: string,
         name: string
       ) => Promise<IPCResponse<boolean>>
+      getUserInfo: () => Promise<IPCResponse<{ username: string }>>
       openExternal: (url: string) => Promise<IPCResponse>
       getPathForFile: (file: File) => string
       windowControl: (
@@ -354,6 +358,22 @@ export const useVersion = () => {
   return useQuery({
     queryKey: ['version'],
     queryFn: async () => getIpc().version,
+    staleTime: Infinity,
+  })
+}
+
+// 获取用户信息 Hook
+export const useUserInfo = () => {
+  return useQuery({
+    queryKey: ['user-info'],
+    queryFn: async () => {
+      const response = await getIpc().invoke('get-user-info')
+      if (!response.success) {
+        // Fallback or ignore error
+        return { username: 'User' }
+      }
+      return response.data
+    },
     staleTime: Infinity,
   })
 }

@@ -15,6 +15,7 @@ import { cn } from '@/utils/cn'
 import { DataAssetsView } from './sidebar/DataAssetsView'
 import { SessionListView } from './sidebar/SessionListView'
 import { useProjectStore } from '../stores/useProjectStore'
+import { useUserInfo } from '@/hooks/useIPC'
 
 interface SidebarProps {
   onImportData?: () => void
@@ -28,6 +29,8 @@ export function Sidebar(_props: SidebarProps) {
   const settings = useSettingsStore()
   const createSession = useProjectStore(state => state.createSession)
   const projectMeta = useProjectStore(state => state.meta)
+  const { data: userInfo } = useUserInfo()
+  const username = userInfo?.username || 'User'
 
   return (
     <aside className="wansan-sidebar flex flex-col h-full bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800">
@@ -95,14 +98,14 @@ export function Sidebar(_props: SidebarProps) {
             <DropdownMenuTrigger asChild>
               <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-200/50 dark:hover:bg-zinc-800 cursor-pointer transition-colors group">
                 {/* Avatar */}
-                <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800">
-                  {settings.isActivated ? 'P' : 'G'}
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-sm ring-1 ring-white/20">
+                  {username.slice(0, 2).toUpperCase()}
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 overflow-hidden">
                   <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
-                    User
+                    {username}
                   </div>
                   <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
                     {settings.isActivated ? (

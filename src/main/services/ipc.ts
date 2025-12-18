@@ -254,6 +254,17 @@ export function setupIPC(
     return { success: true, data: value }
   })
 
+  // 获取用户信息 (OS username)
+  ipcMain.handle('get-user-info', async () => {
+    try {
+      const userInfo = require('os').userInfo()
+      return { success: true, data: { username: userInfo.username } }
+    } catch (error) {
+      console.error('Get user info error:', error)
+      return { success: false, error: 'Failed to get user info' }
+    }
+  })
+
   // 检查文件一致性
   ipcMain.handle(
     'check-files-consistency',
