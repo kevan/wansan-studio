@@ -18,6 +18,7 @@ interface ProjectState extends ProjectData {
   editingReportId: string | null
   language: Language
   pendingReplace: { fileId: string; newPath: string; missing: string[] } | null
+  showRefreshConfirm: boolean
 
   // --- Actions ---
 
@@ -49,6 +50,7 @@ interface ProjectState extends ProjectData {
   setEditingReportId: (id: string | null) => void
   setLanguage: (lang: Language) => void
   setPendingReplace: (payload: { fileId: string; newPath: string; missing: string[] } | null) => void
+  setShowRefreshConfirm: (open: boolean) => void
   confirmReplace: () => Promise<void>
   refreshSessionWidgets: () => Promise<void>
 
@@ -101,8 +103,10 @@ export const useProjectStore = create<ProjectState>()(
       editingReportId: null,
       language: 'en',
       pendingReplace: null,
+      showRefreshConfirm: false,
 
       setPendingReplace: (payload) => set({ pendingReplace: payload }),
+      setShowRefreshConfirm: (open) => set({ showRefreshConfirm: open }),
 
       refreshSessionWidgets: async () => {
           const state = get()
@@ -137,16 +141,14 @@ export const useProjectStore = create<ProjectState>()(
       },
 
       confirmReplace: async () => {
-          const { pendingReplace, replaceFile, refreshSessionWidgets } = get()
+          const { pendingReplace, replaceFile } = get()
           if (!pendingReplace) return
           
           const status = await replaceFile(pendingReplace.fileId, pendingReplace.newPath, true)
           set({ pendingReplace: null })
           
           if (status === 'completed') {
-              if (window.confirm("Data source updated. Refresh all charts in the active session?")) {
-                  await refreshSessionWidgets()
-              }
+              set({ showRefreshConfirm: true })
           }
       },
 
@@ -600,7 +602,8 @@ export const useProjectStore = create<ProjectState>()(
             addWidget, removeWidget, updateLayout, updateReportTitle, setCanvasConfig,
             setLayoutScenario, setEditingReportId, setLanguage,
             addFile, removeFile, loadProject, serialize, reset,
-            abortControllers, layoutScenario, editingReportId, language, pendingReplace, confirmReplace, setPendingReplace, refreshSessionWidgets, // Exclude transient & actions
+            abortControllers, layoutScenario, editingReportId, language, pendingReplace, confirmReplace, setPendingReplace, refreshSessionWidgets,
+            showRefreshConfirm, setShowRefreshConfirm, // Exclude transient & actions
             ...data 
         } = get()
         
@@ -618,7 +621,7 @@ export const useProjectStore = create<ProjectState>()(
       name: 'wansan-project-v2',
       storage: createBigIntStorage(),
       partialize: (state) => {
-        const { abortControllers, layoutScenario, editingReportId, pendingReplace, ...rest } = state
+        const { abortControllers, layoutScenario, editingReportId, pendingReplace, showRefreshConfirm, ...rest } = state
         return rest
       }
     }
