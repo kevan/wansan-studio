@@ -12,6 +12,7 @@ export async function exportWebReport(aiService: AIService, widgets: any[]) {
       title: reportData.title || 'Untitled Chart',
       type: reportData.chartType,
       desc: reportData.summary || '',
+      content: reportData.content || '', // For text widgets
       vizConfig: reportData.vizConfig
       // Don't send data rows to AI
     }
