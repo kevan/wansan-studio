@@ -104,6 +104,10 @@ ${JSON.stringify(meta, null, 2)}
 
   // 5. Call AI
   console.log('[Web Export] Calling AI with prompt:', prompt)
+  const startTime = Date.now()
+  const aiResponse = await aiService.generateText(prompt, systemPrompt)
+  const duration = Date.now() - startTime
+  console.log(`[Web Export] AI Response received in ${duration}ms:`, aiResponse)
 
   let html = aiResponse.trim()
   // Strip markdown fences if AI added them
