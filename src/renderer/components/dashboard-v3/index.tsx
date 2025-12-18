@@ -40,6 +40,20 @@ export function DashboardCanvasV3({
     if (layoutScenario !== target) {
       setLayoutScenario(target)
     }
+
+    // Auto-center scroll on layout switch
+    // Use timeout to wait for layout/DOM update
+    setTimeout(() => {
+        if (containerRef.current) {
+            const container = containerRef.current
+            const centerScrollX = (container.scrollWidth - container.clientWidth) / 2
+            container.scrollTo({
+                top: 0, 
+                left: Math.max(0, centerScrollX),
+                behavior: 'smooth'
+            })
+        }
+    }, 50)
   }, [isA4, layoutScenario, setLayoutScenario])
 
   // --- Zoom Logic (Ctrl + Wheel) ---
