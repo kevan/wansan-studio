@@ -9,6 +9,7 @@ export async function exportWebReport(
 ) {
   const { title: reportTitle, theme } = config
   console.log('exportWebReport,widgets:' + widgets.length, config)
+
   // 1. Prepare Payload
   const meta = widgets.map(w => {
     const reportData = w.reportData || {}
@@ -19,7 +20,6 @@ export async function exportWebReport(
       desc: reportData.summary || '',
       content: reportData.content || '', // For text widgets
       vizConfig: reportData.vizConfig
-      // Don't send data rows to AI
     }
   })
 
@@ -28,30 +28,60 @@ export async function exportWebReport(
     return { ...acc, [w.id]: reportData.tableData || [] }
   }, {})
 
-  // 2. Prompt AI
-  const themeInstructions = {
-    minimal: 'Clean, spacious, lots of white space, subtle gray accents.',
-    cyberpunk: 'Dark mode, neon colors (purple, cyan, pink), futuristic grid, glowing borders.',
-    corporate: 'Professional blue/navy accents, solid borders, structured business layout.'
-  }[theme as 'minimal' | 'cyberpunk' | 'corporate'] || 'Modern and clean.'
+  // 2. Define Theme System
+  const THEMES: Record<string, string> = {
+    minimal: 'Minimalist: Clean, lots of white space, thin borders, monochrome palette with subtle gray accents. Primary font: Inter.',
+    cyberpunk: 'Cyberpunk: Dark background (#09090b), neon neon borders (purple/cyan), glowing text effects, grid-paper background patterns. Primary font: JetBrains Mono or similar.',
+    corporate: 'Corporate: Professional blue/navy accents (#1e40af), heavy-duty cards, clean shadows, consistent spacing. Primary font: Segoe UI or system-ui.'
+  }
 
+  const styleInstruction = THEMES[theme] || THEMES.minimal;
+
+  // 3. Prompt AI
   const prompt = `
-    You are a frontend expert. Create a single-file HTML report (using CDN for Tailwind CSS and ECharts).
-    
-    REPORT TITLE: ${reportTitle}
-    VISUAL THEME: ${theme}
-    THEME STYLE GUIDE: ${themeInstructions}
+Role: Senior Frontend Architect.
+Task: Generate a standalone single-file HTML dashboard report.
 
-    Layout Requirement: 
-    - Responsive Grid. 
-    - ${themeInstructions}
-    - Use a nice font (Inter or system-ui).
-    - Include a header with "${reportTitle}" and current date.
-    ...`
+### 1. Technology Stack (Strict)
+- **CSS**: Tailwind CSS (CDN: https://cdn.tailwindcss.com)
+- **Charts**: ECharts 5 (CDN: https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js)
+- **No external CSS/JS files**. All code must be inline.
+
+### 2. Design System
+- **Report Title**: "${reportTitle}"
+- **Theme Rules**: ${styleInstruction}
+- **Layout**: 
+  - Mobile: Single column.
+  - Desktop: Responsive grid (2-3 columns based on card relevance).
+  - Each chart must be in a card container with padding/shadow consistent with the theme.
+
+### 3. Content Metadata
+Render ${widgets.length} widgets based on this metadata:
+${JSON.stringify(meta, null, 2)}
+
+### 4. Data Binding Contract (CRITICAL)
+- **DO NOT INVENT DATA**. I will inject the real data later.
+- Assume a global object \`window.WIDGET_DATA\` exists.
+- Keys are widget IDs. Values are arrays of row objects.
+- **ECharts Configuration**:
+  - Use \`dataset: { source: window.WIDGET_DATA['WIDGET_ID'] }\`.
+  - Automatically map dimensions (encode) if possible, or use sensible defaults (x=first column, y=numeric column).
+  - Handle 'kpi' type as a big number display.
+  - Handle 'table' type as a clean HTML table (limit to top 10 rows).
+  - Handle 'text' type by rendering its 'content' or 'desc'.
+  - **Must handle resize**: \`window.addEventListener('resize', () => chart.resize());\`
+  - **Must set height**: Ensure \`div\` container has \`style="height: 400px;"\` or Tailwind \`h-96\`.
+
+### 5. Output Format
+- Return **ONLY** the raw HTML code.
+- Start with \`<!DOCTYPE html>\`.
+- End with \`</html>\`.
+- Do not wrap in markdown code blocks.
+`
 
   const systemPrompt = "You are a specialized code generator for BI reports."
 
-  // 3. Call AI
+  // 4. Call AI
   console.log('[Web Export] Calling AI with prompt:', prompt)
   const startTime = Date.now()
   const aiResponse = await aiService.generateText(prompt, systemPrompt)
@@ -62,20 +92,19 @@ export async function exportWebReport(
   // Strip markdown fences if AI added them
   html = html.replace(/^```html/, '').replace(/```$/, '')
 
-  // 4. Inject Data
-  const injection = `<script>window.REPORT_DATA = ${JSON.stringify(dataMap)};</script>`
+  // 5. Inject Data
+  const injection = `<script>window.WIDGET_DATA = ${JSON.stringify(dataMap)};</script>`
   // Insert before </head> or <body>
-  // Safe replacement: try </head>, fallback to <body>
   if (html.includes('</head>')) {
       html = html.replace('</head>', `${injection}</head>`)
   } else {
       html = html.replace('<body>', `<body>${injection}`)
   }
 
-  // 5. Save Dialog
+  // 6. Save Dialog
   const { filePath } = await dialog.showSaveDialog({
     filters: [{ name: 'Web Page', extensions: ['html'] }],
-    defaultPath: 'report.html'
+    defaultPath: `${reportTitle.replace(/\s+/g, '_')}.html`
   })
 
   if (filePath) {
