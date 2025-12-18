@@ -7,6 +7,7 @@ import { secureSet, secureGet } from './secure-storage'
 import { executeSQL } from '../engine/executor'
 import { checkFilesConsistency } from '../engine/file-watcher'
 import { ingestJsonData } from '../engine/ingestion'
+import { exportWebReport } from './web-export'
 import fs from 'fs-extra'
 import os from 'os'
 import type {
@@ -227,6 +228,20 @@ export function setupIPC(
       return { success: true }
     } catch (error) {
       return { success: false, error: 'Failed to clear AI config' }
+    }
+  })
+
+  // AI Web Export
+  ipcMain.handle('export-web-report', async (_event, widgets: any[]) => {
+    try {
+      const result = await exportWebReport(aiService, widgets)
+      return result
+    } catch (error) {
+      console.error('Export web report error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
     }
   })
 

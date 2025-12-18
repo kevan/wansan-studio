@@ -61,6 +61,10 @@ const mockIPC = {
     console.log('Mock exportReport', payload)
     return { success: true }
   },
+  exportWebReport: async (widgets: any[]) => {
+    console.log('Mock exportWebReport', widgets)
+    return { success: true }
+  },
   resetDB: async () => {
     console.log('Mock resetDB')
     return { success: true }
@@ -128,6 +132,7 @@ declare global {
       secureGet: (key: string) => Promise<IPCResponse<string | null>>
       exportPDF: (data: any) => Promise<IPCResponse>
       exportReport: (payload: any) => Promise<IPCResponse>
+      exportWebReport: (widgets: any[]) => Promise<IPCResponse>
       resetDB: () => Promise<IPCResponse>
       resetApp: () => Promise<IPCResponse>
       saveImage: (dataUrl: string, name?: string) => Promise<IPCResponse>
@@ -413,6 +418,20 @@ export const useReIngestFile = () => {
         throw new Error(response.error || 'Failed to re-ingest file')
       }
       return response.data as ReloadResult
+    },
+  })
+}
+
+// AI Web 导出 Hook
+export const useExportWebReport = () => {
+  return useMutation({
+    mutationFn: async (widgets: any[]) => {
+      const response = await getIpc().invoke('export-web-report', widgets)
+      if (!response.success) {
+        if (response.error === 'Cancelled') return
+        throw new Error(response.error || 'Failed to export web report')
+      }
+      return response.data
     },
   })
 }

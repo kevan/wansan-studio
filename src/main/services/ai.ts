@@ -162,6 +162,24 @@ export class AIService {
   }
 
   /**
+   * Generates raw text response from AI.
+   */
+  async generateText(prompt: string, systemPrompt?: string): Promise<string> {
+    const client = this.requireOpenAI()
+    
+    const response = await client.chat.completions.create({
+      model: this.model,
+      messages: [
+        { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.7,
+    })
+
+    return response.choices[0]?.message?.content || ''
+  }
+
+  /**
    * Sets and persists AI configuration.
    */
   setConfig(config: AIConfig) {

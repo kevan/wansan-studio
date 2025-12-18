@@ -14,6 +14,7 @@ import {
   Type,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -48,6 +49,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { Analytics } from '../../services/analytics'
 import logo from '@/src/assets/logo.png'
+import { useExportWebReport } from '@/hooks/useIPC'
 
 export function DashboardHeader() {
   const { canvasConfig, setCanvasConfig, setLayoutScenario } =
@@ -60,6 +62,7 @@ export function DashboardHeader() {
   const { isActivated } = useSettingsStore()
   const addToast = useToastStore(state => state.addToast)
   const addWidget = useProjectStore(state => state.addWidget)
+  const { mutateAsync: exportWebReport } = useExportWebReport()
 
   const insertTextWidget = () => {
     const widgetId = crypto.randomUUID()
@@ -402,6 +405,23 @@ export function DashboardHeader() {
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => handleExport('png')}>
               <FileImage className="mr-2 h-4 w-4" /> {t('export_png')}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50"
+              onSelect={async () => {
+                try {
+                  const { pinnedReports } = useWorkbenchStore.getState()
+                  await exportWebReport(pinnedReports)
+                  addToast({ title: 'Web Report Generated', type: 'success' })
+                } catch (e) {
+                  console.error(e)
+                  addToast({ title: 'Export Failed', type: 'error' })
+                }
+              }}
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              AI Web Report
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
