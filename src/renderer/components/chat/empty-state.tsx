@@ -99,7 +99,8 @@ export function EmptyState({
             key={idx}
             onClick={() => {
               if (!isChatLoading && !isRestoring) {
-                onSelectPrompt(item.prompt)
+                const text = item.isAi ? item.prompt : t(item.prompt)
+                onSelectPrompt(text)
               }
             }}
             disabled={isChatLoading || isRestoring}
