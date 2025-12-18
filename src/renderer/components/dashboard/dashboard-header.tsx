@@ -12,6 +12,7 @@ import {
   Minus,
   Lock,
   RefreshCw,
+  Type,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -52,6 +53,7 @@ export function DashboardHeader() {
   const { isActivated } = useSettingsStore()
   const addToast = useToastStore(state => state.addToast)
   const refreshSessionWidgets = useProjectStore(state => state.refreshSessionWidgets)
+  const addWidget = useProjectStore(state => state.addWidget)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   const handleRefresh = async () => {
@@ -298,6 +300,32 @@ export function DashboardHeader() {
           <RefreshCw
             className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
           />
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-2 text-xs"
+          onClick={() => {
+            const widgetId = crypto.randomUUID()
+            const id = crypto.randomUUID()
+            addWidget({
+              id,
+              sourceMessageId: 'manual',
+              widgetId,
+              reportData: {
+                title: t('text_block', 'Text Block'),
+                content: t('new_section', 'New Section'),
+                chartType: 'text',
+                timestamp: Date.now(),
+              },
+              layout: { i: id, x: 0, y: Infinity, w: 12, h: 2 },
+              pageIndex: 0,
+            })
+          }}
+        >
+          <Type className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">{t('insert_text', 'Text')}</span>
         </Button>
 
         <Separator orientation="vertical" className="h-6 mx-1" />
