@@ -11,7 +11,6 @@ import {
   Plus,
   Minus,
   Lock,
-  RefreshCw,
   Type,
 } from 'lucide-react'
 
@@ -51,23 +50,7 @@ export function DashboardHeader() {
   const { t } = useTranslation('common')
   const { isActivated } = useSettingsStore()
   const addToast = useToastStore(state => state.addToast)
-  const refreshSessionWidgets = useProjectStore(state => state.refreshSessionWidgets)
   const addWidget = useProjectStore(state => state.addWidget)
-  const [isRefreshing, setIsRefreshing] = useState(false)
-
-  const handleRefresh = async () => {
-    if (isRefreshing) return
-    setIsRefreshing(true)
-    try {
-      await refreshSessionWidgets()
-      addToast({ title: t('reload_success'), type: 'success' })
-    } catch (e) {
-      console.error(e)
-      addToast({ title: t('reload_failed'), type: 'error' })
-    } finally {
-      setIsRefreshing(false)
-    }
-  }
 
   const updateConfig = (key: keyof typeof canvasConfig, value: unknown) => {
     setCanvasConfig({ [key]: value } as Partial<typeof canvasConfig>)
@@ -277,19 +260,6 @@ export function DashboardHeader() {
             <ZoomIn className="h-3.5 w-3.5 text-zinc-500" />
           </Button>
         </div>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-zinc-500 hover:text-zinc-900"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          title={t('reload_data')}
-        >
-          <RefreshCw
-            className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
-          />
-        </Button>
 
         <Button
           variant="outline"
