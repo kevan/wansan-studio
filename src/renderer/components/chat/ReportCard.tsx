@@ -57,7 +57,7 @@ export function ReportCard({
       addToast({
         type: 'error',
         title: t('execution_failed', 'Execution Failed'),
-        description: e.message || 'Unknown error occurred',
+        description: t('refresh_failed_desc', 'Unable to refresh data. Please check your data source or SQL.'),
       })
     } finally {
       setIsRerunning(false)

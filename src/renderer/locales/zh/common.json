@@ -100,6 +100,8 @@
   "warning": "提醒",
   "reload_warning": "已重新导入，但有 {{count}} 个关联因字段缺失被移除。",
   "reload_failed": "重新导入失败",
+  "refresh_failed_desc": "无法刷新数据。请确保数据文件未被占用或移动，并检查 SQL 语法是否正确。",
+  "refresh_success": "数据已刷新",
   "reset_confirm": "确定要重置所有应用状态吗？此操作无法撤销。",
   "reset_nuking": "正在重置应用状态...",
   "start_analysis": "开始分析",
