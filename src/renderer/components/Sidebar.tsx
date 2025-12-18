@@ -57,7 +57,7 @@ export function Sidebar(_props: SidebarProps) {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              {t('data_sources', 'Data Sources')}
+              {t('data_sources_root', 'Data Sources')}
             </span>
           </div>
         )}
