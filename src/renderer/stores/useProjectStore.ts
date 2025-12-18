@@ -253,13 +253,38 @@ export const useProjectStore = create<ProjectState>()(
         }),
 
       deleteMessage: (id) =>
-        set(state => ({
-            sessions: state.sessions.map(s => s.id === state.activeSessionId ? {
-                ...s,
-                messages: s.messages.filter(m => m.id !== id),
-                lastModified: Date.now()
-            } : s)
-        })),
+        set(state => {
+            const session = state.sessions.find(s => s.id === state.activeSessionId)
+            if (!session) return state
+
+            const message = session.messages.find(m => m.id === id)
+            if (!message) return state
+
+            let nextRegistry = state.widgetRegistry
+            let nextDashboard = session.dashboard
+
+            if (message.widgetId) {
+                // Remove from registry
+                const { [message.widgetId]: _, ...remainingRegistry } = nextRegistry
+                nextRegistry = remainingRegistry
+
+                // Remove from dashboard widgets
+                nextDashboard = {
+                    ...nextDashboard,
+                    widgets: nextDashboard.widgets.filter(w => w.widgetId !== message.widgetId)
+                }
+            }
+
+            return {
+                widgetRegistry: nextRegistry,
+                sessions: state.sessions.map(s => s.id === state.activeSessionId ? {
+                    ...s,
+                    dashboard: nextDashboard,
+                    messages: s.messages.filter(m => m.id !== id),
+                    lastModified: Date.now()
+                } : s)
+            }
+        }),
 
       setReplyTo: (replyToId: string | null) =>
         set(state => ({
