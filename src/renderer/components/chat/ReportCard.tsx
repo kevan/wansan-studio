@@ -3,6 +3,7 @@ import { Pin, Sparkles, RefreshCw, Code, Settings2 } from 'lucide-react'
 import { DashboardWidget } from '../DashboardWidget'
 import { ReportData, useWorkbenchStore } from '../../stores/useWorkbenchStore'
 import { useChatStore } from '../../stores/useChatStore'
+import { useToastStore } from '../../stores/useToastStore'
 import { cn } from '../../utils/cn'
 import { SqlEditorModal } from '../report/sql-editor-modal'
 import type { ChatMessage } from '../ChatInterface'
@@ -30,6 +31,7 @@ export function ReportCard({
   const setReplyTo = useChatStore(state => state.setReplyTo)
   const updateReportConfig = useChatStore(state => state.updateReportConfig)
   const updateMessageData = useChatStore(state => state.updateMessageData)
+  const addToast = useToastStore(state => state.addToast)
   const { t } = useTranslation('common')
   const [isRerunning, setIsRerunning] = useState(false)
 
@@ -43,11 +45,20 @@ export function ReportCard({
       if (result.success && result.data) {
         const columns = result.data.length > 0 ? Object.keys(result.data[0]) : []
         updateMessageData(messageId, reportData.sql, result.data, columns)
+        addToast({
+          type: 'success',
+          title: t('refresh_success', 'Data refreshed'),
+        })
       } else {
         throw new Error(result.error || 'Execution failed')
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e)
+      addToast({
+        type: 'error',
+        title: t('execution_failed', 'Execution Failed'),
+        description: e.message || 'Unknown error occurred',
+      })
     } finally {
       setIsRerunning(false)
     }
