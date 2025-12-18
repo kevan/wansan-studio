@@ -64,30 +64,30 @@ export function DashboardHeader() {
   const insertTextWidget = () => {
     const widgetId = crypto.randomUUID()
     const id = crypto.randomUUID()
-    
+
     // Intelligent Positioning Logic
     const state = useProjectStore.getState()
     const session = state.sessions.find(s => s.id === state.activeSessionId)
     const widgets = session?.dashboard.widgets || []
     const currentPage = pageCount - 1 // Default to last page
-    
+
     // Filter widgets on the target page
     const pageWidgets = widgets.filter(w => (w.pageIndex || 0) === currentPage)
-    
+
     // Find max Y + H on this page
     let maxY = 0
     pageWidgets.forEach(w => {
         const bottom = w.layout.y + w.layout.h
         if (bottom > maxY) maxY = bottom
     })
-    
+
     let targetY = maxY
     let targetPage = currentPage
-    
+
     // Check if it fits on this page (A4 Mode Only)
     const WIDGET_HEIGHT = 2
-    const MAX_ROWS = 27 
-    
+    const MAX_ROWS = 27
+
     if (isA4 && (targetY + WIDGET_HEIGHT > MAX_ROWS)) {
         // Move to next page
         targetPage = currentPage + 1
@@ -96,7 +96,7 @@ export function DashboardHeader() {
             setPageCount(targetPage + 1)
         }
     }
-    
+
     addWidget({
       id,
       sourceMessageId: 'manual',
@@ -166,7 +166,7 @@ export function DashboardHeader() {
 
       if (type === 'png') {
         Analytics.track('export_clicked', { format: 'png' })
-        
+
         const img = new Image()
         img.src = dataUrl
         await new Promise(r => { img.onload = r })
@@ -184,12 +184,12 @@ export function DashboardHeader() {
             ctx.fillStyle = '#ffffff'
             ctx.fillRect(0, 0, canvas.width, canvas.height)
             ctx.drawImage(img, 0, 0)
-            
+
             ctx.globalAlpha = 0.6
             const footerY = img.height + (footerHeightPx / 2) - (logoSize / 2)
             const marginX = logoSize
             ctx.drawImage(logoImg, marginX, footerY, logoSize, logoSize)
-            
+
             const textX = marginX + logoSize + (logoSize * 0.5)
             const textY = footerY + (logoSize / 2)
             ctx.font = `500 ${fontSize}px sans-serif`
@@ -271,96 +271,114 @@ export function DashboardHeader() {
   }
 
   return (
-    <div className="h-14 border-b bg-white flex items-center px-4 justify-between gap-4 z-10 sticky top-0">
-      {/* LEFT: Edit Tools */}
-      <div className="flex items-center gap-2">
+    <div className="h-14 border-b bg-white flex items-center px-4 justify-between shrink-0 z-20 relative">
+      {/* LEFT: Actions */}
+      <div className="flex items-center gap-2 w-[200px]">
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={insertTextWidget}
           title={t('insert_text')}
-          className="text-zinc-600 hover:text-zinc-900"
+          className="h-8 gap-2 bg-white hover:bg-zinc-50 border-zinc-200 shadow-sm"
         >
-          <Type className="w-4 h-4 mr-2" />
-          {t('insert_text')}
+          <Type className="w-4 h-4 text-zinc-500" />
+          <span className="text-zinc-700 text-xs">{t('insert_text')}</span>
         </Button>
-        <div className="w-px h-4 bg-zinc-200 mx-2" />
       </div>
 
       {/* CENTER: View Controls */}
-      <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1 border">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 rounded-md"
-          onClick={() => updateConfig('zoom', Math.max(50, canvasConfig.zoom - 10))}
-        >
-          <Minus className="h-3 w-3" />
-        </Button>
-        <span className="text-xs font-mono w-12 text-center text-zinc-600 dark:text-zinc-400 tabular-nums">
-          {canvasConfig.zoom}%
-        </span>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 rounded-md"
-          onClick={() => updateConfig('zoom', Math.min(200, canvasConfig.zoom + 10))}
-        >
-          <Plus className="h-3 w-3" />
-        </Button>
-      </div>
-
-      {/* RIGHT: Layout & Export */}
       <div className="flex items-center gap-3">
+        {/* Zoom Control */}
+        <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-md p-0.5 border border-zinc-200 dark:border-zinc-700 h-8">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 rounded-sm hover:bg-white hover:shadow-sm"
+            onClick={() =>
+              updateConfig('zoom', Math.max(50, canvasConfig.zoom - 10))
+            }
+          >
+            <Minus className="w-3 h-3 text-zinc-600" />
+          </Button>
+          <span className="text-xs font-medium font-mono w-10 text-center text-zinc-700 dark:text-zinc-300 select-none">
+            {Math.round(canvasConfig.zoom)}%
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 rounded-sm hover:bg-white hover:shadow-sm"
+            onClick={() =>
+              updateConfig('zoom', Math.min(200, canvasConfig.zoom + 10))
+            }
+          >
+            <Plus className="w-3 h-3 text-zinc-600" />
+          </Button>
+        </div>
+
+        {/* Page Control (Conditional) */}
         {isA4 && (
-          <div className="flex items-center bg-zinc-50 dark:bg-zinc-900 rounded-md p-0.5 border mr-1">
+          <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-md p-0.5 border border-zinc-200 dark:border-zinc-700 h-8">
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 rounded-sm"
+              className="h-7 w-7 rounded-sm hover:bg-white hover:shadow-sm"
               disabled={pageCount <= 1}
               onClick={() => setPageCount(Math.max(1, pageCount - 1))}
               title={t('remove_page')}
             >
-              <Minus className="h-3 w-3" />
+              <ChevronLeft className="w-3 h-3 text-zinc-600" />
             </Button>
-            <span className="text-[10px] font-bold px-2 text-zinc-500 uppercase tracking-wider">
+            <span className="text-xs font-medium font-mono w-8 text-center text-zinc-700 dark:text-zinc-300 select-none">
               {pageCount}P
             </span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 rounded-sm"
+              className="h-7 w-7 rounded-sm hover:bg-white hover:shadow-sm"
               onClick={() => setPageCount(pageCount + 1)}
               title={t('add_page')}
             >
-              <Plus className="h-3 w-3" />
+              <ChevronRight className="w-3 h-3 text-zinc-600" />
             </Button>
           </div>
         )}
+      </div>
 
-        <Select
-          value={canvasConfig.layout}
-          onValueChange={val => handleLayoutChange(val as CanvasLayout)}
-        >
-          <SelectTrigger className="h-8 w-32 border-none bg-transparent shadow-none hover:bg-zinc-50 text-xs font-medium">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="a4">
-              <div className="flex items-center gap-2">
-                <Printer className="w-3.5 h-3.5" />
+      {/* RIGHT: System & Export */}
+      <div className="flex items-center gap-3 w-[200px] justify-end">
+        {/* Layout Switcher */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 gap-2 text-xs">
+              {canvasConfig.layout === 'a4' ? (
+                <Printer className="h-3.5 w-3.5" />
+              ) : (
+                <Monitor className="h-3.5 w-3.5" />
+              )}
+              <span className="hidden sm:inline">
+                {canvasConfig.layout === 'a4'
+                  ? t('layout_print')
+                  : t('layout_screen')}
+              </span>
+              {/*<ChevronDown className="h-3 w-3 opacity-50" />*/}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuRadioGroup
+              value={canvasConfig.layout}
+              onValueChange={val => handleLayoutChange(val as CanvasLayout)}
+            >
+              <DropdownMenuRadioItem value="a4">
                 {t('layout_print')}
-              </div>
-            </SelectItem>
-            <SelectItem value="screen">
-              <div className="flex items-center gap-2">
-                <Monitor className="w-3.5 h-3.5" />
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="screen">
                 {t('layout_screen')}
-              </div>
-            </SelectItem>
-          </SelectContent>
-        </Select>
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/*<div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700 mx-1" />*/}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -373,7 +391,7 @@ export function DashboardHeader() {
               ) : (
                 <Download className="h-3.5 w-3.5" />
               )}
-              <span>{t('export')}</span>
+              <span className="text-xs">{t('export')}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
