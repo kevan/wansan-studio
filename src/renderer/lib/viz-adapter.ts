@@ -7,14 +7,14 @@ type VizConfig = {
   series_name?: string
 }
 
-type VizType = 'bar' | 'line' | 'pie' | 'scatter' | 'table' | 'area' | 'kpi'
+type VizType = 'bar' | 'line' | 'pie' | 'scatter' | 'table' | 'area' | 'kpi' | 'text'
 
 /**
  * Categorizes chart types into groups for conversion logic
  */
 function getChartCategory(
   type: VizType
-): 'cartesian' | 'radial' | 'tabular' | 'kpi' {
+): 'cartesian' | 'radial' | 'tabular' | 'kpi' | 'text' {
   const cartesianTypes = ['bar', 'line', 'area', 'scatter']
   const radialTypes = ['pie']
   const tabularTypes = ['table']
@@ -24,6 +24,7 @@ function getChartCategory(
   if (radialTypes.includes(type)) return 'radial'
   if (tabularTypes.includes(type)) return 'tabular'
   if (kpiTypes.includes(type)) return 'kpi'
+  if (type === 'text') return 'text'
 
   return 'cartesian' // default
 }
@@ -174,6 +175,14 @@ export function adaptChartConfig(
     }
   }
 
+  // Case 6: Any to Text
+  if (newCategory === 'text') {
+    return {
+      type: 'text',
+      config: {},
+    }
+  }
+
   // Default fallback: return a basic configuration
   // This handles cases like undefined oldType or uncategorized conversions
   if (data.length > 0) {
@@ -233,7 +242,7 @@ export function buildEChartsOption(
 
   const hasData = Array.isArray(data) && data.length > 0
   const hasAxes = !!x_axis && yAxes.length > 0
-  const isRenderable = hasData && hasAxes && type !== 'table' && type !== 'kpi'
+  const isRenderable = hasData && hasAxes && type !== 'table' && type !== 'kpi' && type !== 'text'
 
   if (!isRenderable || !x_axis || yAxes.length === 0) {
     return {}

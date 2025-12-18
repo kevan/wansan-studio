@@ -17,7 +17,7 @@ import { adaptChartConfig } from '@/lib/viz-adapter'
 type VizType = NonNullable<AIAnalysisResult['visualization']>['type']
 
 interface VizControlsProps {
-  vizType?: VizType | 'area'
+  vizType?: VizType | 'area' | 'text'
   vizConfig?: {
     x_axis?: string | null
     y_axis?: string | string[] | null

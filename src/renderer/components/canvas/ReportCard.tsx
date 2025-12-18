@@ -1,5 +1,6 @@
 import React, { forwardRef, useRef, useState } from 'react'
 import { DashboardWidget } from '../DashboardWidget'
+import { TitleWidget } from '../report/widgets/TitleWidget'
 import {
   X,
   GripHorizontal,
@@ -44,6 +45,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
       state => state.setEditingReportId
     )
     const isDashboard = variant === 'dashboard'
+    const isTextWidget = report.reportData.chartType === 'text'
 
     // Merge refs
     React.useImperativeHandle(ref, () => cardRef.current!)
@@ -54,7 +56,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
 
       try {
         const dataUrl = await toPng(cardRef.current, {
-          backgroundColor: '#ffffff',
+          backgroundColor: isTextWidget ? undefined : '#ffffff',
           filter: node => {
             // Exclude controls from the screenshot
             return (
@@ -96,7 +98,9 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
         className={cn(
           'group relative flex flex-col overflow-hidden transition-all no-break',
           isDashboard
-            ? 'h-full w-full bg-white border border-zinc-200 shadow-md rounded-lg hover:shadow-lg'
+            ? isTextWidget
+              ? 'h-full w-full'
+              : 'h-full w-full bg-white border border-zinc-200 shadow-md rounded-lg hover:shadow-lg'
             : 'w-full max-w-3xl bg-white border border-zinc-200 shadow-md rounded-lg hover:shadow-lg',
           className
         )}
@@ -117,7 +121,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
               <GripHorizontal className="w-4 h-4" />
             </button>
           )}
-          {isDashboard && (
+          {isDashboard && !isTextWidget && (
             <button
               type="button"
               onClick={e => {
@@ -131,6 +135,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
               <Maximize2 className="w-4 h-4" />
             </button>
           )}
+          {!isTextWidget && (
           <div className="relative">
             <button
               onClick={e => {
@@ -168,6 +173,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
               </>
             )}
           </div>
+          )}
 
           <button
             onClick={e => {
@@ -183,14 +189,18 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
           </button>
         </div>
 
-        <div className="flex-1 min-h-0 w-full flex flex-col pt-4">
-          <DashboardWidget
-            {...report.reportData}
-            variant="dashboard"
-            onTitleChange={onTitleChange}
-            timestamp={report.reportData.timestamp}
-            className="flex-1 min-h-0 w-full"
-          />
+        <div className={cn("flex-1 min-h-0 w-full flex flex-col", !isTextWidget && "pt-4")}>
+          {isTextWidget ? (
+            <TitleWidget id={report.id} content={report.reportData.content || ''} />
+          ) : (
+            <DashboardWidget
+              {...report.reportData}
+              variant="dashboard"
+              onTitleChange={onTitleChange}
+              timestamp={report.reportData.timestamp}
+              className="flex-1 min-h-0 w-full"
+            />
+          )}
         </div>
       </div>
     )

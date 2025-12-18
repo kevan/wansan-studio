@@ -155,7 +155,33 @@ export const useProjectStore = create<ProjectState>()(
       createSession: () =>
         set(state => {
           const newSession = createNewSession()
+          
+          // Add Default Title Widget
+          const titleWidgetId = crypto.randomUUID()
+          const reportId = crypto.randomUUID()
+          
+          const defaultTitleWidget: ReportWidget = {
+              id: reportId,
+              sourceMessageId: 'system',
+              widgetId: titleWidgetId,
+              layout: { i: reportId, x: 0, y: 0, w: 12, h: 2 },
+              pageIndex: 0
+          }
+          
+          const defaultTitleData: ReportData = {
+              title: 'Report Title',
+              content: 'Untitled Report',
+              chartType: 'text',
+              timestamp: Date.now()
+          }
+          
+          newSession.dashboard.widgets.push(defaultTitleWidget)
+
           return {
+            widgetRegistry: {
+                ...state.widgetRegistry,
+                [titleWidgetId]: defaultTitleData
+            },
             sessions: [...state.sessions, newSession],
             activeSessionId: newSession.id,
           }

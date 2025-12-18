@@ -43,7 +43,7 @@ export interface ChatMessage {
     sql?: string
     reasoning?: string
     suggestions?: string[]
-    chartType?: 'bar' | 'line' | 'pie' | 'area' | 'scatter' | 'kpi' | 'table'
+    chartType?: 'bar' | 'line' | 'pie' | 'area' | 'scatter' | 'kpi' | 'table' | 'text'
     chartTitle?: string
     tableData?: Array<Record<string, any>>
     columns?: string[]

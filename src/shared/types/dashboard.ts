@@ -5,10 +5,11 @@ export interface ReportData {
   subtitle?: string
   summary?: string
   insights?: string[]
+  content?: string // For Text Widget
   sql?: string
   reasoning?: string
   suggestions?: string[]
-  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi'
+  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi' | 'text'
   chartTitle?: string
   tableData?: Array<Record<string, any>>
   columns?: string[]

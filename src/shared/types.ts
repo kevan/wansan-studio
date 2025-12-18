@@ -39,7 +39,7 @@ export interface AIAnalysisResult {
 
   // Visualization
   visualization?: {
-    type: 'bar' | 'line' | 'pie' | 'scatter' | 'table' | 'kpi'
+    type: 'bar' | 'line' | 'pie' | 'scatter' | 'table' | 'kpi' | 'area' | 'text'
     config: {
       x_axis?: string | null
       y_axis?: string | string[] | null

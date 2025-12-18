@@ -131,7 +131,7 @@ export function A4Summary({
 
 // 图表组件
 interface A4ChartProps {
-  type?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi' // Added 'table' to be safe, though handled in parent
+  type?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi' | 'text' // Added 'table' to be safe, though handled in parent
   title?: string
   data?: Array<Record<string, any>>
   config?: {

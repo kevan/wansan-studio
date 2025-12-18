@@ -11,7 +11,7 @@ interface DashboardWidgetProps {
   subtitle?: string
   summary?: string
   insights?: string[]
-  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi'
+  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi' | 'text'
   chartTitle?: string
   tableData?: Array<Record<string, any>>
   vizConfig?: {
@@ -114,6 +114,7 @@ export function DashboardWidget({
         <div className="flex-1 min-h-0 w-full mb-0">
           {chartType !== 'table' &&
             chartType !== 'kpi' &&
+            chartType !== 'text' &&
             vizConfig?.x_axis &&
             vizConfig?.y_axis && (
               <A4Chart
@@ -198,6 +199,7 @@ export function DashboardWidget({
 
         {chartType !== 'table' &&
           chartType !== 'kpi' &&
+          chartType !== 'text' &&
           vizConfig?.x_axis &&
           vizConfig?.y_axis && (
             <div className="h-[250px] w-full px-4 pb-4 pt-2">
