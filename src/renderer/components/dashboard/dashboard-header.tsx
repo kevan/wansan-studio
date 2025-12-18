@@ -15,7 +15,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  Loader2,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -51,6 +50,7 @@ import { useTranslation } from 'react-i18next'
 import { Analytics } from '../../services/analytics'
 import logo from '@/src/assets/logo.png'
 import { useExportWebReport } from '@/hooks/useIPC'
+import { ExportLoadingModal } from '../modals/ExportLoadingModal'
 
 export function DashboardHeader() {
   const { canvasConfig, setCanvasConfig, setLayoutScenario } =
@@ -277,6 +277,7 @@ export function DashboardHeader() {
 
   return (
     <div className="h-14 border-b bg-white flex items-center px-4 justify-between shrink-0 z-20 relative">
+      <ExportLoadingModal isOpen={isExportingWeb} />
       {/* LEFT: Actions */}
       <div className="flex items-center gap-2 w-[200px]">
         <Button
@@ -413,7 +414,7 @@ export function DashboardHeader() {
               className="text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50"
               disabled={isExportingWeb}
               onSelect={async (e) => {
-                e.preventDefault() // Prevent closing while loading
+                // e.preventDefault() // No longer needed as modal handles feedback
                 if (isExportingWeb) return
                 setIsExportingWeb(true)
                 try {
@@ -428,12 +429,8 @@ export function DashboardHeader() {
                 }
               }}
             >
-              {isExportingWeb ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
-              )}
-              {isExportingWeb ? 'Generating...' : 'AI Web Report'}
+              <Sparkles className="mr-2 h-4 w-4" />
+              AI Web Report
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
