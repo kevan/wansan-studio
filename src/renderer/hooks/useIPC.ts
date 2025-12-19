@@ -147,6 +147,9 @@ declare global {
       windowControl: (
         action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
       ) => void
+      onWindowStateChanged: (
+        callback: (state: { isFullScreen: boolean }) => void
+      ) => () => void
       platform: string
       version: NodeJS.ProcessVersions
     }

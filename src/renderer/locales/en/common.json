@@ -91,6 +91,8 @@
   "next": "Next",
   "file_removed": "File Removed",
   "file_replaced": "File Replaced",
+  "replace_data_source": "Replace Data Source",
+  "replacing_file": "Replacing file...",
   "replace_failed": "Replace Failed",
   "schema_mismatch_title": "Schema Mismatch",
   "schema_mismatch_desc": "The new file is missing the following columns:",

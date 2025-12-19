@@ -145,6 +145,15 @@ class WansanApp {
       setDockIcon()
     })
 
+    // 监听全屏状态变化，同步给渲染进程（处理系统级退出全屏）
+    this.mainWindow.on('leave-full-screen', () => {
+      this.mainWindow?.webContents.send('window-state-changed', { isFullScreen: false })
+    })
+    
+    this.mainWindow.on('enter-full-screen', () => {
+      this.mainWindow?.webContents.send('window-state-changed', { isFullScreen: true })
+    })
+
     // 窗口关闭事件
     this.mainWindow.on('closed', () => {
       this.mainWindow = null

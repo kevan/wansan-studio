@@ -69,6 +69,13 @@ const electronAPI = {
   // Open external URLs in user's default browser
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
   getPathForFile: (file: File) => webUtils.getPathForFile(file),
+
+  // 事件监听
+  onWindowStateChanged: (callback: (state: { isFullScreen: boolean }) => void) => {
+    const listener = (_event: any, state: { isFullScreen: boolean }) => callback(state)
+    ipcRenderer.on('window-state-changed', listener)
+    return () => ipcRenderer.removeListener('window-state-changed', listener)
+  },
 }
 
 // 将 API 暴露给渲染进程
