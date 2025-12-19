@@ -1,5 +1,6 @@
 import { ColumnSchema, useFileStore } from '../stores/useFileStore'
-import { Hash, Type, Calendar, Key, Link2 } from 'lucide-react'
+import { useProjectStore } from '../stores/useProjectStore'
+import { Hash, Type, Calendar, Key, Link2, ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 // 类型映射配置
@@ -58,7 +59,8 @@ function mapToFormatType(type: string): FormatType {
 }
 
 export function SchemaEditor() {
-  const { files, activeFileId, toggleKeyColumn, relations } = useFileStore()
+  const { files, toggleKeyColumn, relations } = useFileStore()
+  const activeFileId = useProjectStore(s => s.activeFileId)
   const { t } = useTranslation('common')
   const readyFiles = files.filter(f => f.status === 'ready')
 
@@ -217,10 +219,11 @@ function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
       {/* Format - 带图标的 Badge */}
       <td className="px-4 py-3">
         <span
-          className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded ${config.bgColor} ${config.textColor}`}
+          className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded cursor-pointer hover:opacity-80 transition-opacity ${config.bgColor} ${config.textColor}`}
         >
           <IconComponent className="w-3.5 h-3.5" />
           {t(config.label)}
+          <ChevronDown className="w-3 h-3 opacity-50 ml-1" />
         </span>
       </td>
 

@@ -49,12 +49,6 @@ export interface ProjectState {
   // AI 建议的提示词
   suggestedPrompts: string[]
 
-  // 当前选中的文件 ID (保留向后兼容)
-  activeFileId: string | null
-
-  // 当前活动视图
-  activeView: ViewMode
-
   // 当前选中的树节点 (支持文件、列、关联)
   selectedNode: SelectedNode | null
 
@@ -70,8 +64,6 @@ export interface ProjectState {
   ) => string
   updateFile: (id: string, updates: Partial<FileNode>) => void
   removeFile: (id: string) => void
-  setActiveFile: (id: string | null) => void
-  setView: (mode: ViewMode, fileId?: string | null) => void
 
   // 树节点选择
   setSelectedNode: (node: SelectedNode | null) => void
@@ -115,8 +107,6 @@ const initialState = {
   files: [],
   relations: [],
   suggestedPrompts: [],
-  activeFileId: null,
-  activeView: 'chat' as ViewMode,
   selectedNode: null,
   isRestoring: false,
 }
@@ -160,8 +150,6 @@ export const useFileStore = create<ProjectState>()(
         }
         set(state => ({
           files: [...state.files, newFile],
-          activeFileId: id,
-          activeView: 'schema',
         }))
 
         // Track Import
@@ -196,33 +184,13 @@ export const useFileStore = create<ProjectState>()(
           const remainingRelations = state.relations.filter(
             r => r.fileAId !== id && r.fileBId !== id
           )
-          const activeFileId =
-            state.activeFileId === id
-              ? (remainingFiles[0]?.id ?? null)
-              : state.activeFileId
-          const activeView =
-            state.activeView === 'schema' && !activeFileId
-              ? 'chat'
-              : state.activeView
 
           return {
             files: remainingFiles,
             relations: remainingRelations,
-            activeFileId,
-            activeView,
           }
         })
       },
-
-      setActiveFile: id => set({ activeFileId: id }),
-      setView: (mode, fileId) =>
-        set(state => ({
-          activeView: mode,
-          activeFileId:
-            mode === 'schema'
-              ? (fileId ?? state.activeFileId ?? state.files[0]?.id ?? null)
-              : (fileId ?? state.activeFileId),
-        })),
 
       setSelectedNode: node => set({ selectedNode: node }),
 
@@ -449,7 +417,6 @@ export const useFileStore = create<ProjectState>()(
         projectName: state.projectName,
         files: state.files,
         relations: state.relations,
-        activeView: state.activeView,
         suggestedPrompts: state.suggestedPrompts,
       }),
     }

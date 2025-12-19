@@ -3,9 +3,11 @@ import { useFileStore } from '../stores/useFileStore'
 import { ChatInterface } from './ChatInterface'
 import { TableSchema, RelationSuggestion } from '../../shared/types'
 import { useChatStore } from '../stores/useChatStore'
+import { useProjectStore } from '../stores/useProjectStore'
 
 export function ChatStream() {
-  const { files, relations, activeFileId } = useFileStore()
+  const { files, relations } = useFileStore()
+  const activeFileId = useProjectStore(s => s.activeFileId)
   const messages = useChatStore(state => state.messages)
   const sendMessage = useChatStore(state => state.sendMessage)
   const readyFiles = files.filter(f => f.status === 'ready')

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useParseFile, useSelectFiles } from '../hooks/useIPC'
 import { useFileStore } from '../stores/useFileStore'
+import { useProjectStore } from '../stores/useProjectStore'
 import { useAutoLink } from '../hooks/useAutoLink'
 import { loadDemoData } from '../lib/demo-data'
 import { useToastStore } from '../stores/useToastStore'
@@ -43,6 +44,9 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
       size: fileSize,
       columns: [],
     })
+    
+    // Update active file
+    useProjectStore.getState().setActiveFile(fileId)
 
     try {
       // 更新状态为 processing
@@ -121,6 +125,9 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
       'files'
     )
     checkAutoLink(currentFiles)
+    
+    // Switch to Schema View
+    useProjectStore.getState().setView('schema')
   }
 
   const handleFileSelect = async () => {

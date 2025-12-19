@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { ProjectData, Session } from '@shared/types/project'
+import { ProjectData, Session, ViewMode } from '@shared/types/project'
 import { Message } from '@shared/types/chat'
 import { ReportWidget, ReportData } from '@shared/types/dashboard'
 import { FileNode } from '@shared/types'
@@ -19,6 +19,7 @@ interface ProjectState extends ProjectData {
   language: Language
   pendingReplace: { fileId: string; newPath: string; missing: string[] } | null
   showRefreshConfirm: boolean
+  sidebarMode: 'sessions' | 'data'
 
   // --- Actions ---
 
@@ -27,6 +28,9 @@ interface ProjectState extends ProjectData {
   switchSession: (id: string) => void
   deleteSession: (id: string) => void
   renameSession: (id: string, name: string) => void
+  setSidebarMode: (mode: 'sessions' | 'data') => void
+  setView: (view: ViewMode) => void
+  setActiveFile: (id: string | null) => void
 
   // 2. Chat Actions (Targeting Active Session)
   // Accepts denormalized message (with reportData) and normalizes it
@@ -91,6 +95,8 @@ const initialProjectState: ProjectData = {
   relations: [],
   sessions: [],
   activeSessionId: '',
+  activeView: 'chat',
+  activeFileId: null,
   widgetRegistry: {},
 }
 
@@ -104,7 +110,19 @@ export const useProjectStore = create<ProjectState>()(
       language: 'en',
       pendingReplace: null,
       showRefreshConfirm: false,
+      sidebarMode: 'sessions',
 
+      setSidebarMode: (mode) => set({ sidebarMode: mode }),
+      setView: (view) => set(state => {
+          let newSidebarMode = state.sidebarMode
+          if (view === 'schema' || view === 'relationships') {
+              newSidebarMode = 'data'
+          } else if (view === 'chat') {
+              newSidebarMode = 'sessions'
+          }
+          return { activeView: view, sidebarMode: newSidebarMode }
+      }),
+      setActiveFile: (id) => set({ activeFileId: id }),
       setPendingReplace: (payload) => set({ pendingReplace: payload }),
       setShowRefreshConfirm: (open) => set({ showRefreshConfirm: open }),
 

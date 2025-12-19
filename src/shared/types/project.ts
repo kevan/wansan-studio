@@ -3,6 +3,7 @@ import { ReportWidget, ReportData } from './dashboard';
 import { FileNode, RelationSuggestion } from '../types';
 
 export type Relation = RelationSuggestion;
+export type ViewMode = 'chat' | 'schema' | 'relationships';
 
 export interface Session {
   id: string;
@@ -30,5 +31,7 @@ export interface ProjectData {
   relations: Relation[];   // Shared Data Logic
   sessions: Session[];     // Multi-Session Content
   activeSessionId: string;
+  activeView: ViewMode;
+  activeFileId: string | null;
   widgetRegistry: Record<string, ReportData>;
 }

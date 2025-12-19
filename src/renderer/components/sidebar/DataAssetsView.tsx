@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { useFileStore } from '../../stores/useFileStore'
+import { useProjectStore } from '../../stores/useProjectStore'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { useParseFile } from '../../hooks/useIPC'
 import { DataTreeManager } from '../data-tree'
@@ -73,6 +74,8 @@ export function DataAssetsView() {
               sheetName: undefined,
               size: fileData.size,
             })
+            
+            useProjectStore.getState().setActiveFile(fileId)
 
             updateFile(fileId, { status: 'processing' })
             const parseResults = await parseFileMutation.mutateAsync(filePath)
@@ -262,6 +265,9 @@ export function DataAssetsView() {
           'files'
         )
         checkAutoLink(currentFiles)
+        
+        // Switch to Schema View
+        useProjectStore.getState().setView('schema')
       } else {
         console.log('handleImportClick: No files selected or failed')
       }

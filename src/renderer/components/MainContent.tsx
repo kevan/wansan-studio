@@ -2,6 +2,7 @@ import { WelcomeScreen } from './WelcomeScreen'
 import { ChatStream } from './ChatStream'
 import { SchemaEditor } from './SchemaEditor'
 import { useFileStore } from '../stores/useFileStore'
+import { useProjectStore } from '../stores/useProjectStore'
 import { RelationshipManager } from './data/relationship-manager'
 import { DataWorkspaceLayout } from './DataWorkspaceLayout'
 import { useTranslation } from 'react-i18next'
@@ -14,7 +15,8 @@ interface MainContentProps {
 }
 
 export function MainContent({}: MainContentProps) {
-  const { files, activeView, setView } = useFileStore()
+  const files = useFileStore(s => s.files)
+  const activeView = useProjectStore(s => s.activeView)
   const { t } = useTranslation('common')
 
   const readyFiles = files.filter(f => f.status === 'ready')

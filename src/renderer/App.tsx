@@ -69,6 +69,7 @@ function App() {
   useRemoteConfig()
   useDataRehydrate()
   useProjectInit()
+
   const [isChatCollapsed, setIsChatCollapsed] = useState(false)
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
   const initialLayout = loadLayoutPrefs()

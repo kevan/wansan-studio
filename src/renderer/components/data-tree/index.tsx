@@ -6,6 +6,7 @@
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import { Tree, TreeApi } from 'react-arborist'
 import { useFileStore } from '../../stores/useFileStore'
+import { useProjectStore } from '../../stores/useProjectStore'
 import { buildTreeData, TreeNodeData, parseNodeId } from './tree-utils'
 import { TreeNode } from './TreeNode'
 import { useTranslation } from 'react-i18next'
@@ -53,12 +54,14 @@ export function DataTreeManager({
   const {
     files,
     relations,
-    activeFileId,
-    setActiveFile,
-    setView,
     selectedNode,
     setSelectedNode,
   } = useFileStore()
+  
+  const activeFileId = useProjectStore(s => s.activeFileId)
+  const setActiveFile = useProjectStore(s => s.setActiveFile)
+  const setView = useProjectStore(s => s.setView)
+
   const { t } = useTranslation('common')
 
   // 将 Store 数据转换为树数据
@@ -102,12 +105,12 @@ export function DataTreeManager({
 
       if (parsed.type === 'file') {
         setActiveFile(parsed.id)
-        setView('schema', parsed.id)
+        setView('schema')
         setSelectedNode({ id: parsed.id, type: 'file' })
       } else if (parsed.type === 'column' && parsed.parentId) {
         // 选中列时，同时也激活对应的文件
         setActiveFile(parsed.parentId)
-        setView('schema', parsed.parentId)
+        setView('schema')
         setSelectedNode({
           id: parsed.id, // columnName
           type: 'column',

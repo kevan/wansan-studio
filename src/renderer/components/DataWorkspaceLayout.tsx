@@ -1,7 +1,7 @@
 import { ReactNode } from 'react'
 import { Button } from './ui/button'
-import { useFileStore } from '../stores/useFileStore'
 import { useTranslation } from 'react-i18next'
+import { useProjectStore } from '../stores/useProjectStore'
 
 interface DataWorkspaceLayoutProps {
   children: ReactNode
@@ -12,8 +12,16 @@ export function DataWorkspaceLayout({
   children,
   showAction = true,
 }: DataWorkspaceLayoutProps) {
-  const { setView } = useFileStore()
+  const setView = useProjectStore(state => state.setView)
   const { t } = useTranslation('common')
+
+  const handleStartAnalysis = () => {
+    const { activeSessionId, createSession } = useProjectStore.getState()
+    if (!activeSessionId) {
+      createSession()
+    }
+    setView('chat')
+  }
 
   return (
     <div className="flex flex-col h-full min-h-0 relative">
@@ -25,7 +33,7 @@ export function DataWorkspaceLayout({
           <Button
             size="lg"
             className="rounded-full shadow-xl px-8 bg-black hover:bg-zinc-800 hover:scale-105 transition-all"
-            onClick={() => setView('chat')}
+            onClick={handleStartAnalysis}
           >
             ✨ {t('start_analysis')}
           </Button>

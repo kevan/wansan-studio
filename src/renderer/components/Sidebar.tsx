@@ -17,42 +17,34 @@ interface SidebarProps {
 type ViewMode = 'sessions' | 'data'
 
 export function Sidebar(_props: SidebarProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('sessions')
+  const sidebarMode = useProjectStore(state => state.sidebarMode)
+  const setSidebarMode = useProjectStore(state => state.setSidebarMode)
+  
   const { t } = useTranslation('common')
   const settings = useSettingsStore()
   const createSession = useProjectStore(state => state.createSession)
-  const projectMeta = useProjectStore(state => state.meta)
   const { data: userInfo } = useUserInfo()
   const username = userInfo?.username || 'User'
 
   return (
     <aside className="wansan-sidebar flex flex-col h-full bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800">
       {/* Header */}
-      <div className="px-4 py-4 border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0">
-        {viewMode === 'sessions' ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                {projectMeta.name}
-              </h2>
-            </div>
-            <div className="pb-2 border-b border-zinc-200/50 dark:border-zinc-800/50">
-              <Button
-                onClick={() => createSession()}
-                className="w-full h-9 bg-black hover:bg-zinc-800 text-white shadow-sm justify-start px-3"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                {t('new_session', 'New Session')}
-              </Button>
-            </div>
-          </div>
+      <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm flex-shrink-0">
+        {sidebarMode === 'sessions' ? (
+          <Button
+            onClick={() => createSession()}
+            className="w-full h-10 bg-black hover:bg-zinc-800 text-white shadow-sm justify-start px-3 transition-all"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {t('new_session', 'New Session')}
+          </Button>
         ) : (
           <div className="flex items-center gap-2 h-9">
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8 -ml-2"
-              onClick={() => setViewMode('sessions')}
+              onClick={() => setSidebarMode('sessions')}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -65,7 +57,7 @@ export function Sidebar(_props: SidebarProps) {
 
       {/* Body */}
       <div className="flex-1 overflow-hidden min-h-0 flex flex-col">
-        {viewMode === 'sessions' ? (
+        {sidebarMode === 'sessions' ? (
           <div className="flex-1 overflow-y-auto min-h-0">
             <SessionListView />
           </div>
@@ -77,10 +69,10 @@ export function Sidebar(_props: SidebarProps) {
       </div>
 
       {/* Footer */}
-      {viewMode === 'sessions' && (
+      {sidebarMode === 'sessions' && (
         <div className="p-3 mt-auto border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 backdrop-blur-sm z-10">
           <div
-            onClick={() => setViewMode('data')}
+            onClick={() => setSidebarMode('data')}
             className="mb-1 group flex items-center gap-3 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/50 hover:border-indigo-200 dark:hover:border-indigo-500/50 hover:shadow-sm cursor-pointer transition-all"
           >
             {/* Icon Box */}
