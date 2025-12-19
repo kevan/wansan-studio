@@ -98,3 +98,15 @@ export interface AIConfig {
   baseURL?: string
   model?: string
 }
+
+// 选中节点类型
+export type SelectedNodeType = 'file' | 'column' | 'relation' | null
+
+// 选中节点信息
+export interface SelectedNode {
+  id: string
+  type: SelectedNodeType
+  fileId?: string // 如果是 column，关联的文件 ID
+  columnName?: string // 如果是 column，列名
+  relationId?: string // 如果是 relation，关联 ID
+}

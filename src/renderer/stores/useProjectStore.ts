@@ -1,17 +1,24 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { ProjectData, Session, ViewMode } from '@shared/types/project'
+import { ProjectData, Session, ViewMode, Relation } from '@shared/types/project'
 import { Message } from '@shared/types/chat'
 import { ReportWidget, ReportData } from '@shared/types/dashboard'
-import { FileNode } from '@shared/types'
+import { FileNode, ColumnSchema, SelectedNode, SyncStatus } from '@shared/types'
 import { Layout } from 'react-grid-layout'
-import { useFileStore } from './useFileStore'
 import { createBigIntStorage } from '@shared/serialization'
+import { Analytics } from '../services/analytics'
+import { useSettingsStore } from './useSettingsStore'
+import { useToastStore } from './useToastStore'
+import i18n from '../i18n'
+
+// 生成唯一 ID
+const generateId = () =>
+  `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
 
 export type LayoutScenario = 'default' | 'print' | 'large' | 'ppt' | 'email'
 export type Language = 'en' | 'zh'
 
-interface ProjectState extends ProjectData {
+export interface ProjectState extends ProjectData {
   // Transient State
   abortControllers: Record<string, AbortController>
   layoutScenario: LayoutScenario
@@ -20,6 +27,9 @@ interface ProjectState extends ProjectData {
   pendingReplace: { fileId: string; newPath: string; missing: string[] } | null
   showRefreshConfirm: boolean
   sidebarMode: 'sessions' | 'data'
+  suggestedPrompts: string[]
+  selectedNode: SelectedNode | null
+  isRestoring: boolean
 
   // --- Actions ---
 
@@ -31,6 +41,7 @@ interface ProjectState extends ProjectData {
   setSidebarMode: (mode: 'sessions' | 'data') => void
   setView: (view: ViewMode) => void
   setActiveFile: (id: string | null) => void
+  setProjectName: (name: string) => void
 
   // 2. Chat Actions (Targeting Active Session)
   // Accepts denormalized message (with reportData) and normalizes it
@@ -57,11 +68,22 @@ interface ProjectState extends ProjectData {
   setShowRefreshConfirm: (open: boolean) => void
   confirmReplace: () => Promise<void>
   refreshSessionWidgets: () => Promise<void>
+  setSelectedNode: (node: SelectedNode | null) => void
+  setRestoring: (isRestoring: boolean) => void
 
   // 5. File Actions (Global)
-  addFile: (file: FileNode) => void
+  addFile: (file: Omit<FileNode, 'id' | 'createdAt' | 'lastModified'> & { status?: SyncStatus }) => string
+  updateFile: (id: string, updates: Partial<FileNode>) => void
   removeFile: (id: string) => void
   replaceFile: (fileId: string, newPath: string, force?: boolean) => Promise<'completed' | 'pending' | 'error'>
+  updateColumn: (fileId: string, columnName: string, updates: Partial<ColumnSchema>) => void
+  toggleKeyColumn: (fileId: string, columnName: string) => void
+  addRelation: (relation: Omit<Relation, 'id'>) => void
+  removeRelation: (id: string) => void
+  setSuggestedPrompts: (prompts: string[]) => void
+  markAsStale: (ids: string[]) => void
+  markFileMissing: (id: string) => void
+  reloadFile: (fileId: string, result: { lastModified: number; newColumns: ColumnSchema[] }) => number
 
   // 6. IO
   loadProject: (data: ProjectData) => void
@@ -111,6 +133,9 @@ export const useProjectStore = create<ProjectState>()(
       pendingReplace: null,
       showRefreshConfirm: false,
       sidebarMode: 'sessions',
+      suggestedPrompts: [],
+      selectedNode: null,
+      isRestoring: false,
 
       setSidebarMode: (mode) => set({ sidebarMode: mode }),
       setView: (view) => set(state => {
@@ -509,157 +534,402 @@ export const useProjectStore = create<ProjectState>()(
       setLayoutScenario: (scenario: LayoutScenario) => set({ layoutScenario: scenario }),
       setEditingReportId: (id: string | null) => set({ editingReportId: id }),
       setLanguage: (lang: Language) => set({ language: lang }),
+      
+      setProjectName: (name) => set(state => ({ meta: { ...state.meta, name } })),
+      setSelectedNode: (node) => set({ selectedNode: node }),
+      setRestoring: (val) => set({ isRestoring: val }),
+      setSuggestedPrompts: (prompts) => set({ suggestedPrompts: prompts }),
 
-      addFile: (file: FileNode) =>
+      addFile: (file) => {
+        // [LIMIT CHECK]
+        const { isActivated } = useSettingsStore.getState()
+        const currentCount = get().files.length
+
+        if (!isActivated && currentCount >= 1) {
+          useToastStore.getState().addToast({
+            title: i18n.t('trial_limit_reached_title', { ns: 'common' }),
+            description: i18n.t('trial_limit_file_desc', { ns: 'common' }),
+            type: 'warning',
+          })
+          throw new Error(i18n.t('trial_limit_reached_title', { ns: 'common' }))
+        }
+
+        const existing = get().files.find(
+          f => f.path === file.path && f.sheetName === file.sheetName
+        )
+        if (existing) {
+          throw new Error(`File "${file.name}" is already imported.`)
+        }
+
+        const id = generateId()
+        const now = Date.now()
+        const newFile: FileNode = {
+          ...file,
+          id,
+          createdAt: now,
+          lastModified: now,
+          status: file.status || 'ready',
+        }
         set(state => ({
-          files: [...state.files, file],
-        })),
+          files: [...state.files, newFile],
+        }))
+        
+        const ext = file.name.split('.').pop()?.toLowerCase() || 'unknown'
+        Analytics.track('file_imported', { file_type: ext })
+        return id
+      },
 
-      removeFile: (id: string) =>
+      removeFile: async (id) => {
+        const { files } = get()
+        const file = files.find(f => f.id === id)
+
+        if (file) {
+          try {
+            await window.electronAPI.deleteTable(file.tableName)
+          } catch (e) {
+            console.error('Failed to drop table', e)
+          }
+        }
+        
         set(state => ({
           files: state.files.filter(f => f.id !== id),
+          relations: state.relations.filter(r => r.fileAId !== id && r.fileBId !== id)
+        }))
+      },
+      
+      updateFile: (id, updates) =>
+        set(state => ({
+          files: state.files.map(f => (f.id === id ? { ...f, ...updates } : f)),
         })),
 
-      replaceFile: async (fileId: string, newPath: string, force: boolean = false) => {
-        let file = get().files.find(f => f.id === fileId)
-        let sourceStore: 'project' | 'file' = 'project'
-
-        // Fallback to useFileStore if not found in project store
-        if (!file) {
-            const legacyFiles = useFileStore.getState().files
-            file = legacyFiles.find(f => f.id === fileId)
-            if (file) {
-                sourceStore = 'file'
-            }
-        }
-
-        if (!file) {
-            console.error(`replaceFile: File ${fileId} not found in project or file store`)
-            return 'error'
-        }
-
-        try {
-            // Optimistic update status
-            if (sourceStore === 'project') {
-                set(state => ({
-                    files: state.files.map(f => f.id === fileId ? { ...f, status: 'processing' } : f)
-                }))
-            } else {
-                 useFileStore.getState().updateFile(fileId, { status: 'processing' })
-            }
-
-            if (!force) {
-                // 1. Peek New Schema (Validation)
-                const parseRes = await window.electronAPI.parseFile(newPath)
-                if (!parseRes.success || !parseRes.data || parseRes.data.length === 0) {
-                     throw new Error(parseRes.error || 'Failed to parse new file for validation')
+      updateColumn: (fileId, columnName, updates) => {
+        set(state => ({
+          files: state.files.map(f =>
+            f.id === fileId
+              ? {
+                  ...f,
+                  columns: f.columns.map(c =>
+                    c.name === columnName ? { ...c, ...updates } : c
+                  ),
                 }
-
-                // Find best matching sheet/table from the parsed result
-                let candidate = parseRes.data[0]
-                if (file.sheetName) {
-                    // Try to find the same sheet name
-                    const match = parseRes.data.find((d: any) => d.sheetName === file.sheetName)
-                    if (match) candidate = match
-                }
-
-                const newColNames = new Set(candidate.schema.columns.map((c: any) => c.name))
-                const oldColNames = file.columns.map(c => c.name)
-                const missing = oldColNames.filter(c => !newColNames.has(c))
-
-                // Clean up temporary tables created by parseFile
-                for (const item of parseRes.data) {
-                    await window.electronAPI.deleteTable(item.tableName)
-                }
-
-                // User Confirmation if Schema Mismatch
-                if (missing.length > 0) {
-                    set({
-                        pendingReplace: {
-                            fileId,
-                            newPath,
-                            missing
-                        }
-                    })
-                    // Revert status to ready
-                    if (sourceStore === 'project') {
-                        set(state => ({
-                            files: state.files.map(f => f.id === fileId ? { ...f, status: 'ready' } : f)
-                        }))
-                    } else {
-                        useFileStore.getState().updateFile(fileId, { status: 'ready' })
-                    }
-                    return 'pending'
-                }
-            }
-
-            // 2. Trigger Backend Re-ingest
-            const result = await window.electronAPI.reIngestFile(newPath, file.tableName, file.sheetName)
-            
-            if (!result.success || !result.data) {
-                 throw new Error(result.error || 'Re-ingest failed')
-            }
-
-            const { lastModified, newColumns } = result.data
-
-            // 3. Fetch new row count
-            let rowCount = 0
-            try {
-                const countRes = await window.electronAPI.runSQL(`SELECT COUNT(*) as c FROM "${file.tableName}"`)
-                if (countRes.success && countRes.data && countRes.data.length > 0) {
-                    const c = countRes.data[0].c
-                    rowCount = typeof c === 'bigint' ? Number(c) : Number(c)
-                }
-            } catch (e) {
-                console.warn('Failed to fetch row count after replace', e)
-            }
-
-            // 4. Update Store
-            if (sourceStore === 'project') {
-                set(state => ({
-                    files: state.files.map(f => f.id === fileId ? { 
-                        ...f, 
-                        path: newPath, 
-                        lastModified: lastModified || Date.now(),
-                        columns: newColumns,
-                        rowCount: rowCount,
-                        status: 'ready',
-                        error: undefined
-                    } : f)
-                }))
-            } else {
-                // Update legacy store
-                useFileStore.getState().reloadFile(fileId, { lastModified, newColumns })
-                useFileStore.getState().updateFile(fileId, { 
-                    path: newPath, 
-                    rowCount, 
-                    status: 'ready', 
-                    error: undefined 
-                })
-            }
-            return 'completed'
-
-        } catch (error: any) {
-            console.error('replaceFile failed', error)
-            const errorMessage = error.message || 'Failed to replace file'
-            
-            if (sourceStore === 'project') {
-                set(state => ({
-                    files: state.files.map(f => f.id === fileId ? { 
-                        ...f, 
-                        status: 'error',
-                        error: errorMessage
-                    } : f)
-                }))
-            } else {
-                useFileStore.getState().updateFile(fileId, { 
-                    status: 'error', 
-                    error: errorMessage 
-                })
-            }
-            return 'error'
-        }
+              : f
+          ),
+        }))
       },
+
+      toggleKeyColumn: (fileId, columnName) => {
+        const file = get().files.find(f => f.id === fileId)
+        if (!file) return
+
+        const column = file.columns.find(c => c.name === columnName)
+        if (!column) return
+
+        get().updateColumn(fileId, columnName, { isKey: !column.isKey })
+      },
+
+      addRelation: relation => {
+        const exists = get().relations.some(
+          r =>
+            (r.fileAId === relation.fileAId &&
+              r.columnA === relation.columnA &&
+              r.fileBId === relation.fileBId &&
+              r.columnB === relation.columnB) ||
+            (r.fileAId === relation.fileBId &&
+              r.columnA === relation.columnB &&
+              r.fileBId === relation.fileAId &&
+              r.columnB === relation.columnA)
+        )
+        if (exists) {
+          console.warn('Relationship already exists.')
+          return
+        }
+        const id = generateId()
+        set(state => ({
+          relations: [...state.relations, { ...relation, id }],
+        }))
+      },
+
+      removeRelation: id => {
+        set(state => ({
+          relations: state.relations.filter(r => r.id !== id),
+        }))
+      },
+
+      markAsStale: ids =>
+        set(state => ({
+          files: state.files.map(f =>
+            ids.includes(f.id) ? { ...f, status: 'out-of-sync' } : f
+          ),
+        })),
+
+      markFileMissing: id =>
+        set(state => ({
+          files: state.files.map(f =>
+            f.id === id ? { ...f, status: 'missing' } : f
+          ),
+        })),
+
+      reloadFile: (fileId, { lastModified, newColumns }) => {
+        let droppedRelationsCount = 0
+        set(state => {
+          const file = state.files.find(f => f.id === fileId)
+          if (!file) return state
+
+          const oldColumns = file.columns
+          const mergedColumns = newColumns.map(newCol => {
+            const oldCol = oldColumns.find(c => c.name === newCol.name)
+            if (oldCol) {
+              return {
+                ...newCol,
+                userType: oldCol.userType,
+                alias: oldCol.alias,
+                isKey: oldCol.isKey,
+                type: oldCol.type,
+              }
+            } else {
+              return newCol
+            }
+          })
+
+          const activeRelations = state.relations.filter(r => {
+            let valid = true
+            if (r.fileAId === fileId) {
+              if (!mergedColumns.some(c => c.name === r.columnA)) valid = false
+            }
+            if (r.fileBId === fileId) {
+              if (!mergedColumns.some(c => c.name === r.columnB)) valid = false
+            }
+            return valid
+          })
+          droppedRelationsCount = state.relations.length - activeRelations.length
+          return {
+            files: state.files.map(f =>
+              f.id === fileId
+                ? {
+                    ...f,
+                    columns: mergedColumns,
+                    status: 'ready',
+                    lastModified,
+                  }
+                : f
+            ),
+            relations: activeRelations,
+          }
+        })
+        return droppedRelationsCount
+      },
+
+            replaceFile: async (fileId: string, newPath: string, force: boolean = false) => {
+
+              let file = get().files.find(f => f.id === fileId)
+
+              
+
+              if (!file) {
+
+                  console.error(`replaceFile: File ${fileId} not found in project store`)
+
+                  return 'error'
+
+              }
+
+      
+
+              try {
+
+                  // Optimistic update status
+
+                  set(state => ({
+
+                      files: state.files.map(f => f.id === fileId ? { ...f, status: 'processing' } : f)
+
+                  }))
+
+      
+
+                  if (!force) {
+
+                      // 1. Peek New Schema (Validation)
+
+                      const parseRes = await window.electronAPI.parseFile(newPath)
+
+                      if (!parseRes.success || !parseRes.data || parseRes.data.length === 0) {
+
+                           throw new Error(parseRes.error || 'Failed to parse new file for validation')
+
+                      }
+
+      
+
+                      // Find best matching sheet/table from the parsed result
+
+                      let candidate = parseRes.data[0]
+
+                      if (file.sheetName) {
+
+                          // Try to find the same sheet name
+
+                          const match = parseRes.data.find((d: any) => d.sheetName === file.sheetName)
+
+                          if (match) candidate = match
+
+                      }
+
+      
+
+                      const newColNames = new Set(candidate.schema.columns.map((c: any) => c.name))
+
+                      const oldColNames = file.columns.map(c => c.name)
+
+                      const missing = oldColNames.filter(c => !newColNames.has(c))
+
+      
+
+                      // Clean up temporary tables created by parseFile
+
+                      for (const item of parseRes.data) {
+
+                          await window.electronAPI.deleteTable(item.tableName)
+
+                      }
+
+      
+
+                      // User Confirmation if Schema Mismatch
+
+                      if (missing.length > 0) {
+
+                          set({
+
+                              pendingReplace: {
+
+                                  fileId,
+
+                                  newPath,
+
+                                  missing
+
+                              }
+
+                          })
+
+                          // Revert status to ready
+
+                          set(state => ({
+
+                              files: state.files.map(f => f.id === fileId ? { ...f, status: 'ready' } : f)
+
+                          }))
+
+                          return 'pending'
+
+                      }
+
+                  }
+
+      
+
+                  // 2. Trigger Backend Re-ingest
+
+                  const result = await window.electronAPI.reIngestFile(newPath, file.tableName, file.sheetName)
+
+                  
+
+                  if (!result.success || !result.data) {
+
+                       throw new Error(result.error || 'Re-ingest failed')
+
+                  }
+
+      
+
+                  const { lastModified, newColumns } = result.data
+
+      
+
+                  // 3. Fetch new row count
+
+                  let rowCount = 0
+
+                  try {
+
+                      const countRes = await window.electronAPI.runSQL(`SELECT COUNT(*) as c FROM "${file.tableName}" `)
+
+                      if (countRes.success && countRes.data && countRes.data.length > 0) {
+
+                          const c = countRes.data[0].c
+
+                          rowCount = typeof c === 'bigint' ? Number(c) : Number(c)
+
+                      }
+
+                  } catch (e) {
+
+                      console.warn('Failed to fetch row count after replace', e)
+
+                  }
+
+      
+
+                  // 4. Update Store (Merge Logic from reloadFile)
+
+                  get().reloadFile(fileId, { lastModified, newColumns })
+
+      
+
+                  set(state => ({
+
+                      files: state.files.map(f => f.id === fileId ? { 
+
+                          ...f, 
+
+                          path: newPath, 
+
+                          rowCount: rowCount,
+
+                          status: 'ready',
+
+                          error: undefined
+
+                      } : f)
+
+                  }))
+
+                  
+
+                  return 'completed'
+
+      
+
+              } catch (error: any) {
+
+                  console.error('replaceFile failed', error)
+
+                  const errorMessage = error.message || 'Failed to replace file'
+
+                  
+
+                  set(state => ({
+
+                      files: state.files.map(f => f.id === fileId ? { 
+
+                          ...f, 
+
+                          status: 'error',
+
+                          error: errorMessage
+
+                      } : f)
+
+                  }))
+
+                  return 'error'
+
+              }
+
+            },
+
+      
 
       loadProject: (data: ProjectData) => set({ ...data }),
 

@@ -37,6 +37,7 @@ import { GlobalErrorHandler } from './components/system/GlobalErrorHandler'
 import { ErrorBoundary } from './components/system/ErrorBoundary'
 import { usePlatform } from './hooks/useIPC'
 import { useProjectInit } from './hooks/use-project-init'
+import { useStoreMigration } from './hooks/use-store-migration'
 import { SchemaWarningModal } from './components/modals/SchemaWarningModal'
 import { RefreshConfirmModal } from './components/modals/RefreshConfirmModal'
 
@@ -69,6 +70,7 @@ function App() {
   useRemoteConfig()
   useDataRehydrate()
   useProjectInit()
+  useStoreMigration()
 
   const [isChatCollapsed, setIsChatCollapsed] = useState(false)
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)

@@ -2,7 +2,15 @@ import { Message } from './chat';
 import { ReportWidget, ReportData } from './dashboard';
 import { FileNode, RelationSuggestion } from '../types';
 
-export type Relation = RelationSuggestion;
+export interface Relation {
+  id: string;
+  fileAId: string;
+  columnA: string;
+  fileBId: string;
+  columnB: string;
+  autoDetected?: boolean;
+}
+
 export type ViewMode = 'chat' | 'schema' | 'relationships';
 
 export interface Session {
