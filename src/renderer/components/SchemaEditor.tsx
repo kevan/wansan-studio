@@ -1,6 +1,6 @@
 import { ColumnSchema, useFileStore } from '../stores/useFileStore'
 import { useProjectStore } from '../stores/useProjectStore'
-import { Hash, Type, Calendar, Key, Link2, ChevronDown } from 'lucide-react'
+import { Hash, Type, Calendar, Key, Link2, FileSpreadsheet, Database, Clock, AlignJustify } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 // 类型映射配置
@@ -82,27 +82,58 @@ export function SchemaEditor() {
         {/* 当前文件的 Schema 表格 */}
         {currentFile && (
           <div className="flex flex-col min-h-0">
-            <div className="sticky top-0 z-30 bg-zinc-50/95 backdrop-blur border-b px-6 py-2 flex items-center justify-between text-xs text-zinc-600">
-              <div className="flex items-center gap-3">
-                <span className="font-medium text-zinc-900">
-                  {t('edit_schema', { name: currentFile.name })}
-                </span>
-                <span className="text-xs text-zinc-500">
-                  {t('row_col_count', {
-                    rows: currentFile.rowCount?.toLocaleString() ?? 0,
-                    cols: currentFile.columns.length,
-                  })}
-                </span>
-                {currentFile.lastModified && (
-                  <span className="text-xs text-zinc-400">
-                    {t('last_updated')}:{' '}
-                    {new Date(currentFile.lastModified).toLocaleString()}
-                  </span>
-                )}
+            {/* New Modern Header */}
+            <div className="px-8 py-6 border-b border-zinc-100 bg-white shrink-0">
+              <div className="flex flex-col gap-3">
+                {/* Row 1: Icon + Filename */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2 bg-green-50 rounded-lg border border-green-100 shrink-0">
+                    <FileSpreadsheet className="w-6 h-6 text-green-600" />
+                  </div>
+                  <h2 className="text-xl font-bold text-zinc-900 tracking-tight truncate whitespace-nowrap">
+                    {currentFile.name}
+                  </h2>
+                </div>
+
+                {/* Row 2: Metadata Strip */}
+                <div className="flex items-center gap-4 text-sm text-zinc-500 pl-1 overflow-x-auto no-scrollbar">
+                  {/* Table Name (Technical Info) */}
+                  <div
+                    className="flex items-center gap-1.5 shrink-0 whitespace-nowrap"
+                    title="SQL Table Name"
+                  >
+                    <Database className="w-3.5 h-3.5 text-zinc-400" />
+                    <span className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded text-zinc-700 select-all">
+                      {currentFile.tableName}
+                    </span>
+                  </div>
+
+                  <div className="w-px h-3 bg-zinc-200 shrink-0" />
+
+                  {/* Stats */}
+                  <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                    <AlignJustify className="w-3.5 h-3.5 text-zinc-400" />
+                    <span>
+                      {currentFile.rowCount?.toLocaleString() ?? 0} {t('rows')}
+                    </span>
+                    <span>·</span>
+                    <span>
+                      {currentFile.columns.length} {t('field_name')}
+                    </span>
+                  </div>
+
+                  <div className="w-px h-3 bg-zinc-200 shrink-0" />
+
+                  {/* Time */}
+                  <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                    <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                    <span className="text-xs">
+                      {t('last_updated')}:{' '}
+                      {new Date(currentFile.lastModified).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <span className="text-xs text-zinc-400">
-                {t('table_name_label', { name: currentFile.tableName })}
-              </span>
             </div>
 
             {/* 列表格 */}
@@ -219,11 +250,10 @@ function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
       {/* Format - 带图标的 Badge */}
       <td className="px-4 py-3">
         <span
-          className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded cursor-pointer hover:opacity-80 transition-opacity ${config.bgColor} ${config.textColor}`}
+          className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded whitespace-nowrap ${config.bgColor} ${config.textColor}`}
         >
           <IconComponent className="w-3.5 h-3.5" />
           {t(config.label)}
-          <ChevronDown className="w-3 h-3 opacity-50 ml-1" />
         </span>
       </td>
 

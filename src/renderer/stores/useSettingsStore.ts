@@ -127,12 +127,14 @@ export const useSettingsStore = create<SettingsState>()(
         const defaults = getProviderDefaults(provider)
         set({ provider, ...defaults })
         const currentSettings = get()
-        const aiConfig: AIConfig = {
-          apiKey: currentSettings.apiKey,
-          baseURL: defaults.baseUrl,
-          model: defaults.model,
+        if (currentSettings.apiKey) {
+          const aiConfig: AIConfig = {
+            apiKey: currentSettings.apiKey,
+            baseURL: defaults.baseUrl,
+            model: defaults.model,
+          }
+          void window.electronAPI.setAIConfig(aiConfig)
         }
-        void window.electronAPI.setAIConfig(aiConfig)
       },
       activateLicense: (code: string) => {
         const { validBetaCodes, remoteConfig } = get()
@@ -200,7 +202,7 @@ export const useSettingsStore = create<SettingsState>()(
             (patch as Partial<SettingsState>).model !== undefined ||
             nextProvider !== undefined
 
-          if (aiSettingsChanged) {
+          if (aiSettingsChanged && nextState.apiKey) {
             const aiConfig: AIConfig = {
               apiKey: nextState.apiKey,
               baseURL: nextState.baseUrl,
@@ -215,14 +217,6 @@ export const useSettingsStore = create<SettingsState>()(
       resetSettings: () => {
         set({ ...initialSettingsState })
         void window.electronAPI.secureSet('apiKey', '')
-
-        const defaults = getProviderDefaults('openai')
-        const aiConfig: AIConfig = {
-          apiKey: '',
-          baseURL: defaults.baseUrl,
-          model: defaults.model,
-        }
-        void window.electronAPI.setAIConfig(aiConfig)
       },
     }),
     {

@@ -92,7 +92,7 @@ export class AIService {
     language: 'en' | 'zh' = 'en'
   ): Promise<AIAnalysisResult> {
     const client = this.requireOpenAI()
-    
+
     // Preprocess schemas to ensure sample values are formatted (e.g. Dates)
     const processedSchemas = this.preprocessSchemas(schemas)
 
@@ -139,10 +139,10 @@ export class AIService {
     // Note: Need to update imports at the top of the file
     const { fixSQL } = await import('../engine/ai-bridge')
     const client = this.requireOpenAI()
-    
+
     // Also preprocess schemas for fixQuery context
     const processedSchemas = this.preprocessSchemas(schemas)
-    
+
     return fixSQL(client, originalSql, error, processedSchemas, this.model)
   }
 
@@ -166,12 +166,15 @@ export class AIService {
    */
   async generateText(prompt: string, systemPrompt?: string): Promise<string> {
     const client = this.requireOpenAI()
-    
+
     const response = await client.chat.completions.create({
       model: this.model,
       messages: [
-        { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
-        { role: 'user', content: prompt }
+        {
+          role: 'system',
+          content: systemPrompt || 'You are a helpful assistant.',
+        },
+        { role: 'user', content: prompt },
       ],
       temperature: 0.7,
     })
@@ -185,6 +188,7 @@ export class AIService {
   setConfig(config: AIConfig) {
     const current = store.get('aiConfig') as AIConfig
     const newConfig = { ...current, ...config }
+    console.log('[AI Service] setConfig', { current, newConfig })
     store.set('aiConfig', newConfig)
 
     // Reload to apply

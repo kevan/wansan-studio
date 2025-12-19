@@ -28,6 +28,7 @@
   "edit_schema": "Edit Schema: {{name}}",
   "row_col_count": "{{rows}} rows · {{cols}} cols",
   "table_name_label": "Table: {{name}}",
+  "rows": "rows",
   "field_name": "Field Name",
   "format": "Format",
   "preview": "Preview",
