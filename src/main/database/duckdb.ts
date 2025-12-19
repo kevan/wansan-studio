@@ -34,11 +34,19 @@ export class DatabaseService {
   private db: any = null
   private conn: any = null
   private mutex: Mutex = new Mutex()
-  private isReady = false
+
+  private initPromise: Promise<void> | null = null
+
+  // New Helper: Ensure ready
+  private async ensureReady() {
+    if (this.db) return
+    if (!this.initPromise) {
+      this.initPromise = this.ensureInitialized() // Fire and hold promise
+    }
+    await this.initPromise
+  }
 
   private async ensureInitialized(): Promise<void> {
-    if (this.isReady) return
-
     console.log('Initializing DuckDB-WASM (Blocking)...')
     try {
       // Resolve the path to the WASM bundle
@@ -80,7 +88,6 @@ export class DatabaseService {
       console.log('Connecting to DuckDB...')
       this.conn = this.db.connect()
       console.log('Connected successfully')
-      this.isReady = true
 
       await this.query("SET memory_limit='2GB'")
       // Note: SET threads is not supported in blocking version (no threads)
@@ -94,12 +101,12 @@ export class DatabaseService {
   }
 
   async initialize(): Promise<void> {
-    return this.ensureInitialized()
+    return this.ensureReady()
   }
 
   async query(sql: string): Promise<any[]> {
+    await this.ensureReady()
     return this.mutex.runExclusive(async () => {
-      await this.ensureInitialized()
       if (!this.conn) {
         throw new Error('Database not initialized')
       }
@@ -184,7 +191,7 @@ export class DatabaseService {
   }
 
   async dropAllTables(): Promise<void> {
-    await this.ensureInitialized()
+    await this.ensureReady()
     const tables = await this.query(
       "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
     )
@@ -207,14 +214,12 @@ export class DatabaseService {
         }
         this.db = null
       }
-
-      this.isReady = false
       console.log('DuckDB-WASM (Blocking) connection closed')
     })
   }
 
   async registerFileText(filename: string, data: string): Promise<void> {
-    await this.ensureInitialized()
+    await this.ensureReady()
     if (!this.db) {
       throw new Error('Database not initialized')
     }

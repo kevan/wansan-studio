@@ -40,16 +40,16 @@ class WansanApp {
     // 等待 Electron 准备就绪
     await app.whenReady()
 
-    // 初始化数据库服务
-    const databaseService = new DatabaseService()
-    await databaseService.initialize()
-    this.databaseService = databaseService
-
     // 创建 AI Service 实例
     this.aiService = new AIService()
 
     // 创建主窗口
     this.createMainWindow()
+
+    // 初始化数据库服务
+    // const databaseService = new DatabaseService()
+    // await databaseService.initialize()
+    this.databaseService = new DatabaseService()
 
     // 设置 IPC 通信
     this.setupIPC()
@@ -147,11 +147,15 @@ class WansanApp {
 
     // 监听全屏状态变化，同步给渲染进程（处理系统级退出全屏）
     this.mainWindow.on('leave-full-screen', () => {
-      this.mainWindow?.webContents.send('window-state-changed', { isFullScreen: false })
+      this.mainWindow?.webContents.send('window-state-changed', {
+        isFullScreen: false,
+      })
     })
-    
+
     this.mainWindow.on('enter-full-screen', () => {
-      this.mainWindow?.webContents.send('window-state-changed', { isFullScreen: true })
+      this.mainWindow?.webContents.send('window-state-changed', {
+        isFullScreen: true,
+      })
     })
 
     // 窗口关闭事件
