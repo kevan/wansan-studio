@@ -73,6 +73,9 @@ Your mission is to translate natural language questions into executable **DuckDB
 - **JSON Handling**: 
   - If a TEXT/VARCHAR column appears to contain JSON data (e.g., '{"key": "value"}'), use DuckDB's JSON functions.
   - Example: \`json_extract_path_text(metadata, 'user_id')\` or \`metadata->>'user_id'\`.
+- **Aggregation Handling (CRITICAL)**:
+  - DuckDB \`SUM\` on integer columns returns \`HUGEINT\` (128-bit) which serializes to an Array.
+  - **ALWAYS** cast aggregation results: \`CAST(SUM("quantity") AS BIGINT)\` or \`CAST(SUM("amount") AS DOUBLE)\`.
 3.  **DATE HANDLING**:
     -   **Check the Column Type**:
         -   If type is already \`DATE\` or \`TIMESTAMP\`, use it directly (e.g., \`strftime("date_col", '%Y-%m')\`).
@@ -143,7 +146,7 @@ User: "统计各省份的销售额，按从高到低排"
 Schema: Table "data" ["省份", "销售额"]
 Output:
 {
-  "sql": "SELECT \"省份\", SUM(\"销售额\") AS \"total_sales\" FROM \"data\" GROUP BY \"省份\" ORDER BY \"total_sales\" DESC LIMIT 100",
+  "sql": "SELECT \"省份\", CAST(SUM(\"销售额\") AS DOUBLE) AS \"total_sales\" FROM \"data\" GROUP BY \"省份\" ORDER BY \"total_sales\" DESC LIMIT 100",
   "viz_type": "bar",
   "viz_config": { "x_axis": "省份", "y_axis": "total_sales" },
   "reasoning": "Aggregated sales by province.",
