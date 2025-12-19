@@ -12,9 +12,13 @@ import {
   Brain,
   Zap,
   Trash2,
+  Crown,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useChatStore } from '../stores/useChatStore'
+import { useUserInfo } from '../hooks/useIPC'
+import { useSettingsStore } from '../stores/useSettingsStore'
+import { cn } from '@/utils/cn'
 import { format } from 'sql-formatter'
 
 export interface ChatMessage {
@@ -77,6 +81,9 @@ export function ChatInterface({
   const removeMessage = useChatStore(state => state.removeMessage)
   const isChatLoading = useChatStore(state => !!state.abortController)
   const isRestoring = !useChatStore.persist.hasHydrated()
+  const { data: userInfo } = useUserInfo()
+  const settings = useSettingsStore()
+  const username = userInfo?.username || 'User'
 
   // Auto-scroll to bottom when messages or loading state changes
   useEffect(() => {
@@ -108,14 +115,15 @@ export function ChatInterface({
               {/* Avatar */}
               <div className="flex-shrink-0 mt-1">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm ${
+                  className={cn(
+                    "w-8 h-8 rounded-full flex items-center justify-center shadow-sm",
                     message.type === 'user'
-                      ? 'bg-white border border-zinc-200 text-zinc-600'
+                      ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold text-[10px] ring-1 ring-white/20 border border-white/10'
                       : 'bg-orange-50 text-orange-600 ring-1 ring-orange-100'
-                  }`}
+                  )}
                 >
                   {message.type === 'user' ? (
-                    <User className="w-5 h-5" />
+                    username.slice(0, 2).toUpperCase()
                   ) : (
                     <Bot className="w-5 h-5" />
                   )}
@@ -126,8 +134,11 @@ export function ChatInterface({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-zinc-900">
-                      {message.type === 'user' ? t('you') : t('assistant')}
+                    <span className="text-sm font-semibold text-zinc-900 flex items-center gap-1.5">
+                      {message.type === 'user' ? username : t('assistant')}
+                      {message.type === 'user' && settings.isActivated && (
+                        <Crown className="w-3 h-3 text-yellow-500 fill-current" />
+                      )}
                     </span>
                     <span className="text-xs text-zinc-400">
                       {new Date(message.timestamp).toLocaleTimeString([], {
