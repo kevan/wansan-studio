@@ -3,13 +3,11 @@ import { Plus, ArrowLeft, Database, Settings, Crown, Sparkles, Settings2, Bot, C
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { Button } from './ui/button'
 import { useTranslation } from 'react-i18next'
-import { SettingsDialog } from './settings/SettingsDialog'
 import { cn } from '@/utils/cn'
 import { DataAssetsView } from './sidebar/DataAssetsView'
 import { SessionListView } from './sidebar/SessionListView'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useUserInfo } from '@/hooks/useIPC'
-import { useProGate } from '@/hooks/use-pro-gate'
 
 interface SidebarProps {
   onImportData?: () => void
@@ -28,11 +26,9 @@ export function Sidebar(_props: SidebarProps) {
   const createSession = useProjectStore(state => state.createSession)
   const { data: userInfo } = useUserInfo()
   const username = userInfo?.username || 'User'
-  const { checkGate, gateNode } = useProGate()
 
   return (
     <aside className="wansan-sidebar flex flex-col h-full bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800">
-      {gateNode}
       {/* Header */}
       <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm flex-shrink-0">
         {sidebarMode === 'sessions' ? (
@@ -123,15 +119,7 @@ export function Sidebar(_props: SidebarProps) {
               <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 truncate">
                 {username}
               </div>
-              <div
-                onClick={e => {
-                  if (!settings.isActivated) {
-                    e.stopPropagation()
-                    checkGate('Full Access', () => {})
-                  }
-                }}
-                className="text-[10px] text-yellow-600 dark:text-yellow-500 font-medium flex items-center gap-1 hover:underline cursor-pointer"
-              >
+              <div className="text-[10px] text-yellow-600 dark:text-yellow-500 font-medium flex items-center gap-1">
                 {settings.isActivated ? (
                   <>
                     <Crown className="w-3 h-3 fill-current" />
@@ -146,8 +134,6 @@ export function Sidebar(_props: SidebarProps) {
             {/* Icon */}
             <Settings2 className="w-4 h-4 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
-
-          <SettingsDialog />
         </div>
       )}
     </aside>
