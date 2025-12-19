@@ -143,36 +143,36 @@ export function summarizeJson(value: any, depth = 0): any {
 }
 
 /**
- * Standardize Date/Time values to ISO string
- * Handles Date objects, number/bigint timestamps, and parseable strings
+ * Standardize Date/Time values to a clean string format for AI
+ * Handles Date objects and valid date strings.
+ * Returns only the necessary parts based on type hints if possible.
  */
-export function formatDateValue(val: any): string | null {
+export function formatDateValue(val: any, typeHint?: string): string | null {
   if (val === null || val === undefined) return null
 
   let dateObj: Date | null = null
 
   if (val instanceof Date) {
     dateObj = val
-  } else if (typeof val === 'number') {
-    dateObj = new Date(val)
-  } else if (typeof val === 'bigint') {
-    // Convert BigInt to number for Date constructor
-    // Note: Precision loss possible for extremely large values, but safe for standard timestamps
-    dateObj = new Date(Number(val))
   } else if (typeof val === 'string') {
-    // Check if string is a numeric timestamp
-    if (/^\d+$/.test(val)) {
-      dateObj = new Date(Number(val))
-    } else {
+    // Only parse if it's NOT a pure numeric string
+    if (!/^\d+$/.test(val)) {
       const d = new Date(val)
       if (!isNaN(d.getTime())) {
         dateObj = d
       }
     }
   }
+  // Note: We deliberately EXCLUDE number/bigint here to prevent 
+  // false positive date conversions for IDs or Metrics.
 
   if (dateObj && !isNaN(dateObj.getTime())) {
-    return dateObj.toISOString()
+    const iso = dateObj.toISOString()
+    const lowerHint = typeHint?.toLowerCase() || ''
+    
+    if (lowerHint === 'date') return iso.split('T')[0] // YYYY-MM-DD
+    if (lowerHint === 'time') return iso.split('T')[1].split('.')[0] // HH:mm:ss
+    return iso.replace('T', ' ').split('.')[0] // YYYY-MM-DD HH:mm:ss
   }
 
   return null
@@ -186,36 +186,20 @@ export function formatForDisplay(value: any): string {
   if (value === null || value === undefined) return '—'
 
   if (typeof value === 'number') {
-    // 1. Check for timestamp range (2000-2030)
+    // For UI display, we keep a mild heuristic for dates but prioritize number formatting
     const minTimestamp = 946684800000 // 2000-01-01
     const maxTimestamp = 1893456000000 // 2030-01-01
+    
+    // Only format as date if it's clearly in ms timestamp range AND not a small integer
     if (value >= minTimestamp && value <= maxTimestamp) {
       try {
         return new Date(value).toLocaleString()
-      } catch {
-        // Fallback to number formatting if date fails
-      }
+      } catch { /* fall through */ }
     }
 
-    // 2. Format numbers (add commas, limit decimals)
-    // Use maximumFractionDigits: 4 to avoid overly long floats but keep reasonable precision
     return new Intl.NumberFormat('en-US', {
       maximumFractionDigits: 4,
     }).format(value)
-  }
-
-  // If string looks like a date, try formatting it (e.g., '2023-01-01')
-  if (
-    typeof value === 'string' &&
-    !isNaN(Date.parse(value)) &&
-    value.length > 10
-  ) {
-    // Simple heuristic: don't aggressive format short strings like "2023"
-    try {
-      return new Date(value).toLocaleString()
-    } catch {
-      return value
-    }
   }
 
   return String(value)
@@ -226,31 +210,38 @@ export function formatForDisplay(value: any): string {
  * Handles: BigInt, Date (ISO), JSON summarization, and string truncation
  */
 export function processSampleValue(val: any, columnType?: string): any {
-  // Handle Date/Time Types if columnType is provided
-  // Priority: Check this BEFORE generic BigInt stringification
-  if (columnType) {
-    const lowerType = columnType.toLowerCase()
-    if (
-      lowerType.includes('date') ||
-      lowerType.includes('time') ||
+  const lowerType = columnType?.toLowerCase() || ''
+  
+  // 1. Strict Type Check: If it's a numeric type, NEVER format as date
+  // This prevents AI from thinking a BIGINT column is a TIMESTAMP column
+  const isNumericType = 
+    lowerType.includes('int') || 
+    lowerType.includes('double') || 
+    lowerType.includes('float') || 
+    lowerType.includes('decimal') ||
+    lowerType.includes('numeric')
+
+  // 2. Handle Date/Time Types if columnType is provided
+  if (!isNumericType && (
+      lowerType.includes('date') || 
+      lowerType.includes('time') || 
       lowerType.includes('timestamp')
-    ) {
-      const formattedDate = formatDateValue(val)
-      if (formattedDate) return formattedDate
-    }
+  )) {
+    const formattedDate = formatDateValue(val, lowerType)
+    if (formattedDate) return formattedDate
   }
 
-  // Handle BigInt (Generic fallback)
+  // 3. Handle BigInt (Generic fallback)
   if (typeof val === 'bigint') {
     return val.toString()
   }
 
-  // Handle Float: keep 4 decimal places
+  // 4. Handle Float: keep 4 decimal places
   if (typeof val === 'number') {
     return Math.round(val * 10000) / 10000
   }
 
-  // Handle Object/Array - treat as JSON
+  // 5. Handle Object/Array - treat as JSON
   if (typeof val === 'object' && val !== null && !(val instanceof Date)) {
     try {
       const summary = summarizeJson(val)
@@ -260,7 +251,7 @@ export function processSampleValue(val: any, columnType?: string): any {
     }
   }
 
-  // Handle String (check for JSON)
+  // 6. Handle String (check for JSON)
   if (typeof val === 'string') {
     const MAX_LEN = 50
 
@@ -272,18 +263,17 @@ export function processSampleValue(val: any, columnType?: string): any {
     ) {
       try {
         const parsed = JSON.parse(val)
-        // Summarize the structure to keep keys but shorten values
         const summary = summarizeJson(parsed)
         return JSON.stringify(summary)
       } catch (e) {
-        // Try to handle "unescaped" JSON (e.g. {\"a\": 1} copied from logs)
+        // Try to handle \"unescaped\" JSON
         try {
           const unescaped = val.replace(/\\"/g, '"')
           const parsed = JSON.parse(unescaped)
           const summary = summarizeJson(parsed)
           return JSON.stringify(summary)
         } catch (e2) {
-          // Ignore parse errors, fall through to string truncation
+          // Ignore parse errors
         }
       }
     }
