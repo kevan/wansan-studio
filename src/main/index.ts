@@ -50,6 +50,9 @@ class WansanApp {
     // const databaseService = new DatabaseService()
     // await databaseService.initialize()
     this.databaseService = new DatabaseService()
+    this.databaseService.initialize().catch(err => {
+      console.error('Failed to initialize database in background:', err)
+    })
 
     // 设置 IPC 通信
     this.setupIPC()
