@@ -57,6 +57,7 @@
   "edit_title_tooltip": "Click to edit title",
   "no_data_sources": "No data sources",
   "import_hint": "Click \"Import Data\" above to get started.",
+  "import_first_hint": "Please import data first",
   "view_logic": "View Analysis Logic",
   "generated_sql": "Generated SQL",
   "analysis_report": "Analysis Report",

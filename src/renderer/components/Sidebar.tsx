@@ -19,6 +19,8 @@ type ViewMode = 'sessions' | 'data'
 export function Sidebar(_props: SidebarProps) {
   const sidebarMode = useProjectStore(state => state.sidebarMode)
   const setSidebarMode = useProjectStore(state => state.setSidebarMode)
+  const files = useProjectStore(state => state.files)
+  const hasFiles = files.length > 0
   
   const { t } = useTranslation('common')
   const settings = useSettingsStore()
@@ -33,7 +35,12 @@ export function Sidebar(_props: SidebarProps) {
         {sidebarMode === 'sessions' ? (
           <Button
             onClick={() => createSession()}
-            className="w-full h-10 bg-black hover:bg-zinc-800 text-white shadow-sm justify-start px-3 transition-all"
+            disabled={!hasFiles}
+            title={!hasFiles ? t('import_first_hint', 'Please import data first') : undefined}
+            className={cn(
+              "w-full h-10 text-white shadow-sm justify-start px-3 transition-all",
+              hasFiles ? "bg-black hover:bg-zinc-800" : "bg-zinc-400 opacity-50 cursor-not-allowed"
+            )}
           >
             <Plus className="mr-2 h-4 w-4" />
             {t('new_session', 'New Session')}

@@ -57,6 +57,7 @@
   "edit_title_tooltip": "点击编辑标题",
   "no_data_sources": "暂无数据源",
   "import_hint": "请在上方点击 “导入数据” 开始使用。",
+  "import_first_hint": "请先导入数据",
   "view_logic": "查看分析逻辑",
   "generated_sql": "生成的 SQL",
   "analysis_report": "分析报告",
