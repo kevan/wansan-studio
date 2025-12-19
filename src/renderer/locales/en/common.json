@@ -138,6 +138,13 @@
   "pro_feature_export_desc": "Exporting reports is available in Pro version.",
   "pro_feature_export_markdown_desc": "Markdown export is available in Pro version.",
   "pro_feature_sqllab_desc": "SQL Editor is available in Pro version.",
+  
+  "unlock_feature": "Unlock {{feature}}",
+  "pro_gate_desc": "This feature requires a Pro license. Activate now to remove all limits.",
+  "pro_benefit_unlimited_files": "Unlimited Files & Sheets",
+  "pro_benefit_export": "PDF & Web Report Export",
+  "pro_benefit_sql": "Advanced SQL Editor",
+  "enter_license": "Enter License Key",
 
   "sidebar": {
     "electron_api_unavailable": "Electron API unavailable",

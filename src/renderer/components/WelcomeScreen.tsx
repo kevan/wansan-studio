@@ -9,6 +9,7 @@ import { Sparkles } from 'lucide-react'
 import { Button } from './ui/button'
 import { Separator } from './ui/separator'
 import { useTranslation } from 'react-i18next'
+import { useProGate } from '@/hooks/use-pro-gate'
 
 interface WelcomeScreenProps {
   onDataImported?: (tableName: string) => void
@@ -21,6 +22,7 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
   const { checkAutoLink } = useAutoLink()
   const { addToast } = useToastStore()
   const { t } = useTranslation('chat')
+  const { isActivated, checkGate, gateNode } = useProGate()
   const [isDragging, setIsDragging] = useState(false)
   const [processingCount, setProcessingCount] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
@@ -131,6 +133,12 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
   }
 
   const handleFileSelect = async () => {
+    const currentFiles = useProjectStore.getState().files
+    if (!isActivated && currentFiles.length >= 1) {
+      checkGate(t('import_data', { ns: 'common' }), () => {})
+      return
+    }
+
     try {
       const result = await selectFilesMutation.mutateAsync()
       if (result && result.length > 0) {
@@ -185,6 +193,12 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(false)
+
+    const currentFiles = useProjectStore.getState().files
+    if (!isActivated && currentFiles.length >= 1) {
+      checkGate(t('import_data', { ns: 'common' }), () => {})
+      return
+    }
 
     const droppedFiles = Array.from(e.dataTransfer.files)
     console.log('handleDrop', droppedFiles)
@@ -257,6 +271,7 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
 
   return (
     <div className="flex-1 flex items-center justify-center p-8">
+      {gateNode}
       {/* Drop Zone - 核心空态界面 */}
       <div
         className={`wansan-drop-zone w-full max-w-2xl text-center animate-card-enter ${

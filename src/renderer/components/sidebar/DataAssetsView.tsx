@@ -10,12 +10,13 @@ import { useFileSync } from '../../hooks/useFileSync'
 import { Button } from '../ui/button'
 import { useToastStore } from '../../stores/useToastStore'
 import { useTranslation } from 'react-i18next'
+import { useProGate } from '@/hooks/use-pro-gate'
 
 const MAX_SIZE = 100 * 1024 * 1024 // 100MB
 
 export function DataAssetsView() {
   const { addFile, updateFile } = useFileStore()
-  const settings = useSettingsStore()
+  const { isActivated, checkGate, gateNode } = useProGate()
   const [isImporting, setIsImporting] = useState(false)
   const parseFileMutation = useParseFile()
   const { checkAutoLink } = useAutoLink()
@@ -27,6 +28,12 @@ export function DataAssetsView() {
 
   // 处理多文件导入
   const handleImportClick = async () => {
+    const currentFiles = useProjectStore.getState().files
+    if (!isActivated && currentFiles.length >= 1) {
+      checkGate(t('import_data'), () => {})
+      return
+    }
+
     console.log('handleImportClick: Started')
     if (!window.electronAPI) {
       alert(t('sidebar.electron_api_unavailable'))
@@ -91,17 +98,14 @@ export function DataAssetsView() {
             let placeholderUsed = false
 
             // [NEW LIMIT CHECK: MULTI-SHEET]
-            if (!settings.isActivated && results.length > 1) {
-              addToast({
-                title: t('sidebar.trial_limit_multi_sheet_title'),
-                description: t('sidebar.trial_limit_multi_sheet_desc'),
-                type: 'warning',
-              })
+            if (!isActivated && results.length > 1) {
+              checkGate(t('import_data'), () => {})
               // Remove the placeholder file if already added, to clean up UI
               if (fileId) {
-                useFileStore.getState().removeFile(fileId) // This needs the store ref
+                useProjectStore.getState().removeFile(fileId)
               }
-              continue // Skip this file and proceed to next
+              setIsImporting(false) // Reset loading state
+              return // Stop processing this file
             }
 
             for (const res of results) {
@@ -280,6 +284,7 @@ export function DataAssetsView() {
 
   return (
     <div className="flex flex-col h-full min-h-0">
+      {gateNode}
       <div className="px-4 pb-4 pt-4 border-b border-zinc-200 space-y-2">
         <Button
           onClick={handleImportClick}

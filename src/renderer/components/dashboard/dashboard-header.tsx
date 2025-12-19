@@ -52,6 +52,7 @@ import logo from '@/src/assets/logo.png'
 import { useExportWebReport } from '@/hooks/useIPC'
 import { ExportLoadingModal } from '../modals/ExportLoadingModal'
 import { ExportConfigModal, type ExportConfig } from '../modals/ExportConfigModal'
+import { useProGate } from '@/hooks/use-pro-gate'
 
 export function DashboardHeader() {
   const { canvasConfig, setCanvasConfig, setLayoutScenario } =
@@ -67,6 +68,7 @@ export function DashboardHeader() {
   const { mutateAsync: exportWebReport } = useExportWebReport()
   const [isExportingWeb, setIsExportingWeb] = useState(false)
   const [isConfigOpen, setIsConfigOpen] = useState(false)
+  const { checkGate, gateNode } = useProGate()
 
   const handleConfirmExport = async (config: ExportConfig) => {
     setIsConfigOpen(false)
@@ -148,14 +150,6 @@ export function DashboardHeader() {
         // Default to PDF for generic call
         handleExport('pdf')
         return
-    }
-    if (!isActivated) {
-      addToast({
-        title: t('pro_feature_title'),
-        description: t('pro_feature_export_desc'),
-        type: 'info',
-      })
-      return
     }
 
     const node = document.getElementById('dashboard-export-root')
@@ -294,6 +288,7 @@ export function DashboardHeader() {
 
   return (
     <div className="h-14 border-b bg-white flex items-center px-4 justify-between shrink-0 z-20 relative">
+      {gateNode}
       <ExportLoadingModal isOpen={isExportingWeb} />
       <ExportConfigModal
         isOpen={isConfigOpen}
@@ -426,17 +421,17 @@ export function DashboardHeader() {
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuLabel>{t('export_options')}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => handleExport('pdf')}>
+            <DropdownMenuItem onSelect={() => checkGate('PDF Export', () => handleExport('pdf'))}>
               <FileText className="mr-2 h-4 w-4" /> {t('export_pdf')}
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => handleExport('png')}>
+            <DropdownMenuItem onSelect={() => checkGate('Image Export', () => handleExport('png'))}>
               <FileImage className="mr-2 h-4 w-4" /> {t('export_png')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50"
               disabled={isExportingWeb}
-              onSelect={() => setIsConfigOpen(true)}
+              onSelect={() => checkGate('Web Report', () => setIsConfigOpen(true))}
             >
               <Sparkles className="mr-2 h-4 w-4" />
               AI Web Report

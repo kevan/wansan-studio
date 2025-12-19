@@ -18,6 +18,7 @@ import { cn } from '../../utils/cn'
 import { format } from 'sql-formatter'
 import { useToastStore } from '@/stores/useToastStore'
 import { useSettingsStore } from '@/stores/useSettingsStore'
+import { useProGate } from '@/hooks/use-pro-gate'
 
 interface SqlEditorModalProps {
   isOpen: boolean
@@ -40,7 +41,7 @@ export function SqlEditorModal({
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const addToast = useToastStore(state => state.addToast)
-  const { isActivated } = useSettingsStore()
+  const { isActivated, checkGate, gateNode } = useProGate()
 
   // Auto-format SQL when modal opens
   useEffect(() => {
@@ -107,6 +108,7 @@ export function SqlEditorModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      {gateNode}
       <div
         className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
@@ -144,16 +146,16 @@ export function SqlEditorModal({
                 SQL EDITOR
               </span>
               <button
-                onClick={handleFormat}
-                disabled={!isActivated}
+                onClick={() => checkGate('SQL Editor', handleFormat)}
                 className={cn(
                   'flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-colors border border-transparent',
                   !isActivated
-                    ? 'text-zinc-400 cursor-not-allowed'
+                    ? 'text-zinc-400'
                     : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 hover:border-zinc-300'
                 )}
                 title="Format Code"
               >
+                {!isActivated && <Lock className="w-3 h-3 mr-1" />}
                 <AlignLeft className="h-3 w-3" />
                 Format
               </button>
@@ -177,10 +179,13 @@ export function SqlEditorModal({
                 )}
               />
               {!isActivated && (
-                <div className="absolute bottom-4 right-4 bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-md flex items-center gap-1.5 border border-yellow-200 shadow-sm z-10 pointer-events-none">
+                <button
+                  onClick={() => checkGate('SQL Editor', () => {})}
+                  className="absolute bottom-4 right-4 bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-md flex items-center gap-1.5 border border-yellow-200 shadow-sm z-10 hover:bg-yellow-200 transition-colors"
+                >
                   <Lock className="w-3 h-3" />
-                  <span className="font-medium">Read-only (Pro Feature)</span>
-                </div>
+                  <span className="font-medium">Unlock Editor (Pro)</span>
+                </button>
               )}
             </div>
           </div>
@@ -195,15 +200,15 @@ export function SqlEditorModal({
         <div className="p-4 border-t border-zinc-200 bg-zinc-50 flex justify-between items-center">
           <div className="flex gap-2">
             <button
-              onClick={handleReset}
-              disabled={!isActivated}
+              onClick={() => checkGate('SQL Editor', handleReset)}
               className={cn(
                 'flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors border border-transparent',
                 !isActivated
-                  ? 'text-zinc-400 cursor-not-allowed'
+                  ? 'text-zinc-400'
                   : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 hover:border-zinc-300'
               )}
             >
+              {!isActivated && <Lock className="w-3 h-3" />}
               <RotateCcw className="w-4 h-4" />
               {t('sql_editor.reset')}
             </button>

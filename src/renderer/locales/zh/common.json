@@ -139,6 +139,13 @@
   "pro_feature_export_markdown_desc": "Markdown 导出仅在专业版可用。",
   "pro_feature_sqllab_desc": "SQL 编辑器仅在专业版可用。",
 
+  "unlock_feature": "解锁 {{feature}}",
+  "pro_gate_desc": "此功能需要专业版许可。立即激活以移除所有限制。",
+  "pro_benefit_unlimited_files": "无限文件与工作表",
+  "pro_benefit_export": "PDF 与网页报告导出",
+  "pro_benefit_sql": "高级 SQL 编辑器",
+  "enter_license": "输入激活码",
+
   "sidebar": {
     "electron_api_unavailable": "Electron API 不可用",
     "duplicate_file_skipped_title": "跳过重复文件",

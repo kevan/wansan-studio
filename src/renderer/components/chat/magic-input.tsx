@@ -26,6 +26,7 @@ import type { ChatMessage } from '../ChatInterface'
 import { useTranslation } from 'react-i18next'
 import { exportDebugLog } from '../../utils/debug-exporter'
 import { generateMarkdown } from '../../utils/markdown-exporter'
+import { useProGate } from '@/hooks/use-pro-gate'
 
 interface MagicInputProps {
   onSubmit: (value: string) => void
@@ -76,49 +77,43 @@ export function MagicInput({
   const refreshSessionWidgets = useProjectStore(state => state.refreshSessionWidgets)
   const addMessage = useProjectStore(state => state.addMessage)
   const updateMessage = useProjectStore(state => state.updateMessage)
+  const { checkGate, gateNode } = useProGate()
 
   const handleExportMarkdown = async () => {
-    if (!isActivated) {
-      addToast({
-        title: tCommon('pro_feature_title'),
-        description: tCommon('pro_feature_export_markdown_desc'),
-        type: 'info',
-      })
-      return
-    }
-
-    try {
-      addToast({
-        title: t('export_triggered'),
-        description: t('export_desc'),
-        type: 'info',
-        duration: 2000,
-      })
-      
-      const content = generateMarkdown(messages)
-      const fileName = `Chat_Export_${new Date().toISOString().slice(0, 10)}.md`
-      
-      // @ts-ignore
-      const result = await window.electronAPI.saveFile(content, 'md', fileName)
-      
-      if (result.success) {
+    checkGate('Markdown Export', async () => {
+      try {
         addToast({
-          title: 'Export Successful', // TODO: Add i18n key
-          // @ts-ignore
-          description: `Saved to ${result.filePath}`,
-          type: 'success',
+          title: t('export_triggered'),
+          description: t('export_desc'),
+          type: 'info',
+          duration: 2000,
         })
-      } else if (result.error !== 'Cancelled') {
-        throw new Error(result.error)
+        
+        const content = generateMarkdown(messages)
+        const fileName = `Chat_Export_${new Date().toISOString().slice(0, 10)}.md`
+        
+        // @ts-ignore
+        const result = await window.electronAPI.saveFile(content, 'md', fileName)
+        
+        if (result.success) {
+          addToast({
+            title: 'Export Successful', // TODO: Add i18n key
+            // @ts-ignore
+            description: `Saved to ${result.filePath}`,
+            type: 'success',
+          })
+        } else if (result.error !== 'Cancelled') {
+          throw new Error(result.error)
+        }
+      } catch (error) {
+        console.error('Export failed', error)
+        addToast({
+          title: 'Export Failed', // TODO: Add i18n key
+          description: String(error),
+          type: 'error',
+        })
       }
-    } catch (error) {
-      console.error('Export failed', error)
-      addToast({
-        title: 'Export Failed', // TODO: Add i18n key
-        description: String(error),
-        type: 'error',
-      })
-    }
+    })
   }
 
   const readyTables = useMemo(
@@ -448,6 +443,7 @@ export function MagicInput({
 
   return (
     <div className={cn('relative w-full flex justify-center', className)}>
+      {gateNode}
       <div ref={containerRef} className="relative w-full max-w-2xl">
         {replyToId && replyMessage && (
           <div className="absolute -top-12 left-4 right-4 bg-zinc-50 border border-b-0 rounded-t-2xl px-3 py-2 text-xs flex items-center justify-between z-[55] shadow-sm">

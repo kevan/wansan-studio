@@ -546,12 +546,7 @@ export const useProjectStore = create<ProjectState>()(
         const currentCount = get().files.length
 
         if (!isActivated && currentCount >= 1) {
-          useToastStore.getState().addToast({
-            title: i18n.t('trial_limit_reached_title', { ns: 'common' }),
-            description: i18n.t('trial_limit_file_desc', { ns: 'common' }),
-            type: 'warning',
-          })
-          throw new Error(i18n.t('trial_limit_reached_title', { ns: 'common' }))
+          throw new Error('Trial version supports only 1 file. Please activate Pro for unlimited files.')
         }
 
         const existing = get().files.find(
