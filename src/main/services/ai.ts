@@ -151,7 +151,7 @@ export class AIService {
    */
   async getContextAnalysis(
     schemas: TableSchema[],
-    language?: 'en' | 'zh'
+    language: 'en' | 'zh' = 'en'
   ): Promise<ContextAnalysisResult> {
     const client = this.requireOpenAI()
 
