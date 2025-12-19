@@ -22,7 +22,7 @@
 我们采用了 **Electron + React + WASM** 的混合架构，以平衡开发效率、性能与跨平台稳定性。
 
 ### 2.1 App Shell (主进程)
-*   **Runtime**: **Electron** (v28+ recommended for stability).
+*   **Runtime**: **Electron** (v39+ recommended for stability).
 *   **Language**: TypeScript (Node.js environment).
 *   **Build Tool**: `electron-builder` (supporting ASAR unpack for WASM).
 

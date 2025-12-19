@@ -1,9 +1,3 @@
-这是 **Project Wansan 架构全书** 的第四卷。这份文档涵盖了用户最直接感知的界面交互部分，包括对话流、仪表盘布局以及图表渲染引擎。
-
-请保存为 `docs/03_WORKBENCH_UI.md`。
-
----
-
 # 📙 03_WORKBENCH_UI.md - Interaction & Visualization
 
 > **Version**: 1.0
@@ -99,7 +93,3 @@
 ### 4.3 Export HTML (Interactive)
 *   **Feature**: Generate a standalone `.html` file containing chart data + ECharts library.
 *   **Layout**: Use CSS Grid to approximate the dashboard layout in the static file.
-
----
-
-**(End of Workbench Spec)**
