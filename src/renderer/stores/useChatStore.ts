@@ -342,6 +342,13 @@ const sendMessage = async (
             },
         }))
 
+        // Auto-rename session if it's "New Session"
+        const activeSessionId = useProjectStore.getState().activeSessionId
+        const session = useProjectStore.getState().sessions.find(s => s.id === activeSessionId)
+        if (session && session.title === 'New Session' && plan.title) {
+            useProjectStore.getState().renameSession(activeSessionId, plan.title)
+        }
+
         useProjectStore.getState().setAbortController(null)
 
     } catch (error: any) {
