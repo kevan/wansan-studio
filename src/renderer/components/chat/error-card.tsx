@@ -205,7 +205,7 @@ export function ErrorCard({ message }: ErrorCardProps) {
         onClose={() => setIsEditorOpen(false)}
         initialSql={originalSql || ''}
         reasoning={message.reportData?.reasoning}
-        onRun={handleRunSql}
+        onSave={handleRunSql}
       />
     </div>
   )

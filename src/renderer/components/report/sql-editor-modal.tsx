@@ -19,26 +19,42 @@ import { format } from 'sql-formatter'
 import { useToastStore } from '@/stores/useToastStore'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { useProGate } from '@/hooks/use-pro-gate'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { ReportTable } from './report-table'
 
 interface SqlEditorModalProps {
   isOpen: boolean
   onClose: () => void
   initialSql: string
+  initialData?: any[]
+  initialColumns?: string[]
   reasoning?: string
-  onRun: (sql: string) => Promise<void>
+  onSave: (sql: string) => Promise<void>
 }
 
 export function SqlEditorModal({
   isOpen,
   onClose,
   initialSql,
+  initialData = [],
+  initialColumns = [],
   reasoning,
-  onRun,
+  onSave,
 }: SqlEditorModalProps) {
   const { t } = useTranslation('analysis')
   const [sql, setSql] = useState(initialSql)
   const [isRunning, setIsRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [previewData, setPreviewData] = useState<any[] | null>(null)
+  const [previewColumns, setPreviewColumns] = useState<string[] | null>(null)
+  const [previewError, setPreviewError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const addToast = useToastStore(state => state.addToast)
   const { isActivated, checkGate, gateNode } = useProGate()
@@ -62,24 +78,33 @@ export function SqlEditorModal({
 
   if (!isOpen) return null
 
-  const handleRun = async () => {
+  const handleRunPreview = async () => {
     setIsRunning(true)
-    setError(null)
-    const startTime = performance.now()
+    setPreviewError(null)
     try {
-      await onRun(sql)
-      const duration = Math.round(performance.now() - startTime)
-      addToast({
-        title: t('sql_editor.run_success'),
-        description: `${t('sql_editor.execution_time')}: ${duration}ms`,
-        type: 'success',
-        duration: 3000,
-      })
+      const res = await window.electronAPI.runSQL(sql)
+      if (res.success) {
+        setPreviewData(res.data)
+        if (res.data && res.data.length > 0) {
+          setPreviewColumns(Object.keys(res.data[0]))
+        } else {
+          setPreviewColumns([])
+        }
+      } else {
+        throw new Error(res.error)
+      }
     } catch (e: any) {
-      setError(e.message || 'Execution failed')
+      setPreviewError(e.message || 'Execution failed')
+      setPreviewData([])
+      setPreviewColumns([])
     } finally {
       setIsRunning(false)
     }
+  }
+
+  const handleSave = async () => {
+    await onSave(sql)
+    onClose()
   }
 
   const handleCopy = () => {
@@ -107,58 +132,34 @@ export function SqlEditorModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      {gateNode}
-      <div
-        className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
-        onClick={e => e.stopPropagation()}
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent
+        className="max-w-5xl h-[90vh] flex flex-col p-0 gap-0"
+        onPointerDownOutside={e => e.preventDefault()}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 bg-zinc-50">
-          <h3 className="font-semibold text-zinc-800">Analysis Inspector</h3>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onClose}
-              className="p-1.5 hover:bg-zinc-200 rounded-md text-zinc-500 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+        {gateNode}
+        <DialogHeader className="p-4 border-b">
+          <DialogTitle>{t('sql_editor.title')}</DialogTitle>
+        </DialogHeader>
 
-        <div className="flex-1 flex flex-col gap-4 overflow-hidden p-1">
-          {reasoning && (
-            <div className="flex-none bg-indigo-50/50 border border-indigo-100 p-4 rounded-lg text-sm text-indigo-900/80 max-h-[30%] overflow-y-auto">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
-                <h4 className="font-semibold text-xs tracking-wide uppercase text-indigo-400">
-                  AI Reasoning
-                </h4>
-              </div>
-              <p className="leading-relaxed whitespace-pre-wrap font-medium">
-                {reasoning}
-              </p>
-            </div>
-          )}
-
-          <div className="flex-1 border border-zinc-200 rounded-md overflow-hidden flex flex-col shadow-sm">
+        <div className="flex-1 flex flex-col min-h-0 gap-4 p-4">
+          {/* EDITOR AREA */}
+          <div className="flex-1 border rounded-md overflow-hidden relative flex flex-col min-h-0">
             <div className="flex items-center justify-between px-3 py-2 border-b bg-zinc-50">
               <span className="text-xs font-bold text-zinc-500">
                 SQL EDITOR
               </span>
-              <button
+              <Button
                 onClick={() => checkGate('SQL Editor', handleFormat)}
-                className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-colors border border-transparent',
-                  !isActivated
-                    ? 'text-zinc-400'
-                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 hover:border-zinc-300'
-                )}
-                title="Format Code"
+                variant="ghost"
+                size="sm"
+                className="h-7"
+                disabled={!isActivated}
               >
                 {!isActivated && <Lock className="w-3 h-3 mr-1" />}
-                <AlignLeft className="h-3 w-3" />
+                <AlignLeft className="h-3 w-3 mr-1" />
                 Format
-              </button>
+              </Button>
             </div>
             <div className="flex-1 min-h-0 relative overflow-auto bg-zinc-50/30">
               <Editor
@@ -170,82 +171,59 @@ export function SqlEditorModal({
                 style={{
                   fontFamily: '"Fira Code", "Fira Mono", monospace',
                   fontSize: 14,
-                  backgroundColor: '#f9f9f9',
+                  backgroundColor: '#fafafa',
                   minHeight: '100%',
                 }}
                 className={cn(
                   'min-h-full',
-                  !isActivated && 'opacity-80 bg-zinc-50 cursor-not-allowed'
+                  !isActivated && 'opacity-80 bg-zinc-100 cursor-not-allowed'
                 )}
               />
-              {!isActivated && (
-                <button
-                  onClick={() => checkGate('SQL Editor', () => {})}
-                  className="absolute bottom-4 right-4 bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-md flex items-center gap-1.5 border border-yellow-200 shadow-sm z-10 hover:bg-yellow-200 transition-colors"
-                >
-                  <Lock className="w-3 h-3" />
-                  <span className="font-medium">Unlock Editor (Pro)</span>
-                </button>
+            </div>
+          </div>
+
+          {/* PREVIEW AREA */}
+          <div className="h-1/2 border rounded-md bg-white flex flex-col overflow-hidden">
+            <div className="bg-zinc-100 px-4 py-2 text-xs font-bold text-zinc-500 border-b flex justify-between items-center">
+              <span>RESULT PREVIEW</span>
+              {previewData && <span>{previewData.length} rows</span>}
+            </div>
+
+            <div className="flex-1 overflow-auto p-0">
+              {previewError ? (
+                <div className="p-4 text-red-600 font-mono text-sm">
+                  {previewError}
+                </div>
+              ) : (
+                <ReportTable
+                  data={previewData || initialData}
+                  columns={previewColumns || initialColumns}
+                  variant="dashboard"
+                />
               )}
             </div>
           </div>
         </div>
 
-        {error && (
-          <div className="px-4 py-2 bg-red-50 text-red-600 text-xs border-t border-red-100 font-mono overflow-auto max-h-24">
-            {error}
-          </div>
-        )}
-
-        <div className="p-4 border-t border-zinc-200 bg-zinc-50 flex justify-between items-center">
-          <div className="flex gap-2">
-            <button
-              onClick={() => checkGate('SQL Editor', handleReset)}
-              className={cn(
-                'flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors border border-transparent',
-                !isActivated
-                  ? 'text-zinc-400'
-                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 hover:border-zinc-300'
-              )}
-            >
-              {!isActivated && <Lock className="w-3 h-3" />}
-              <RotateCcw className="w-4 h-4" />
-              {t('sql_editor.reset')}
-            </button>
-            <button
-              onClick={handleCopy}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 rounded-md transition-colors border border-transparent hover:border-zinc-300"
-            >
-              {copied ? (
-                <Check className="w-4 h-4 text-green-500" />
-              ) : (
-                <Copy className="w-4 h-4" />
-              )}
-              {copied ? t('sql_editor.copy_success') : t('sql_editor.copy')}
-            </button>
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={handleRun}
-              disabled={isRunning}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-md transition-all shadow-sm',
-                isRunning
-                  ? 'bg-zinc-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 hover:shadow'
-              )}
-            >
-              {isRunning ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Play className="w-4 h-4" />
-              )}
-              {t('sql_editor.run')}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+        <DialogFooter className="p-4 border-t bg-zinc-50">
+          <Button variant="outline" onClick={onClose}>
+            {t('sql_editor.cancel')}
+          </Button>
+          <Button
+            onClick={handleRunPreview}
+            variant="secondary"
+            disabled={isRunning}
+          >
+            {isRunning ? (
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+            ) : (
+              <Play className="w-4 h-4 mr-2" />
+            )}
+            {t('sql_editor.run')}
+          </Button>
+          <Button onClick={handleSave}>{t('sql_editor.save')}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

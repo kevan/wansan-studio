@@ -190,7 +190,7 @@ export function ReportCard({
         onClose={() => setIsEditorOpen(false)}
         initialSql={reportData.sql || ''}
         reasoning={reportData.reasoning}
-        onRun={handleRunSql}
+        onSave={handleRunSql}
       />
     </div>
   )
