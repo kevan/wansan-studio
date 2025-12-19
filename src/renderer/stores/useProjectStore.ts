@@ -23,7 +23,6 @@ export interface ProjectState extends ProjectData {
   abortControllers: Record<string, AbortController>
   layoutScenario: LayoutScenario
   editingReportId: string | null
-  language: Language
   pendingReplace: { fileId: string; newPath: string; missing: string[] } | null
   showRefreshConfirm: boolean
   sidebarMode: 'sessions' | 'data'
@@ -63,7 +62,6 @@ export interface ProjectState extends ProjectData {
   // 4. UI Actions
   setLayoutScenario: (scenario: LayoutScenario) => void
   setEditingReportId: (id: string | null) => void
-  setLanguage: (lang: Language) => void
   setPendingReplace: (payload: { fileId: string; newPath: string; missing: string[] } | null) => void
   setShowRefreshConfirm: (open: boolean) => void
   confirmReplace: () => Promise<void>
@@ -129,7 +127,6 @@ export const useProjectStore = create<ProjectState>()(
       abortControllers: {},
       layoutScenario: 'default',
       editingReportId: null,
-      language: 'en',
       pendingReplace: null,
       showRefreshConfirm: false,
       sidebarMode: 'sessions',
@@ -533,7 +530,6 @@ export const useProjectStore = create<ProjectState>()(
 
       setLayoutScenario: (scenario: LayoutScenario) => set({ layoutScenario: scenario }),
       setEditingReportId: (id: string | null) => set({ editingReportId: id }),
-      setLanguage: (lang: Language) => set({ language: lang }),
       
       setProjectName: (name) => set(state => ({ meta: { ...state.meta, name } })),
       setSelectedNode: (node) => set({ selectedNode: node }),
@@ -934,9 +930,9 @@ export const useProjectStore = create<ProjectState>()(
             createSession, switchSession, deleteSession, renameSession, 
             addMessage, updateMessage, setReplyTo, setAbortController,
             addWidget, removeWidget, updateLayout, updateReportTitle, setCanvasConfig,
-            setLayoutScenario, setEditingReportId, setLanguage,
+            setLayoutScenario, setEditingReportId,
             addFile, removeFile, loadProject, serialize, reset,
-            abortControllers, layoutScenario, editingReportId, language, pendingReplace, confirmReplace, setPendingReplace, refreshSessionWidgets,
+            abortControllers, layoutScenario, editingReportId, pendingReplace, confirmReplace, setPendingReplace, refreshSessionWidgets,
             showRefreshConfirm, setShowRefreshConfirm, // Exclude transient & actions
             ...data 
         } = get()

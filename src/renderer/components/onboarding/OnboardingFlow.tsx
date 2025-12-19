@@ -11,19 +11,16 @@ import {
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { useTranslation } from 'react-i18next'
 import { AI_PROVIDERS, type AIProviderKey } from '@/src/lib/constants'
-import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
 
 export function OnboardingFlow() {
   const settings = useSettingsStore()
   const { t } = useTranslation('settings')
-  const setWorkbenchLanguage = useWorkbenchStore(state => state.setLanguage)
 
   const [step, setStep] = useState<'language' | 'setup' | 'finish'>('language')
   const providerConfig = AI_PROVIDERS[settings.provider]
 
   const setLanguageAndContinue = (lang: 'en' | 'zh') => {
     settings.updateSettings({ language: lang })
-    setWorkbenchLanguage(lang)
     setStep('setup')
   }
 

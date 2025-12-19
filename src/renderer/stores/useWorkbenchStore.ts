@@ -9,6 +9,7 @@ import {
   ROWS_PER_PAGE,
   GRID_MARGIN_Y,
 } from '@/components/dashboard-v3/page-layer'
+import { useSettingsStore } from './useSettingsStore'
 
 // Re-exports for compatibility
 export type { LayoutScenario, Language }
@@ -52,7 +53,6 @@ interface WorkbenchState {
   setPageCount: (count: number) => void
   incrementPageCount: () => void
   setEditingReportId: (id: string | null) => void
-  setLanguage: (lang: Language) => void
   reset: () => void
 }
 
@@ -269,7 +269,7 @@ export const useWorkbenchStore = <T = WorkbenchState>(selector?: (state: Workben
         },
         pageCount: dashboard?.pageCount || 1,
         editingReportId: projectState.editingReportId,
-        language: projectState.language,
+        language: useSettingsStore.getState().language,
 
         pinReport,
         removeReport: (id) => useProjectStore.getState().removeWidget(id),
@@ -301,7 +301,6 @@ export const useWorkbenchStore = <T = WorkbenchState>(selector?: (state: Workben
             if (dashboard) useProjectStore.getState().setCanvasConfig({ pageCount: dashboard.pageCount + 1 })
         },
         setEditingReportId: (id) => useProjectStore.getState().setEditingReportId(id),
-        setLanguage: (l) => useProjectStore.getState().setLanguage(l),
         reset: () => { /* Project reset? */ },
     }
     
@@ -331,7 +330,7 @@ useWorkbenchStore.getState = () => {
         },
         pageCount: dashboard?.pageCount || 1,
         editingReportId: projectState.editingReportId,
-        language: projectState.language,
+        language: useSettingsStore.getState().language,
         pinReport,
         removeReport: (id) => useProjectStore.getState().removeWidget(id),
         updateReportTitle: (id, title) => useProjectStore.getState().updateReportTitle(id, title),
@@ -365,7 +364,6 @@ useWorkbenchStore.getState = () => {
             if (dashboard) useProjectStore.getState().setCanvasConfig({ pageCount: dashboard.pageCount + 1 })
         },
         setEditingReportId: (id) => useProjectStore.getState().setEditingReportId(id),
-        setLanguage: (l) => useProjectStore.getState().setLanguage(l),
         reset: () => {},
     }
 }
