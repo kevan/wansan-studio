@@ -29,6 +29,7 @@ export interface ProjectState extends ProjectData {
   suggestedPrompts: string[]
   selectedNode: SelectedNode | null
   isRestoring: boolean
+  previewFileId: string | null
 
   // --- Actions ---
 
@@ -68,6 +69,7 @@ export interface ProjectState extends ProjectData {
   refreshSessionWidgets: () => Promise<void>
   setSelectedNode: (node: SelectedNode | null) => void
   setRestoring: (isRestoring: boolean) => void
+  setPreviewFileId: (id: string | null) => void
 
   // 5. File Actions (Global)
   addFile: (file: Omit<FileNode, 'id' | 'createdAt' | 'lastModified'> & { status?: SyncStatus }) => string
@@ -133,6 +135,7 @@ export const useProjectStore = create<ProjectState>()(
       suggestedPrompts: [],
       selectedNode: null,
       isRestoring: false,
+      previewFileId: null,
 
       setSidebarMode: (mode) => set({ sidebarMode: mode }),
       setView: (view) => set(state => {
@@ -534,6 +537,7 @@ export const useProjectStore = create<ProjectState>()(
       setProjectName: (name) => set(state => ({ meta: { ...state.meta, name } })),
       setSelectedNode: (node) => set({ selectedNode: node }),
       setRestoring: (val) => set({ isRestoring: val }),
+      setPreviewFileId: (id) => set({ previewFileId: id }),
       setSuggestedPrompts: (prompts) => set({ suggestedPrompts: prompts }),
 
       addFile: (file) => {
@@ -934,6 +938,7 @@ export const useProjectStore = create<ProjectState>()(
             addFile, removeFile, loadProject, serialize, reset,
             abortControllers, layoutScenario, editingReportId, pendingReplace, confirmReplace, setPendingReplace, refreshSessionWidgets,
             showRefreshConfirm, setShowRefreshConfirm, // Exclude transient & actions
+            previewFileId, setPreviewFileId,
             ...data 
         } = get()
         

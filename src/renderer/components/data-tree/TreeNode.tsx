@@ -56,6 +56,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
   } = useFileStore()
   const replaceFile = useProjectStore(state => state.replaceFile)
   const setActiveFile = useProjectStore(state => state.setActiveFile)
+  const setPreviewFileId = useProjectStore(state => state.setPreviewFileId)
   const setView = useProjectStore(state => state.setView)
   const { addToast } = useToastStore()
   const reIngest = useReIngestFile()
@@ -123,8 +124,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
 
   const handlePreviewFile = () => {
     if (data.fileId) {
-      setActiveFile(data.fileId)
-      setView('schema')
+      setPreviewFileId(data.fileId)
     }
   }
 

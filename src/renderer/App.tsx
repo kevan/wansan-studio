@@ -41,6 +41,7 @@ import { useStoreMigration } from './hooks/use-store-migration'
 import { SchemaWarningModal } from './components/modals/SchemaWarningModal'
 import { RefreshConfirmModal } from './components/modals/RefreshConfirmModal'
 import { SettingsDialog } from './components/settings/SettingsDialog'
+import { DataPreviewModal } from './components/modals/DataPreviewModal'
 
 const LAYOUT_STORAGE_KEY = 'wansan-layout'
 
@@ -307,6 +308,7 @@ function App() {
         <UpdateModal />
         <SchemaWarningModal />
         <RefreshConfirmModal />
+        <DataPreviewModal />
         <SettingsDialog />
         {/* Global Window Header */}
         <header
