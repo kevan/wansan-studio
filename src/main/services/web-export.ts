@@ -101,6 +101,7 @@ ${JSON.stringify(meta, null, 2)}
   - **Must handle resize**: \`window.addEventListener('resize', () => chart.resize());\`
   - **Must set height**: Ensure \`div\` container has \`style="height: 400px;"\` or Tailwind \`h-96\`.
   - **Data Safety**: Check if data exists before init. \`if (!window.WIDGET_DATA['ID']) return;\`.
+  - **Safe Formatting**: When using \`formatter\` (tooltip/label), ALWAYS safely handle null/undefined values. Use \`(val ?? 0).toLocaleString()\` or check existence. NEVER call methods on undefined.
 
 ### 5. Output Format
 - Return **ONLY** the raw HTML code.
