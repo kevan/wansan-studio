@@ -38,6 +38,7 @@ import { useReIngestFile } from '../hooks/useIPC'
 import { useState } from 'react'
 import { Input } from './ui/input'
 import { cn } from '@/utils/cn'
+import { ExpandableAction } from './ui/expandable-action'
 
 interface FormatConfig {
   label: string
@@ -210,25 +211,19 @@ export function SchemaEditor() {
                 </div>
 
                 {/* Header Actions */}
-                <div className="flex items-center gap-2 ml-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                <div className="flex items-center gap-2 ml-4 shrink-0">
+                  <ExpandableAction
+                    icon={<Code className="w-4 h-4" />}
+                    label={t('preview_data')}
                     onClick={handlePreview}
-                    title={t('preview_data')}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Code className="w-4 h-4 text-zinc-500" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  />
+                  <ExpandableAction
+                    icon={<RefreshCw className="w-4 h-4" />}
+                    label={t('reload_data')}
                     onClick={handleReload}
-                    title={t('reload_data')}
-                    className="h-8 w-8 p-0"
-                  >
-                    <RefreshCw className="w-4 h-4 text-zinc-500" />
-                  </Button>
+                  />
+
+                  <div className="w-px h-4 bg-zinc-200 mx-1" />
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
