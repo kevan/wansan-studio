@@ -3,6 +3,7 @@ import path from 'path'
 import { Mutex } from 'async-mutex'
 import { app } from 'electron'
 import { isDev } from '../utils/env'
+import { normalizeDuckDBType } from '../../shared/type-utils'
 
 // Use blocking DuckDB version to avoid worker issues
 const require = createRequire(import.meta.url)
@@ -129,7 +130,7 @@ export class DatabaseService {
         // Extract column types from Arrow schema
         const columnTypes: Record<string, string> = {}
         arrowTable.schema.fields.forEach((field: any) => {
-          columnTypes[field.name] = field.type.toString()
+          columnTypes[field.name] = normalizeDuckDBType(field.type.toString())
         })
 
         // Convert Arrow table to JSON and sanitize for IPC
@@ -137,7 +138,9 @@ export class DatabaseService {
           .toArray()
           .map((row: any) => sanitizeValue(row.toJSON()))
           .slice(0, 1000)
-
+        if (isDev) {
+          console.log('[DuckDB] Executing SQL:', { sql, data, columnTypes })
+        }
         return { data, columnTypes }
       } catch (error) {
         console.error('Query failed:', sql, error)
