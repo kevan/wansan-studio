@@ -149,7 +149,10 @@ export function summarizeJson(value: any, depth = 0): any {
  * Handles Date objects and valid date strings.
  * Returns only the necessary parts based on type hints if possible.
  */
-export function formatDateValue(val: any, typeHint?: string): string | null {
+export function formatDateValue(
+  val: any,
+  typeHint?: 'date' | 'time' | 'timestamp'
+): string | null {
   if (val === null || val === undefined) return null
 
   let dateObj: Date | null = null
@@ -176,15 +179,13 @@ export function formatDateValue(val: any, typeHint?: string): string | null {
   // Note: We deliberately EXCLUDE number/bigint here to prevent 
   // false positive date conversions for IDs or Metrics.
 
-  if (dateObj && !isNaN(dateObj.getTime())) {
-    const iso = dateObj.toISOString()
-    const lowerHint = typeHint?.toLowerCase() || ''
-    
-    if (lowerHint === 'date') return iso.split('T')[0] // YYYY-MM-DD
-    if (lowerHint === 'time') return iso.split('T')[1].split('.')[0] // HH:mm:ss
-    return iso.replace('T', ' ').split('.')[0] // YYYY-MM-DD HH:mm:ss
-  }
-
+    if (dateObj && !isNaN(dateObj.getTime())) {
+      const iso = dateObj.toISOString()
+  
+      if (typeHint === 'date') return iso.split('T')[0] // YYYY-MM-DD
+      if (typeHint === 'time') return iso.split('T')[1].split('.')[0] // HH:mm:ss
+      return iso.replace('T', ' ').split('.')[0] // YYYY-MM-DD HH:mm:ss
+    }
   return null
 }
 
