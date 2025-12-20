@@ -13,6 +13,8 @@ const electronAPI = {
 
   // 数据库操作
   runSQL: (sql: string) => ipcRenderer.invoke('run-sql', sql),
+  generateSQL: (prompt: string, schema: any) =>
+    ipcRenderer.invoke('generate-sql', prompt, schema),
   getSchema: (tableName?: string) =>
     ipcRenderer.invoke('get-schema', tableName),
   deleteTable: (tableName: string) =>
@@ -54,9 +56,12 @@ const electronAPI = {
     title: string
     layoutOptions: { isA4: boolean; landscape?: boolean }
   }) => ipcRenderer.invoke('export-report', payload),
+  exportWebReport: (widgets: any[], config: any) =>
+    ipcRenderer.invoke('export-web-report', widgets, config),
 
   // 系统信息
   getDeviceId: () => ipcRenderer.invoke('get-device-id'),
+  getUserInfo: () => ipcRenderer.invoke('get-user-info'),
   secureSet: (key: string, value: string) =>
     ipcRenderer.invoke('secure-set', key, value),
   secureGet: (key: string) => ipcRenderer.invoke('secure-get', key),
