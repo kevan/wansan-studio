@@ -18,6 +18,7 @@ import {
   Timer,
   Save,
   Code,
+  Loader2,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../utils/cn'
@@ -224,6 +225,20 @@ export function SqlEditorModal({
                   <RotateCcw className="w-3 h-3 mr-1" />
                   {t('sql_editor.reset')}
                 </Button>
+                <div className="w-px h-4 bg-zinc-200 mx-1" />
+                <Button
+                  size="sm"
+                  onClick={() => handleRunPreview(sql)}
+                  className="h-7 bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 shadow-sm px-3"
+                  disabled={isRunning}
+                >
+                  {isRunning ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Play className="w-3 h-3 fill-current" />
+                  )}
+                  {t('sql_editor.run')}
+                </Button>
               </div>
             </div>
             <div className="flex-1 min-h-0 relative overflow-auto">
@@ -314,30 +329,13 @@ export function SqlEditorModal({
           <Button variant="ghost" onClick={onClose}>
             {t('sql_editor.cancel')}
           </Button>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => handleRunPreview(sql)}
-              variant="secondary"
-              disabled={isRunning}
-              className="gap-2"
-            >
-              {isRunning ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Play className="w-4 h-4 fill-current" />
-              )}
-              {t('sql_editor.run')}
-            </Button>
-            {onSave && (
-              <Button
-                onClick={handleSave}
-                className="gap-2 bg-black text-white hover:bg-zinc-800 shadow-sm"
-              >
-                <Save className="w-4 h-4" />
-                {t('sql_editor.save')}
-              </Button>
-            )}
-          </div>
+          <Button
+            onClick={handleSave}
+            className="gap-2 bg-black text-white hover:bg-zinc-800 shadow-sm px-6"
+          >
+            <Save className="w-4 h-4" />
+            {t('sql_editor.save')}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
