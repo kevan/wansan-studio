@@ -41,6 +41,18 @@ export function Toaster() {
                     {toast.description}
                   </p>
                 )}
+                {toast.action && (
+                  <button
+                    onClick={e => {
+                      e.stopPropagation()
+                      toast.action?.onClick()
+                      dismissToast(toast.id)
+                    }}
+                    className="mt-2 text-xs font-semibold text-white bg-black hover:bg-zinc-800 px-3 py-1.5 rounded-md transition-colors shadow-sm"
+                  >
+                    {toast.action.label}
+                  </button>
+                )}
               </div>
               <button
                 type="button"

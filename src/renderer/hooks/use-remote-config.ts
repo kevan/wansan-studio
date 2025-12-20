@@ -76,7 +76,18 @@ export function useRemoteConfig() {
             title: t('update_available', { version: config.latest_version }),
             description: t('update_available_desc'),
             type: 'info',
-            duration: 8000,
+            duration: 10000,
+            action: {
+              label: t('download'),
+              onClick: () => {
+                const url = config.download_url || 'https://wansan.app'
+                if (window.electronAPI?.openExternal) {
+                  window.electronAPI.openExternal(url)
+                } else {
+                  window.open(url, '_blank')
+                }
+              },
+            },
           })
         }
 

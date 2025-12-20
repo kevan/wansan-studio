@@ -8,6 +8,10 @@ export interface Toast {
   description?: string
   type: ToastType
   duration?: number
+  action?: {
+    label: string
+    onClick: () => void
+  }
 }
 
 interface ToastState {
