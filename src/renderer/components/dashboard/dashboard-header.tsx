@@ -62,7 +62,7 @@ export function DashboardHeader() {
   const layoutScenario = useWorkbenchStore(state => state.layoutScenario)
   const isA4 = canvasConfig.layout === 'a4'
   const { t } = useTranslation('common')
-  const { isActivated } = useSettingsStore()
+  const { isActivated, language } = useSettingsStore()
   const addToast = useToastStore(state => state.addToast)
   const addWidget = useProjectStore(state => state.addWidget)
   const { mutateAsync: exportWebReport } = useExportWebReport()
@@ -75,8 +75,14 @@ export function DashboardHeader() {
     setIsExportingWeb(true)
     try {
       const { pinnedReports } = useWorkbenchStore.getState()
-      await exportWebReport({ widgets: pinnedReports, config })
-      addToast({ title: t('export_success', 'Web Report Generated'), type: 'success' })
+      await exportWebReport({
+        widgets: pinnedReports,
+        config: { ...config, language: language as 'en' | 'zh' },
+      })
+      addToast({
+        title: t('export_success', 'Web Report Generated'),
+        type: 'success',
+      })
     } catch (e) {
       console.error(e)
       addToast({ title: t('export_failed', 'Export Failed'), type: 'error' })

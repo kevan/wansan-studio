@@ -5,9 +5,9 @@ import type { AIService } from './ai'
 export async function exportWebReport(
   aiService: AIService,
   widgets: any[],
-  config: { title: string; theme: string }
+  config: { title: string; theme: string; language?: 'en' | 'zh' }
 ) {
-  const { title: reportTitle, theme } = config
+  const { title: reportTitle, theme, language = 'en' } = config
   console.log('exportWebReport,widgets:' + widgets.length, config)
 
   // 1. Sort Widgets (Page -> Y -> X)
@@ -56,10 +56,15 @@ export async function exportWebReport(
 
   const styleInstruction = THEMES[theme] || THEMES.minimal;
 
+  const languageInstruction = language === 'zh'
+    ? 'Output Language: Chinese (Simplified). Ensure all UI labels, chart legends, and tooltips are in Chinese where appropriate.'
+    : 'Output Language: English.'
+
   // 4. Prompt AI
   const prompt = `
 Role: Senior Frontend Architect.
 Task: Generate a standalone single-file HTML dashboard report.
+${languageInstruction}
 
 ### 1. Technology Stack (Strict)
 - **CSS**: Tailwind CSS (CDN: https://cdn.tailwindcss.com)
