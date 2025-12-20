@@ -326,16 +326,23 @@ export function SqlEditorModal({
         </div>
 
         <DialogFooter className="p-4 border-t bg-zinc-50/50 flex items-center justify-between sm:justify-between shrink-0">
-          <Button variant="ghost" onClick={onClose}>
-            {t('sql_editor.cancel')}
-          </Button>
-          <Button
-            onClick={handleSave}
-            className="gap-2 bg-black text-white hover:bg-zinc-800 shadow-sm px-6"
-          >
-            <Save className="w-4 h-4" />
-            {t('sql_editor.save')}
-          </Button>
+          <div className="text-xs text-zinc-400 font-medium italic">
+            {onSave ? t('sql_editor.editing') : t('sql_editor.read_only')}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={onClose}>
+              {onSave ? t('sql_editor.cancel') : t('sql_editor.close')}
+            </Button>
+            {onSave && (
+              <Button
+                onClick={handleSave}
+                className="gap-2 bg-black text-white hover:bg-zinc-800 shadow-sm px-6"
+              >
+                <Save className="w-4 h-4" />
+                {t('sql_editor.save')}
+              </Button>
+            )}
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

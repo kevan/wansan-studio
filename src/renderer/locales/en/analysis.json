@@ -16,6 +16,9 @@
     "result_preview": "RESULT PREVIEW",
     "rows_suffix": "rows",
     "show_logic": "Show Logic",
-    "hide_logic": "Hide Logic"
+    "hide_logic": "Hide Logic",
+    "read_only": "Read-only Preview",
+    "editing": "Editing Widget",
+    "close": "Close"
   }
 }

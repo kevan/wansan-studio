@@ -16,6 +16,9 @@
     "result_preview": "结果预览",
     "rows_suffix": "行",
     "show_logic": "显示思路",
-    "hide_logic": "隐藏思路"
+    "hide_logic": "隐藏思路",
+    "read_only": "只读预览模式",
+    "editing": "正在编辑图表",
+    "close": "关闭"
   }
 }
