@@ -190,7 +190,7 @@ export function SchemaEditor() {
                   </div>
 
                   {/* Row 2: Metadata Strip */}
-                  <div className="flex items-center gap-4 text-sm text-zinc-500 pl-1 overflow-x-auto no-scrollbar">
+                  <div className="flex items-center flex-wrap gap-4 text-sm text-zinc-500 pl-1">
                     {/* Table Name (Technical Info) */}
                     <div
                       className="flex items-center gap-1.5 shrink-0 whitespace-nowrap"
