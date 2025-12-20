@@ -220,24 +220,15 @@ export function formatForDisplay(value: any): string {
  * Handles: BigInt, Date (ISO), JSON summarization, and string truncation
  */
 export function processSampleValue(val: any, columnType?: ColumnType): any {
-  const lowerType = columnType?.toLowerCase() || ''
-  
   // 1. Strict Type Check: If it's a numeric type, NEVER format as date
-  // This prevents AI from thinking a BIGINT column is a TIMESTAMP column
-  const isNumericType = 
-    lowerType.includes('int') || 
-    lowerType.includes('double') || 
-    lowerType.includes('float') || 
-    lowerType.includes('decimal') ||
-    lowerType.includes('numeric')
+  const isNumericType = columnType === 'INTEGER' || columnType === 'DOUBLE'
 
   // 2. Handle Date/Time Types if columnType is provided
-  if (!isNumericType && (
-      lowerType.includes('date') || 
-      lowerType.includes('time') || 
-      lowerType.includes('timestamp')
-  )) {
-    const formattedDate = formatDateValue(val, lowerType)
+  if (!isNumericType && (columnType === 'DATE' || columnType === 'TIMESTAMP')) {
+    const formattedDate = formatDateValue(
+      val,
+      columnType === 'DATE' ? 'date' : 'timestamp'
+    )
     if (formattedDate) return formattedDate
   }
 
