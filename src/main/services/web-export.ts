@@ -19,7 +19,7 @@ export async function exportWebReport(
 
     const layoutA = a.layout || { x: 0, y: 0 }
     const layoutB = b.layout || { x: 0, y: 0 }
-    
+
     // Then Y (Row)
     if (layoutA.y !== layoutB.y) return layoutA.y - layoutB.y
     // Then X (Column)
@@ -72,7 +72,6 @@ ${languageInstruction}
 - **No external CSS/JS files**. All code must be inline.
 
 ### 2. Design System
-- **Report Title**: "${reportTitle}"
 - **Theme Rules**: ${styleInstruction}
 - **Layout**: 
   - Mobile: Single column.
@@ -87,18 +86,21 @@ ${languageInstruction}
 Render ${meta.length} widgets based on this metadata:
 ${JSON.stringify(meta, null, 2)}
 
-### 4. Data Binding Contract (CRITICAL)
+### 4. Data Binding & Rendering (CRITICAL)
 - **DO NOT INVENT DATA**. I will inject the real data later.
 - Assume a global object \`window.WIDGET_DATA\` exists.
 - Keys are widget IDs. Values are arrays of row objects.
+- **Container Styling**: ALWAYS add \`w-full\` (width: 100%) to the chart container div. Example: \`class="w-full h-96 min-h-[400px]"\`.
 - **ECharts Configuration**:
   - Use \`dataset: { source: window.WIDGET_DATA['WIDGET_ID'] }\`.
   - Automatically map dimensions (encode) if possible, or use sensible defaults (x=first column, y=numeric column).
   - Handle 'kpi' type as a big number display.
   - Handle 'table' type as a clean HTML table (limit to top 10 rows).
   - Handle 'text' type by rendering its 'content' or 'desc'.
+  - **Initialization Timing**: Since the layout uses CSS Grid, the container width might not be calculated immediately. You MUST add a \`setTimeout(() => chart.resize(), 50)\` immediately after \`chart.setOption\`.
   - **Must handle resize**: \`window.addEventListener('resize', () => chart.resize());\`
   - **Must set height**: Ensure \`div\` container has \`style="height: 400px;"\` or Tailwind \`h-96\`.
+  - **Data Safety**: Check if data exists before init. \`if (!window.WIDGET_DATA['ID']) return;\`.
 
 ### 5. Output Format
 - Return **ONLY** the raw HTML code.
@@ -129,9 +131,9 @@ ${JSON.stringify(meta, null, 2)}
         if (!window.WIDGET_DATA) { alert('Error: Data injection failed.'); }
     });
   </script>`
-  
+
   const injection = `${debugScript}<script>window.WIDGET_DATA = ${JSON.stringify(dataMap)};</script>`
-  
+
   // Insert before </head> or <body>
   if (html.includes('</head>')) {
       html = html.replace('</head>', `${injection}</head>`)
