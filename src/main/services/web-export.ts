@@ -91,12 +91,12 @@ ${JSON.stringify(meta, null, 2)}
 - Assume a global object \`window.WIDGET_DATA\` exists.
 - Keys are widget IDs. Values are arrays of row objects.
 - **Container Styling**: ALWAYS add \`w-full\` (width: 100%) to the chart container div. Example: \`class="w-full h-96 min-h-[400px]"\`.
-- **ECharts Configuration**:
-  - Use \`dataset: { source: window.WIDGET_DATA['WIDGET_ID'] }\`.
-  - Automatically map dimensions (encode) if possible, or use sensible defaults (x=first column, y=numeric column).
-  - Handle 'kpi' type as a big number display.
-  - Handle 'table' type as a clean HTML table (limit to top 10 rows).
-  - Handle 'text' type by rendering its 'content' or 'desc'.
+  - **ECharts Configuration**:
+    - Use \`dataset: { source: window.WIDGET_DATA['WIDGET_ID'] }\`.
+    - Automatically map dimensions (encode) if possible, or use sensible defaults (x=first column, y=numeric column).
+    - **Tooltip Formatter**: Since \`dataset.source\` is an array of objects, \`params.value\` is an OBJECT (e.g. \`{ month: 'Jan', sales: 100 }\`). Do NOT access it by index (e.g. \`params.value[1]\`). Use \`params.value['field_name']\` or rely on default tooltip.
+    - Handle 'kpi' type as a big number display.
+    - Handle 'table' type as a clean HTML table (limit to top 10 rows).  - Handle 'text' type by rendering its 'content' or 'desc'.
   - **Initialization Timing**: Since the layout uses CSS Grid, the container width might not be calculated immediately. You MUST add a \`setTimeout(() => chart.resize(), 50)\` immediately after \`chart.setOption\`.
   - **Must handle resize**: \`window.addEventListener('resize', () => chart.resize());\`
   - **Must set height**: Ensure \`div\` container has \`style="height: 400px;"\` or Tailwind \`h-96\`.
