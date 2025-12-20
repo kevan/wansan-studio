@@ -16,6 +16,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
   RotateCcw,
+  Loader2,
 } from 'lucide-react'
 import { DashboardCanvasV3 } from './components/dashboard-v3'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
@@ -94,6 +95,11 @@ function App() {
   const { t } = useTranslation('common')
   const { data: platform } = usePlatform()
   const [isStoreReady, setIsStoreReady] = useState(false)
+  
+  const isRestoring = useProjectStore(state => state.isRestoring)
+  const isRefreshing = useProjectStore(state => state.isRefreshing)
+  const isLoading = isRestoring || isRefreshing
+  const loadingText = isRestoring ? t('restoring_session', { ns: 'chat' }) : t('command_refresh', { ns: 'chat' })
 
   useEffect(() => {
     const unsub = useSettingsStore.persist.onFinishHydration(() => setIsStoreReady(true))
@@ -494,6 +500,18 @@ function App() {
 
         {/* 开发模式调试控制台 */}
         {isDev && <DevConsole defaultOpen={false} />}
+
+        {/* Global Loading Overlay */}
+        {isLoading && (
+          <div className="absolute inset-0 z-[9999] bg-white/50 dark:bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-2xl flex flex-col items-center border border-zinc-100 dark:border-zinc-800 scale-110">
+              <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-4" />
+              <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 tracking-wide">
+                {loadingText}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </ErrorBoundary>
   )
