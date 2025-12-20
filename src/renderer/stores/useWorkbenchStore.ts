@@ -116,23 +116,65 @@ const pinReport = (messageId: string, reportData: ReportData, timestamp?: number
     h = Math.min(Math.max(1, h), SAFE_ROWS)
 
     let targetPageIndex = 0
+    let targetX = 0
     let targetY = 0
 
     if (dashboard.widgets.length > 0) {
-        const lastReport = [...dashboard.widgets].sort((a, b) => {
-            const pageDiff = (b.pageIndex || 0) - (a.pageIndex || 0)
-            if (pageDiff !== 0) return pageDiff
-            return ((b.layout.y ?? 0) + (b.layout.h ?? 0)) - ((a.layout.y ?? 0) + (a.layout.h ?? 0))
-        })[0]
+        // 1. Find the target page (last page with content)
+        const maxPageIndex = Math.max(...dashboard.widgets.map(w => w.pageIndex || 0))
+        targetPageIndex = maxPageIndex
+        
+        const pageWidgets = dashboard.widgets.filter(w => (w.pageIndex || 0) === maxPageIndex)
+        
+        if (pageWidgets.length > 0) {
+            // Default strategy: Start a new row below everything
+            const bottomY = pageWidgets.reduce((max, w) => Math.max(max, (w.layout.y || 0) + (w.layout.h || 0)), 0)
+            targetY = bottomY
+            targetX = 0
 
-        if (lastReport) {
-            targetPageIndex = lastReport.pageIndex || 0
-            targetY = (lastReport.layout.y ?? 0) + (lastReport.layout.h ?? 0)
+            // Optimized strategy: Try to append to the right of the "last" widget
+            const sorted = [...pageWidgets].sort((a, b) => {
+                const ay = a.layout.y || 0
+                const by = b.layout.y || 0
+                if (ay !== by) return ay - by
+                return (a.layout.x || 0) - (b.layout.x || 0)
+            })
+
+            const last = sorted[sorted.length - 1]
+            if (last) {
+                const attemptX = (last.layout.x || 0) + (last.layout.w || 0)
+                const attemptY = last.layout.y || 0
+
+                // Check 1: Does it fit within the 12-column grid?
+                if (attemptX + w <= 12) {
+                    // Check 2: Does it collide with any other widget?
+                    const hasCollision = pageWidgets.some(existing => {
+                        const ex = existing.layout.x || 0
+                        const ey = existing.layout.y || 0
+                        const ew = existing.layout.w || 0
+                        const eh = existing.layout.h || 0
+
+                        // Rectangle Intersection Logic
+                        return (
+                            attemptX < ex + ew &&
+                            attemptX + w > ex &&
+                            attemptY < ey + eh &&
+                            attemptY + h > ey
+                        )
+                    })
+
+                    if (!hasCollision) {
+                        targetX = attemptX
+                        targetY = attemptY
+                    }
+                }
+            }
         }
     }
 
     if (targetY + h > SAFE_ROWS) {
         targetPageIndex++
+        targetX = 0
         targetY = 0
     }
 
@@ -148,7 +190,7 @@ const pinReport = (messageId: string, reportData: ReportData, timestamp?: number
         sourceMessageId: messageId,
         widgetId: widgetId || id,
         reportData: { ...reportData, timestamp: timestamp ?? reportData.timestamp },
-        layout: { i: id, x: 0, y: targetY, w, h },
+        layout: { i: id, x: targetX, y: targetY, w, h },
         pageIndex: targetPageIndex,
     })
 }
