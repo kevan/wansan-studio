@@ -19,6 +19,10 @@
     "hide_logic": "Hide Logic",
     "read_only": "Read-only Preview",
     "editing": "Editing Widget",
-    "close": "Close"
+    "close": "Close",
+    "file_preview": "File Preview",
+    "widget_edit": "Edit Widget",
+    "mode_read_only": "READ-ONLY PREVIEW",
+    "mode_editing": "EDITING SQL LOGIC"
   }
 }

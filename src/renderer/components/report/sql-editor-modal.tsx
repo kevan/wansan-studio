@@ -178,9 +178,9 @@ export function SqlEditorModal({
             </DialogTitle>
 
             <p className="text-xs text-zinc-400 font-mono flex items-center gap-2">
-              {isFileMode ? 'READ-ONLY PREVIEW' : 'EDITING SQL LOGIC'}
-              <span className="w-1 h-1 rounded-full bg-zinc-300" />
-              DuckDB Dialect
+              {isFileMode
+                ? t('sql_editor.mode_read_only')
+                : t('sql_editor.mode_editing')}
             </p>
           </div>
         </DialogHeader>

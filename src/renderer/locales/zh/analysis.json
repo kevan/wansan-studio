@@ -19,6 +19,10 @@
     "hide_logic": "隐藏思路",
     "read_only": "只读预览模式",
     "editing": "正在编辑图表",
-    "close": "关闭"
+    "close": "关闭",
+    "file_preview": "文件预览",
+    "widget_edit": "编辑组件",
+    "mode_read_only": "只读预览模式",
+    "mode_editing": "编辑 SQL 逻辑"
   }
 }
