@@ -18,10 +18,7 @@ const generateId = () =>
 export type LayoutScenario = 'default' | 'print' | 'large' | 'ppt' | 'email'
 export type Language = 'en' | 'zh'
 
-export interface ProjectState {
-  activeFileId: string | null
-  activeSessionId: string | null
-  activeView: ViewMode
+export interface ProjectState extends ProjectData {
   sidebarMode: 'sessions' | 'data'
   layoutScenario: LayoutScenario
   editingReportId: string | null
@@ -31,12 +28,7 @@ export interface ProjectState {
   selectedNode: SelectedNode | null
   isRestoring: boolean
   isRefreshing: boolean
-  sessions: Session[]
-  files: FileNode[]
-  relations: Relation[]
-  widgetRegistry: Record<string, ReportData>
   abortControllers: Record<string, AbortController>
-  meta: ProjectData['meta']
 
   // Actions
   setSidebarMode: (mode: 'sessions' | 'data') => void
