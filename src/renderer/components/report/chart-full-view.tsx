@@ -166,10 +166,10 @@ export function ChartFullView() {
             </div>
 
             <div
-              className={cn('w-[320px] border-l border-zinc-200 bg-white p-4')}
+              className={cn('w-[320px] border-l border-zinc-200 bg-white p-4 overflow-y-auto')}
             >
-              <div className="mb-3 text-sm font-semibold text-zinc-700">
-                Visualization Controls
+              <div className="mb-4 text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                {t('visualization')}
               </div>
               <VizControls
                 vizType={localType}
@@ -177,6 +177,7 @@ export function ChartFullView() {
                 columns={columns}
                 data={data}
                 onChange={handleConfigChange}
+                inline={true}
               />
             </div>
           </div>
