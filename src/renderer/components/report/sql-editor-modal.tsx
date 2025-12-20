@@ -14,6 +14,8 @@ import {
   Lock,
   ChevronUp,
   ChevronDown,
+  Table,
+  Timer,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../utils/cn'
@@ -57,6 +59,7 @@ export function SqlEditorModal({
   const [previewData, setPreviewData] = useState<any[] | null>(null)
   const [previewColumns, setPreviewColumns] = useState<string[] | null>(null)
   const [previewError, setPreviewError] = useState<string | null>(null)
+  const [execTime, setExecTime] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
   const [showReasoning, setShowReasoning] = useState(true)
   const addToast = useToastStore(state => state.addToast)
@@ -84,9 +87,11 @@ export function SqlEditorModal({
   const handleRunPreview = async () => {
     setIsRunning(true)
     setPreviewError(null)
+    const startTime = performance.now()
     try {
       const res = await window.electronAPI.runSQL(sql)
       if (res.success) {
+        setExecTime(Math.round(performance.now() - startTime))
         setPreviewData(res.data)
         if (res.data && res.data.length > 0) {
           setPreviewColumns(Object.keys(res.data[0]))
@@ -219,13 +224,32 @@ export function SqlEditorModal({
 
           {/* PREVIEW AREA */}
           <div className="h-1/2 border rounded-md bg-white flex flex-col overflow-hidden">
-            <div className="bg-zinc-100 px-4 py-2 text-xs font-bold text-zinc-500 border-b flex justify-between items-center">
-              <span>{t('sql_editor.result_preview')}</span>
-              {previewData && (
-                <span>
-                  {previewData.length} {t('sql_editor.rows_suffix')}
-                </span>
-              )}
+            <div className="bg-zinc-100/80 px-4 py-2 border-b flex justify-between items-center text-xs">
+              <div className="flex items-center gap-2 font-bold text-zinc-600">
+                <Table className="w-3 h-3" />
+                <span>{t('sql_editor.result_preview')}</span>
+              </div>
+
+              <div className="flex items-center gap-3 text-zinc-500 font-mono">
+                {execTime !== null && (
+                  <span className="flex items-center gap-1">
+                    <Timer className="w-3 h-3" /> {execTime}ms
+                  </span>
+                )}
+                {previewData && (
+                  <>
+                    <span className="w-px h-3 bg-zinc-300" />
+                    <span>
+                      {previewData.length} {t('sql_editor.rows_suffix')}
+                    </span>
+                    <span>x</span>
+                    <span>
+                      {Object.keys(previewData[0] || {}).length}{' '}
+                      {t('field_name', { ns: 'common' })}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
 
             <div className="flex-1 overflow-auto p-0">
