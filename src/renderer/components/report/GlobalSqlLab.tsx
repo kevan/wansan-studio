@@ -14,6 +14,7 @@ export function GlobalSqlLab() {
       initialSql={sqlLabSession.initialSql}
       initialData={sqlLabSession.initialData}
       initialColumns={sqlLabSession.initialColumns}
+      autoRun={sqlLabSession.mode === 'file'}
       onSave={async (sql) => {
         if (sqlLabSession.onSave) {
           await sqlLabSession.onSave(sql)

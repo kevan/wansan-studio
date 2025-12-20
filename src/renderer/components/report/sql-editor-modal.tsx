@@ -42,6 +42,7 @@ interface SqlEditorModalProps {
   initialColumns?: string[]
   reasoning?: string
   onSave?: (sql: string) => Promise<void>
+  autoRun?: boolean
 }
 
 export function SqlEditorModal({
@@ -52,6 +53,7 @@ export function SqlEditorModal({
   initialColumns = [],
   reasoning,
   onSave,
+  autoRun = false,
 }: SqlEditorModalProps) {
   const { t } = useTranslation('analysis')
   const [sql, setSql] = useState(initialSql)
@@ -65,30 +67,12 @@ export function SqlEditorModal({
   const addToast = useToastStore(state => state.addToast)
   const { isActivated, checkGate, gateNode } = useProGate()
 
-  // Auto-format SQL when modal opens
-  useEffect(() => {
-    if (initialSql) {
-      try {
-        const formatted = format(initialSql, {
-          language: 'postgresql',
-          tabWidth: 2,
-          keywordCase: 'upper',
-        })
-        setSql(formatted)
-      } catch (e) {
-        setSql(initialSql)
-      }
-    }
-  }, [initialSql])
-
-  if (!isOpen) return null
-
-  const handleRunPreview = async () => {
+  const handleRunPreview = async (queryToRun: string) => {
     setIsRunning(true)
     setPreviewError(null)
     const startTime = performance.now()
     try {
-      const res = await window.electronAPI.runSQL(sql)
+      const res = await window.electronAPI.runSQL(queryToRun)
       if (res.success) {
         setExecTime(Math.round(performance.now() - startTime))
         setPreviewData(res.data)
@@ -108,6 +92,30 @@ export function SqlEditorModal({
       setIsRunning(false)
     }
   }
+
+  // Auto-format SQL when modal opens
+  useEffect(() => {
+    if (initialSql) {
+      try {
+        const formatted = format(initialSql, {
+          language: 'postgresql',
+          tabWidth: 2,
+          keywordCase: 'upper',
+        })
+        setSql(formatted)
+        if (autoRun && isOpen) {
+            handleRunPreview(formatted)
+        }
+      } catch (e) {
+        setSql(initialSql)
+        if (autoRun && isOpen) {
+            handleRunPreview(initialSql)
+        }
+      }
+    }
+  }, [initialSql, isOpen, autoRun])
+
+  if (!isOpen) return null
 
   const handleSave = async () => {
     if (onSave) {
@@ -308,7 +316,7 @@ export function SqlEditorModal({
           </Button>
           <div className="flex items-center gap-2">
             <Button
-              onClick={handleRunPreview}
+              onClick={() => handleRunPreview(sql)}
               variant="secondary"
               disabled={isRunning}
               className="gap-2"
