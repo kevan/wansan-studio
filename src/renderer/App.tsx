@@ -26,6 +26,7 @@ import { useTranslation } from 'react-i18next'
 import i18n from './i18n'
 import { useWorkbenchStore } from './stores/useWorkbenchStore'
 import { useSettingsStore } from './stores/useSettingsStore'
+import { useUIStore } from './stores/useUIStore'
 import { useProjectStore } from './stores/useProjectStore'
 import { useChatStore } from './stores/useChatStore'
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow'
@@ -44,30 +45,6 @@ import { RefreshConfirmModal } from './components/modals/RefreshConfirmModal'
 import { SettingsDialog } from './components/settings/SettingsDialog'
 import { GlobalSqlLab } from './components/report/GlobalSqlLab'
 
-const LAYOUT_STORAGE_KEY = 'wansan-layout'
-
-const loadLayoutPrefs = () => {
-  try {
-    const raw = localStorage.getItem(LAYOUT_STORAGE_KEY)
-    if (!raw) return { rightCollapsed: true, rightSize: 50 }
-    const parsed = JSON.parse(raw) as {
-      rightCollapsed?: boolean
-      rightSize?: number
-    }
-
-    // 确保 rightSize 有合理的值（> 0）
-    const rightSize =
-      parsed.rightSize && parsed.rightSize > 0 ? parsed.rightSize : 50
-
-    return {
-      rightCollapsed: parsed.rightCollapsed ?? true,
-      rightSize,
-    }
-  } catch {
-    return { rightCollapsed: true, rightSize: 50 }
-  }
-}
-
 function App() {
   useBootSequence()
   useRemoteConfig()
@@ -77,11 +54,11 @@ function App() {
 
   const [isChatCollapsed, setIsChatCollapsed] = useState(false)
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
-  const initialLayout = loadLayoutPrefs()
-  const [isRightCollapsed, setIsRightCollapsed] = useState(
-    initialLayout.rightCollapsed
-  )
-  const [rightPanelSize, setRightPanelSize] = useState(initialLayout.rightSize)
+  
+  const mainPanelLayout = useUIStore(s => s.mainPanelLayout)
+  const setMainPanelLayout = useUIStore(s => s.setMainPanelLayout)
+
+  const [isRightCollapsed, setIsRightCollapsed] = useState(true)
   const [isPresentationMode, setIsPresentationMode] = useState(false)
   const language = useSettingsStore(state => state.language)
   // const hasCompletedOnboarding = useSettingsStore(
@@ -166,7 +143,7 @@ function App() {
     if (!rightPanelRef.current) return
     if (isRightCollapsed) {
       rightPanelRef.current.expand?.()
-      const newSize = rightPanelSize > 0 ? rightPanelSize : 50
+      const newSize = mainPanelLayout[2] > 0 ? mainPanelLayout[2] : 45
       rightPanelRef.current.resize?.(newSize)
       setIsRightCollapsed(false)
     } else {
@@ -201,16 +178,6 @@ function App() {
   }
 
   useEffect(() => {
-    localStorage.setItem(
-      LAYOUT_STORAGE_KEY,
-      JSON.stringify({
-        rightCollapsed: isRightCollapsed,
-        rightSize: rightPanelSize || 50,
-      })
-    )
-  }, [isRightCollapsed, rightPanelSize])
-
-  useEffect(() => {
     if (isStoreReady && language && i18n.language !== language) {
       void i18n.changeLanguage(language)
     }
@@ -226,14 +193,14 @@ function App() {
       const right = rightPanelRef.current
       if (right) {
         right.expand?.()
-        right.resize?.(rightPanelSize || 45)
+        right.resize?.(mainPanelLayout[2] || 45)
       }
       setIsRightCollapsed(false)
     }
     window.addEventListener('wansan:open-dashboard', handleOpenDashboard)
     return () =>
       window.removeEventListener('wansan:open-dashboard', handleOpenDashboard)
-  }, [rightPanelSize])
+  }, [mainPanelLayout])
 
   useEffect(() => {
     const maybeOpenOnMaximize = () => {
@@ -283,7 +250,7 @@ function App() {
         // 退出全屏 -> 还原 UI
         left.expand?.()
         middle.expand?.()
-        right.resize?.(rightPanelSize || 45)
+        right.resize?.(mainPanelLayout[2] || 45)
         setIsLeftCollapsed(false)
         setIsChatCollapsed(false)
         setIsPresentationMode(false)
@@ -291,7 +258,7 @@ function App() {
     })
 
     return unsub
-  }, [isPresentationMode, rightPanelSize])
+  }, [isPresentationMode, mainPanelLayout])
 
   const handleHeaderDoubleClick = useCallback(() => {
     window.electronAPI?.windowControl?.('toggle-maximize')
@@ -414,11 +381,15 @@ function App() {
           </div>
         </header>
 
-        <PanelGroup direction="horizontal" className="flex-1">
+        <PanelGroup
+          direction="horizontal"
+          className="flex-1"
+          onLayout={setMainPanelLayout}
+        >
           {/* 左侧 Sidebar */}
           <Panel
             ref={leftPanelRef}
-            defaultSize={20}
+            defaultSize={mainPanelLayout[0]}
             minSize={15}
             maxSize={20}
             collapsible
@@ -439,7 +410,7 @@ function App() {
           {/* 主画布区域 - Chat/Workspace */}
           <Panel
             ref={middlePanelRef}
-            defaultSize={30}
+            defaultSize={mainPanelLayout[1]}
             minSize={0}
             collapsible
             collapsedSize={0}
@@ -456,18 +427,13 @@ function App() {
 
           {/* 右侧 Report Canvas */}
           <Panel
-            defaultSize={isRightCollapsed ? 0 : rightPanelSize}
+            defaultSize={mainPanelLayout[2]}
             minSize={0}
             ref={rightPanelRef}
             collapsible
             collapsedSize={0}
             onCollapse={() => setIsRightCollapsed(true)}
             onExpand={() => setIsRightCollapsed(false)}
-            onResize={size => {
-              if (size > 1) {
-                setRightPanelSize(size)
-              }
-            }}
             className={`bg-zinc-100/60 dark:bg-zinc-900 transition-all duration-300 ${isRightCollapsed ? 'min-w-0' : ''}`}
           >
             <div className="h-full w-full flex flex-col bg-zinc-100/60 dark:bg-zinc-900">

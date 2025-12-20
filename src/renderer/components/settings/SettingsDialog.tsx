@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { useSettingsStore } from '@/stores/useSettingsStore'
+import { useUIStore } from '@/stores/useUIStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
@@ -462,6 +463,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                       variant="outline"
                       onClick={() => {
                         settings.resetPreferences()
+                        useUIStore.getState().resetLayout()
                         addToast({
                           title: t('data.reset_title'),
                           description: t('data.reset_desc'),
