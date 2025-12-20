@@ -1,3 +1,5 @@
+import { ColumnType } from './types'
+
 /**
  * Unified serialization utilities for handling JSON.stringify/parse with special types
  */
@@ -217,7 +219,7 @@ export function formatForDisplay(value: any): string {
  * Process a single value for LLM context sampling
  * Handles: BigInt, Date (ISO), JSON summarization, and string truncation
  */
-export function processSampleValue(val: any, columnType?: string): any {
+export function processSampleValue(val: any, columnType?: ColumnType): any {
   const lowerType = columnType?.toLowerCase() || ''
   
   // 1. Strict Type Check: If it's a numeric type, NEVER format as date

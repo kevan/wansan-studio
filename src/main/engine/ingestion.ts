@@ -70,7 +70,7 @@ export async function getSampleValues(
   databaseService: DatabaseService,
   tableName: string,
   columnName: string,
-  columnType: string
+  columnType: ColumnType
 ): Promise<any[]> {
   const rows = await databaseService.query(
     `SELECT DISTINCT "${columnName}"
