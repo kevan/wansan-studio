@@ -9,6 +9,7 @@ import {
 } from '../engine/ingestion'
 import { DEMO_DATA } from '../../shared/demo-data'
 import { ReloadResult, ColumnSchema, ColumnType } from '../../shared/types'
+import { normalizeDuckDBType } from '../utils/type-mapper'
 
 // Helper to infer TIMESTAMP type from column name if DuckDB detects it as number
 function inferTypeFromSemanticName(name: string, currentType: string): string {
@@ -138,7 +139,8 @@ export class FileService {
       const columns: ColumnSchema[] = []
       for (const col of columnsResult) {
         // Apply semantic type inference
-        const finalType = inferTypeFromSemanticName(col.name, col.type)
+        const normalizedType = normalizeDuckDBType(col.type)
+        const finalType = inferTypeFromSemanticName(col.name, normalizedType)
 
         const sampleValues = await getSampleValues(
           this.databaseService,
@@ -205,7 +207,8 @@ export class FileService {
       const columns: ColumnSchema[] = []
       for (const col of columnsResult) {
         // Apply semantic type inference
-        const finalType = inferTypeFromSemanticName(col.name, col.type)
+        const normalizedType = normalizeDuckDBType(col.type)
+        const finalType = inferTypeFromSemanticName(col.name, normalizedType)
 
         const sampleValues = await getSampleValues(
           this.databaseService,
@@ -322,7 +325,8 @@ export class FileService {
 
       for (const col of columnsResult) {
         // Apply semantic type inference
-        const finalType = inferTypeFromSemanticName(col.name, col.type)
+        const normalizedType = normalizeDuckDBType(col.type)
+        const finalType = inferTypeFromSemanticName(col.name, normalizedType)
 
         const sampleValues = await getSampleValues(
           this.databaseService,
@@ -358,7 +362,8 @@ export class FileService {
 
       for (const col of columnsResult) {
         // Apply semantic type inference
-        const finalType = inferTypeFromSemanticName(col.name, col.type)
+        const normalizedType = normalizeDuckDBType(col.type)
+        const finalType = inferTypeFromSemanticName(col.name, normalizedType)
 
         const sampleValues = await getSampleValues(
           this.databaseService,
