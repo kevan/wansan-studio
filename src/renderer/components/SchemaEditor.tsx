@@ -95,6 +95,7 @@ export function SchemaEditor() {
     openSqlLab({
       mode: 'file',
       targetId: currentFile.name,
+      targetTitle: currentFile.name,
       initialSql: `SELECT * FROM "${currentFile.tableName}" LIMIT 100`,
     })
   }

@@ -19,6 +19,8 @@ import {
   Save,
   Code,
   Loader2,
+  FileSpreadsheet,
+  BarChart,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../utils/cn'
@@ -38,6 +40,8 @@ import { ReportTable } from './report-table'
 interface SqlEditorModalProps {
   isOpen: boolean
   onClose: () => void
+  mode?: 'file' | 'widget'
+  targetTitle?: string
   initialSql: string
   initialData?: any[]
   initialColumns?: string[]
@@ -49,6 +53,8 @@ interface SqlEditorModalProps {
 export function SqlEditorModal({
   isOpen,
   onClose,
+  mode = 'widget',
+  targetTitle,
   initialSql,
   initialData = [],
   initialColumns = [],
@@ -68,6 +74,8 @@ export function SqlEditorModal({
   const [showReasoning, setShowReasoning] = useState(true)
   const addToast = useToastStore(state => state.addToast)
   const { isActivated, checkGate, gateNode } = useProGate()
+
+  const isFileMode = mode === 'file'
 
   const handleRunPreview = async (queryToRun: string) => {
     setIsRunning(true)
@@ -157,8 +165,24 @@ export function SqlEditorModal({
         onPointerDownOutside={e => e.preventDefault()}
       >
         {gateNode}
-        <DialogHeader className="p-4 border-b shrink-0">
-          <DialogTitle>{t('sql_editor.title')}</DialogTitle>
+        <DialogHeader className="px-6 py-4 border-b flex flex-row items-center justify-between shrink-0">
+          <div className="flex flex-col gap-1">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              {isFileMode ? (
+                <FileSpreadsheet className="w-5 h-5 text-green-600" />
+              ) : (
+                <BarChart className="w-5 h-5 text-indigo-600" />
+              )}
+              {targetTitle ||
+                (isFileMode ? t('sql_editor.file_preview') : t('sql_editor.widget_edit'))}
+            </DialogTitle>
+
+            <p className="text-xs text-zinc-400 font-mono flex items-center gap-2">
+              {isFileMode ? 'READ-ONLY PREVIEW' : 'EDITING SQL LOGIC'}
+              <span className="w-1 h-1 rounded-full bg-zinc-300" />
+              DuckDB Dialect
+            </p>
+          </div>
         </DialogHeader>
 
         <div className="flex-1 flex flex-col min-h-0 gap-4 p-4 overflow-hidden">

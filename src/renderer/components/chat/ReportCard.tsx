@@ -97,6 +97,7 @@ export function ReportCard({
     openSqlLab({
       mode: 'widget',
       targetId: messageId,
+      targetTitle: reportData.title,
       initialSql: reportData.sql,
       initialColumns: reportData.columns,
       initialColumnTypes: reportData.columnTypes,

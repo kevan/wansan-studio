@@ -11,6 +11,8 @@ export function GlobalSqlLab() {
     <SqlEditorModal
       isOpen={!!session}
       onClose={close}
+      mode={session.mode}
+      targetTitle={session.targetTitle}
       initialSql={session.initialSql}
       initialData={[]}
       initialColumns={session.initialColumns}

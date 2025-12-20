@@ -3,6 +3,7 @@ import { create } from 'zustand'
 export interface SqlLabSession {
   mode: 'widget' | 'file'
   targetId: string // widgetId or tableName
+  targetTitle?: string // <--- Added
   initialSql: string
   initialColumns?: string[]
   initialColumnTypes?: Record<string, string>
