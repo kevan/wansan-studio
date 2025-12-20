@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,10 @@ export function ExportConfigModal({
     'minimal'
   )
   const { t } = useTranslation('common')
+
+  useEffect(() => {
+    setTitle(defaultTitle)
+  }, [defaultTitle, isOpen]) // Re-sync when modal opens or title changes
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
