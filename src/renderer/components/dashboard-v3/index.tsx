@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Plus, LayoutDashboard, ArrowLeft } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 import {
   PAGE_GAP_PX,
@@ -12,7 +12,7 @@ import { PageLayer } from './page-layer'
 import { LayoutScenario, useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { useUIStore } from '@/stores/useUIStore'
 import { ChartFullView } from '@/components/report/chart-full-view'
-import { useTranslation, Trans } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
 
 interface DashboardCanvasV3Props {
   isPresentationMode?: boolean
@@ -210,33 +210,6 @@ export function DashboardCanvasV3({
             height={isA4 ? totalHeightPx : undefined}
             scale={activeScale}
           />
-
-          {/* Empty State Guide */}
-          {pinnedReports.length <= 1 && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-50 z-0">
-              <div className="w-64 h-48 border-2 border-dashed border-zinc-300 rounded-xl flex items-center justify-center bg-zinc-50/50">
-                <LayoutDashboard className="w-12 h-12 text-zinc-300" />
-              </div>
-              <div className="mt-6 text-center max-w-sm px-4">
-                <h3 className="text-lg font-bold text-zinc-400">
-                  {t('empty_dashboard_title')}
-                </h3>
-                <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
-                  <Trans
-                    i18nKey="common:empty_dashboard_desc"
-                    components={{ strong: <strong className="text-zinc-500" /> }}
-                  />
-                </p>
-              </div>
-
-              {/* Arrow pointing to Chat */}
-              {!isPresentationMode && (
-                <div className="absolute left-10 top-1/2 -translate-x-full text-zinc-300 hidden xl:block">
-                  <ArrowLeft className="w-8 h-8 animate-bounce-x" />
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
