@@ -10,6 +10,8 @@ import {
 import { cn } from '@/utils/cn.ts'
 import { useTranslation } from 'react-i18next'
 import { formatForDisplay } from '@shared/serialization'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Button } from '../ui/button'
 
 interface ReportTableProps {
   data: Array<Record<string, any>>
@@ -154,30 +156,31 @@ export function ReportTable({
         </table>
       </div>
 
-      {isDashboard && (
-        <div className="flex items-center justify-between gap-3 py-3 text-xs text-zinc-600">
-          <div>
-            {t('page_of', {
-              page: table.getState().pagination.pageIndex + 1,
-              total: table.getPageCount() || 1,
-            })}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              className="px-2 py-1 rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              {t('prev')}
-            </button>
-            <button
-              className="px-2 py-1 rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              {t('next')}
-            </button>
-          </div>
+      {isDashboard && table.getPageCount() > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-2 py-1 bg-white/90 backdrop-blur border border-zinc-200 rounded-full shadow-lg transition-all hover:scale-105 z-30">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 rounded-full hover:bg-zinc-100 disabled:opacity-30"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <span className="text-[11px] font-bold font-mono text-zinc-600 min-w-[60px] text-center select-none">
+            {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
+          </span>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 rounded-full hover:bg-zinc-100 disabled:opacity-30"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       )}
     </div>
