@@ -2,25 +2,25 @@ import { ColumnSchema, useFileStore } from '../stores/useFileStore'
 import { useProjectStore } from '../stores/useProjectStore'
 import { ColumnType } from '@shared/types'
 import {
-  Hash,
-  Type,
-  Calendar,
-  Key,
-  Link2,
-  FileSpreadsheet,
-  Database,
-  Clock,
   AlignJustify,
-  Eye,
-  RefreshCw,
-  MoreVertical,
-  Trash2,
-  FileInput,
-  Code,
-  Edit2,
+  Calendar,
   Check,
   ChevronDown,
+  Clock,
+  Code,
+  Database,
+  Edit2,
+  Eye,
+  FileInput,
+  FileSpreadsheet,
+  Hash,
+  Key,
+  Link2,
+  MoreVertical,
+  RefreshCw,
   ToggleLeft,
+  Trash2,
+  Type,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from './ui/button'
@@ -341,39 +341,6 @@ function ColumnRow({ fileId, column, onToggleKey, isLinked }: ColumnRowProps) {
     updateColumn(fileId, column.name, { type: newType as ColumnType })
   }
 
-  // 格式化显示值（处理时间戳）
-  const formatDisplayValue = (value: any, type: string): string => {
-    if (value === null || value === undefined) return ''
-
-    const lowerType = type.toLowerCase()
-
-    // 检查是否为时间类型
-    if (
-      lowerType.includes('date') ||
-      lowerType.includes('time') ||
-      lowerType.includes('timestamp')
-    ) {
-      try {
-        let dateVal = value
-        // 如果是数字字符串，转换为数字
-        if (typeof value === 'string' && /^\d+$/.test(value)) {
-          dateVal = Number(value)
-        }
-
-        const date = new Date(dateVal)
-        // 只有有效日期才格式化
-        if (!isNaN(date.getTime())) {
-          return date.toLocaleString()
-        }
-      } catch {
-        // 忽略错误，回退到原始值
-      }
-    }
-
-    // 其他类型直接转换为字符串
-    return String(value)
-  }
-
   return (
     <tr className="hover:bg-zinc-50 transition-colors group">
       {/* Field Name - 包含 Key 图标 */}
@@ -493,14 +460,13 @@ function ColumnRow({ fileId, column, onToggleKey, isLinked }: ColumnRowProps) {
         column.sampleValues.length > 0 ? (
           <div className="flex gap-1 flex-wrap text-xs text-muted-foreground">
             {column.sampleValues.map((val, i) => {
-              const displayValue = formatDisplayValue(val, column.type)
               return (
                 <span
                   key={i}
                   className="bg-zinc-100 px-1.5 py-0.5 rounded text-[10px] border text-zinc-600 max-w-[120px] truncate inline-block align-middle"
-                  title={displayValue}
+                  title={String(val)}
                 >
-                  {displayValue}
+                  {String(val)}
                 </span>
               )
             })}

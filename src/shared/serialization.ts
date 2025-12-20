@@ -154,9 +154,17 @@ export function formatDateValue(val: any, typeHint?: string): string | null {
 
   if (val instanceof Date) {
     dateObj = val
+  } else if (typeof val === 'number') {
+    dateObj = new Date(val)
+  } else if (typeof val === 'bigint') {
+    // Convert BigInt to number for Date constructor
+    // Note: Precision loss possible for extremely large values, but safe for standard timestamps
+    dateObj = new Date(Number(val))
   } else if (typeof val === 'string') {
-    // Only parse if it's NOT a pure numeric string
-    if (!/^\d+$/.test(val)) {
+    // Check if string is a numeric timestamp
+    if (/^\d+$/.test(val)) {
+      dateObj = new Date(Number(val))
+    } else {
       const d = new Date(val)
       if (!isNaN(d.getTime())) {
         dateObj = d
