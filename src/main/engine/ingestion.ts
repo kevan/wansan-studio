@@ -4,6 +4,7 @@ import { Worker } from 'worker_threads'
 import { DatabaseService } from '../database/duckdb'
 import { ColumnSchema, ColumnType, TableSchema } from '../../shared/types'
 import { processSampleValue } from '../../shared/serialization'
+import { normalizeDuckDBType } from '../../shared/type-utils'
 
 /**
  * 摄取 JSON 数据到 DuckDB（用于 Demo 数据）
@@ -39,17 +40,18 @@ export async function ingestJsonData(
 
     const inferredColumns: ColumnSchema[] = await Promise.all(
       columnsResult.map(async (col: any) => {
+        const finalType = normalizeDuckDBType(col.type)
         const sampleValues = await getSampleValues(
           databaseService,
           tableName,
           col.name,
-          col.type
+          finalType
         )
 
         return {
           name: col.name,
           safeName: col.name,
-          type: col.type as ColumnType,
+          type: finalType,
           sampleValues,
         }
       })
@@ -150,16 +152,17 @@ export async function ingestExcelFile(
             )
             const columns: ColumnSchema[] = []
             for (const col of columnsResult) {
+              const finalType = normalizeDuckDBType(col.type)
               const sampleValues = await getSampleValues(
                 databaseService,
                 tableName,
                 col.name,
-                col.type
+                finalType
               )
               columns.push({
                 name: col.name,
                 safeName: col.name,
-                type: col.type as ColumnType,
+                type: finalType,
                 sampleValues,
               })
             }

@@ -1,6 +1,7 @@
 import { ColumnSchema, useFileStore } from '../stores/useFileStore'
 import { useProjectStore } from '../stores/useProjectStore'
 import { ColumnType } from '@shared/types'
+import { getUIFormatType, UIFormatType as FormatType } from '@shared/type-utils'
 import {
   AlignJustify,
   Calendar,
@@ -37,9 +38,6 @@ import { useState } from 'react'
 import { Input } from './ui/input'
 import { cn } from '@/utils/cn'
 
-// 类型映射配置
-type FormatType = 'number' | 'text' | 'date'
-
 interface FormatConfig {
   label: string
   icon: typeof Hash
@@ -66,30 +64,6 @@ const FORMAT_CONFIG: Record<FormatType, FormatConfig> = {
     bgColor: 'bg-green-50',
     textColor: 'text-green-600',
   },
-}
-
-// 将技术类型映射到业务类型
-function mapToFormatType(type: string): FormatType {
-  const lowerType = type.toLowerCase()
-  if (
-    lowerType.includes('int') ||
-    lowerType.includes('decimal') ||
-    lowerType.includes('double') ||
-    lowerType.includes('float') ||
-    lowerType.includes('bigint') ||
-    lowerType.includes('number') ||
-    lowerType.includes('numeric')
-  ) {
-    return 'number'
-  }
-  if (
-    lowerType.includes('date') ||
-    lowerType.includes('time') ||
-    lowerType.includes('timestamp')
-  ) {
-    return 'date'
-  }
-  return 'text'
 }
 
 export function SchemaEditor() {
@@ -321,7 +295,7 @@ interface ColumnRowProps {
 }
 
 function ColumnRow({ fileId, column, onToggleKey, isLinked }: ColumnRowProps) {
-  const formatType = mapToFormatType(column.type)
+  const formatType = getUIFormatType(column.type)
   const config = FORMAT_CONFIG[formatType]
   const IconComponent = config.icon
   const { t } = useTranslation('common')

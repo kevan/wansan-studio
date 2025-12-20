@@ -1,4 +1,4 @@
-import { ColumnType } from '../../shared/types'
+import { ColumnType } from './types'
 
 export function normalizeDuckDBType(duckType: string): ColumnType {
   const type = duckType.toUpperCase().trim()
@@ -58,4 +58,32 @@ export function normalizeDuckDBType(duckType: string): ColumnType {
   }
 
   return 'VARCHAR' // Fallback for BLOBS, Structs, Lists (stringify them)
+}
+
+export type UIFormatType = 'number' | 'text' | 'date'
+
+export function getUIFormatType(type: string): UIFormatType {
+  const lowerType = type.toLowerCase()
+  
+  if (
+    lowerType.includes('int') ||
+    lowerType.includes('decimal') ||
+    lowerType.includes('double') ||
+    lowerType.includes('float') ||
+    lowerType.includes('bigint') ||
+    lowerType.includes('number') ||
+    lowerType.includes('numeric')
+  ) {
+    return 'number'
+  }
+  
+  if (
+    lowerType.includes('date') ||
+    lowerType.includes('time') ||
+    lowerType.includes('timestamp')
+  ) {
+    return 'date'
+  }
+  
+  return 'text'
 }

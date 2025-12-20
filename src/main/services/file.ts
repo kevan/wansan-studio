@@ -9,8 +9,9 @@ import {
 } from '../engine/ingestion'
 import { DEMO_DATA } from '../../shared/demo-data'
 import { ReloadResult, ColumnSchema, ColumnType } from '../../shared/types'
-import { normalizeDuckDBType } from '../utils/type-mapper'
+import { normalizeDuckDBType } from '../../shared/type-utils'
 
+// Helper to infer TIMESTAMP type from column name if DuckDB detects it as number
 export class FileService {
   constructor(private databaseService: DatabaseService) {}
 
