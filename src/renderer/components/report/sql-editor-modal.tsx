@@ -12,6 +12,8 @@ import {
   AlignLeft,
   Sparkles,
   Lock,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../utils/cn'
@@ -56,6 +58,7 @@ export function SqlEditorModal({
   const [previewColumns, setPreviewColumns] = useState<string[] | null>(null)
   const [previewError, setPreviewError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [showReasoning, setShowReasoning] = useState(true)
   const addToast = useToastStore(state => state.addToast)
   const { isActivated, checkGate, gateNode } = useProGate()
 
@@ -147,21 +150,53 @@ export function SqlEditorModal({
           <div className="flex-1 border rounded-md overflow-hidden relative flex flex-col min-h-0">
             <div className="flex items-center justify-between px-3 py-2 border-b bg-zinc-50">
               <span className="text-xs font-bold text-zinc-500">
-                SQL EDITOR
+                {t('sql_editor.editor_header')}
               </span>
-              <Button
-                onClick={() => checkGate('SQL Editor', handleFormat)}
-                variant="ghost"
-                size="sm"
-                className="h-7"
-                disabled={!isActivated}
-              >
-                {!isActivated && <Lock className="w-3 h-3 mr-1" />}
-                <AlignLeft className="h-3 w-3 mr-1" />
-                Format
-              </Button>
+              <div className="flex items-center gap-2">
+                {reasoning && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-zinc-500"
+                    onClick={() => setShowReasoning(!showReasoning)}
+                  >
+                    {showReasoning ? (
+                      <ChevronUp className="w-3 h-3 mr-1" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3 mr-1" />
+                    )}
+                    {showReasoning
+                      ? t('sql_editor.hide_logic')
+                      : t('sql_editor.show_logic')}
+                  </Button>
+                )}
+                <Button
+                  onClick={() => checkGate('SQL Editor', handleFormat)}
+                  variant="ghost"
+                  size="sm"
+                  className="h-7"
+                  disabled={!isActivated}
+                >
+                  {!isActivated && <Lock className="w-3 h-3 mr-1" />}
+                  <AlignLeft className="h-3 w-3 mr-1" />
+                  {t('sql_editor.format')}
+                </Button>
+              </div>
             </div>
             <div className="flex-1 min-h-0 relative overflow-auto bg-zinc-50/30">
+              {showReasoning && reasoning && (
+                <div className="m-4 bg-indigo-50/50 border border-indigo-100 p-3 rounded-lg text-xs text-indigo-900/80 animate-in slide-in-from-top-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles className="h-3 w-3 text-indigo-500" />
+                    <span className="font-semibold tracking-wide uppercase text-indigo-400">
+                      {t('sql_editor.ai_reasoning')}
+                    </span>
+                  </div>
+                  <p className="leading-relaxed whitespace-pre-wrap font-medium italic">
+                    {reasoning}
+                  </p>
+                </div>
+              )}
               <Editor
                 value={sql}
                 onValueChange={setSql}
@@ -185,8 +220,12 @@ export function SqlEditorModal({
           {/* PREVIEW AREA */}
           <div className="h-1/2 border rounded-md bg-white flex flex-col overflow-hidden">
             <div className="bg-zinc-100 px-4 py-2 text-xs font-bold text-zinc-500 border-b flex justify-between items-center">
-              <span>RESULT PREVIEW</span>
-              {previewData && <span>{previewData.length} rows</span>}
+              <span>{t('sql_editor.result_preview')}</span>
+              {previewData && (
+                <span>
+                  {previewData.length} {t('sql_editor.rows_suffix')}
+                </span>
+              )}
             </div>
 
             <div className="flex-1 overflow-auto p-0">

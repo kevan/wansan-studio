@@ -1,11 +1,21 @@
 {
   "sql_editor": {
     "title": "Edit SQL Query",
-    "run": "Run Query",
+    "run": "Run (Preview)",
+    "save": "Save & Close",
+    "cancel": "Cancel",
     "reset": "Reset to Original",
     "copy": "Copy SQL",
     "copy_success": "SQL Copied!",
     "run_success": "Query Executed Successfully",
-    "execution_time": "Execution Time"
+    "execution_time": "Execution Time",
+    "ai_reasoning": "AI Reasoning",
+    "editor_header": "SQL EDITOR",
+    "format": "Format",
+    "unlock_pro": "Unlock Editor (Pro)",
+    "result_preview": "RESULT PREVIEW",
+    "rows_suffix": "rows",
+    "show_logic": "Show Logic",
+    "hide_logic": "Hide Logic"
   }
 }

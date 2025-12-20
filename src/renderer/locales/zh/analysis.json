@@ -1,11 +1,21 @@
 {
   "sql_editor": {
     "title": "编辑 SQL 查询",
-    "run": "运行查询",
+    "run": "运行 (预览)",
+    "save": "保存并关闭",
+    "cancel": "取消",
     "reset": "重置为原始",
     "copy": "复制 SQL",
     "copy_success": "SQL 已复制！",
     "run_success": "查询执行成功",
-    "execution_time": "耗时"
+    "execution_time": "耗时",
+    "ai_reasoning": "AI 分析思路",
+    "editor_header": "SQL 编辑器",
+    "format": "格式化",
+    "unlock_pro": "解锁编辑器 (Pro)",
+    "result_preview": "结果预览",
+    "rows_suffix": "行",
+    "show_logic": "显示思路",
+    "hide_logic": "隐藏思路"
   }
 }
