@@ -15,15 +15,15 @@ export function GlobalSqlLab() {
       initialData={sqlLabSession.initialData}
       initialColumns={sqlLabSession.initialColumns}
       autoRun={sqlLabSession.mode === 'file'}
-      onSave={async (sql) => {
-        if (sqlLabSession.onSave) {
-          await sqlLabSession.onSave(sql)
-        }
-      }}
-      // For file exploration, we don't show "Save" button if onSave is undefined
-      // But SqlEditorModal currently *always* shows Save button.
-      // We might need to pass a prop to hide it.
-      // Let's check SqlEditorModal props.
+      onSave={
+        sqlLabSession.onSave
+          ? async sql => {
+              if (sqlLabSession.onSave) {
+                await sqlLabSession.onSave(sql)
+              }
+            }
+          : undefined
+      }
     />
   )
 }
