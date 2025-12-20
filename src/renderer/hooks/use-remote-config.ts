@@ -53,7 +53,9 @@ export function useRemoteConfig() {
         }
 
         // 1. Force Update Check
+        let isForceUpdate = false
         if (config.min_version && semver.lt(appVersion, config.min_version)) {
+          isForceUpdate = true
           // Dispatch global event for the modal
           const event = new CustomEvent('force-update', {
             detail: {
@@ -64,7 +66,21 @@ export function useRemoteConfig() {
           document.dispatchEvent(event)
         }
 
-        // 2. Announcement Check
+        // 2. Soft Update Notification (Only if not force updating)
+        if (
+          !isForceUpdate &&
+          config.latest_version &&
+          semver.gt(config.latest_version, appVersion)
+        ) {
+          addToast({
+            title: t('update_available', { version: config.latest_version }),
+            description: t('update_available_desc'),
+            type: 'info',
+            duration: 8000,
+          })
+        }
+
+        // 3. Announcement Check
         const currentDismissedId =
           useSettingsStore.getState().dismissedAnnouncementId
         const { language } = useSettingsStore.getState() // Get current language

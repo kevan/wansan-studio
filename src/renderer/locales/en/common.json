@@ -168,6 +168,9 @@
   "update_modal_title": "Critical Update Required",
   "update_modal_desc": "A new version ({{version}}) is available and required to continue using Wansan Studio. Please update to access the latest features and security fixes.",
   "update_modal_button": "Download Update",
+  "update_available": "Update Available: v{{version}}",
+  "update_available_desc": "A new version is available. Click to go to the official website.",
+  "download": "Download",
 
   "announcement_title": "Announcement",
   "announcement_important": "Important",
