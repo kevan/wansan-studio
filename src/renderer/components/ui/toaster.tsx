@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { X, CheckCircle2, Info, AlertTriangle, AlertCircle } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useToastStore } from '@/stores/useToastStore'
+import { Button } from './button'
 
 const iconMap = {
   success: <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
@@ -42,26 +43,28 @@ export function Toaster() {
                   </p>
                 )}
                 {toast.action && (
-                  <button
+                  <Button
+                    size="sm"
+                    className="mt-2 text-xs h-7 px-3 bg-black hover:bg-zinc-800 text-white shadow-sm"
                     onClick={e => {
                       e.stopPropagation()
                       toast.action?.onClick()
                       dismissToast(toast.id)
                     }}
-                    className="mt-2 text-xs font-semibold text-white bg-black hover:bg-zinc-800 px-3 py-1.5 rounded-md transition-colors shadow-sm"
                   >
                     {toast.action.label}
-                  </button>
+                  </Button>
                 )}
               </div>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 rounded-md text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
                 onClick={() => dismissToast(toast.id)}
-                className="rounded-md p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
                 aria-label="Close"
               >
-                <X className="h-4 w-4" />
-              </button>
+                <X className="h-3 w-3" />
+              </Button>
             </div>
           </div>
         ))}
