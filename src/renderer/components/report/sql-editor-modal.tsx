@@ -318,7 +318,7 @@ export function SqlEditorModal({
                 <ReportTable
                   data={previewData || initialData}
                   columns={previewColumns || initialColumns}
-                  variant="dashboard"
+                  variant="preview"
                 />
               )}
             </div>
