@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useLogStore } from '../../stores/useLogStore' // Adjust path
+import { isDev } from '../../utils/env'
 
 export function GlobalErrorHandler() {
   const addLog = useLogStore(s => s.addLog)
@@ -7,6 +8,12 @@ export function GlobalErrorHandler() {
   useEffect(() => {
     // 1. JS Errors
     const handleError = (event: ErrorEvent) => {
+      if (isDev) {
+        console.error('[Global Error Handler] Caught error:', {
+          message: event.message,
+          error: event.error,
+        })
+      }
       void addLog({
         type: 'error',
         message: event.message,
@@ -16,6 +23,11 @@ export function GlobalErrorHandler() {
 
     // 2. Promise Rejections
     const handleRejection = (event: PromiseRejectionEvent) => {
+      if (isDev) {
+        console.error('[Global Error Handler] Caught rejection:', {
+          reason: event.reason,
+        })
+      }
       void addLog({
         type: 'error',
         message: `Unhandled Rejection: ${event.reason?.message || event.reason}`,
