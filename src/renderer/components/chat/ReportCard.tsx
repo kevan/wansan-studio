@@ -189,6 +189,8 @@ export function ReportCard({
         isOpen={isEditorOpen}
         onClose={() => setIsEditorOpen(false)}
         initialSql={reportData.sql || ''}
+        initialData={reportData.tableData}
+        initialColumns={reportData.columns}
         reasoning={reportData.reasoning}
         onSave={handleRunSql}
       />
