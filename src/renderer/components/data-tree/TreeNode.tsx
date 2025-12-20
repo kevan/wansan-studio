@@ -14,30 +14,11 @@ import {
   ChevronRight,
   ChevronDown,
   Database,
-  Trash2,
-  Eye,
-  Pencil,
-  RefreshCw,
-  X,
   AlertCircle,
   FileWarning,
-  Code,
 } from 'lucide-react'
 import { MouseEvent } from 'react'
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
-} from '../ui/context-menu'
 import { useFileStore } from '../../stores/useFileStore'
-import { useProjectStore } from '../../stores/useProjectStore'
-import { useToastStore } from '../../stores/useToastStore'
-import { useReIngestFile } from '../../hooks/useIPC'
 import { useTranslation } from 'react-i18next'
 
 interface TreeNodeProps {
@@ -49,18 +30,7 @@ interface TreeNodeProps {
 export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
   const data = node.data
   const isSelected = node.isSelected
-  const {
-    removeFile,
-    removeRelation,
-    updateColumn,
-    files,
-  } = useFileStore()
-  const replaceFile = useProjectStore(state => state.replaceFile)
-  const setActiveFile = useProjectStore(state => state.setActiveFile)
-  const openSqlLab = useProjectStore(state => state.openSqlLab)
-  const setView = useProjectStore(state => state.setView)
-  const { addToast } = useToastStore()
-  const reIngest = useReIngestFile()
+  const { files } = useFileStore()
   const { t } = useTranslation('common')
 
   // --- Icon Logic ---
@@ -115,135 +85,6 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
     return <Database className="w-4 h-4 text-zinc-400" />
   }
 
-  // --- Actions ---
-  const handleRemoveFile = () => {
-    if (data.fileId) {
-      removeFile(data.fileId)
-      addToast({ title: t('file_removed'), type: 'success', duration: 2000 })
-    }
-  }
-
-  const handlePreviewFile = () => {
-    if (data.fileId) {
-      // Use SQL Lab for exploration
-      const file = files.find(f => f.id === data.fileId)
-      if (file) {
-        openSqlLab({
-          mode: 'file',
-          targetId: file.name,
-          initialSql: `SELECT * FROM "${file.tableName}" LIMIT 100`,
-        })
-      }
-    }
-  }
-
-  const handleRemoveRelation = () => {
-    if (data.relationId) {
-      removeRelation(data.relationId)
-      addToast({
-        title: t('relationship_removed'),
-        type: 'success',
-        duration: 2000,
-      })
-    }
-  }
-
-  const handleColumnTypeChange = (
-    newType: 'VARCHAR' | 'DOUBLE' | 'DATE' | 'BOOLEAN'
-  ) => {
-    if (data.fileId && data.columnName) {
-      updateColumn(data.fileId, data.columnName, { type: newType })
-      addToast({
-        title: t('type_changed', { type: newType }),
-        type: 'success',
-        duration: 2000,
-      })
-    }
-  }
-
-  const handleRenameAlias = () => {
-    // Placeholder for rename logic
-    addToast({
-      title: t('rename_feature'),
-      description: t('coming_soon'),
-      type: 'info',
-      duration: 2000,
-    })
-  }
-
-  const handleReplaceFile = async () => {
-    if (!data.fileId) return
-    if (!window.electronAPI) return
-
-    const result = await window.electronAPI.selectFile()
-    if (result.success && result.data && typeof result.data === 'string') {
-        const loadingToast = addToast({ title: t('replacing_file'), type: 'info', duration: 0 })
-        try {
-            const status = await replaceFile(data.fileId, result.data)
-            if (status === 'completed') {
-                addToast({ title: t('file_replaced'), type: 'success', duration: 2000 })
-            } else if (status === 'error') {
-                addToast({ title: t('replace_failed'), type: 'error' })
-            }
-        } catch (e) {
-            addToast({ title: t('replace_failed'), description: String(e), type: 'error' })
-        } finally {
-            // Dismiss loading toast if possible, or let it timeout? 
-            // Current toast store doesn't support dismiss by ID easily.
-        }
-    }
-  }
-
-  const handleReload = async () => {
-    if (!data.fileId) return
-    const file = files.find(f => f.id === data.fileId)
-    if (!file) return
-
-    // Dismiss any existing persistent toast? We don't have IDs easily.
-    // Just add new ones.
-    const toastId = addToast({
-      title: t('reloading'),
-      type: 'info',
-      duration: 0,
-    })
-
-    try {
-      const result = await reIngest.mutateAsync({
-        filePath: file.path,
-        tableName: file.tableName,
-        sheetName: file.sheetName,
-      })
-      // result is ReloadResult { lastModified, newColumns }
-
-      // Call store action
-      // We need to access the store action. It's not destructured above.
-      // Let's grab it from the store hook.
-      const droppedCount = useFileStore.getState().reloadFile(file.id, result)
-
-      addToast({
-        title: t('reload_success'),
-        type: 'success',
-        duration: 2000,
-      })
-
-      if (droppedCount > 0) {
-        addToast({
-          title: t('warning'),
-          description: t('reload_warning', { count: droppedCount }),
-          type: 'warning',
-          duration: 5000,
-        })
-      }
-    } catch (e) {
-      addToast({
-        title: t('reload_failed'),
-        description: String(e),
-        type: 'error',
-        duration: 3000,
-      })
-    }
-  }
-
   const getFileIcon = () => {
     if (data.type === 'file' && data.fileId) {
       const file = files.find(f => f.id === data.fileId)
@@ -282,114 +123,58 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
   const isMissing = data.type === 'file' && data.status === 'missing'
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <div
-          style={style}
-          className={containerClass}
-          onClick={handleClick}
-          ref={dragHandle}
-        >
-          {/* Indentation / Arrow */}
-          <div
-            className="flex items-center justify-center w-6 shrink-0"
-            onClick={handleToggle}
-          >
-            {!node.isLeaf &&
-              (node.isOpen ? (
-                <ChevronDown className="w-3 h-3 text-zinc-400" />
-              ) : (
-                <ChevronRight className="w-3 h-3 text-zinc-400" />
-              ))}
+    <div
+      style={style}
+      className={containerClass}
+      onClick={handleClick}
+      ref={dragHandle}
+    >
+      {/* Indentation / Arrow */}
+      <div
+        className="flex items-center justify-center w-6 shrink-0"
+        onClick={handleToggle}
+      >
+        {!node.isLeaf &&
+          (node.isOpen ? (
+            <ChevronDown className="w-3 h-3 text-zinc-400" />
+          ) : (
+            <ChevronRight className="w-3 h-3 text-zinc-400" />
+          ))}
+      </div>
+
+      {/* Icon */}
+      <div className="flex items-center justify-center w-5 shrink-0 mr-1 relative">
+        {isMissing ? (
+          <FileWarning className="w-4 h-4 text-red-400" />
+        ) : (
+          getIcon()
+        )}
+        {!isMissing && data.type === 'file' && data.status === 'out-of-sync' && (
+          <div className="absolute -top-1 -right-1 bg-white rounded-full">
+            <AlertCircle className="w-2.5 h-2.5 text-amber-500 fill-white" />
           </div>
-
-          {/* Icon */}
-          <div className="flex items-center justify-center w-5 shrink-0 mr-1 relative">
-            {isMissing ? (
-              <FileWarning className="w-4 h-4 text-red-400" />
-            ) : (
-              getIcon()
-            )}
-            {!isMissing &&
-              data.type === 'file' &&
-              data.status === 'out-of-sync' && (
-                <div className="absolute -top-1 -right-1 bg-white rounded-full">
-                  <AlertCircle className="w-2.5 h-2.5 text-amber-500 fill-white" />
-                </div>
-              )}
-          </div>
-
-          {/* Label */}
-          <span
-            className={`truncate flex-1 ${isMissing ? 'line-through text-red-400 opacity-80' : ''}`}
-            title={isMissing ? t('file_missing_tooltip') : undefined}
-          >
-            {data.name}
-          </span>
-
-          {/* Badges / Indicators */}
-          {data.isKey && (
-            <span className="text-[10px] bg-amber-100 text-amber-700 px-1 rounded ml-1 border border-amber-200">
-              PK
-            </span>
-          )}
-          {data.isForeignKey && (
-            <span className="ml-1" title={t('part_of_relationship')}>
-              <Link2 className="w-3 h-3 text-indigo-400" />
-            </span>
-          )}
-        </div>
-      </ContextMenuTrigger>
-
-      {/* Menu Content */}
-      <ContextMenuContent className="w-48">
-        {data.type === 'file' && (
-          <>
-            <ContextMenuItem onClick={handlePreviewFile}>
-              <Code className="w-4 h-4 mr-2" />
-              {t('preview_data')}
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem
-              onClick={handleRemoveFile}
-              className="text-rose-600 focus:text-rose-600 focus:bg-rose-50"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              {t('remove_file')}
-            </ContextMenuItem>
-          </>
         )}
+      </div>
 
-        {data.type === 'column' && (
-          <ContextMenuItem
-            onClick={() => {
-              if (data.fileId) {
-                setActiveFile(data.fileId)
-                setView('schema')
-              }
-            }}
-          >
-            <Pencil className="w-4 h-4 mr-2" />
-            {t('manage_in_schema_editor')}
-          </ContextMenuItem>
-        )}
+      {/* Label */}
+      <span
+        className={`truncate flex-1 ${isMissing ? 'line-through text-red-400 opacity-80' : ''}`}
+        title={isMissing ? t('file_missing_tooltip') : undefined}
+      >
+        {data.name}
+      </span>
 
-        {data.type === 'relation' && (
-          <ContextMenuItem
-            onClick={handleRemoveRelation}
-            className="text-rose-600 focus:text-rose-600 focus:bg-rose-50"
-          >
-            <X className="w-4 h-4 mr-2" />
-            {t('delete_relationship')}
-          </ContextMenuItem>
-        )}
-
-        {data.type === 'folder' && (
-          <ContextMenuItem disabled className="text-zinc-400">
-            {t('folder_actions_na')}
-          </ContextMenuItem>
-        )}
-      </ContextMenuContent>
-    </ContextMenu>
+      {/* Badges / Indicators */}
+      {data.isKey && (
+        <span className="text-[10px] bg-amber-100 text-amber-700 px-1 rounded ml-1 border border-amber-200">
+          PK
+        </span>
+      )}
+      {data.isForeignKey && (
+        <span className="ml-1" title={t('part_of_relationship')}>
+          <Link2 className="w-3 h-3 text-indigo-400" />
+        </span>
+      )}
+    </div>
   )
 }
