@@ -39,22 +39,16 @@ interface SqlEditorModalProps {
   isOpen: boolean
   onClose: () => void
   initialSql: string
-  initialData?: any[]
-  initialColumns?: string[]
   reasoning?: string
   onSave?: (sql: string) => Promise<void>
-  autoRun?: boolean
 }
 
 export function SqlEditorModal({
   isOpen,
   onClose,
   initialSql,
-  initialData = [],
-  initialColumns = [],
   reasoning,
   onSave,
-  autoRun = false,
 }: SqlEditorModalProps) {
   const { t } = useTranslation('analysis')
   const [sql, setSql] = useState(initialSql)
@@ -94,9 +88,10 @@ export function SqlEditorModal({
     }
   }
 
-  // Auto-format SQL when modal opens
+  // Auto-format SQL and run initial query when modal opens
   useEffect(() => {
-    if (initialSql) {
+    if (isOpen && initialSql) {
+      let sqlToRun = initialSql
       try {
         const formatted = format(initialSql, {
           language: 'postgresql',
@@ -104,17 +99,15 @@ export function SqlEditorModal({
           keywordCase: 'upper',
         })
         setSql(formatted)
-        if (autoRun && isOpen) {
-            handleRunPreview(formatted)
-        }
+        sqlToRun = formatted
       } catch (e) {
         setSql(initialSql)
-        if (autoRun && isOpen) {
-            handleRunPreview(initialSql)
-        }
       }
+      
+      // Always run on open
+      handleRunPreview(sqlToRun)
     }
-  }, [initialSql, isOpen, autoRun])
+  }, [isOpen, initialSql])
 
   if (!isOpen) return null
 
@@ -316,8 +309,8 @@ export function SqlEditorModal({
                 </div>
               ) : (
                 <ReportTable
-                  data={previewData || initialData}
-                  columns={previewColumns || initialColumns}
+                  data={previewData || []}
+                  columns={previewColumns || []}
                   variant="preview"
                 />
               )}

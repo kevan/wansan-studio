@@ -204,8 +204,6 @@ export function ErrorCard({ message }: ErrorCardProps) {
         isOpen={isEditorOpen}
         onClose={() => setIsEditorOpen(false)}
         initialSql={originalSql || ''}
-        initialData={message.reportData?.tableData}
-        initialColumns={message.reportData?.columns}
         reasoning={message.reportData?.reasoning}
         onSave={handleRunSql}
       />

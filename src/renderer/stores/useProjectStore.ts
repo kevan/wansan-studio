@@ -22,8 +22,6 @@ export interface SqlLabSession {
   mode: 'widget' | 'file'
   targetId: string // widgetId or tableName
   initialSql: string
-  initialData?: any[]
-  initialColumns?: string[]
   onSave?: (sql: string) => Promise<void>
 }
 
