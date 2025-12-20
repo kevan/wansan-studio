@@ -1,7 +1,33 @@
 import { ColumnSchema, useFileStore } from '../stores/useFileStore'
 import { useProjectStore } from '../stores/useProjectStore'
-import { Hash, Type, Calendar, Key, Link2, FileSpreadsheet, Database, Clock, AlignJustify } from 'lucide-react'
+import {
+  Hash,
+  Type,
+  Calendar,
+  Key,
+  Link2,
+  FileSpreadsheet,
+  Database,
+  Clock,
+  AlignJustify,
+  Eye,
+  RefreshCw,
+  MoreVertical,
+  Trash2,
+  FileInput,
+  Code,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { Button } from './ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
+import { useToastStore } from '../stores/useToastStore'
+import { useReIngestFile } from '../hooks/useIPC'
 
 // 类型映射配置
 type FormatType = 'number' | 'text' | 'date'
@@ -61,7 +87,12 @@ function mapToFormatType(type: string): FormatType {
 export function SchemaEditor() {
   const { files, toggleKeyColumn, relations } = useFileStore()
   const activeFileId = useProjectStore(s => s.activeFileId)
+  const openSqlLab = useProjectStore(s => s.openSqlLab)
+  const replaceFile = useProjectStore(s => s.replaceFile)
+  const removeFile = useProjectStore(s => s.removeFile)
   const { t } = useTranslation('common')
+  const { addToast } = useToastStore()
+  const reIngest = useReIngestFile()
   const readyFiles = files.filter(f => f.status === 'ready')
 
   // 如果没有 ready 的文件，不显示
@@ -75,6 +106,60 @@ export function SchemaEditor() {
 
   const currentFile = readyFiles.find(f => f.id === currentFileId)
 
+  // --- Handlers ---
+  const handlePreview = () => {
+    if (!currentFile) return
+    openSqlLab({
+      mode: 'file',
+      targetId: currentFile.name,
+      initialSql: `SELECT * FROM "${currentFile.tableName}" LIMIT 100`,
+    })
+  }
+
+  const handleReload = async () => {
+    if (!currentFile) return
+    addToast({ title: t('reloading'), type: 'info', duration: 0 })
+    try {
+      const result = await reIngest.mutateAsync({
+        filePath: currentFile.path,
+        tableName: currentFile.tableName,
+        sheetName: currentFile.sheetName,
+      })
+      useFileStore.getState().reloadFile(currentFile.id, result)
+      addToast({ title: t('reload_success'), type: 'success', duration: 2000 })
+    } catch (e) {
+      addToast({
+        title: t('reload_failed'),
+        description: String(e),
+        type: 'error',
+      })
+    }
+  }
+
+  const handleReplace = async () => {
+    if (!currentFile || !window.electronAPI) return
+    const result = await window.electronAPI.selectFile()
+    if (result.success && result.data) {
+      addToast({ title: t('replacing_file'), type: 'info', duration: 0 })
+      try {
+        const status = await replaceFile(currentFile.id, result.data)
+        if (status === 'completed') {
+          addToast({ title: t('file_replaced'), type: 'success', duration: 2000 })
+        }
+      } catch (e) {
+        addToast({ title: t('replace_failed'), description: String(e), type: 'error' })
+      }
+    }
+  }
+
+  const handleDelete = () => {
+    if (!currentFile) return
+    if (confirm(t('delete_session_desc'))) {
+      removeFile(currentFile.id)
+      addToast({ title: t('file_removed'), type: 'success', duration: 2000 })
+    }
+  }
+
   return (
     <div className="flex flex-col h-full w-full bg-white overflow-hidden relative">
       {/* 可滚动内容 */}
@@ -84,54 +169,100 @@ export function SchemaEditor() {
           <div className="flex flex-col min-h-0">
             {/* New Modern Header */}
             <div className="px-8 py-6 border-b border-zinc-100 bg-white shrink-0">
-              <div className="flex flex-col gap-3">
-                {/* Row 1: Icon + Filename */}
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="p-2 bg-green-50 rounded-lg border border-green-100 shrink-0">
-                    <FileSpreadsheet className="w-6 h-6 text-green-600" />
+              <div className="flex items-start justify-between">
+                <div className="flex flex-col gap-3 min-w-0">
+                  {/* Row 1: Icon + Filename */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2 bg-green-50 rounded-lg border border-green-100 shrink-0">
+                      <FileSpreadsheet className="w-6 h-6 text-green-600" />
+                    </div>
+                    <h2 className="text-xl font-bold text-zinc-900 tracking-tight truncate whitespace-nowrap">
+                      {currentFile.name}
+                    </h2>
                   </div>
-                  <h2 className="text-xl font-bold text-zinc-900 tracking-tight truncate whitespace-nowrap">
-                    {currentFile.name}
-                  </h2>
+
+                  {/* Row 2: Metadata Strip */}
+                  <div className="flex items-center gap-4 text-sm text-zinc-500 pl-1 overflow-x-auto no-scrollbar">
+                    {/* Table Name (Technical Info) */}
+                    <div
+                      className="flex items-center gap-1.5 shrink-0 whitespace-nowrap"
+                      title="SQL Table Name"
+                    >
+                      <Database className="w-3.5 h-3.5 text-zinc-400" />
+                      <span className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded text-zinc-700 select-all">
+                        {currentFile.tableName}
+                      </span>
+                    </div>
+
+                    <div className="w-px h-3 bg-zinc-200 shrink-0" />
+
+                    {/* Stats */}
+                    <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                      <AlignJustify className="w-3.5 h-3.5 text-zinc-400" />
+                      <span>
+                        {currentFile.rowCount?.toLocaleString() ?? 0} {t('rows')}
+                      </span>
+                      <span>·</span>
+                      <span>
+                        {currentFile.columns.length} {t('field_name')}
+                      </span>
+                    </div>
+
+                    <div className="w-px h-3 bg-zinc-200 shrink-0" />
+
+                    {/* Time */}
+                    <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                      <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                      <span className="text-xs">
+                        {t('last_updated')}:{' '}
+                        {new Date(currentFile.lastModified).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Row 2: Metadata Strip */}
-                <div className="flex items-center gap-4 text-sm text-zinc-500 pl-1 overflow-x-auto no-scrollbar">
-                  {/* Table Name (Technical Info) */}
-                  <div
-                    className="flex items-center gap-1.5 shrink-0 whitespace-nowrap"
-                    title="SQL Table Name"
+                {/* Header Actions */}
+                <div className="flex items-center gap-2 ml-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handlePreview}
+                    title={t('preview_data')}
+                    className="h-8 w-8 p-0"
                   >
-                    <Database className="w-3.5 h-3.5 text-zinc-400" />
-                    <span className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded text-zinc-700 select-all">
-                      {currentFile.tableName}
-                    </span>
-                  </div>
+                    <Code className="w-4 h-4 text-zinc-500" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleReload}
+                    title={t('reload_data')}
+                    className="h-8 w-8 p-0"
+                  >
+                    <RefreshCw className="w-4 h-4 text-zinc-500" />
+                  </Button>
 
-                  <div className="w-px h-3 bg-zinc-200 shrink-0" />
-
-                  {/* Stats */}
-                  <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
-                    <AlignJustify className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>
-                      {currentFile.rowCount?.toLocaleString() ?? 0} {t('rows')}
-                    </span>
-                    <span>·</span>
-                    <span>
-                      {currentFile.columns.length} {t('field_name')}
-                    </span>
-                  </div>
-
-                  <div className="w-px h-3 bg-zinc-200 shrink-0" />
-
-                  {/* Time */}
-                  <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
-                    <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                    <span className="text-xs">
-                      {t('last_updated')}:{' '}
-                      {new Date(currentFile.lastModified).toLocaleDateString()}
-                    </span>
-                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MoreVertical className="w-4 h-4 text-zinc-500" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleReplace}>
+                        <FileInput className="w-4 h-4 mr-2" />
+                        {t('replace_data_source')}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={handleDelete}
+                        className="text-red-600 focus:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        {t('remove_file')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </div>
