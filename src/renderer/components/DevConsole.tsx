@@ -4,6 +4,7 @@ import i18n from '../i18n'
 import { useFileStore } from '../stores/useFileStore'
 import { useChatStore } from '../stores/useChatStore'
 import { useWorkbenchStore } from '../stores/useWorkbenchStore'
+import { useUIStore } from '../stores/useUIStore'
 import { useSettingsStore, SETTINGS_STORAGE_KEY } from '../stores/useSettingsStore'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useTranslation } from 'react-i18next'
@@ -107,6 +108,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     useFileStore.getState().reset()
     useChatStore.getState().reset()
     useWorkbenchStore.getState().reset()
+    useUIStore.getState().resetLayout()
     useSettingsStore.getState().resetPreferences()
     useProjectStore.getState().reset()
     window.location.reload()
