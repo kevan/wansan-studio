@@ -115,6 +115,13 @@
   "refresh_failed_desc": "无法刷新数据。请确保数据文件未被占用或移动，并检查 SQL 语法是否正确。",
   "refresh_success": "数据已刷新",
   "creating_web_report": "正在生成网页报告",
+  "export_web_report": "导出网页报告",
+  "report_title_label": "报告标题",
+  "visual_style_label": "视觉风格",
+  "generate_button": "立即生成",
+  "theme_minimal": "简约",
+  "theme_corporate": "商务",
+  "theme_cyberpunk": "赛博",
   "export_step_0": "分析数据结构",
   "export_step_1": "设计版面布局",
   "export_step_2": "编写网页代码",
@@ -140,7 +147,6 @@
   "pro_feature_export_desc": "导出报表仅在专业版可用。",
   "pro_feature_export_markdown_desc": "Markdown 导出仅在专业版可用。",
   "pro_feature_sqllab_desc": "SQL 编辑器仅在专业版可用。",
-
   "unlock_feature": "解锁 {{feature}}",
   "unlock_pro": "解锁专业版",
   "pro_gate_desc": "此功能需要专业版许可。立即激活以移除所有限制。",
@@ -148,7 +154,6 @@
   "pro_benefit_export": "PDF 与网页报告导出",
   "pro_benefit_sql": "高级 SQL 编辑器",
   "enter_license": "输入激活码",
-
   "sidebar": {
     "electron_api_unavailable": "Electron API 不可用",
     "duplicate_file_skipped_title": "跳过重复文件",
@@ -164,24 +169,20 @@
     "trial_limit_multi_sheet_title": "达到试用限制",
     "trial_limit_multi_sheet_desc": "试用版不支持导入多张 Excel 工作表。请激活专业版以解锁完整功能。"
   },
-
   "update_modal_title": "需要重要更新",
   "update_modal_desc": "检测到新版本 ({{version}})。为了继续使用 Wansan Studio，请进行更新。更新包含重要功能和安全修复。",
   "update_modal_button": "下载更新",
   "update_available": "发现新版本：v{{version}}",
   "update_available_desc": "已有新版本可供下载。点击前往官网查看。",
   "download": "下载",
-
   "announcement_title": "公告",
   "announcement_important": "重要通知",
-
   "error_boundary_title": "发生了一些错误。",
   "error_boundary_description": "发生了一个意外错误。请尝试重新加载应用。",
   "error_boundary_reload_button": "重新加载应用",
   "debug_export_button": "导出诊断信息",
   "debug_export_command": "导出调试日志",
   "debug_export_success_toast": "调试日志已导出",
-
   "settings_title": "设置",
   "settings_tab_ai": "AI 模型",
   "settings_tab_general": "通用",
@@ -215,7 +216,6 @@
   "settings_theme_system": "跟随系统",
   "settings_theme_light": "浅色",
   "settings_theme_dark": "深色",
-
   "onboarding_step_label": "第 {{current}} / {{total}} 步",
   "onboarding_welcome_title": "欢迎使用 Wansan Studio",
   "onboarding_welcome_body": "本地优先的 AI 商业智能工具。先完成 AI 连接配置即可开始使用。",

@@ -115,6 +115,13 @@
   "refresh_failed_desc": "Unable to refresh data. Please ensure the data file is not in use or moved, and check if the SQL syntax is correct.",
   "refresh_success": "Data refreshed",
   "creating_web_report": "Creating Web Report",
+  "export_web_report": "Export Web Report",
+  "report_title_label": "Report Title",
+  "visual_style_label": "Visual Style",
+  "generate_button": "Generate",
+  "theme_minimal": "Minimal",
+  "theme_corporate": "Business",
+  "theme_cyberpunk": "Cyber",
   "export_step_0": "Analyzing Data",
   "export_step_1": "Designing Layout",
   "export_step_2": "Writing Code",
@@ -140,7 +147,6 @@
   "pro_feature_export_desc": "Exporting reports is available in Pro version.",
   "pro_feature_export_markdown_desc": "Markdown export is available in Pro version.",
   "pro_feature_sqllab_desc": "SQL Editor is available in Pro version.",
-  
   "unlock_feature": "Unlock {{feature}}",
   "unlock_pro": "Unlock Pro",
   "pro_gate_desc": "This feature requires a Pro license. Activate now to remove all limits.",
@@ -148,7 +154,6 @@
   "pro_benefit_export": "PDF & Web Report Export",
   "pro_benefit_sql": "Advanced SQL Editor",
   "enter_license": "Enter License Key",
-
   "sidebar": {
     "electron_api_unavailable": "Electron API unavailable",
     "duplicate_file_skipped_title": "Duplicate file skipped",
@@ -164,24 +169,20 @@
     "trial_limit_multi_sheet_title": "Trial Limit Reached",
     "trial_limit_multi_sheet_desc": "Trial version does not support multiple Excel sheets. Please activate Pro for full access."
   },
-
   "update_modal_title": "Critical Update Required",
   "update_modal_desc": "A new version ({{version}}) is available and required to continue using Wansan Studio. Please update to access the latest features and security fixes.",
   "update_modal_button": "Download Update",
   "update_available": "Update Available: v{{version}}",
   "update_available_desc": "A new version is available. Click to go to the official website.",
   "download": "Download",
-
   "announcement_title": "Announcement",
   "announcement_important": "Important",
-
   "error_boundary_title": "Something went wrong.",
   "error_boundary_description": "An unexpected error occurred. Please try reloading the app.",
   "error_boundary_reload_button": "Reload App",
   "debug_export_button": "Export Diagnostic Info",
   "debug_export_command": "Export Debug Log",
   "debug_export_success_toast": "Debug log exported",
-
   "settings_title": "Settings",
   "settings_tab_ai": "AI Model",
   "settings_tab_general": "General",
@@ -215,7 +216,6 @@
   "settings_theme_system": "System",
   "settings_theme_light": "Light",
   "settings_theme_dark": "Dark",
-
   "onboarding_step_label": "Step {{current}} / {{total}}",
   "onboarding_welcome_title": "Welcome to Wansan Studio",
   "onboarding_welcome_body": "Local-first BI powered by AI. Let’s set up your AI connection to get started.",

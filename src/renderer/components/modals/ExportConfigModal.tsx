@@ -40,13 +40,13 @@ export function ExportConfigModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{t('export_web_report', 'Export Web Report')}</DialogTitle>
+          <DialogTitle>{t('export_web_report')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {/* 1. Title */}
           <div className="space-y-2">
-            <Label className="text-zinc-500">{t('report_title', 'Report Title')}</Label>
+            <Label className="text-zinc-500">{t('report_title_label')}</Label>
             <Input
               value={title}
               onChange={e => setTitle(e.target.value)}
@@ -57,7 +57,7 @@ export function ExportConfigModal({
 
           {/* 2. Theme Selection */}
           <div className="space-y-3">
-            <Label className="text-zinc-500">{t('visual_style', 'Visual Style')}</Label>
+            <Label className="text-zinc-500">{t('visual_style_label')}</Label>
             <RadioGroup
               value={theme}
               onValueChange={(v: any) => setTheme(v)}
@@ -73,7 +73,7 @@ export function ExportConfigModal({
                   className="sr-only"
                 />
                 <span className="text-2xl mb-1">📄</span>
-                <span className="text-xs font-bold text-zinc-600">Minimal</span>
+                <span className="text-xs font-bold text-zinc-600">{t('theme_minimal')}</span>
               </Label>
 
               <Label
@@ -86,7 +86,7 @@ export function ExportConfigModal({
                   className="sr-only"
                 />
                 <span className="text-2xl mb-1">💼</span>
-                <span className="text-xs font-bold text-blue-700">Business</span>
+                <span className="text-xs font-bold text-blue-700">{t('theme_corporate')}</span>
               </Label>
 
               <Label
@@ -99,7 +99,7 @@ export function ExportConfigModal({
                   className="sr-only"
                 />
                 <span className="text-2xl mb-1">👾</span>
-                <span className="text-xs font-bold text-zinc-300">Cyber</span>
+                <span className="text-xs font-bold text-zinc-300">{t('theme_cyberpunk')}</span>
               </Label>
             </RadioGroup>
           </div>
@@ -113,7 +113,7 @@ export function ExportConfigModal({
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-8"
             onClick={() => onConfirm({ title, theme })}
           >
-            {t('generate', 'Generate')}
+            {t('generate_button')}
           </Button>
         </DialogFooter>
       </DialogContent>
