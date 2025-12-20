@@ -564,9 +564,10 @@ const removeMessage = (id: string) => {
 }
 
 const reset = () => {
-    // Clear messages for active session?
-    console.warn('Bridge: reset called, clearing messages for session')
-    // useProjectStore.getState().clearMessages()
+    const activeSessionId = useProjectStore.getState().activeSessionId
+    if (activeSessionId) {
+        useProjectStore.getState().clearSessionMessages(activeSessionId)
+    }
 }
 
 

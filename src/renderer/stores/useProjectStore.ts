@@ -57,6 +57,7 @@ export interface ProjectState extends ProjectData {
   addMessage: (msg: Message & { reportData?: ReportData }) => void
   updateMessage: (id: string, update: Partial<Message> & { reportData?: Partial<ReportData> }) => void
   deleteMessage: (id: string) => void
+  clearSessionMessages: (sessionId: string) => void
   setReplyTo: (replyToId: string | null) => void
   setAbortController: (controller: AbortController | null) => void
 
@@ -362,6 +363,26 @@ export const useProjectStore = create<ProjectState>()(
                     messages: s.messages.filter(m => m.id !== id),
                     lastModified: Date.now()
                 } : s)
+            }
+        }),
+
+      clearSessionMessages: (sessionId) =>
+        set(state => {
+            const session = state.sessions.find(s => s.id === sessionId)
+            if (!session) return state
+
+            const widgetIdsToRemove = new Set(session.messages.map(m => m.widgetId).filter(Boolean))
+            
+            const newRegistry = { ...state.widgetRegistry }
+            widgetIdsToRemove.forEach(id => {
+                if (id) delete newRegistry[id]
+            })
+
+            return {
+                widgetRegistry: newRegistry,
+                sessions: state.sessions.map(s => 
+                    s.id === sessionId ? { ...s, messages: [], lastModified: Date.now() } : s
+                )
             }
         }),
 
@@ -941,7 +962,7 @@ export const useProjectStore = create<ProjectState>()(
         // Destructure actions to exclude them from serialization
         const { 
             createSession, switchSession, deleteSession, renameSession, 
-            addMessage, updateMessage, setReplyTo, setAbortController,
+            addMessage, updateMessage, setReplyTo, setAbortController, deleteMessage, clearSessionMessages,
             addWidget, removeWidget, updateLayout, updateReportTitle, setCanvasConfig,
             setLayoutScenario, setEditingReportId,
             addFile, removeFile, loadProject, serialize, reset,
