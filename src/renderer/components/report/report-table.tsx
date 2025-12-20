@@ -27,11 +27,14 @@ export function ReportTable({
   variant,
 }: ReportTableProps) {
   const { t } = useTranslation('common')
+  const safeData = data || []
+  const safeColumns = columns || []
+
   const columnKeys =
-    columns && columns.length > 0
-      ? columns
-      : data.length > 0
-        ? Object.keys(data[0])
+    safeColumns.length > 0
+      ? safeColumns
+      : safeData.length > 0
+        ? Object.keys(safeData[0])
         : []
   const [sorting, setSorting] = React.useState<SortingState>([])
   
@@ -53,7 +56,7 @@ export function ReportTable({
   }))
 
   const table = useReactTable({
-    data,
+    data: safeData,
     columns: columnDefs,
     state: { sorting },
     onSortingChange: setSorting,
