@@ -19,14 +19,14 @@ export function Toaster() {
   if (visibleToasts.length === 0) return null
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-[9999] flex flex-col items-end justify-end px-4 py-6 sm:p-6">
-      <div className="flex w-full flex-col items-end space-y-3">
+    <div className="pointer-events-none fixed inset-0 top-0 z-[10000] flex flex-col items-center justify-start px-4 py-6 pointer-events-none">
+      <div className="flex w-full flex-col items-center space-y-3">
         {visibleToasts.map(toast => (
           <div
             key={toast.id}
             className={cn(
-              'pointer-events-auto w-full max-w-sm overflow-hidden rounded-xl border shadow-lg backdrop-blur supports-[backdrop-filter]:bg-white/80 bg-white/95 transition-all duration-200',
-              'border-zinc-200 shadow-zinc-200/70'
+              'pointer-events-auto w-full max-w-sm overflow-hidden rounded-xl border shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/80 bg-white/95 transition-all duration-300 animate-in slide-in-from-top-4 fade-in',
+              'border-zinc-200 shadow-zinc-200/50'
             )}
             role="alert"
           >
