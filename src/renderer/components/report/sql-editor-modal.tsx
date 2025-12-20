@@ -78,28 +78,30 @@ export function SqlEditorModal({
   const isFileMode = mode === 'file'
 
   const handleRunPreview = async (queryToRun: string) => {
-    setIsRunning(true)
-    setPreviewError(null)
-    const startTime = performance.now()
-    try {
-      const res = await window.electronAPI.runSQL(queryToRun)
-      if (res.success && res.data) {
-        const { data, columnTypes } = res.data
-        setExecTime(Math.round(performance.now() - startTime))
-        setPreviewData(data)
-        setPreviewColumns(data.length > 0 ? Object.keys(data[0]) : [])
-        setPreviewColumnTypes(columnTypes || {})
-        setPreviewError(null)
-      } else {
-        throw new Error(res.error)
+    checkGate(t('pro_benefit_sql', { ns: 'common' }), async () => {
+      setIsRunning(true)
+      setPreviewError(null)
+      const startTime = performance.now()
+      try {
+        const res = await window.electronAPI.runSQL(queryToRun)
+        if (res.success && res.data) {
+          const { data, columnTypes } = res.data
+          setExecTime(Math.round(performance.now() - startTime))
+          setPreviewData(data)
+          setPreviewColumns(data.length > 0 ? Object.keys(data[0]) : [])
+          setPreviewColumnTypes(columnTypes || {})
+          setPreviewError(null)
+        } else {
+          throw new Error(res.error)
+        }
+      } catch (e: any) {
+        setPreviewError(e.message || 'Execution failed')
+        setPreviewData([])
+        setPreviewColumns([])
+      } finally {
+        setIsRunning(false)
       }
-    } catch (e: any) {
-      setPreviewError(e.message || 'Execution failed')
-      setPreviewData([])
-      setPreviewColumns([])
-    } finally {
-      setIsRunning(false)
-    }
+    })
   }
 
   // Auto-format SQL and run initial query when modal opens
