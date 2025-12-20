@@ -39,6 +39,7 @@ import { useState } from 'react'
 import { Input } from './ui/input'
 import { cn } from '@/utils/cn'
 import { ExpandableAction } from './ui/expandable-action'
+import { ConfirmDialog } from './modals/ConfirmDialog'
 
 interface FormatConfig {
   label: string
@@ -89,6 +90,8 @@ export function SchemaEditor() {
       : readyFiles[0]?.id
 
   const currentFile = readyFiles.find(f => f.id === currentFileId)
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // --- Handlers ---
   const handlePreview = () => {
@@ -143,10 +146,17 @@ export function SchemaEditor() {
 
   const handleDelete = () => {
     if (!currentFile) return
-    if (confirm(t('delete_session_desc'))) {
-      removeFile(currentFile.id)
-      toast.addToast({ title: t('file_removed'), type: 'success', duration: 2000 })
-    }
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDelete = () => {
+    if (!currentFile) return
+    removeFile(currentFile.id)
+    toast.addToast({
+      title: t('file_removed'),
+      type: 'success',
+      duration: 2000,
+    })
   }
 
   return (
@@ -157,96 +167,85 @@ export function SchemaEditor() {
         {currentFile && (
           <div className="flex flex-col min-h-0">
             {/* New Modern Header */}
-            <div className="px-8 py-6 border-b border-zinc-100 bg-white shrink-0">
-              <div className="flex items-start justify-between">
-                <div className="flex flex-col gap-3 min-w-0">
-                  {/* Row 1: Icon + Filename */}
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="p-2 bg-green-50 rounded-lg border border-green-100 shrink-0">
-                      <FileSpreadsheet className="w-6 h-6 text-green-600" />
-                    </div>
-                    <h2 className="text-xl font-bold text-zinc-900 tracking-tight truncate whitespace-nowrap">
-                      {currentFile.name}
-                    </h2>
+            <div className="px-8 py-6 border-b border-zinc-100 bg-white shrink-0 relative">
+              <div className="flex flex-col gap-3 min-w-0">
+                {/* Row 1: Icon + Filename */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2 bg-green-50 rounded-lg border border-green-100 shrink-0">
+                    <FileSpreadsheet className="w-6 h-6 text-green-600" />
                   </div>
-
-                  {/* Row 2: Metadata Strip */}
-                  <div className="flex items-center flex-wrap gap-4 text-sm text-zinc-500 pl-1">
-                    {/* Table Name (Technical Info) */}
-                    <div
-                      className="flex items-center gap-1.5 shrink-0 whitespace-nowrap"
-                      title="SQL Table Name"
-                    >
-                      <Database className="w-3.5 h-3.5 text-zinc-400" />
-                      <span className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded text-zinc-700 select-all">
-                        {currentFile.tableName}
-                      </span>
-                    </div>
-
-                    <div className="w-px h-3 bg-zinc-200 shrink-0" />
-
-                    {/* Stats */}
-                    <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
-                      <AlignJustify className="w-3.5 h-3.5 text-zinc-400" />
-                      <span>
-                        {currentFile.rowCount?.toLocaleString() ?? 0} {t('rows')}
-                      </span>
-                      <span>·</span>
-                      <span>
-                        {currentFile.columns.length} {t('field_name')}
-                      </span>
-                    </div>
-
-                    <div className="w-px h-3 bg-zinc-200 shrink-0" />
-
-                    {/* Time */}
-                    <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
-                      <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                      <span className="text-xs">
-                        {t('last_updated')}:{' '}
-                        {new Date(currentFile.lastModified).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
+                  <h2 className="text-xl font-bold text-zinc-900 tracking-tight truncate whitespace-nowrap">
+                    {currentFile.name}
+                  </h2>
                 </div>
 
-                {/* Header Actions */}
-                <div className="flex items-center gap-2 ml-4 shrink-0">
-                  <ExpandableAction
-                    icon={<Code className="w-4 h-4" />}
-                    label={t('preview_data')}
-                    onClick={handlePreview}
-                  />
-                  <ExpandableAction
-                    icon={<RefreshCw className="w-4 h-4" />}
-                    label={t('reload_data')}
-                    onClick={handleReload}
-                  />
+                {/* Row 2: Metadata Strip */}
+                <div className="flex items-center flex-wrap gap-4 text-sm text-zinc-500 pl-1">
+                  {/* Table Name (Technical Info) */}
+                  <div
+                    className="flex items-center gap-1.5 shrink-0 whitespace-nowrap"
+                    title="SQL Table Name"
+                  >
+                    <Database className="w-3.5 h-3.5 text-zinc-400" />
+                    <span className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded text-zinc-700 select-all">
+                      {currentFile.tableName}
+                    </span>
+                  </div>
 
-                  <div className="w-px h-4 bg-zinc-200 mx-1" />
+                  <div className="w-px h-3 bg-zinc-200 shrink-0" />
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="w-4 h-4 text-zinc-500" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handleReplace}>
-                        <FileInput className="w-4 h-4 mr-2" />
-                        {t('replace_data_source')}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={handleDelete}
-                        className="text-red-600 focus:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        {t('remove_file')}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  {/* Stats */}
+                  <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                    <AlignJustify className="w-3.5 h-3.5 text-zinc-400" />
+                    <span>
+                      {currentFile.rowCount?.toLocaleString() ?? 0} {t('rows')}
+                    </span>
+                    <span>·</span>
+                    <span>
+                      {currentFile.columns.length} {t('field_name')}
+                    </span>
+                  </div>
+
+                  <div className="w-px h-3 bg-zinc-200 shrink-0" />
+
+                  {/* Time */}
+                  <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                    <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                    <span className="text-xs">
+                      {t('last_updated')}:{' '}
+                      {new Date(currentFile.lastModified).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
+              </div>
+
+              {/* Header Actions */}
+              <div className="absolute top-6 right-8 flex items-center gap-2">
+                <ExpandableAction
+                  icon={<Code className="w-4 h-4" />}
+                  label={t('preview_data')}
+                  onClick={handlePreview}
+                />
+                <ExpandableAction
+                  icon={<RefreshCw className="w-4 h-4" />}
+                  label={t('reload_data')}
+                  onClick={handleReload}
+                />
+
+                <div className="w-px h-4 bg-zinc-200 mx-1" />
+
+                <ExpandableAction
+                  icon={<FileInput className="w-4 h-4" />}
+                  label={t('replace_source')}
+                  onClick={handleReplace}
+                />
+
+                <ExpandableAction
+                  icon={<Trash2 className="w-4 h-4" />}
+                  label={t('remove_file')}
+                  onClick={handleDelete}
+                  className="hover:text-red-600 hover:bg-red-50"
+                />
               </div>
             </div>
 
@@ -283,6 +282,17 @@ export function SchemaEditor() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title={t('remove_file')}
+        description={t('delete_session_desc')}
+        onConfirm={confirmDelete}
+        variant="destructive"
+        confirmText={t('remove_file')}
+        cancelText={t('cancel')}
+      />
     </div>
   )
 }
