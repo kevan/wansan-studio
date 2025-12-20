@@ -67,38 +67,40 @@ export function ReportTable({
     <div className="flex flex-col h-full w-full">
       <div
         className={cn(
-          'flex-1 overflow-auto rounded-lg border border-zinc-200 bg-white',
+          'flex-1 overflow-auto rounded-lg border border-zinc-200 bg-white relative',
           isDashboard ? 'min-h-0' : 'shadow-sm'
         )}
       >
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 z-10 bg-zinc-50 text-zinc-700">
+        <table className="w-full text-[13px] border-separate border-spacing-0">
+          <thead className="sticky top-0 z-20 shadow-sm">
             {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id} className="border-b border-zinc-200">
+              <tr key={headerGroup.id} className="bg-zinc-100">
                 {headerGroup.headers.map(header => {
                   const sorted = header.column.getIsSorted()
                   return (
                     <th
                       key={header.id}
                       className={cn(
-                        'px-4 py-2 text-left font-semibold whitespace-nowrap',
+                        'h-9 px-3 text-left font-bold text-zinc-600 uppercase tracking-wider border-r border-b border-zinc-300 last:border-r-0 whitespace-nowrap',
                         header.column.getCanSort()
-                          ? 'cursor-pointer select-none hover:bg-zinc-100'
+                          ? 'cursor-pointer select-none hover:bg-zinc-200/80 transition-colors'
                           : ''
                       )}
                       onClick={header.column.getToggleSortingHandler()}
                     >
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         {flexRender(
                           header.column.columnDef.header,
                           header.getContext()
                         )}
-                        {sorted === 'asc' && (
-                          <span className="text-[10px]">▲</span>
-                        )}
-                        {sorted === 'desc' && (
-                          <span className="text-[10px]">▼</span>
-                        )}
+                        <div className="w-3">
+                          {sorted === 'asc' && (
+                            <span className="text-[10px] text-indigo-600">▲</span>
+                          )}
+                          {sorted === 'desc' && (
+                            <span className="text-[10px] text-indigo-600">▼</span>
+                          )}
+                        </div>
                       </div>
                     </th>
                   )
@@ -108,28 +110,41 @@ export function ReportTable({
           </thead>
           <tbody className="text-zinc-700">
             {rowModel.rows.length ? (
-              rowModel.rows.map(row => (
+              rowModel.rows.map((row, i) => (
                 <tr
                   key={row.id}
-                  className="border-b border-zinc-100 hover:bg-zinc-50"
+                  className={cn(
+                    'group border-b border-zinc-100 transition-colors hover:bg-indigo-50/40',
+                    i % 2 === 0 ? 'bg-white' : 'bg-zinc-50/50'
+                  )}
                 >
-                  {row.getVisibleCells().map(cell => (
-                    <td key={cell.id} className="px-4 py-2 max-w-xs">
-                      <div className="truncate">
+                  {row.getVisibleCells().map(cell => {
+                    const val = cell.getValue()
+                    const isNum = typeof val === 'number' || typeof val === 'bigint'
+                    
+                    return (
+                      <td 
+                        key={cell.id} 
+                        className={cn(
+                          "px-3 py-1.5 border-r border-zinc-100 last:border-r-0 truncate max-w-[250px]",
+                          isNum && "font-mono text-right text-indigo-600/90"
+                        )}
+                        title={String(val)}
+                      >
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext()
                         )}
-                      </div>
-                    </td>
-                  ))}
+                      </td>
+                    )
+                  })}
                 </tr>
               ))
             ) : (
               <tr>
                 <td
                   colSpan={columnKeys.length || 1}
-                  className="px-4 py-8 text-center text-sm text-zinc-500"
+                  className="px-4 py-12 text-center text-sm text-zinc-400 italic"
                 >
                   {t('no_data')}
                 </td>
