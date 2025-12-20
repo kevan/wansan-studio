@@ -142,6 +142,7 @@
   "pro_feature_sqllab_desc": "SQL Editor is available in Pro version.",
   
   "unlock_feature": "Unlock {{feature}}",
+  "unlock_pro": "Unlock Pro",
   "pro_gate_desc": "This feature requires a Pro license. Activate now to remove all limits.",
   "pro_benefit_unlimited_files": "Unlimited Files & Sheets",
   "pro_benefit_export": "PDF & Web Report Export",

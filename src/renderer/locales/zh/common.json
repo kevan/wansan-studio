@@ -142,6 +142,7 @@
   "pro_feature_sqllab_desc": "SQL 编辑器仅在专业版可用。",
 
   "unlock_feature": "解锁 {{feature}}",
+  "unlock_pro": "解锁专业版",
   "pro_gate_desc": "此功能需要专业版许可。立即激活以移除所有限制。",
   "pro_benefit_unlimited_files": "无限文件与工作表",
   "pro_benefit_export": "PDF 与网页报告导出",
