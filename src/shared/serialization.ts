@@ -198,11 +198,11 @@ export function formatForDisplay(value: any, typeHint?: string): string {
 
   if (typeHint) {
     const upperHint = typeHint.toUpperCase()
-    if (upperHint === 'DATE') {
-      return formatDateValue(value, 'date') || String(value)
-    }
-    if (upperHint === 'TIMESTAMP' || upperHint === 'DATETIME') {
+    if (upperHint.includes('TIMESTAMP') || upperHint.includes('DATETIME')) {
       return formatDateValue(value, 'timestamp') || String(value)
+    }
+    if (upperHint.includes('DATE')) {
+      return formatDateValue(value, 'date') || String(value)
     }
   }
 
