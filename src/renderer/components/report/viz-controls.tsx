@@ -13,6 +13,7 @@ import type { AIAnalysisResult } from '@shared/types'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import { adaptChartConfig } from '@/lib/viz-adapter'
+import { ExpandableAction } from '../ui/expandable-action'
 
 type VizType = NonNullable<AIAnalysisResult['visualization']>['type']
 
@@ -133,22 +134,16 @@ export function VizControls({
 
   return (
     <div className="relative hide-on-export">
-      <button
-        type="button"
+      <ExpandableAction
+        icon={<Settings2 className="w-4 h-4" />}
+        label={t('edit_viz')}
         disabled={disabled}
         onClick={e => {
           e.stopPropagation()
           setOpen(prev => !prev)
         }}
-        onMouseDown={e => e.stopPropagation()}
-        className={cn(
-          'p-1.5 rounded-md transition-colors hover:bg-zinc-200 text-zinc-500',
-          disabled && 'cursor-not-allowed opacity-60'
-        )}
-        title={t('edit_viz')}
-      >
-        <Settings2 className="w-4 h-4" />
-      </button>
+        active={open}
+      />
 
       {open && (
         <div
