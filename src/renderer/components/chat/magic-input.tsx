@@ -75,6 +75,7 @@ export function MagicInput({
   const { t } = useTranslation('chat')
   const { t: tCommon } = useTranslation('common')
   const refreshSessionWidgets = useProjectStore(state => state.refreshSessionWidgets)
+  const setRefreshing = useProjectStore(state => state.setRefreshing)
   const addMessage = useProjectStore(state => state.addMessage)
   const updateMessage = useProjectStore(state => state.updateMessage)
   const { checkGate, gateNode } = useProGate()
@@ -180,30 +181,23 @@ export function MagicInput({
           setPopoverOpen(false)
           setValue('')
           
-          // 1. User Message
-          addMessage({ 
-            id: crypto.randomUUID(),
-            type: 'user', 
-            content: '/refresh',
-            timestamp: Date.now()
-          } as any)
-
-          // 2. System Message
-          const systemMsgId = crypto.randomUUID()
-          addMessage({ 
-            id: systemMsgId, 
-            type: 'assistant', 
-            content: '🔄 Refreshing all charts in this session...',
-            timestamp: Date.now()
-          } as any)
-
-          // 3. Logic
-          await refreshSessionWidgets()
-
-          // 4. Update
-          updateMessage(systemMsgId, { 
-            content: '✅ **Refresh Complete.** All charts are up to date with the latest source files.' 
-          } as any)
+          try {
+            setRefreshing(true)
+            await refreshSessionWidgets()
+            addToast({
+              title: tCommon('refresh_success'),
+              type: 'success',
+              duration: 2000,
+            })
+          } catch (e) {
+            addToast({
+              title: tCommon('reload_failed'),
+              description: tCommon('refresh_failed_desc'),
+              type: 'error',
+            })
+          } finally {
+            setRefreshing(false)
+          }
         }
       },
       {
@@ -284,30 +278,23 @@ export function MagicInput({
           addToast({ title: t('chat_cleared'), type: 'info', duration: 2500 })
         }
         if (cmd === 'refresh') {
-           // 1. User Message
-          addMessage({ 
-            id: crypto.randomUUID(),
-            type: 'user', 
-            content: '/refresh',
-            timestamp: Date.now()
-          } as any)
-
-          // 2. System Message
-          const systemMsgId = crypto.randomUUID()
-          addMessage({ 
-            id: systemMsgId, 
-            type: 'assistant', 
-            content: '🔄 Refreshing all charts in this session...',
-            timestamp: Date.now()
-          } as any)
-
-          // 3. Logic
-          await refreshSessionWidgets()
-
-          // 4. Update
-          updateMessage(systemMsgId, { 
-            content: '✅ **Refresh Complete.** All charts are up to date with the latest source files.' 
-          } as any)
+          try {
+            setRefreshing(true)
+            await refreshSessionWidgets()
+            addToast({
+              title: tCommon('refresh_success'),
+              type: 'success',
+              duration: 2000,
+            })
+          } catch (e) {
+            addToast({
+              title: tCommon('reload_failed'),
+              description: tCommon('refresh_failed_desc'),
+              type: 'error',
+            })
+          } finally {
+            setRefreshing(false)
+          }
         }
         if (cmd === 'export') {
           handleExportMarkdown()
