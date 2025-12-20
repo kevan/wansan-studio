@@ -437,10 +437,12 @@ export function DashboardHeader() {
             <DropdownMenuItem
               className="text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50"
               disabled={isExportingWeb}
-              onSelect={() => checkGate('Web Report', () => setIsConfigOpen(true))}
+              onSelect={() =>
+                checkGate(t('export_web_report'), () => setIsConfigOpen(true))
+              }
             >
               <Sparkles className="mr-2 h-4 w-4" />
-              AI Web Report
+              {t('export_web_report')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
