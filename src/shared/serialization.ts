@@ -297,3 +297,38 @@ export function processSampleValue(val: any, columnType?: ColumnType): any {
 
   return val
 }
+
+/**
+ * Sanitize values for IPC transmission and general usage.
+ * - Converts BigInt to number (safe for IPC)
+ * - Rounds floating point numbers
+ * - Converts Date to timestamp
+ * - Recursively handles Arrays and Objects
+ */
+export function sanitizeValue(value: any): any {
+  if (typeof value === 'bigint') {
+    return Number(value)
+  }
+  if (typeof value === 'number') {
+    // Round to 6 decimal places to avoid floating point artifacts (e.g. 0.1 + 0.2)
+    // and keep JSON payload cleaner. 6 is enough for most BI cases.
+    if (!Number.isInteger(value)) {
+      return Math.round(value * 1000000) / 1000000
+    }
+    return value
+  }
+  if (value instanceof Date) {
+    return value.getTime()
+  }
+  if (Array.isArray(value)) {
+    return value.map(sanitizeValue)
+  }
+  if (value !== null && typeof value === 'object') {
+    const plain: any = {}
+    for (const key of Object.keys(value)) {
+      plain[key] = sanitizeValue(value[key])
+    }
+    return plain
+  }
+  return value
+}

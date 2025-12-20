@@ -4,41 +4,11 @@ import { Mutex } from 'async-mutex'
 import { app } from 'electron'
 import { isDev } from '../utils/env'
 import { normalizeDuckDBType } from '../../shared/type-utils'
+import { sanitizeValue } from '../../shared/serialization'
 
 // Use blocking DuckDB version to avoid worker issues
 const require = createRequire(import.meta.url)
 const duckdb = require('@duckdb/duckdb-wasm/dist/duckdb-node-blocking.cjs')
-
-// Helper to sanitize values for IPC (handle BigInt, etc.)
-function sanitizeValue(value: any): any {
-  if (typeof value === 'bigint') {
-    // Convert BigInt to number for IPC safety
-    // Note: This might lose precision for very large integers (> 2^53)
-    return Number(value)
-  }
-  if (typeof value === 'number') {
-    // Round to 6 decimal places to avoid floating point artifacts (e.g. 0.1 + 0.2)
-    // and keep JSON payload cleaner. 6 is enough for most BI cases.
-    if (!Number.isInteger(value)) {
-      return Math.round(value * 1000000) / 1000000
-    }
-    return value
-  }
-  if (value instanceof Date) {
-    return value.getTime() // Convert Date to timestamp for consistency
-  }
-  if (Array.isArray(value)) {
-    return value.map(sanitizeValue)
-  }
-  if (value !== null && typeof value === 'object') {
-    const plain: any = {}
-    for (const key of Object.keys(value)) {
-      plain[key] = sanitizeValue(value[key])
-    }
-    return plain
-  }
-  return value
-}
 
 export class DatabaseService {
   private db: any = null
