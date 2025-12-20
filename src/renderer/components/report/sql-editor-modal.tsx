@@ -185,11 +185,13 @@ export function SqlEditorModal({
                 )}
                 <div className="w-px h-3 bg-zinc-200 mx-1" />
                 <Button
-                  onClick={() => checkGate('SQL Editor', handleFormat)}
+                  onClick={() => checkGate(t('pro_benefit_sql', { ns: 'common' }), handleFormat)}
                   variant="ghost"
                   size="sm"
-                  className="h-7 text-xs text-zinc-500 hover:text-zinc-900"
-                  disabled={!isActivated}
+                  className={cn(
+                    "h-7 text-xs hover:text-zinc-900",
+                    !isActivated ? "text-amber-600 font-medium" : "text-zinc-500"
+                  )}
                 >
                   {!isActivated && <Lock className="w-3 h-3 mr-1" />}
                   <Sparkles className="h-3 w-3 mr-1" />
@@ -209,11 +211,13 @@ export function SqlEditorModal({
                   {copied ? t('sql_editor.copy_success') : t('sql_editor.copy')}
                 </Button>
                 <Button
-                  onClick={() => checkGate('SQL Editor', handleReset)}
+                  onClick={() => checkGate(t('pro_benefit_sql', { ns: 'common' }), handleReset)}
                   variant="ghost"
                   size="sm"
-                  className="h-7 text-xs text-zinc-500 hover:text-zinc-900"
-                  disabled={!isActivated}
+                  className={cn(
+                    "h-7 text-xs hover:text-zinc-900",
+                    !isActivated ? "text-amber-600 font-medium" : "text-zinc-500"
+                  )}
                 >
                   <RotateCcw className="w-3 h-3 mr-1" />
                   {t('sql_editor.reset')}
@@ -235,6 +239,17 @@ export function SqlEditorModal({
               </div>
             </div>
             <div className="flex-1 min-h-0 relative overflow-auto">
+              {!isActivated && (
+                <div 
+                  className="absolute inset-0 z-10 bg-zinc-100/10 backdrop-blur-[1px] flex items-center justify-center cursor-pointer group/lock"
+                  onClick={() => checkGate(t('pro_benefit_sql', { ns: 'common' }), () => {})}
+                >
+                  <div className="bg-white/90 shadow-md border border-amber-200 px-4 py-2 rounded-full flex items-center gap-2 text-amber-700 text-sm font-semibold transform transition-transform group-hover/lock:scale-105">
+                    <Lock className="w-4 h-4" />
+                    {t('unlock_pro')}
+                  </div>
+                </div>
+              )}
               {showReasoning && reasoning && (
                 <div className="m-4 mb-0 bg-indigo-50/50 border border-indigo-100 p-3 rounded-lg text-xs text-indigo-900/80 animate-in slide-in-from-top-2">
                   <div className="flex items-center gap-2 mb-1">
@@ -328,7 +343,7 @@ export function SqlEditorModal({
             </Button>
             {onSave && (
               <Button
-                onClick={handleSave}
+                onClick={() => checkGate(t('pro_benefit_sql', { ns: 'common' }), handleSave)}
                 className="gap-2 bg-black text-white hover:bg-zinc-800 shadow-sm px-6"
               >
                 <Save className="w-4 h-4" />
