@@ -62,28 +62,17 @@ export function normalizeDuckDBType(duckType: string): ColumnType {
 
 export type UIFormatType = 'number' | 'text' | 'date'
 
-export function getUIFormatType(type: string): UIFormatType {
-  const lowerType = type.toLowerCase()
-  
-  if (
-    lowerType.includes('int') ||
-    lowerType.includes('decimal') ||
-    lowerType.includes('double') ||
-    lowerType.includes('float') ||
-    lowerType.includes('bigint') ||
-    lowerType.includes('number') ||
-    lowerType.includes('numeric')
-  ) {
-    return 'number'
+export function getUIFormatType(type: ColumnType): UIFormatType {
+  switch (type) {
+    case 'INTEGER':
+    case 'DOUBLE':
+      return 'number'
+    case 'DATE':
+    case 'TIMESTAMP':
+      return 'date'
+    case 'VARCHAR':
+    case 'BOOLEAN':
+    default:
+      return 'text'
   }
-  
-  if (
-    lowerType.includes('date') ||
-    lowerType.includes('time') ||
-    lowerType.includes('timestamp')
-  ) {
-    return 'date'
-  }
-  
-  return 'text'
 }
