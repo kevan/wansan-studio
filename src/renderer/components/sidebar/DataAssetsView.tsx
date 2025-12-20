@@ -11,6 +11,8 @@ import { Button } from '../ui/button'
 import { useToastStore } from '../../stores/useToastStore'
 import { useTranslation } from 'react-i18next'
 import { useProGate } from '@/hooks/use-pro-gate'
+import { normalizeDuckDBType } from '@shared/type-utils'
+import { ColumnSchema } from '@shared/types'
 
 const MAX_SIZE = 100 * 1024 * 1024 // 100MB
 
@@ -129,7 +131,7 @@ export function DataAssetsView() {
               // 从 preview 数据中提取每列的样本值
               const columns = (res.schema?.columns || []).map(
                 (
-                  col: { name: string; type: string; nullable: boolean },
+                  col: ColumnSchema,
                   colIndex: number
                 ) => {
                   // preview 可能是 [[header...], [row1...], ...] 或 [{col: val}, ...]
@@ -170,6 +172,8 @@ export function DataAssetsView() {
 
                   return {
                     ...col,
+                    type: normalizeDuckDBType(col.type),
+                    safeName: col.name, // Default safeName
                     sampleValues,
                   }
                 }
