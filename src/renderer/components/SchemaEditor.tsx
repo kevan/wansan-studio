@@ -16,6 +16,8 @@ import {
   Trash2,
   FileInput,
   Code,
+  Edit2,
+  Check,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from './ui/button'
@@ -28,6 +30,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useToastStore } from '../stores/useToastStore'
 import { useReIngestFile } from '../hooks/useIPC'
+import { useState } from 'react'
+import { Input } from './ui/input'
+import { cn } from '@/utils/cn'
 
 // 类型映射配置
 type FormatType = 'number' | 'text' | 'date'
@@ -282,6 +287,7 @@ export function SchemaEditor() {
                 {currentFile.columns.map(col => (
                   <ColumnRow
                     key={col.name}
+                    fileId={currentFile.id}
                     column={col}
                     onToggleKey={() =>
                       toggleKeyColumn(currentFile.id, col.name)
@@ -305,16 +311,28 @@ export function SchemaEditor() {
 
 // 列行组件
 interface ColumnRowProps {
+  fileId: string
   column: ColumnSchema
   onToggleKey: () => void
   isLinked: boolean
 }
 
-function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
+function ColumnRow({ fileId, column, onToggleKey, isLinked }: ColumnRowProps) {
   const formatType = mapToFormatType(column.type)
   const config = FORMAT_CONFIG[formatType]
   const IconComponent = config.icon
   const { t } = useTranslation('common')
+  const { updateColumn } = useFileStore()
+
+  const [isRenaming, setIsRenaming] = useState(false)
+  const [alias, setAlias] = useState(column.alias || column.name)
+
+  const submitRename = () => {
+    if (alias.trim() && alias !== (column.alias || column.name)) {
+      updateColumn(fileId, column.name, { alias: alias.trim() })
+    }
+    setIsRenaming(false)
+  }
 
   // 格式化显示值（处理时间戳）
   const formatDisplayValue = (value: any, type: string): string => {
@@ -350,7 +368,7 @@ function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
   }
 
   return (
-    <tr className="hover:bg-zinc-50 transition-colors">
+    <tr className="hover:bg-zinc-50 transition-colors group">
       {/* Field Name - 包含 Key 图标 */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
@@ -366,7 +384,58 @@ function ColumnRow({ column, onToggleKey, isLinked }: ColumnRowProps) {
           </button>
 
           {/* 字段名 */}
-          <span className="text-sm text-zinc-900">{column.name}</span>
+          <div className="flex items-center gap-2 flex-1 min-w-0 group/name">
+            {isRenaming ? (
+              <div className="flex items-center gap-1 flex-1">
+                <Input
+                  autoFocus
+                  value={alias}
+                  onChange={e => setAlias(e.target.value)}
+                  onBlur={submitRename}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') submitRename()
+                    if (e.key === 'Escape') {
+                      setAlias(column.alias || column.name)
+                      setIsRenaming(false)
+                    }
+                  }}
+                  className="h-7 text-sm py-0 px-2"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-green-600 shrink-0"
+                  onClick={submitRename}
+                >
+                  <Check className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <>
+                <span
+                  className={cn(
+                    'text-sm truncate',
+                    column.alias ? 'text-zinc-900 font-medium' : 'text-zinc-600'
+                  )}
+                >
+                  {column.alias || column.name}
+                </span>
+                {column.alias && (
+                  <span className="text-[10px] text-zinc-400 font-mono">
+                    ({column.name})
+                  </span>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0"
+                  onClick={() => setIsRenaming(true)}
+                >
+                  <Edit2 className="w-3 h-3 text-zinc-400" />
+                </Button>
+              </>
+            )}
+          </div>
 
           {/* 已关联标记 */}
           {isLinked && (

@@ -143,13 +143,15 @@ export function RelationshipManager() {
                         ({rel.columnB})
                       </span>
                     </div>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => removeRelation(rel.id)}
-                      className="text-xs text-rose-600 hover:text-rose-700 flex items-center gap-1"
+                      className="h-8 w-8 text-zinc-400 hover:text-rose-600 hover:bg-rose-50"
+                      title={t('delete')}
                     >
                       <Trash2 className="w-4 h-4" />
-                      {t('delete')}
-                    </button>
+                    </Button>
                   </div>
                 )
               })}

@@ -349,19 +349,6 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
               <Code className="w-4 h-4 mr-2" />
               {t('preview_data')}
             </ContextMenuItem>
-            <ContextMenuItem onClick={handleReplaceFile}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              {t('replace_data_source')}
-            </ContextMenuItem>
-            <ContextMenuItem
-              onClick={handleReload}
-              disabled={reIngest.isPending}
-            >
-              <RefreshCw
-                className={`w-4 h-4 mr-2 ${reIngest.isPending ? 'animate-spin' : ''}`}
-              />
-              {t('reload_data')}
-            </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem
               onClick={handleRemoveFile}
@@ -374,38 +361,17 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
         )}
 
         {data.type === 'column' && (
-          <>
-            <ContextMenuItem onClick={handleRenameAlias}>
-              <Pencil className="w-4 h-4 mr-2" />
-              {t('rename_alias')}
-            </ContextMenuItem>
-            <ContextMenuSub>
-              <ContextMenuSubTrigger>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                {t('change_type')}
-              </ContextMenuSubTrigger>
-              <ContextMenuSubContent className="w-32">
-                <ContextMenuItem
-                  onClick={() => handleColumnTypeChange('VARCHAR')}
-                >
-                  <Type className="w-4 h-4 mr-2" /> {t('format_text')}
-                </ContextMenuItem>
-                <ContextMenuItem
-                  onClick={() => handleColumnTypeChange('DOUBLE')}
-                >
-                  <Hash className="w-4 h-4 mr-2" /> {t('format_number')}
-                </ContextMenuItem>
-                <ContextMenuItem onClick={() => handleColumnTypeChange('DATE')}>
-                  <Calendar className="w-4 h-4 mr-2" /> {t('format_date')}
-                </ContextMenuItem>
-                <ContextMenuItem
-                  onClick={() => handleColumnTypeChange('BOOLEAN')}
-                >
-                  <ToggleLeft className="w-4 h-4 mr-2" /> {t('type_boolean')}
-                </ContextMenuItem>
-              </ContextMenuSubContent>
-            </ContextMenuSub>
-          </>
+          <ContextMenuItem
+            onClick={() => {
+              if (data.fileId) {
+                setActiveFile(data.fileId)
+                setView('schema')
+              }
+            }}
+          >
+            <Pencil className="w-4 h-4 mr-2" />
+            {t('manage_in_schema_editor')}
+          </ContextMenuItem>
         )}
 
         {data.type === 'relation' && (
