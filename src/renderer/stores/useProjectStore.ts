@@ -220,8 +220,8 @@ export const useProjectStore = create<ProjectState>()(
           }
 
           const defaultTitleData: ReportData = {
-            title: 'Report Title',
-            content: 'Untitled Report',
+            title: newSession.title,
+            content: newSession.title,
             chartType: 'text',
             timestamp: Date.now(),
           }
