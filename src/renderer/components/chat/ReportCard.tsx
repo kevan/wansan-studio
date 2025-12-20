@@ -11,6 +11,7 @@ import { SqlEditorModal } from '../report/sql-editor-modal'
 import type { ChatMessage } from '../ChatInterface'
 import { useTranslation } from 'react-i18next'
 import { VizControls } from '@/components/report/viz-controls'
+import { ExpandableAction } from '../ui/expandable-action'
 
 interface ReportCardProps {
   messageId: string
@@ -154,50 +155,46 @@ export function ReportCard({
           />
 
           {/* Inspect Code & Logic Button */}
-          <button
+          <ExpandableAction
+            icon={<Code className="h-4 w-4" />}
+            label="Code"
             onClick={handleOpenSqlLab}
-            className="p-1.5 rounded-md transition-colors hover:bg-zinc-200"
-            title="Inspect Code & Logic"
-          >
-            <Code className="h-4 w-4 text-zinc-500" />
-          </button>
+          />
 
           {/* Rerun Button */}
-          <button
+          <ExpandableAction
+            icon={
+              <RefreshCw
+                className={cn('h-4 w-4', isRerunning && 'animate-spin')}
+              />
+            }
+            label={t('rerun')}
             onClick={handleRerun}
             disabled={isRerunning}
-            className="p-1.5 rounded-md transition-colors hover:bg-zinc-200 disabled:opacity-50"
-            title={t('rerun_with_latest')}
-          >
-            <RefreshCw
-              className={cn('h-4 w-4 text-zinc-500', isRerunning && 'animate-spin')}
-            />
-          </button>
+          />
 
           {/* Refine Button */}
-          <button
+          <ExpandableAction
+            icon={<Sparkles className="h-4 w-4" />}
+            label={t('refine')}
             onClick={() => setReplyTo(messageId)}
-            className="p-1.5 rounded-md transition-colors hover:bg-zinc-200"
-            title={t('refine')}
-          >
-            <Sparkles className="h-4 w-4 text-zinc-500" />
-          </button>
+          />
 
           {/* Pin Button */}
-          <button
+          <ExpandableAction
+            icon={
+              <Pin
+                className={cn(
+                  'w-4 h-4',
+                  isPinned && 'fill-current text-orange-600'
+                )}
+              />
+            }
+            label={isPinned ? t('pinned') : t('pin')}
             onClick={handlePinToggle}
-            className={cn(
-              'p-1.5 rounded-md transition-colors hover:bg-zinc-200'
-            )}
-            title={isPinned ? t('unpin_from_canvas') : t('pin_to_canvas')}
-          >
-            <Pin
-              className={cn(
-                'w-4 h-4',
-                isPinned ? 'fill-current text-orange-600' : 'text-zinc-500'
-              )}
-            />
-          </button>
+            active={isPinned}
+            className={isPinned ? 'text-orange-600 bg-orange-50 border-orange-100' : ''}
+          />
         </div>
       </div>
     </div>
