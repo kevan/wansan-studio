@@ -2,7 +2,50 @@ import { describe, it, expect } from 'vitest'
 import fs from 'fs'
 import path from 'path'
 import { parse } from 'csv-parse/sync'
-import { processSampleValue } from '../serialization'
+import { processSampleValue, formatDateValue } from '../serialization'
+
+describe('formatDateValue', () => {
+  it('should format Date objects correctly', () => {
+    const date = new Date('2023-01-01T12:34:56.789Z')
+    // No hint: YYYY-MM-DD HH:mm:ss
+    expect(formatDateValue(date)).toBe('2023-01-01 12:34:56')
+  })
+
+  it('should respect typeHint="date"', () => {
+    const date = new Date('2023-01-01T12:34:56.789Z')
+    expect(formatDateValue(date, 'date')).toBe('2023-01-01')
+  })
+
+  it('should respect typeHint="time"', () => {
+    const date = new Date('2023-01-01T12:34:56.789Z')
+    expect(formatDateValue(date, 'time')).toBe('12:34:56')
+  })
+
+  it('should handle ISO date strings', () => {
+    expect(formatDateValue('2023-12-31T23:59:59Z')).toBe('2023-12-31 23:59:59')
+  })
+
+  it('should handle other parseable date strings', () => {
+    expect(formatDateValue('2023-05-20T15:00:00Z')).toBe('2023-05-20 15:00:00')
+  })
+
+  it('should IGNORE pure numeric strings to prevent false positives', () => {
+    // 123456789 looks like a number, should not be parsed as date
+    expect(formatDateValue('123456789')).toBeNull()
+  })
+
+  it('should IGNORE number/bigint inputs to prevent false positives', () => {
+    expect(formatDateValue(1672531200000)).toBeNull()
+    expect(formatDateValue(BigInt(1672531200000))).toBeNull()
+  })
+
+  it('should handle invalid inputs gracefully', () => {
+    expect(formatDateValue(null)).toBeNull()
+    expect(formatDateValue(undefined)).toBeNull()
+    expect(formatDateValue('not-a-date')).toBeNull()
+    expect(formatDateValue({})).toBeNull()
+  })
+})
 
 describe('Serialization - CSV/JSON Robustness', () => {
   const csvPath = path.join(__dirname, 'test.csv')
