@@ -18,6 +18,15 @@ const generateId = () =>
 export type LayoutScenario = 'default' | 'print' | 'large' | 'ppt' | 'email'
 export type Language = 'en' | 'zh'
 
+export interface SqlLabSession {
+  mode: 'widget' | 'file'
+  targetId: string // widgetId or tableName
+  initialSql: string
+  initialData?: any[]
+  initialColumns?: string[]
+  onSave?: (sql: string) => Promise<void>
+}
+
 export interface ProjectState extends ProjectData {
   // Transient State
   abortControllers: Record<string, AbortController>
@@ -29,7 +38,7 @@ export interface ProjectState extends ProjectData {
   suggestedPrompts: string[]
   selectedNode: SelectedNode | null
   isRestoring: boolean
-  previewFileId: string | null
+  sqlLabSession: SqlLabSession | null
 
   // --- Actions ---
 
@@ -42,6 +51,8 @@ export interface ProjectState extends ProjectData {
   setView: (view: ViewMode) => void
   setActiveFile: (id: string | null) => void
   setProjectName: (name: string) => void
+  openSqlLab: (session: SqlLabSession) => void
+  closeSqlLab: () => void
 
   // 2. Chat Actions (Targeting Active Session)
   // Accepts denormalized message (with reportData) and normalizes it
@@ -69,7 +80,6 @@ export interface ProjectState extends ProjectData {
   refreshSessionWidgets: () => Promise<void>
   setSelectedNode: (node: SelectedNode | null) => void
   setRestoring: (isRestoring: boolean) => void
-  setPreviewFileId: (id: string | null) => void
 
   // 5. File Actions (Global)
   addFile: (file: Omit<FileNode, 'id' | 'createdAt' | 'lastModified'> & { status?: SyncStatus }) => string
@@ -135,7 +145,7 @@ export const useProjectStore = create<ProjectState>()(
       suggestedPrompts: [],
       selectedNode: null,
       isRestoring: false,
-      previewFileId: null,
+      sqlLabSession: null,
 
       setSidebarMode: (mode) => set({ sidebarMode: mode }),
       setView: (view) => set(state => {
@@ -150,6 +160,8 @@ export const useProjectStore = create<ProjectState>()(
       setActiveFile: (id) => set({ activeFileId: id }),
       setPendingReplace: (payload) => set({ pendingReplace: payload }),
       setShowRefreshConfirm: (open) => set({ showRefreshConfirm: open }),
+      openSqlLab: (session) => set({ sqlLabSession: session }),
+      closeSqlLab: () => set({ sqlLabSession: null }),
 
       refreshSessionWidgets: async () => {
           const state = get()
@@ -537,7 +549,6 @@ export const useProjectStore = create<ProjectState>()(
       setProjectName: (name) => set(state => ({ meta: { ...state.meta, name } })),
       setSelectedNode: (node) => set({ selectedNode: node }),
       setRestoring: (val) => set({ isRestoring: val }),
-      setPreviewFileId: (id) => set({ previewFileId: id }),
       setSuggestedPrompts: (prompts) => set({ suggestedPrompts: prompts }),
 
       addFile: (file) => {
@@ -938,7 +949,7 @@ export const useProjectStore = create<ProjectState>()(
             addFile, removeFile, loadProject, serialize, reset,
             abortControllers, layoutScenario, editingReportId, pendingReplace, confirmReplace, setPendingReplace, refreshSessionWidgets,
             showRefreshConfirm, setShowRefreshConfirm, // Exclude transient & actions
-            previewFileId, setPreviewFileId,
+            sqlLabSession, openSqlLab, closeSqlLab,
             ...data 
         } = get()
         

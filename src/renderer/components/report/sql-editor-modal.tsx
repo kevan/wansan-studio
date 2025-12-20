@@ -41,7 +41,7 @@ interface SqlEditorModalProps {
   initialData?: any[]
   initialColumns?: string[]
   reasoning?: string
-  onSave: (sql: string) => Promise<void>
+  onSave?: (sql: string) => Promise<void>
 }
 
 export function SqlEditorModal({
@@ -110,8 +110,10 @@ export function SqlEditorModal({
   }
 
   const handleSave = async () => {
-    await onSave(sql)
-    onClose()
+    if (onSave) {
+      await onSave(sql)
+      onClose()
+    }
   }
 
   const handleCopy = () => {
@@ -318,13 +320,15 @@ export function SqlEditorModal({
               )}
               {t('sql_editor.run')}
             </Button>
-            <Button
-              onClick={handleSave}
-              className="gap-2 bg-black text-white hover:bg-zinc-800 shadow-sm"
-            >
-              <Save className="w-4 h-4" />
-              {t('sql_editor.save')}
-            </Button>
+            {onSave && (
+              <Button
+                onClick={handleSave}
+                className="gap-2 bg-black text-white hover:bg-zinc-800 shadow-sm"
+              >
+                <Save className="w-4 h-4" />
+                {t('sql_editor.save')}
+              </Button>
+            )}
           </div>
         </DialogFooter>
       </DialogContent>

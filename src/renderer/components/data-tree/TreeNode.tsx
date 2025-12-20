@@ -21,6 +21,7 @@ import {
   X,
   AlertCircle,
   FileWarning,
+  Code,
 } from 'lucide-react'
 import { MouseEvent } from 'react'
 import {
@@ -56,7 +57,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
   } = useFileStore()
   const replaceFile = useProjectStore(state => state.replaceFile)
   const setActiveFile = useProjectStore(state => state.setActiveFile)
-  const setPreviewFileId = useProjectStore(state => state.setPreviewFileId)
+  const openSqlLab = useProjectStore(state => state.openSqlLab)
   const setView = useProjectStore(state => state.setView)
   const { addToast } = useToastStore()
   const reIngest = useReIngestFile()
@@ -124,7 +125,15 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
 
   const handlePreviewFile = () => {
     if (data.fileId) {
-      setPreviewFileId(data.fileId)
+      // Use SQL Lab for exploration
+      const file = files.find(f => f.id === data.fileId)
+      if (file) {
+        openSqlLab({
+          mode: 'file',
+          targetId: file.name,
+          initialSql: `SELECT * FROM "${file.tableName}" LIMIT 100`,
+        })
+      }
     }
   }
 
@@ -337,7 +346,7 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
         {data.type === 'file' && (
           <>
             <ContextMenuItem onClick={handlePreviewFile}>
-              <Eye className="w-4 h-4 mr-2" />
+              <Code className="w-4 h-4 mr-2" />
               {t('preview_data')}
             </ContextMenuItem>
             <ContextMenuItem onClick={handleReplaceFile}>
