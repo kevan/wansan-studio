@@ -1,25 +1,25 @@
-import { useProjectStore } from '@/stores/useProjectStore'
+import { useSqlLabStore } from '@/stores/useSqlLabStore'
 import { SqlEditorModal } from './sql-editor-modal'
 
 export function GlobalSqlLab() {
-  const sqlLabSession = useProjectStore(state => state.sqlLabSession)
-  const closeSqlLab = useProjectStore(state => state.closeSqlLab)
+  const session = useSqlLabStore(state => state.session)
+  const close = useSqlLabStore(state => state.close)
 
-  if (!sqlLabSession) return null
+  if (!session) return null
 
   return (
     <SqlEditorModal
-      isOpen={!!sqlLabSession}
-      onClose={closeSqlLab}
-      initialSql={sqlLabSession.initialSql}
+      isOpen={!!session}
+      onClose={close}
+      initialSql={session.initialSql}
       initialData={[]}
-      initialColumns={sqlLabSession.initialColumns}
-      initialColumnTypes={sqlLabSession.initialColumnTypes}
+      initialColumns={session.initialColumns}
+      initialColumnTypes={session.initialColumnTypes}
       onSave={
-        sqlLabSession.onSave
+        session.onSave
           ? async sql => {
-              if (sqlLabSession.onSave) {
-                await sqlLabSession.onSave(sql)
+              if (session.onSave) {
+                await session.onSave(sql)
               }
             }
           : undefined

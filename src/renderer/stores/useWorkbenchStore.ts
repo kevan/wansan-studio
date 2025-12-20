@@ -334,26 +334,20 @@ useWorkbenchStore.getState = () => {
         pinReport,
         removeReport: (id) => useProjectStore.getState().removeWidget(id),
         updateReportTitle: (id, title) => useProjectStore.getState().updateReportTitle(id, title),
-        updateReportConfig: (id, updates) => {
-            const { dashboard, projectState } = getSessionState()
-            const widget = dashboard?.widgets.find(w => w.id === id)
-            if (!widget) return
-
-            const currentData = projectState.widgetRegistry[widget.widgetId]
-            if (!currentData) return
-
-            const nextVizConfig = updates.config !== undefined
-                ? { ...currentData.vizConfig, ...updates.config }
-                : currentData.vizConfig
-
-            useProjectStore.getState().updateMessage(id, { 
-                reportData: {
-                    chartType: updates.type ?? currentData.chartType,
-                    vizConfig: nextVizConfig,
-                }
-            })
-        },
-        updateLayout,
+                updateReportConfig: (id, updates) => {
+                    const projectState = useProjectStore.getState()
+                    const session = projectState.sessions.find(s => s.id === projectState.activeSessionId)
+                    const msg = session?.messages.find(m => m.id === id)
+                    const reportData = msg?.widgetId ? projectState.widgetRegistry[msg.widgetId] : undefined
+        
+                    useProjectStore.getState().updateMessage(id, {
+                        reportData: {
+                            ...(reportData || { title: 'Untitled' }),
+                            chartType: updates.type,
+                            vizConfig: updates.config,
+                        }
+                    })
+                },        updateLayout,
         updateGlobalLayout,
         moveWidgetToPage,
         setLayoutScenario: (s) => useProjectStore.getState().setLayoutScenario(s),

@@ -3,7 +3,9 @@ import { Pin, Sparkles, RefreshCw, Code, Settings2 } from 'lucide-react'
 import { DashboardWidget } from '../DashboardWidget'
 import { ReportData, useWorkbenchStore } from '../../stores/useWorkbenchStore'
 import { useChatStore } from '../../stores/useChatStore'
+import { useSqlLabStore } from '../../stores/useSqlLabStore'
 import { useToastStore } from '../../stores/useToastStore'
+import { useProjectStore } from '../../stores/useProjectStore'
 import { cn } from '../../utils/cn'
 import { SqlEditorModal } from '../report/sql-editor-modal'
 import type { ChatMessage } from '../ChatInterface'
@@ -24,7 +26,6 @@ export function ReportCard({
   className,
 }: ReportCardProps) {
   const [isLogicOpen, setIsLogicOpen] = useState(false)
-  const [isEditorOpen, setIsEditorOpen] = useState(false)
   const pinReport = useWorkbenchStore(state => state.pinReport)
   const removeReport = useWorkbenchStore(state => state.removeReport)
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
@@ -32,6 +33,7 @@ export function ReportCard({
   const updateReportConfig = useChatStore(state => state.updateReportConfig)
   const updateMessageData = useChatStore(state => state.updateMessageData)
   const addToast = useToastStore(state => state.addToast)
+  const openSqlLab = useSqlLabStore(state => state.open)
   const { t } = useTranslation('common')
   const [isRerunning, setIsRerunning] = useState(false)
 
@@ -90,6 +92,18 @@ export function ReportCard({
     }
   }
 
+  const handleOpenSqlLab = () => {
+    if (!reportData.sql) return
+    openSqlLab({
+      mode: 'widget',
+      targetId: messageId,
+      initialSql: reportData.sql,
+      initialColumns: reportData.columns,
+      initialColumnTypes: reportData.columnTypes,
+      onSave: handleRunSql,
+    })
+  }
+
   return (
     <div
       className={cn(
@@ -140,7 +154,7 @@ export function ReportCard({
 
           {/* Inspect Code & Logic Button */}
           <button
-            onClick={() => setIsEditorOpen(true)}
+            onClick={handleOpenSqlLab}
             className="p-1.5 rounded-md transition-colors hover:bg-zinc-200"
             title="Inspect Code & Logic"
           >
@@ -185,15 +199,6 @@ export function ReportCard({
           </button>
         </div>
       </div>
-
-      {/* Modal */}
-      <SqlEditorModal
-        isOpen={isEditorOpen}
-        onClose={() => setIsEditorOpen(false)}
-        initialSql={reportData.sql || ''}
-        reasoning={reportData.reasoning}
-        onSave={handleRunSql}
-      />
     </div>
   )
 }

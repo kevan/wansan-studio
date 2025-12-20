@@ -18,4 +18,5 @@ export interface Message {
     latency?: number
   }
   widgetId?: string
+  reportData?: ReportData
 }

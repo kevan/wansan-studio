@@ -1,6 +1,7 @@
-import { ColumnSchema, useFileStore } from '../stores/useFileStore'
+import { useFileStore } from '../stores/useFileStore'
 import { useProjectStore } from '../stores/useProjectStore'
-import { ColumnType } from '@shared/types'
+import { useSqlLabStore } from '../stores/useSqlLabStore'
+import { ColumnType, ColumnSchema } from '@shared/types'
 import { getUIFormatType, UIFormatType as FormatType } from '@shared/type-utils'
 import {
   AlignJustify,
@@ -69,7 +70,7 @@ const FORMAT_CONFIG: Record<FormatType, FormatConfig> = {
 export function SchemaEditor() {
   const { files, toggleKeyColumn, relations } = useFileStore()
   const activeFileId = useProjectStore(s => s.activeFileId)
-  const openSqlLab = useProjectStore(s => s.openSqlLab)
+  const openSqlLab = useSqlLabStore(s => s.open)
   const replaceFile = useProjectStore(s => s.replaceFile)
   const removeFile = useProjectStore(s => s.removeFile)
   const { t } = useTranslation('common')
