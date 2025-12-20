@@ -1,5 +1,6 @@
 import { ColumnSchema, useFileStore } from '../stores/useFileStore'
 import { useProjectStore } from '../stores/useProjectStore'
+import { ColumnType } from '@shared/types'
 import {
   Hash,
   Type,
@@ -18,6 +19,8 @@ import {
   Code,
   Edit2,
   Check,
+  ChevronDown,
+  ToggleLeft,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from './ui/button'
@@ -334,6 +337,10 @@ function ColumnRow({ fileId, column, onToggleKey, isLinked }: ColumnRowProps) {
     setIsRenaming(false)
   }
 
+  const handleTypeChange = (newType: string) => {
+    updateColumn(fileId, column.name, { type: newType as ColumnType })
+  }
+
   // 格式化显示值（处理时间戳）
   const formatDisplayValue = (value: any, type: string): string => {
     if (value === null || value === undefined) return ''
@@ -447,14 +454,37 @@ function ColumnRow({ fileId, column, onToggleKey, isLinked }: ColumnRowProps) {
         </div>
       </td>
 
-      {/* Format - 带图标的 Badge */}
+      {/* Format - 可点击切换的 Badge */}
       <td className="px-4 py-3">
-        <span
-          className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded whitespace-nowrap ${config.bgColor} ${config.textColor}`}
-        >
-          <IconComponent className="w-3.5 h-3.5" />
-          {t(config.label)}
-        </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className={cn(
+                'inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded whitespace-nowrap cursor-pointer hover:opacity-80 transition-opacity',
+                config.bgColor,
+                config.textColor
+              )}
+            >
+              <IconComponent className="w-3.5 h-3.5" />
+              {t(config.label)}
+              <ChevronDown className="w-3 h-3 opacity-50" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-32">
+            <DropdownMenuItem onClick={() => handleTypeChange('VARCHAR')}>
+              <Type className="w-4 h-4 mr-2" /> {t('format_text')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleTypeChange('DOUBLE')}>
+              <Hash className="w-4 h-4 mr-2" /> {t('format_number')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleTypeChange('DATE')}>
+              <Calendar className="w-4 h-4 mr-2" /> {t('format_date')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleTypeChange('BOOLEAN')}>
+              <ToggleLeft className="w-4 h-4 mr-2" /> {t('type_boolean')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </td>
 
       {/* Preview */}
