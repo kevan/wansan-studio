@@ -193,8 +193,18 @@ export function formatDateValue(
  * Format a value for display in UI (tables, big numbers, etc.)
  * Handles timestamps, floating point numbers (fixed precision), and generic strings.
  */
-export function formatForDisplay(value: any): string {
+export function formatForDisplay(value: any, typeHint?: string): string {
   if (value === null || value === undefined) return '—'
+
+  if (typeHint) {
+    const upperHint = typeHint.toUpperCase()
+    if (upperHint === 'DATE') {
+      return formatDateValue(value, 'date') || String(value)
+    }
+    if (upperHint === 'TIMESTAMP' || upperHint === 'DATETIME') {
+      return formatDateValue(value, 'timestamp') || String(value)
+    }
+  }
 
   if (typeof value === 'number') {
     // For UI display, we keep a mild heuristic for dates but prioritize number formatting

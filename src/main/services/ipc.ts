@@ -108,7 +108,7 @@ export function setupIPC(
   ipcMain.handle('run-sql', async (_event, sql: string) => {
     try {
       const result = await executeSQL(sql, databaseService)
-      return { success: true, data: result }
+      return { success: true, data: result.data, columnTypes: result.columnTypes }
     } catch (error) {
       console.error('SQL execution error:', error)
       return {

@@ -106,23 +106,39 @@ export class DatabaseService {
   }
 
   async query(sql: string): Promise<any[]> {
+    const { data } = await this.queryWithSchema(sql)
+    return data
+  }
+
+  async queryWithSchema(
+    sql: string
+  ): Promise<{ data: any[]; columnTypes: Record<string, string> }> {
     await this.ensureReady()
     return this.mutex.runExclusive(async () => {
       if (!this.conn) {
         throw new Error('Database not initialized')
       }
 
-      if (isDev()) {
+      if (isDev) {
         console.log('[DuckDB] Executing SQL:', sql)
       }
 
       try {
         const arrowTable = this.conn.query(sql)
+
+        // Extract column types from Arrow schema
+        const columnTypes: Record<string, string> = {}
+        arrowTable.schema.fields.forEach((field: any) => {
+          columnTypes[field.name] = field.type.toString()
+        })
+
         // Convert Arrow table to JSON and sanitize for IPC
-        return arrowTable
+        const data = arrowTable
           .toArray()
           .map((row: any) => sanitizeValue(row.toJSON()))
           .slice(0, 1000)
+
+        return { data, columnTypes }
       } catch (error) {
         console.error('Query failed:', sql, error)
         throw error

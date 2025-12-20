@@ -39,6 +39,9 @@ interface SqlEditorModalProps {
   isOpen: boolean
   onClose: () => void
   initialSql: string
+  initialData?: any[]
+  initialColumns?: string[]
+  initialColumnTypes?: Record<string, string>
   reasoning?: string
   onSave?: (sql: string) => Promise<void>
 }
@@ -47,14 +50,18 @@ export function SqlEditorModal({
   isOpen,
   onClose,
   initialSql,
+  initialData = [],
+  initialColumns = [],
+  initialColumnTypes = {},
   reasoning,
   onSave,
 }: SqlEditorModalProps) {
   const { t } = useTranslation('analysis')
   const [sql, setSql] = useState(initialSql)
   const [isRunning, setIsRunning] = useState(false)
-  const [previewData, setPreviewData] = useState<any[] | null>(null)
-  const [previewColumns, setPreviewColumns] = useState<string[] | null>(null)
+  const [previewData, setPreviewData] = useState<any[] | null>(initialData.length > 0 ? initialData : null)
+  const [previewColumns, setPreviewColumns] = useState<string[] | null>(initialColumns.length > 0 ? initialColumns : null)
+  const [previewColumnTypes, setPreviewColumnTypes] = useState<Record<string, string>>(initialColumnTypes)
   const [previewError, setPreviewError] = useState<string | null>(null)
   const [execTime, setExecTime] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
@@ -68,14 +75,13 @@ export function SqlEditorModal({
     const startTime = performance.now()
     try {
       const res = await window.electronAPI.runSQL(queryToRun)
-      if (res.success) {
+      if (res.success && res.data) {
+        const { data, columnTypes } = res.data
         setExecTime(Math.round(performance.now() - startTime))
-        setPreviewData(res.data)
-        if (res.data && res.data.length > 0) {
-          setPreviewColumns(Object.keys(res.data[0]))
-        } else {
-          setPreviewColumns([])
-        }
+        setPreviewData(data)
+        setPreviewColumns(data.length > 0 ? Object.keys(data[0]) : [])
+        setPreviewColumnTypes(columnTypes || {})
+        setPreviewError(null)
       } else {
         throw new Error(res.error)
       }
@@ -326,6 +332,7 @@ export function SqlEditorModal({
                 <ReportTable
                   data={previewData || []}
                   columns={previewColumns || []}
+                  columnTypes={previewColumnTypes}
                   variant="preview"
                 />
               )}

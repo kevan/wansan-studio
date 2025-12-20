@@ -13,6 +13,7 @@ export interface ReportData {
   chartTitle?: string
   tableData?: Array<Record<string, any>>
   columns?: string[]
+  columnTypes?: Record<string, string>
   vizConfig?: {
     x_axis?: string | null
     y_axis?: string | string[] | null

@@ -40,11 +40,11 @@ function validateSQL(sql: string): boolean {
 export async function executeSQL(
   sql: string,
   databaseService: DatabaseService
-): Promise<any[]> {
+): Promise<{ data: any[]; columnTypes: Record<string, string> }> {
   validateSQL(sql)
 
   try {
-    const result = await databaseService.query(sql)
+    const result = await databaseService.queryWithSchema(sql)
     return result
   } catch (error) {
     console.error('SQL Execution Error:', error)

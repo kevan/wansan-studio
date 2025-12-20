@@ -43,8 +43,9 @@ export function ReportCard({
     try {
       const result = await window.electronAPI.runSQL(reportData.sql)
       if (result.success && result.data) {
-        const columns = result.data.length > 0 ? Object.keys(result.data[0]) : []
-        updateMessageData(messageId, reportData.sql, result.data, columns)
+        const data = result.data.data
+        const columns = data.length > 0 ? Object.keys(data[0]) : []
+        updateMessageData(messageId, reportData.sql, data, columns, result.data.columnTypes)
         addToast({
           type: 'success',
           title: t('refresh_success', 'Data refreshed'),
@@ -81,8 +82,9 @@ export function ReportCard({
   const handleRunSql = async (newSql: string) => {
     const result = await window.electronAPI.runSQL(newSql)
     if (result.success && result.data) {
-      const columns = result.data.length > 0 ? Object.keys(result.data[0]) : []
-      updateMessageData(messageId, newSql, result.data, columns)
+      const data = result.data.data
+      const columns = data.length > 0 ? Object.keys(data[0]) : []
+      updateMessageData(messageId, newSql, data, columns, result.data.columnTypes)
     } else {
       throw new Error(result.error || 'Execution failed')
     }

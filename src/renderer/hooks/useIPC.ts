@@ -98,7 +98,7 @@ declare global {
       selectFile: () => Promise<IPCResponse<string>>
       selectFiles: () => Promise<IPCResponse<{ path: string; size: number }[]>>
       parseFile: (filePath: string) => Promise<IPCResponse<any[]>>
-      runSQL: (sql: string) => Promise<IPCResponse>
+      runSQL: (sql: string) => Promise<IPCResponse<{ data: any[]; columnTypes: Record<string, string> }>>
       getSchema: (tableName?: string) => Promise<IPCResponse>
       deleteTable: (tableName?: string) => Promise<IPCResponse>
       generateSQL: (prompt: string, schema: any) => Promise<IPCResponse>

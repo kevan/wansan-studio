@@ -16,12 +16,14 @@ import { Button } from '../ui/button'
 interface ReportTableProps {
   data: Array<Record<string, any>>
   columns: string[]
+  columnTypes?: Record<string, string>
   variant: 'chat' | 'dashboard' | 'preview' | 'fullscreen'
 }
 
 export function ReportTable({
   data = [],
   columns = [],
+  columnTypes = {},
   variant,
 }: ReportTableProps) {
   const { t } = useTranslation('common')
@@ -41,7 +43,7 @@ export function ReportTable({
     header: key,
     cell: info => {
       const value = info.getValue()
-      const display = formatForDisplay(value)
+      const display = formatForDisplay(value, columnTypes[key])
       return (
         <span className="truncate" title={display}>
           {display}

@@ -22,6 +22,8 @@ export interface SqlLabSession {
   mode: 'widget' | 'file'
   targetId: string // widgetId or tableName
   initialSql: string
+  initialColumns?: string[]
+  initialColumnTypes?: Record<string, string>
   onSave?: (sql: string) => Promise<void>
 }
 
@@ -181,9 +183,12 @@ export const useProjectStore = create<ProjectState>()(
              try {
                const res = await window.electronAPI.runSQL(reportData.sql)
                if (res.success && res.data) {
+                   const { data, columnTypes } = res.data
                    updatedRegistry[w.widgetId] = {
                        ...reportData,
-                       tableData: res.data,
+                       tableData: data,
+                       columnTypes: columnTypes,
+                       columns: data.length > 0 ? Object.keys(data[0]) : reportData.columns,
                        timestamp: Date.now()
                    }
                    hasUpdates = true
@@ -876,23 +881,39 @@ export const useProjectStore = create<ProjectState>()(
 
       
 
-                  // 3. Fetch new row count
+                                    // 3. Fetch new row count
 
-                  let rowCount = 0
+      
 
-                  try {
+                                    let rowCount = 0
 
-                      const countRes = await window.electronAPI.runSQL(`SELECT COUNT(*) as c FROM "${file.tableName}" `)
+      
 
-                      if (countRes.success && countRes.data && countRes.data.length > 0) {
+                                    try {
 
-                          const c = countRes.data[0].c
+      
 
-                          rowCount = typeof c === 'bigint' ? Number(c) : Number(c)
+                                        const countRes = await window.electronAPI.runSQL(`SELECT COUNT(*) as c FROM "${file.tableName}" `)
 
-                      }
+      
 
-                  } catch (e) {
+                                        if (countRes.success && countRes.data && countRes.data.data.length > 0) {
+
+      
+
+                                            const c = countRes.data.data[0].c
+
+      
+
+                                            rowCount = typeof c === 'bigint' ? Number(c) : Number(c)
+
+      
+
+                                        }
+
+      
+
+                                    } catch (e) {
 
                       console.warn('Failed to fetch row count after replace', e)
 
