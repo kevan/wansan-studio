@@ -74,7 +74,7 @@ export function SchemaEditor() {
   const replaceFile = useProjectStore(s => s.replaceFile)
   const removeFile = useProjectStore(s => s.removeFile)
   const { t } = useTranslation('common')
-  const { addToast, dismissToast } = useToastStore()
+  const toast = useToastStore()
   const reIngest = useReIngestFile()
   const readyFiles = files.filter(f => f.status === 'ready')
 
@@ -101,57 +101,41 @@ export function SchemaEditor() {
 
   const handleReload = async () => {
     if (!currentFile) return
-    const toastId = addToast({
-      title: t('reloading'),
-      type: 'info',
-      duration: Infinity,
-    })
-    try {
-      const result = await reIngest.mutateAsync({
-        filePath: currentFile.path,
-        tableName: currentFile.tableName,
-        sheetName: currentFile.sheetName,
-      })
-      useFileStore.getState().reloadFile(currentFile.id, result)
-      dismissToast(toastId)
-      addToast({ title: t('reload_success'), type: 'success', duration: 2000 })
-    } catch (e) {
-      dismissToast(toastId)
-      addToast({
-        title: t('reload_failed'),
-        description: String(e),
-        type: 'error',
-      })
-    }
+    
+    await toast.promise(
+      async () => {
+        const result = await reIngest.mutateAsync({
+          filePath: currentFile.path,
+          tableName: currentFile.tableName,
+          sheetName: currentFile.sheetName,
+        })
+        useFileStore.getState().reloadFile(currentFile.id, result)
+      },
+      {
+        loading: t('reloading'),
+        success: t('reload_success'),
+        error: (e) => `${t('reload_failed')}: ${String(e)}`
+      }
+    )
   }
 
   const handleReplace = async () => {
     if (!currentFile || !window.electronAPI) return
     const result = await window.electronAPI.selectFile()
     if (result.success && result.data) {
-      const toastId = addToast({
-        title: t('replacing_file'),
-        type: 'info',
-        duration: Infinity,
-      })
-      try {
-        const status = await replaceFile(currentFile.id, result.data)
-        dismissToast(toastId)
-        if (status === 'completed') {
-          addToast({
-            title: t('file_replaced'),
-            type: 'success',
-            duration: 2000,
-          })
+      await toast.promise(
+        async () => {
+          const status = await replaceFile(currentFile.id, result.data)
+          if (status !== 'completed') {
+             throw new Error(t('replace_failed'))
+          }
+        },
+        {
+          loading: t('replacing_file'),
+          success: t('file_replaced'),
+          error: (e) => `${t('replace_failed')}: ${String(e)}`
         }
-      } catch (e) {
-        dismissToast(toastId)
-        addToast({
-          title: t('replace_failed'),
-          description: String(e),
-          type: 'error',
-        })
-      }
+      )
     }
   }
 
@@ -159,7 +143,7 @@ export function SchemaEditor() {
     if (!currentFile) return
     if (confirm(t('delete_session_desc'))) {
       removeFile(currentFile.id)
-      addToast({ title: t('file_removed'), type: 'success', duration: 2000 })
+      toast.addToast({ title: t('file_removed'), type: 'success', duration: 2000 })
     }
   }
 
