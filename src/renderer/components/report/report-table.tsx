@@ -168,7 +168,8 @@ export function ReportTable({
         </table>
       </div>
 
-      {(isModal || table.getPageCount() > 1) && (
+      {/* 1. Modal Style (Floating Capsule) */}
+      {isModal && table.getPageCount() > 1 && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-2 py-1 bg-white/90 backdrop-blur border border-zinc-200 rounded-full shadow-lg transition-all hover:scale-105 z-30">
           <Button
             variant="ghost"
@@ -193,6 +194,38 @@ export function ReportTable({
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
+        </div>
+      )}
+
+      {/* 2. Card Style (Static Footer) */}
+      {isCard && table.getPageCount() > 1 && (
+        <div className="flex items-center justify-end gap-2 py-2 px-1 border-t border-zinc-100 bg-white/50">
+          <span className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider">
+            {t('page_of', {
+              page: table.getState().pagination.pageIndex + 1,
+              total: table.getPageCount(),
+            })}
+          </span>
+          <div className="flex gap-1">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 hover:bg-zinc-100 rounded-md"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <ChevronLeft className="h-3.5 w-3.5 text-zinc-500" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 hover:bg-zinc-100 rounded-md"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              <ChevronRight className="h-3.5 w-3.5 text-zinc-500" />
+            </Button>
+          </div>
         </div>
       )}
     </div>
