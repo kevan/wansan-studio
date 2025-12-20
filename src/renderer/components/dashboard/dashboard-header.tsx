@@ -300,7 +300,7 @@ export function DashboardHeader() {
         isOpen={isConfigOpen}
         onClose={() => setIsConfigOpen(false)}
         onConfirm={handleConfirmExport}
-        defaultTitle={canvasConfig.title || 'Data Report'}
+        defaultTitle={canvasConfig.title || t('default_report_title')}
       />
       {/* LEFT: Actions */}
       <div className="flex items-center gap-2 w-[200px]">
@@ -427,10 +427,18 @@ export function DashboardHeader() {
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuLabel>{t('export_options')}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => checkGate('PDF Export', () => handleExport('pdf'))}>
+            <DropdownMenuItem
+              onSelect={() =>
+                checkGate(t('export_pdf'), () => handleExport('pdf'))
+              }
+            >
               <FileText className="mr-2 h-4 w-4" /> {t('export_pdf')}
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => checkGate('Image Export', () => handleExport('png'))}>
+            <DropdownMenuItem
+              onSelect={() =>
+                checkGate(t('export_png'), () => handleExport('png'))
+              }
+            >
               <FileImage className="mr-2 h-4 w-4" /> {t('export_png')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
