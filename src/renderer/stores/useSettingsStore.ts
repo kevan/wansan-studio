@@ -53,7 +53,7 @@ export interface SettingsState {
         | 'setProvider'
         | 'updateSettings'
         | 'completeOnboarding'
-        | 'resetSettings'
+        | 'resetPreferences'
         | 'activateLicense'
         | 'loadSensitiveData'
         | 'setRemoteConfig'
@@ -62,7 +62,7 @@ export interface SettingsState {
     >
   ) => void
   completeOnboarding: () => void
-  resetSettings: () => void
+  resetPreferences: () => void
 }
 
 const getProviderDefaults = (provider: AIProviderKey) => {
@@ -82,7 +82,7 @@ const initialSettingsState: Omit<
   | 'setProvider'
   | 'updateSettings'
   | 'completeOnboarding'
-  | 'resetSettings'
+  | 'resetPreferences'
   | 'activateLicense'
   | 'loadSensitiveData'
   | 'setRemoteConfig'
@@ -214,9 +214,26 @@ export const useSettingsStore = create<SettingsState>()(
           return nextState
         }),
       completeOnboarding: () => set({ hasCompletedOnboarding: true }),
-      resetSettings: () => {
-        set({ ...initialSettingsState })
-        void window.electronAPI.secureSet('apiKey', '')
+      resetPreferences: () => {
+        set(state => ({
+          // Reset Preferences
+          language: detectDefaultLanguage(),
+          // Preserve License & Config
+          isActivated: state.isActivated,
+          apiKey: state.apiKey,
+          deviceId: state.deviceId,
+          remoteConfig: state.remoteConfig,
+          provider: state.provider, // Preserve AI Provider choice too? Usually yes for "Preferences". 
+          // If user wants to reset AI, they can clear manually or we might need separate action.
+          // The prompt said "Only clears UI preferences (Theme, Language), preserving License and Config"
+          // AI Config (provider, baseurl, model) is technically config.
+          // So I should preserve them.
+          baseUrl: state.baseUrl,
+          model: state.model,
+          validBetaCodes: state.validBetaCodes,
+          dismissedAnnouncementId: state.dismissedAnnouncementId
+        }))
+        // Do NOT clear secure storage apiKey
       },
     }),
     {

@@ -107,10 +107,8 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     useFileStore.getState().reset()
     useChatStore.getState().reset()
     useWorkbenchStore.getState().reset()
-    useSettingsStore.getState().resetSettings()
+    useSettingsStore.getState().resetPreferences()
     useProjectStore.getState().reset()
-
-    console.log('✅ App state reset complete. Reloading...')
     window.location.reload()
   }, [t])
 

@@ -461,7 +461,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        settings.resetSettings()
+                        settings.resetPreferences()
                         addToast({
                           title: t('data.reset_title'),
                           description: t('data.reset_desc'),
