@@ -81,6 +81,7 @@ ${languageInstruction}
     - 'full-width' items MUST span the full container width (col-span-full).
     - 'half-width' items should take 50% (or span 1 in 2-col grid).
   - Each chart must be in a card container with padding/shadow consistent with the theme.
+  - **CRITICAL**: All Chart containers (divs) MUST have an explicit height (e.g., \`style="height: 400px; min-height: 400px;"\` or Tailwind \`h-96 min-h-[400px]\`). Otherwise charts will be invisible.
 
 ### 3. Content Metadata
 Render ${meta.length} widgets based on this metadata:
@@ -119,8 +120,18 @@ ${JSON.stringify(meta, null, 2)}
   // Strip markdown fences if AI added them
   html = html.replace(/^```html/, '').replace(/```$/, '')
 
-  // 5. Inject Data
-  const injection = `<script>window.WIDGET_DATA = ${JSON.stringify(dataMap)};</script>`
+  // 5. Inject Data & Safety Script
+  const debugScript = `
+  <script>
+    window.onerror = function(msg, url, line) { document.body.innerHTML += '<div style="color:red;padding:20px;">Runtime Error: ' + msg + '</div>'; };
+    window.addEventListener('load', function() {
+        if (typeof echarts === 'undefined') { alert('Error: ECharts library failed to load. Please check your internet connection.'); }
+        if (!window.WIDGET_DATA) { alert('Error: Data injection failed.'); }
+    });
+  </script>`
+  
+  const injection = `${debugScript}<script>window.WIDGET_DATA = ${JSON.stringify(dataMap)};</script>`
+  
   // Insert before </head> or <body>
   if (html.includes('</head>')) {
       html = html.replace('</head>', `${injection}</head>`)
