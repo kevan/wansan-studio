@@ -16,12 +16,13 @@ import {
   ChevronDown,
   Table,
   Timer,
+  Save,
+  Code,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../utils/cn'
 import { format } from 'sql-formatter'
 import { useToastStore } from '@/stores/useToastStore'
-import { useSettingsStore } from '@/stores/useSettingsStore'
 import { useProGate } from '@/hooks/use-pro-gate'
 import {
   Dialog,
@@ -55,7 +56,6 @@ export function SqlEditorModal({
   const { t } = useTranslation('analysis')
   const [sql, setSql] = useState(initialSql)
   const [isRunning, setIsRunning] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [previewData, setPreviewData] = useState<any[] | null>(null)
   const [previewColumns, setPreviewColumns] = useState<string[] | null>(null)
   const [previewError, setPreviewError] = useState<string | null>(null)
@@ -76,7 +76,6 @@ export function SqlEditorModal({
         })
         setSql(formatted)
       } catch (e) {
-        // Fallback if format fails
         setSql(initialSql)
       }
     }
@@ -123,7 +122,9 @@ export function SqlEditorModal({
 
   const handleReset = () => {
     setSql(initialSql)
-    setError(null)
+    setPreviewError(null)
+    setPreviewData(null)
+    setExecTime(null)
   }
 
   const handleFormat = () => {
@@ -142,27 +143,30 @@ export function SqlEditorModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="max-w-5xl h-[90vh] flex flex-col p-0 gap-0"
+        className="max-w-5xl h-[90vh] flex flex-col p-0 gap-0 overflow-hidden"
         onPointerDownOutside={e => e.preventDefault()}
       >
         {gateNode}
-        <DialogHeader className="p-4 border-b">
+        <DialogHeader className="p-4 border-b shrink-0">
           <DialogTitle>{t('sql_editor.title')}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col min-h-0 gap-4 p-4">
+        <div className="flex-1 flex flex-col min-h-0 gap-4 p-4 overflow-hidden">
           {/* EDITOR AREA */}
-          <div className="flex-1 border rounded-md overflow-hidden relative flex flex-col min-h-0">
-            <div className="flex items-center justify-between px-3 py-2 border-b bg-zinc-50">
-              <span className="text-xs font-bold text-zinc-500">
-                {t('sql_editor.editor_header')}
-              </span>
+          <div className="flex-1 border border-zinc-200 rounded-lg overflow-hidden relative flex flex-col min-h-0 shadow-sm bg-white">
+            <div className="flex items-center justify-between px-3 py-2 border-b bg-zinc-50/80 shrink-0">
+              <div className="flex items-center gap-2">
+                <Code className="w-3.5 h-3.5 text-zinc-500" />
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">
+                  {t('sql_editor.editor_header')}
+                </span>
+              </div>
               <div className="flex items-center gap-2">
                 {reasoning && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 text-xs text-zinc-500"
+                    className="h-7 text-xs text-zinc-500 hover:text-zinc-900"
                     onClick={() => setShowReasoning(!showReasoning)}
                   >
                     {showReasoning ? (
@@ -175,22 +179,46 @@ export function SqlEditorModal({
                       : t('sql_editor.show_logic')}
                   </Button>
                 )}
+                <div className="w-px h-3 bg-zinc-200 mx-1" />
                 <Button
                   onClick={() => checkGate('SQL Editor', handleFormat)}
                   variant="ghost"
                   size="sm"
-                  className="h-7"
+                  className="h-7 text-xs text-zinc-500 hover:text-zinc-900"
                   disabled={!isActivated}
                 >
                   {!isActivated && <Lock className="w-3 h-3 mr-1" />}
-                  <AlignLeft className="h-3 w-3 mr-1" />
+                  <Sparkles className="h-3 w-3 mr-1" />
                   {t('sql_editor.format')}
+                </Button>
+                <Button
+                  onClick={handleCopy}
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-zinc-500 hover:text-zinc-900"
+                >
+                  {copied ? (
+                    <Check className="w-3 h-3 mr-1 text-green-500" />
+                  ) : (
+                    <Copy className="w-3 h-3 mr-1" />
+                  )}
+                  {copied ? t('sql_editor.copy_success') : t('sql_editor.copy')}
+                </Button>
+                <Button
+                  onClick={() => checkGate('SQL Editor', handleReset)}
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-zinc-500 hover:text-zinc-900"
+                  disabled={!isActivated}
+                >
+                  <RotateCcw className="w-3 h-3 mr-1" />
+                  {t('sql_editor.reset')}
                 </Button>
               </div>
             </div>
-            <div className="flex-1 min-h-0 relative overflow-auto bg-zinc-50/30">
+            <div className="flex-1 min-h-0 relative overflow-auto">
               {showReasoning && reasoning && (
-                <div className="m-4 bg-indigo-50/50 border border-indigo-100 p-3 rounded-lg text-xs text-indigo-900/80 animate-in slide-in-from-top-2">
+                <div className="m-4 mb-0 bg-indigo-50/50 border border-indigo-100 p-3 rounded-lg text-xs text-indigo-900/80 animate-in slide-in-from-top-2">
                   <div className="flex items-center gap-2 mb-1">
                     <Sparkles className="h-3 w-3 text-indigo-500" />
                     <span className="font-semibold tracking-wide uppercase text-indigo-400">
@@ -210,8 +238,8 @@ export function SqlEditorModal({
                 readOnly={!isActivated}
                 style={{
                   fontFamily: '"Fira Code", "Fira Mono", monospace',
-                  fontSize: 14,
-                  backgroundColor: '#fafafa',
+                  fontSize: 13,
+                  backgroundColor: 'transparent',
                   minHeight: '100%',
                 }}
                 className={cn(
@@ -223,14 +251,14 @@ export function SqlEditorModal({
           </div>
 
           {/* PREVIEW AREA */}
-          <div className="h-1/2 border rounded-md bg-white flex flex-col overflow-hidden">
-            <div className="bg-zinc-100/80 px-4 py-2 border-b flex justify-between items-center text-xs">
-              <div className="flex items-center gap-2 font-bold text-zinc-600">
-                <Table className="w-3 h-3" />
+          <div className="h-1/2 border border-zinc-200 rounded-lg bg-white flex flex-col overflow-hidden shadow-sm">
+            <div className="bg-zinc-50/80 px-4 py-2 border-b flex justify-between items-center text-xs shrink-0">
+              <div className="flex items-center gap-2 font-bold text-zinc-500 uppercase tracking-wider">
+                <Table className="w-3.5 h-3.5" />
                 <span>{t('sql_editor.result_preview')}</span>
               </div>
 
-              <div className="flex items-center gap-3 text-zinc-500 font-mono">
+              <div className="flex items-center gap-3 text-zinc-400 font-mono">
                 {execTime !== null && (
                   <span className="flex items-center gap-1">
                     <Timer className="w-3 h-3" /> {execTime}ms
@@ -238,7 +266,7 @@ export function SqlEditorModal({
                 )}
                 {previewData && (
                   <>
-                    <span className="w-px h-3 bg-zinc-300" />
+                    <span className="w-px h-3 bg-zinc-200" />
                     <span>
                       {previewData.length} {t('sql_editor.rows_suffix')}
                     </span>
@@ -252,10 +280,14 @@ export function SqlEditorModal({
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto p-0">
+            <div className="flex-1 overflow-auto p-0 min-h-0">
               {previewError ? (
-                <div className="p-4 text-red-600 font-mono text-sm">
-                  {previewError}
+                <div className="p-4 text-red-600 font-mono text-sm bg-red-50/30 h-full overflow-auto">
+                  <div className="flex items-center gap-2 mb-2 font-bold">
+                    <X className="w-4 h-4" />
+                    ERROR
+                  </div>
+                  <pre className="whitespace-pre-wrap">{previewError}</pre>
                 </div>
               ) : (
                 <ReportTable
@@ -268,23 +300,32 @@ export function SqlEditorModal({
           </div>
         </div>
 
-        <DialogFooter className="p-4 border-t bg-zinc-50">
-          <Button variant="outline" onClick={onClose}>
+        <DialogFooter className="p-4 border-t bg-zinc-50/50 flex items-center justify-between sm:justify-between shrink-0">
+          <Button variant="ghost" onClick={onClose}>
             {t('sql_editor.cancel')}
           </Button>
-          <Button
-            onClick={handleRunPreview}
-            variant="secondary"
-            disabled={isRunning}
-          >
-            {isRunning ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-            ) : (
-              <Play className="w-4 h-4 mr-2" />
-            )}
-            {t('sql_editor.run')}
-          </Button>
-          <Button onClick={handleSave}>{t('sql_editor.save')}</Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleRunPreview}
+              variant="secondary"
+              disabled={isRunning}
+              className="gap-2"
+            >
+              {isRunning ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Play className="w-4 h-4 fill-current" />
+              )}
+              {t('sql_editor.run')}
+            </Button>
+            <Button
+              onClick={handleSave}
+              className="gap-2 bg-black text-white hover:bg-zinc-800 shadow-sm"
+            >
+              <Save className="w-4 h-4" />
+              {t('sql_editor.save')}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
