@@ -16,6 +16,14 @@ function sanitizeValue(value: any): any {
     // Note: This might lose precision for very large integers (> 2^53)
     return Number(value)
   }
+  if (typeof value === 'number') {
+    // Round to 6 decimal places to avoid floating point artifacts (e.g. 0.1 + 0.2)
+    // and keep JSON payload cleaner. 6 is enough for most BI cases.
+    if (!Number.isInteger(value)) {
+      return Math.round(value * 1000000) / 1000000
+    }
+    return value
+  }
   if (value instanceof Date) {
     return value.getTime() // Convert Date to timestamp for consistency
   }
