@@ -36,6 +36,7 @@ export interface ProjectState extends ProjectData {
   suggestedPrompts: string[]
   selectedNode: SelectedNode | null
   isRestoring: boolean
+  isRefreshing: boolean
   sqlLabSession: SqlLabSession | null
 
   // --- Actions ---
@@ -49,6 +50,7 @@ export interface ProjectState extends ProjectData {
   setView: (view: ViewMode) => void
   setActiveFile: (id: string | null) => void
   setProjectName: (name: string) => void
+  setRefreshing: (isRefreshing: boolean) => void
   openSqlLab: (session: SqlLabSession) => void
   closeSqlLab: () => void
 
@@ -144,6 +146,7 @@ export const useProjectStore = create<ProjectState>()(
       suggestedPrompts: [],
       selectedNode: null,
       isRestoring: false,
+      isRefreshing: false,
       sqlLabSession: null,
 
       setSidebarMode: (mode) => set({ sidebarMode: mode }),
@@ -159,6 +162,7 @@ export const useProjectStore = create<ProjectState>()(
       setActiveFile: (id) => set({ activeFileId: id }),
       setPendingReplace: (payload) => set({ pendingReplace: payload }),
       setShowRefreshConfirm: (open) => set({ showRefreshConfirm: open }),
+      setRefreshing: (val) => set({ isRefreshing: val }),
       openSqlLab: (session) => set({ sqlLabSession: session }),
       closeSqlLab: () => set({ sqlLabSession: null }),
 
@@ -968,7 +972,7 @@ export const useProjectStore = create<ProjectState>()(
             addFile, removeFile, loadProject, serialize, reset,
             abortControllers, layoutScenario, editingReportId, pendingReplace, confirmReplace, setPendingReplace, refreshSessionWidgets,
             showRefreshConfirm, setShowRefreshConfirm, // Exclude transient & actions
-            sqlLabSession, openSqlLab, closeSqlLab,
+            sqlLabSession, openSqlLab, closeSqlLab, isRefreshing, setRefreshing,
             ...data 
         } = get()
         
