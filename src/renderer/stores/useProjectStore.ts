@@ -264,11 +264,39 @@ export const useProjectStore = create<ProjectState>()(
         }),
 
       renameSession: (id: string, name: string) =>
-        set(state => ({
-          sessions: state.sessions.map(s =>
-            s.id === id ? { ...s, title: name, lastModified: Date.now() } : s
-          ),
-        })),
+        set(state => {
+          const session = state.sessions.find(s => s.id === id)
+          let nextRegistry = state.widgetRegistry
+
+          // Attempt to sync title widget
+          if (session) {
+            const titleWidget = session.dashboard.widgets.find(
+              w => w.sourceMessageId === 'system'
+            )
+            if (titleWidget) {
+              const wId = titleWidget.widgetId
+              const currentData = nextRegistry[wId] || {}
+              // Only update if it exists
+              if (currentData) {
+                nextRegistry = {
+                  ...nextRegistry,
+                  [wId]: {
+                    ...currentData,
+                    title: name,
+                    content: name,
+                  } as ReportData,
+                }
+              }
+            }
+          }
+
+          return {
+            widgetRegistry: nextRegistry,
+            sessions: state.sessions.map(s =>
+              s.id === id ? { ...s, title: name, lastModified: Date.now() } : s
+            ),
+          }
+        }),
 
       clearSessionMessages: sessionId =>
         set(state => {
