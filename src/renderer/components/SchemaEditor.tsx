@@ -74,7 +74,7 @@ export function SchemaEditor() {
   const replaceFile = useProjectStore(s => s.replaceFile)
   const removeFile = useProjectStore(s => s.removeFile)
   const { t } = useTranslation('common')
-  const { addToast } = useToastStore()
+  const { addToast, dismissToast } = useToastStore()
   const reIngest = useReIngestFile()
   const readyFiles = files.filter(f => f.status === 'ready')
 
@@ -101,7 +101,11 @@ export function SchemaEditor() {
 
   const handleReload = async () => {
     if (!currentFile) return
-    addToast({ title: t('reloading'), type: 'info', duration: 0 })
+    const toastId = addToast({
+      title: t('reloading'),
+      type: 'info',
+      duration: Infinity,
+    })
     try {
       const result = await reIngest.mutateAsync({
         filePath: currentFile.path,
@@ -109,8 +113,10 @@ export function SchemaEditor() {
         sheetName: currentFile.sheetName,
       })
       useFileStore.getState().reloadFile(currentFile.id, result)
+      dismissToast(toastId)
       addToast({ title: t('reload_success'), type: 'success', duration: 2000 })
     } catch (e) {
+      dismissToast(toastId)
       addToast({
         title: t('reload_failed'),
         description: String(e),
@@ -123,14 +129,28 @@ export function SchemaEditor() {
     if (!currentFile || !window.electronAPI) return
     const result = await window.electronAPI.selectFile()
     if (result.success && result.data) {
-      addToast({ title: t('replacing_file'), type: 'info', duration: 0 })
+      const toastId = addToast({
+        title: t('replacing_file'),
+        type: 'info',
+        duration: Infinity,
+      })
       try {
         const status = await replaceFile(currentFile.id, result.data)
+        dismissToast(toastId)
         if (status === 'completed') {
-          addToast({ title: t('file_replaced'), type: 'success', duration: 2000 })
+          addToast({
+            title: t('file_replaced'),
+            type: 'success',
+            duration: 2000,
+          })
         }
       } catch (e) {
-        addToast({ title: t('replace_failed'), description: String(e), type: 'error' })
+        dismissToast(toastId)
+        addToast({
+          title: t('replace_failed'),
+          description: String(e),
+          type: 'error',
+        })
       }
     }
   }
