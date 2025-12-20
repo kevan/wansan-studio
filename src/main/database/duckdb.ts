@@ -2,6 +2,7 @@ import { createRequire } from 'module'
 import path from 'path'
 import { Mutex } from 'async-mutex'
 import { app } from 'electron'
+import { isDev } from '../utils/env'
 
 // Use blocking DuckDB version to avoid worker issues
 const require = createRequire(import.meta.url)
@@ -109,6 +110,10 @@ export class DatabaseService {
     return this.mutex.runExclusive(async () => {
       if (!this.conn) {
         throw new Error('Database not initialized')
+      }
+
+      if (isDev()) {
+        console.log('[DuckDB] Executing SQL:', sql)
       }
 
       try {

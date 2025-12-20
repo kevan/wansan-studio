@@ -97,7 +97,7 @@ export function MagicInput({
         
         if (result.success) {
           addToast({
-            title: 'Export Successful', // TODO: Add i18n key
+            title: t('export_success_title'),
             // @ts-ignore
             description: `Saved to ${result.filePath}`,
             type: 'success',
@@ -108,7 +108,7 @@ export function MagicInput({
       } catch (error) {
         console.error('Export failed', error)
         addToast({
-          title: 'Export Failed', // TODO: Add i18n key
+          title: t('export_failed_title'),
           description: String(error),
           type: 'error',
         })
@@ -163,7 +163,7 @@ export function MagicInput({
     const cmds = [
       {
         id: 'clear',
-        label: 'Clear Chat',
+        label: t('command_clear'),
         icon: Eraser,
         action: () => {
           resetChat()
@@ -472,12 +472,12 @@ export function MagicInput({
               {triggerType === 'command' ? (
                 <>
                   <Sparkles className="w-3 h-3 text-indigo-500" />
-                  Commands & Suggestions
+                  {t('command_suggestions')}
                 </>
               ) : (
                 <>
                   <Database className="w-3 h-3" />
-                  选择表
+                  {tCommon('select_table')}
                 </>
               )}
             </div>
@@ -566,7 +566,7 @@ export function MagicInput({
             />
             <div className="flex items-center justify-between text-[11px] text-zinc-400 mt-1">
               <span>
-                {isRestoring ? 'Restoring session...' : t('input_hint')}
+                {isRestoring ? t('restoring_session') : t('input_hint')}
               </span>
               <span className="font-mono text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded">
                 {t('table_count', { count: readyTables.length })}

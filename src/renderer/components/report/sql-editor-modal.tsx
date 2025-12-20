@@ -246,7 +246,7 @@ export function SqlEditorModal({
                 >
                   <div className="bg-white/90 shadow-md border border-amber-200 px-4 py-2 rounded-full flex items-center gap-2 text-amber-700 text-sm font-semibold transform transition-transform group-hover/lock:scale-105">
                     <Lock className="w-4 h-4" />
-                    {t('unlock_pro')}
+                    {t('unlock_pro', { ns: 'common' })}
                   </div>
                 </div>
               )}
