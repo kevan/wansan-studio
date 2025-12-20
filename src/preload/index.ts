@@ -1,7 +1,8 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
+import { ElectronAPI } from '../shared/electron-api'
 
 // 定义暴露给渲染进程的 API
-const electronAPI = {
+const electronAPI: ElectronAPI = {
   // IPC 通信
   invoke: (channel: string, ...args: any[]) =>
     ipcRenderer.invoke(channel, ...args),

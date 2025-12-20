@@ -1,4 +1,4 @@
-import { ElectronAPI } from '../preload'
+import { ElectronAPI } from '../shared/electron-api'
 
 // Vite 环境变量类型
 /// <reference types="vite/client" />

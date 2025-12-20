@@ -6,9 +6,10 @@ import type {
   ParseFileResponse,
   AIConfigResponse,
 } from '../../shared/api-types'
+import { ElectronAPI } from '../../shared/electron-api'
 
 // 模拟 IPC 调用（实际实现将在主进程完成后替换）
-const mockIPC = {
+const mockIPC: ElectronAPI = {
   invoke: async (channel: string, ...args: any[]): Promise<IPCResponse> => {
     console.log(`IPC Mock (invoke): ${channel}`, args)
     return { success: true, data: null }
@@ -146,74 +147,6 @@ const mockIPC = {
   onWindowStateChanged: (callback: any) => () => {},
   platform: 'darwin', // Mock platform
   version: { electron: 'mock', chrome: 'mock', node: 'mock' } as NodeJS.ProcessVersions, // Mock versions
-}
-
-// 声明全局 electronAPI（将由主进程注入）
-declare global {
-  interface Window {
-    electronAPI: {
-      // Removed generic invoke to enforce type safety
-      invoke: (channel: string, ...args: any[]) => Promise<IPCResponse>
-      
-      selectFile: () => Promise<IPCResponse<string>>
-      selectFiles: () => Promise<IPCResponse<{ path: string; size: number }[]>>
-      parseFile: (filePath: string) => Promise<ParseFileResponse>
-      runSQL: (sql: string) => Promise<RunSQLResponse>
-      getSchema: (tableName?: string) => Promise<IPCResponse>
-      deleteTable: (tableName?: string) => Promise<IPCResponse>
-      generateSQL: (prompt: string, schema: any) => Promise<IPCResponse>
-      askAI: (
-        query: string,
-        schemas: any[],
-        relations: any[],
-        context?: { lastSql: string; lastQuery: string },
-        language?: 'en' | 'zh'
-      ) => Promise<IPCResponse>
-      fixSQL: (
-        originalSql: string,
-        error: string,
-        schemas: any[]
-      ) => Promise<IPCResponse>
-      analyzeContext: (
-        schemas: any[],
-        language?: 'en' | 'zh'
-      ) => Promise<IPCResponse>
-      getAIConfig: () => Promise<AIConfigResponse>
-      setAIConfig: (config: any) => Promise<IPCResponse>
-      clearAIConfig: () => Promise<IPCResponse>
-      checkFilesConsistency: (files: any[]) => Promise<IPCResponse>
-      reIngestFile: (
-        filePath: string,
-        tableName: string,
-        sheetName?: string
-      ) => Promise<IPCResponse<ReloadResult>>
-      getDeviceId: () => Promise<IPCResponse<string>>
-      secureSet: (key: string, value: string) => Promise<IPCResponse<boolean>>
-      secureGet: (key: string) => Promise<IPCResponse<string | null>>
-      exportPDF: (data: any) => Promise<IPCResponse>
-      exportReport: (payload: any) => Promise<IPCResponse>
-      exportWebReport: (widgets: any[], config: any) => Promise<IPCResponse>
-      resetDB: () => Promise<IPCResponse>
-      resetApp: () => Promise<IPCResponse>
-      saveImage: (dataUrl: string, name?: string) => Promise<IPCResponse>
-      saveFile: (
-        content: string,
-        extension: string,
-        name: string
-      ) => Promise<IPCResponse<boolean>>
-      getUserInfo: () => Promise<IPCResponse<{ username: string }>>
-      openExternal: (url: string) => Promise<IPCResponse>
-      getPathForFile: (file: File) => string
-      windowControl: (
-        action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
-      ) => void
-      onWindowStateChanged: (
-        callback: (state: { isFullScreen: boolean }) => void
-      ) => () => void
-      platform: string
-      version: NodeJS.ProcessVersions
-    }
-  }
 }
 
 function getIpc() {
