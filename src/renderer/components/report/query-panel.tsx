@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import Editor from 'react-simple-code-editor'
 import Prism from 'prismjs'
 import 'prismjs/components/prism-sql'
 import 'prismjs/themes/prism.css'
 import {
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Code,
+  Copy,
+  Loader2,
+  Lock,
   Play,
   RotateCcw,
-  Copy,
-  X,
-  Check,
-  ChevronUp,
-  ChevronDown,
+  Sparkles,
   Table,
   Timer,
-  Code,
-  Loader2,
-  Sparkles,
-  Lock,
+  X,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/utils/cn'
@@ -154,7 +154,12 @@ export function QueryPanel({
   }
 
   return (
-    <div className={cn("flex-1 flex flex-col min-h-0 gap-4 overflow-hidden", className)}>
+    <div
+      className={cn(
+        'flex-1 flex flex-col min-h-0 gap-4 overflow-hidden',
+        className
+      )}
+    >
       {gateNode}
       {/* EDITOR AREA */}
       <div className="flex-1 border border-zinc-200 rounded-lg overflow-hidden relative flex flex-col min-h-0 shadow-sm bg-white">

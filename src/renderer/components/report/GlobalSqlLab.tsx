@@ -14,9 +14,6 @@ export function GlobalSqlLab() {
       mode={session.mode}
       targetTitle={session.targetTitle}
       initialSql={session.initialSql}
-      initialData={[]}
-      initialColumns={session.initialColumns}
-      initialColumnTypes={session.initialColumnTypes}
       onSave={
         session.onSave
           ? async sql => {

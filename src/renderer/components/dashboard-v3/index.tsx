@@ -13,6 +13,7 @@ import { LayoutScenario, useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { useUIStore } from '@/stores/useUIStore'
 import { ChartFullView } from '@/components/report/chart-full-view'
 import { useTranslation } from 'react-i18next'
+import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 
 interface DashboardCanvasV3Props {
   isPresentationMode?: boolean
@@ -174,46 +175,55 @@ export function DashboardCanvasV3({
   const activeScale = isPresentationMode ? 1.0 : zoom / 100
 
   return (
-    <div
-      ref={containerRef}
-      className={`flex h-full w-full flex-1 overflow-auto bg-zinc-100/60 p-6 dark:bg-zinc-900 ${
-        isSpacePressed ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''
-      }`}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-    >
+    <div className="flex h-full w-full flex-col overflow-hidden">
+      {!isPresentationMode && (
+        <div className="draggable shrink-0 border-b bg-white/50 backdrop-blur z-10">
+          <div className="non-draggable">
+            <DashboardHeader />
+          </div>
+        </div>
+      )}
       <div
-        className={`mx-auto flex min-h-min w-fit flex-col ${
-          isA4 ? 'items-center' : ''
+        ref={containerRef}
+        className={`flex w-full flex-1 overflow-auto bg-zinc-100/60 p-6 dark:bg-zinc-900 ${
+          isSpacePressed ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''
         }`}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
       >
         <div
-          id="dashboard-export-root"
-          className={`relative w-full transition-transform duration-200 ${
-            !isA4 ? 'bg-white shadow-sm' : ''
+          className={`mx-auto flex min-h-min w-fit flex-col ${
+            isA4 ? 'items-center' : ''
           }`}
-          style={{
-            transform: `scale(${activeScale})`,
-            transformOrigin: 'top center',
-            width: `${gridWidth}px`,
-            minHeight: isA4
-              ? `${totalHeightPx ?? PAGE_HEIGHT_PX}px`
-              : '100vh',
-          }}
         >
-          <PageLayer isA4={isA4} pageCount={pageCount} />
-          <GridLayer
-            width={gridWidth}
-            isA4={isA4}
-            height={isA4 ? totalHeightPx : undefined}
-            scale={activeScale}
-          />
+          <div
+            id="dashboard-export-root"
+            className={`relative w-full transition-transform duration-200 ${
+              !isA4 ? 'bg-white shadow-sm' : ''
+            }`}
+            style={{
+              transform: `scale(${activeScale})`,
+              transformOrigin: 'top center',
+              width: `${gridWidth}px`,
+              minHeight: isA4
+                ? `${totalHeightPx ?? PAGE_HEIGHT_PX}px`
+                : '100vh',
+            }}
+          >
+            <PageLayer isA4={isA4} pageCount={pageCount} />
+            <GridLayer
+              width={gridWidth}
+              isA4={isA4}
+              height={isA4 ? totalHeightPx : undefined}
+              scale={activeScale}
+            />
+          </div>
         </div>
-      </div>
 
-      <ChartFullView />
+        <ChartFullView />
+      </div>
     </div>
   )
 }

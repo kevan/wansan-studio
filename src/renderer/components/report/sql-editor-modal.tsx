@@ -1,9 +1,5 @@
 import React, { useState } from 'react'
-import {
-  FileSpreadsheet,
-  BarChart,
-  Save,
-} from 'lucide-react'
+import { BarChart, FileSpreadsheet, Save } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useProGate } from '@/hooks/use-pro-gate'
 import {
@@ -98,9 +94,6 @@ export function SqlEditorModal({
             sql={sql}
             onChange={setSql}
             initialSql={initialSql}
-            initialData={initialData}
-            initialColumns={initialColumns}
-            initialColumnTypes={initialColumnTypes}
             reasoning={reasoning}
             runOnMount={true}
           />

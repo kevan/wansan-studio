@@ -11,25 +11,22 @@ import {
   PanelResizeHandle,
 } from 'react-resizable-panels'
 import {
+  Loader2,
   MonitorPlay,
   PanelLeft,
   PanelRightClose,
   PanelRightOpen,
   RotateCcw,
-  Loader2,
 } from 'lucide-react'
 import { DashboardCanvasV3 } from './components/dashboard-v3'
-import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { cn } from '@/utils/cn'
 import { useDataRehydrate } from '@/hooks/use-data-rehydrate'
 import { useTranslation } from 'react-i18next'
 import i18n from './i18n'
-import { useWorkbenchStore } from './stores/useWorkbenchStore'
 import { useSettingsStore } from './stores/useSettingsStore'
 import { useUIStore } from './stores/useUIStore'
 import { useProjectStore } from './stores/useProjectStore'
 import { useChatStore } from './stores/useChatStore'
-import { OnboardingFlow } from './components/onboarding/OnboardingFlow'
 import logo from './src/assets/logo.png'
 import type { AIConfig } from '@shared/types'
 import { useBootSequence } from './hooks/use-boot-sequence'
@@ -39,7 +36,6 @@ import { GlobalErrorHandler } from './components/system/GlobalErrorHandler'
 import { ErrorBoundary } from './components/system/ErrorBoundary'
 import { usePlatform } from './hooks/useIPC'
 import { useProjectInit } from './hooks/use-project-init'
-import { useStoreMigration } from './hooks/use-store-migration'
 import { SchemaWarningModal } from './components/modals/SchemaWarningModal'
 import { RefreshConfirmModal } from './components/modals/RefreshConfirmModal'
 import { SettingsDialog } from './components/settings/SettingsDialog'
@@ -51,11 +47,11 @@ function App() {
   useRemoteConfig()
   useDataRehydrate()
   useProjectInit()
-  useStoreMigration()
+  // useStoreMigration()
 
   const [isChatCollapsed, setIsChatCollapsed] = useState(false)
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
-  
+
   const mainPanelLayout = useUIStore(s => s.mainPanelLayout)
   const setMainPanelLayout = useUIStore(s => s.setMainPanelLayout)
 
@@ -73,16 +69,20 @@ function App() {
   const { t } = useTranslation('common')
   const { data: platform } = usePlatform()
   const [isStoreReady, setIsStoreReady] = useState(false)
-  
+
   const activeFileId = useProjectStore(state => state.activeFileId)
   const activeView = useProjectStore(state => state.activeView)
   const isRestoring = useProjectStore(state => state.isRestoring)
   const isRefreshing = useProjectStore(state => state.isRefreshing)
   const isLoading = isRestoring || isRefreshing
-  const loadingText = isRestoring ? t('restoring_session', { ns: 'chat' }) : t('command_refresh', { ns: 'chat' })
+  const loadingText = isRestoring
+    ? t('restoring_session', { ns: 'chat' })
+    : t('command_refresh', { ns: 'chat' })
 
   useEffect(() => {
-    const unsub = useSettingsStore.persist.onFinishHydration(() => setIsStoreReady(true))
+    const unsub = useSettingsStore.persist.onFinishHydration(() =>
+      setIsStoreReady(true)
+    )
     if (useSettingsStore.persist.hasHydrated()) {
       setIsStoreReady(true)
     }
@@ -235,30 +235,32 @@ function App() {
   useEffect(() => {
     if (!window.electronAPI?.onWindowStateChanged) return
 
-    const unsub = window.electronAPI.onWindowStateChanged(({ isFullScreen }) => {
-      const left = leftPanelRef.current
-      const middle = middlePanelRef.current
-      const right = rightPanelRef.current
-      if (!left || !middle || !right) return
+    const unsub = window.electronAPI.onWindowStateChanged(
+      ({ isFullScreen }) => {
+        const left = leftPanelRef.current
+        const middle = middlePanelRef.current
+        const right = rightPanelRef.current
+        if (!left || !middle || !right) return
 
-      if (isFullScreen && !isPresentationMode) {
-        // 进入全屏 -> 开启演示模式 UI
-        left.collapse?.()
-        middle.collapse?.()
-        right.expand?.()
-        setIsLeftCollapsed(true)
-        setIsChatCollapsed(true)
-        setIsPresentationMode(true)
-      } else if (!isFullScreen && isPresentationMode) {
-        // 退出全屏 -> 还原 UI
-        left.expand?.()
-        middle.expand?.()
-        right.resize?.(mainPanelLayout[2] || 45)
-        setIsLeftCollapsed(false)
-        setIsChatCollapsed(false)
-        setIsPresentationMode(false)
+        if (isFullScreen && !isPresentationMode) {
+          // 进入全屏 -> 开启演示模式 UI
+          left.collapse?.()
+          middle.collapse?.()
+          right.expand?.()
+          setIsLeftCollapsed(true)
+          setIsChatCollapsed(true)
+          setIsPresentationMode(true)
+        } else if (!isFullScreen && isPresentationMode) {
+          // 退出全屏 -> 还原 UI
+          left.expand?.()
+          middle.expand?.()
+          right.resize?.(mainPanelLayout[2] || 45)
+          setIsLeftCollapsed(false)
+          setIsChatCollapsed(false)
+          setIsPresentationMode(false)
+        }
       }
-    })
+    )
 
     return unsub
   }, [isPresentationMode, mainPanelLayout])
@@ -439,35 +441,15 @@ function App() {
             onExpand={() => setIsRightCollapsed(false)}
             className={`bg-zinc-100/60 dark:bg-zinc-900 transition-all duration-300 ${isRightCollapsed ? 'min-w-0' : ''}`}
           >
-            <div className="h-full w-full flex flex-col bg-zinc-100/60 dark:bg-zinc-900">
-              {!isPresentationMode && activeView !== 'schema' && (
-                <div className="draggable shrink-0 border-b bg-white/50 backdrop-blur">
-                  <div className="non-draggable">
-                    <DashboardHeader />
-                  </div>
-                </div>
-              )}
-              <div
-                className={cn(
-                  'flex-1 w-full overflow-hidden transition-all',
-                  isPresentationMode ? 'p-0' : 'p-1'
-                )}
-              >
-                <div
-                  className={cn(
-                    'h-full w-full bg-white dark:bg-black transition-all',
-                    !isPresentationMode &&
-                      'rounded-lg border border-zinc-200 shadow-sm'
-                  )}
-                >
-                  {activeView === 'schema' ? (
-                    <DataPreviewPanel />
-                  ) : (
-                    <DashboardCanvasV3 isPresentationMode={isPresentationMode} />
-                  )}
+            {activeView === 'chat' ? (
+              <DashboardCanvasV3 isPresentationMode={isPresentationMode} />
+            ) : activeView === 'schema' ? (
+              <div className="h-full w-full">
+                <div className="h-full w-full bg-white dark:bg-black border border-zinc-200 shadow-sm overflow-hidden">
+                  <DataPreviewPanel />
                 </div>
               </div>
-            </div>
+            ) : null}
           </Panel>
         </PanelGroup>
 

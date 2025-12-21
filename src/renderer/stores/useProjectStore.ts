@@ -130,7 +130,14 @@ export const useProjectStore = create<ProjectState>()(
       isRestoring: true,
       isRefreshing: false,
 
-      setSidebarMode: mode => set({ sidebarMode: mode }),
+      setSidebarMode: mode =>
+        set(state => {
+          const updates: Partial<ProjectState> = { sidebarMode: mode }
+          if (mode === 'sessions') {
+            updates.activeView = 'chat'
+          }
+          return updates
+        }),
       setView: view =>
         set(state => {
           let newSidebarMode = state.sidebarMode
