@@ -12,7 +12,7 @@ import { Button } from '../ui/button'
 import type { ChatMessage } from '../ChatInterface'
 import { useChatStore } from '../../stores/useChatStore'
 import { useToastStore } from '../../stores/useToastStore'
-import { SqlEditorModal } from '../report/sql-editor-modal'
+import { useSqlLabStore } from '../../stores/useSqlLabStore'
 import { useTranslation } from 'react-i18next'
 import { useSettingsStore } from '../../stores/useSettingsStore'
 
@@ -21,7 +21,6 @@ interface ErrorCardProps {
 }
 
 export function ErrorCard({ message }: ErrorCardProps) {
-  const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [isFixing, setIsFixing] = useState(false)
   const autoFixMessage = useChatStore(state => state.autoFixMessage)
   const updateMessageData = useChatStore(state => state.updateMessageData)
@@ -102,10 +101,6 @@ export function ErrorCard({ message }: ErrorCardProps) {
     }
   }
 
-  const handleEditSql = () => {
-    setIsEditorOpen(true)
-  }
-
   const handleRunSql = async (newSql: string) => {
     const result = await window.electronAPI.runSQL(newSql)
     if (result.success && result.data) {
@@ -115,6 +110,16 @@ export function ErrorCard({ message }: ErrorCardProps) {
     } else {
       throw new Error(result.error || 'Execution failed')
     }
+  }
+
+  const handleEditSql = () => {
+    useSqlLabStore.getState().open({
+      mode: 'widget',
+      targetId: message.id,
+      targetTitle: t('error_edit_sql'),
+      initialSql: originalSql || '',
+      onSave: handleRunSql,
+    })
   }
 
   return (
@@ -199,15 +204,6 @@ export function ErrorCard({ message }: ErrorCardProps) {
           </Button>
         )}
       </div>
-
-      {/* SQL Editor Modal */}
-      <SqlEditorModal
-        isOpen={isEditorOpen}
-        onClose={() => setIsEditorOpen(false)}
-        initialSql={originalSql || ''}
-        reasoning={message.reportData?.reasoning}
-        onSave={handleRunSql}
-      />
     </div>
   )
 }
