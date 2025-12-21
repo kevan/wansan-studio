@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import Editor from 'react-simple-code-editor'
-import { highlight, languages } from 'prismjs'
+import Prism from 'prismjs'
 import 'prismjs/components/prism-sql'
 import 'prismjs/themes/prism.css'
 import {
@@ -259,9 +259,14 @@ export function QueryPanel({
           <Editor
             value={sql}
             onValueChange={onChange}
-            highlight={code => highlight(code, languages.sql, 'sql')}
+            highlight={code =>
+              Prism.highlight(
+                code,
+                Prism.languages.sql || Prism.languages.extend('sql', {}),
+                'sql'
+              )
+            }
             padding={16}
-            readOnly={!isActivated}
             style={{
               fontFamily: '"Fira Code", "Fira Mono", monospace',
               fontSize: 13,
