@@ -31,7 +31,6 @@ export function DataPreviewPanel() {
         onChange={setSql}
         initialSql={`SELECT * FROM "${file.tableName}" LIMIT 100`}
         runOnMount={true}
-        readOnly={true}
       />
     </div>
   )

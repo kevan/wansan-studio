@@ -35,7 +35,6 @@ interface QueryPanelProps {
   reasoning?: string
   className?: string
   runOnMount?: boolean
-  readOnly?: boolean
 }
 
 export function QueryPanel({
@@ -48,7 +47,6 @@ export function QueryPanel({
   reasoning,
   className,
   runOnMount = false,
-  readOnly = false,
 }: QueryPanelProps) {
   const { t } = useTranslation('analysis')
   const [isRunning, setIsRunning] = useState(false)
@@ -155,43 +153,39 @@ export function QueryPanel({
             </span>
           </div>
           <div className="flex items-center gap-2">
-            {!readOnly && (
-              <>
-                {reasoning && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs text-zinc-500 hover:text-zinc-900"
-                    onClick={() => setShowReasoning(!showReasoning)}
-                  >
-                    {showReasoning ? (
-                      <ChevronUp className="w-3 h-3 mr-1" />
-                    ) : (
-                      <ChevronDown className="w-3 h-3 mr-1" />
-                    )}
-                    {showReasoning
-                      ? t('sql_editor.hide_logic')
-                      : t('sql_editor.show_logic')}
-                  </Button>
+            {reasoning && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs text-zinc-500 hover:text-zinc-900"
+                onClick={() => setShowReasoning(!showReasoning)}
+              >
+                {showReasoning ? (
+                  <ChevronUp className="w-3 h-3 mr-1" />
+                ) : (
+                  <ChevronDown className="w-3 h-3 mr-1" />
                 )}
-                <div className="w-px h-3 bg-zinc-200 mx-1" />
-                <Button
-                  onClick={() =>
-                    checkGate(t('pro_benefit_sql', { ns: 'common' }), handleFormat)
-                  }
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    'h-7 text-xs hover:text-zinc-900',
-                    !isActivated ? 'text-amber-600 font-medium' : 'text-zinc-500'
-                  )}
-                >
-                  {!isActivated && <Lock className="w-3 h-3 mr-1" />}
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  {t('sql_editor.format')}
-                </Button>
-              </>
+                {showReasoning
+                  ? t('sql_editor.hide_logic')
+                  : t('sql_editor.show_logic')}
+              </Button>
             )}
+            <div className="w-px h-3 bg-zinc-200 mx-1" />
+            <Button
+              onClick={() =>
+                checkGate(t('pro_benefit_sql', { ns: 'common' }), handleFormat)
+              }
+              variant="ghost"
+              size="sm"
+              className={cn(
+                'h-7 text-xs hover:text-zinc-900',
+                !isActivated ? 'text-amber-600 font-medium' : 'text-zinc-500'
+              )}
+            >
+              {!isActivated && <Lock className="w-3 h-3 mr-1" />}
+              <Sparkles className="h-3 w-3 mr-1" />
+              {t('sql_editor.format')}
+            </Button>
             <Button
               onClick={handleCopy}
               variant="ghost"
@@ -205,42 +199,38 @@ export function QueryPanel({
               )}
               {copied ? t('sql_editor.copy_success') : t('sql_editor.copy')}
             </Button>
-            {!readOnly && (
-              <>
-                <Button
-                  onClick={() =>
-                    checkGate(t('pro_benefit_sql', { ns: 'common' }), handleReset)
-                  }
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    'h-7 text-xs hover:text-zinc-900',
-                    !isActivated ? 'text-amber-600 font-medium' : 'text-zinc-500'
-                  )}
-                >
-                  <RotateCcw className="w-3 h-3 mr-1" />
-                  {t('sql_editor.reset')}
-                </Button>
-                <div className="w-px h-4 bg-zinc-200 mx-1" />
-                <Button
-                  size="sm"
-                  onClick={() => handleRunPreview(sql)}
-                  className="h-7 bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 shadow-sm px-3"
-                  disabled={isRunning}
-                >
-                  {isRunning ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Play className="w-3 h-3 fill-current" />
-                  )}
-                  {t('sql_editor.run')}
-                </Button>
-              </>
-            )}
+            <Button
+              onClick={() =>
+                checkGate(t('pro_benefit_sql', { ns: 'common' }), handleReset)
+              }
+              variant="ghost"
+              size="sm"
+              className={cn(
+                'h-7 text-xs hover:text-zinc-900',
+                !isActivated ? 'text-amber-600 font-medium' : 'text-zinc-500'
+              )}
+            >
+              <RotateCcw className="w-3 h-3 mr-1" />
+              {t('sql_editor.reset')}
+            </Button>
+            <div className="w-px h-4 bg-zinc-200 mx-1" />
+            <Button
+              size="sm"
+              onClick={() => handleRunPreview(sql)}
+              className="h-7 bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 shadow-sm px-3"
+              disabled={isRunning}
+            >
+              {isRunning ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Play className="w-3 h-3 fill-current" />
+              )}
+              {t('sql_editor.run')}
+            </Button>
           </div>
         </div>
         <div className="flex-1 min-h-0 relative overflow-auto">
-          {!isActivated && !readOnly && (
+          {!isActivated && (
             <div
               className="absolute inset-0 z-10 bg-zinc-100/10 backdrop-blur-[1px] flex items-center justify-center cursor-pointer group/lock"
               onClick={() =>
@@ -253,7 +243,7 @@ export function QueryPanel({
               </div>
             </div>
           )}
-          {showReasoning && reasoning && !readOnly && (
+          {showReasoning && reasoning && (
             <div className="m-4 mb-0 bg-indigo-50/50 border border-indigo-100 p-3 rounded-lg text-xs text-indigo-900/80 animate-in slide-in-from-top-2">
               <div className="flex items-center gap-2 mb-1">
                 <Sparkles className="h-3 w-3 text-indigo-500" />
@@ -271,7 +261,7 @@ export function QueryPanel({
             onValueChange={onChange}
             highlight={code => highlight(code, languages.sql, 'sql')}
             padding={16}
-            readOnly={readOnly || !isActivated}
+            readOnly={!isActivated}
             style={{
               fontFamily: '"Fira Code", "Fira Mono", monospace',
               fontSize: 13,
@@ -280,7 +270,7 @@ export function QueryPanel({
             }}
             className={cn(
               'min-h-full',
-              (readOnly || !isActivated) && 'opacity-80 bg-zinc-100 cursor-not-allowed'
+              !isActivated && 'opacity-80 bg-zinc-100 cursor-not-allowed'
             )}
           />
         </div>
