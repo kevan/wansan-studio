@@ -66,6 +66,7 @@ export function MagicInput({
   const setReplyTo = useChatStore(state => state.setReplyTo)
   const rerunAnalysis = useChatStore(state => state.rerunAnalysis)
   const resetChat = useChatStore(state => state.reset)
+  const removeMessage = useChatStore(state => state.removeMessage)
   const stopGeneration = useChatStore(state => state.stopGeneration)
   const addToast = useToastStore(state => state.addToast)
   const files = useFileStore(state => state.files)
@@ -79,6 +80,34 @@ export function MagicInput({
   const addMessage = useProjectStore(state => state.addMessage)
   const updateMessage = useProjectStore(state => state.updateMessage)
   const { checkGate, gateNode } = useProGate()
+
+  const handleStop = () => {
+    stopGeneration()
+    
+    // Find last user message to restore
+    const lastUserMsgIndex = [...messages].reverse().findIndex(m => m.type === 'user')
+    
+    if (lastUserMsgIndex !== -1) {
+      const actualIndex = messages.length - 1 - lastUserMsgIndex
+      const userMsg = messages[actualIndex]
+      
+      setValue(userMsg.content)
+      
+      // Remove user message
+      removeMessage(userMsg.id)
+      
+      // Remove potential assistant message (usually the one being generated or failed)
+      // It should be immediately after the user message
+      if (actualIndex + 1 < messages.length) {
+        const nextMsg = messages[actualIndex + 1]
+        if (nextMsg.type === 'assistant') {
+          removeMessage(nextMsg.id)
+        }
+      }
+      
+      textareaRef.current?.focus()
+    }
+  }
 
   const handleExportMarkdown = async () => {
     checkGate('Markdown Export', async () => {
@@ -564,7 +593,7 @@ export function MagicInput({
           <div className="pb-1">
             {loading ? (
               <button
-                onClick={stopGeneration}
+                onClick={handleStop}
                 className="h-10 w-10 rounded-full flex items-center justify-center transition-all duration-200 bg-red-50 hover:bg-red-100 active:scale-95"
                 aria-label="Stop generation"
                 title={t('stop_generation')}
