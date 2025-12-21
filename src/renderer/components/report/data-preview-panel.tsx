@@ -3,9 +3,10 @@ import { QueryPanel } from './query-panel'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { useTranslation } from 'react-i18next'
 import { format } from 'sql-formatter'
+import { Loader2 } from 'lucide-react'
 
 export function DataPreviewPanel() {
-  const { activeFileId, files } = useProjectStore()
+  const { activeFileId, files, isRestoring } = useProjectStore()
   const file = files.find(f => f.id === activeFileId)
   const { t } = useTranslation('common')
   const [sql, setSql] = useState('')
@@ -25,6 +26,15 @@ export function DataPreviewPanel() {
       }
     }
   }, [file])
+
+  if (isRestoring) {
+    return (
+      <div className="h-full w-full flex flex-col items-center justify-center text-zinc-400 gap-2">
+        <Loader2 className="w-5 h-5 animate-spin" />
+        <span className="text-sm">{t('restoring_session', { ns: 'chat' })}...</span>
+      </div>
+    )
+  }
 
   if (!file) {
     return (

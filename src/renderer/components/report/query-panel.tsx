@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/utils/cn'
 import { format } from 'sql-formatter'
 import { useProGate } from '@/hooks/use-pro-gate'
+import { useProjectStore } from '@/stores/useProjectStore'
 import { Button } from '@/components/ui/button'
 import { ReportTable } from './report-table'
 
@@ -50,6 +51,7 @@ export function QueryPanel({
 }: QueryPanelProps) {
   const { t } = useTranslation('analysis')
   const [isRunning, setIsRunning] = useState(false)
+  const isRestoring = useProjectStore(s => s.isRestoring)
   const [previewData, setPreviewData] = useState<any[] | null>(
     initialData.length > 0 ? initialData : null
   )
@@ -66,6 +68,7 @@ export function QueryPanel({
   const { isActivated, checkGate } = useProGate()
 
   const handleRunPreview = async (queryToRun: string) => {
+    if (isRestoring) return
     checkGate(t('pro_benefit_sql', { ns: 'common' }), async () => {
       setIsRunning(true)
       setPreviewError(null)
@@ -93,8 +96,10 @@ export function QueryPanel({
   }
 
   // Auto-format and run on mount if requested
+  const [hasRunOnMount, setHasRunOnMount] = useState(false)
   useEffect(() => {
-    if (runOnMount) {
+    if (runOnMount && !isRestoring && !hasRunOnMount) {
+      setHasRunOnMount(true)
       let sqlToRun = initialSql
       try {
         const formatted = format(initialSql, {
@@ -104,7 +109,7 @@ export function QueryPanel({
         })
         // Only update if different to avoid loop if parent updates prop
         if (formatted !== sql) {
-             onChange(formatted)
+          onChange(formatted)
         }
         sqlToRun = formatted
       } catch (e) {
@@ -113,7 +118,7 @@ export function QueryPanel({
       handleRunPreview(sqlToRun)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) 
+  }, [runOnMount, isRestoring, hasRunOnMount])
 
   const handleCopy = () => {
     navigator.clipboard.writeText(sql)
@@ -218,9 +223,9 @@ export function QueryPanel({
               size="sm"
               onClick={() => handleRunPreview(sql)}
               className="h-7 bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 shadow-sm px-3"
-              disabled={isRunning}
+              disabled={isRunning || isRestoring}
             >
-              {isRunning ? (
+              {isRunning || isRestoring ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
               ) : (
                 <Play className="w-3 h-3 fill-current" />

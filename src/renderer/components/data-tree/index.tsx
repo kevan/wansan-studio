@@ -61,6 +61,7 @@ export function DataTreeManager({
   const activeFileId = useProjectStore(s => s.activeFileId)
   const setActiveFile = useProjectStore(s => s.setActiveFile)
   const setView = useProjectStore(s => s.setView)
+  const isRestoring = useProjectStore(s => s.isRestoring)
 
   const { t } = useTranslation('common')
 
@@ -93,6 +94,8 @@ export function DataTreeManager({
   // 处理节点选择
   const handleSelect = useCallback(
     (nodes: TreeNodeData[]) => {
+      if (isRestoring) return // Prevent interaction during restore
+
       if (nodes.length === 0) {
         // 不要轻易清除 activeFileId，除非用户明确取消选择（Tree 行为通常是点击空白不取消，除非多选）
         // 但这里如果 arborist 传回空数组，说明取消了选择

@@ -127,7 +127,7 @@ export const useProjectStore = create<ProjectState>()(
       sidebarMode: 'sessions',
       suggestedPrompts: [],
       selectedNode: null,
-      isRestoring: false,
+      isRestoring: true,
       isRefreshing: false,
 
       setSidebarMode: mode => set({ sidebarMode: mode }),
@@ -1004,9 +1004,22 @@ export const useProjectStore = create<ProjectState>()(
           showRefreshConfirm,
           isRestoring,
           isRefreshing,
+          activeView,
+          sidebarMode,
+          selectedNode,
           ...rest
         } = state
         return rest
+      },
+      onRehydrateStorage: () => state => {
+        if (state) {
+          const hasFilesToRestore = state.files.some(
+            f => f.status === 'ready' && f.tableName
+          )
+          // Set restoring state based on whether we actually have files to restore
+          // This overrides the default 'true' if no files exist, allowing immediate interaction
+          state.setRestoring(hasFilesToRestore)
+        }
       },
     }
   )

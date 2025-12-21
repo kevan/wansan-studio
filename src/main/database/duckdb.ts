@@ -98,17 +98,19 @@ export class DatabaseService {
         throw new Error('Database not initialized')
       }
 
-      if (isDev) {
-        console.log('[DuckDB] Executing SQL:', sql)
-      }
-
       try {
         const arrowTable = this.conn.query(sql)
 
         // Extract column types from Arrow schema
         const columnTypes: Record<string, string> = {}
         arrowTable.schema.fields.forEach((field: any) => {
-          columnTypes[field.name] = normalizeDuckDBType(field.type.toString())
+          const columnType = normalizeDuckDBType(field.type.toString())
+          console.log('[DuckDB] Extract column types:', {
+            field,
+            rawType: field.type.toString(),
+            type: columnType,
+          })
+          columnTypes[field.name] = columnType
         })
 
         // Convert Arrow table to JSON and sanitize for IPC
@@ -117,7 +119,11 @@ export class DatabaseService {
           .map((row: any) => sanitizeValue(row.toJSON()))
           .slice(0, 1000)
         if (isDev) {
-          console.log('[DuckDB] Executing SQL:', { sql, data, columnTypes })
+          console.log('[DuckDB] Executing SQL:', {
+            sql,
+            dataLength: data.length,
+            columnTypes,
+          })
         }
         return { data, columnTypes }
       } catch (error) {

@@ -37,7 +37,12 @@ export function useDataRehydrate() {
     const filesToRestore = initialFilesRef.current.filter(
       f => f.status === 'ready' && f.tableName
     )
-    if (filesToRestore.length === 0) return
+    if (filesToRestore.length === 0) {
+      // Ensure isRestoring is false if there's nothing to restore
+      // This is needed because onRehydrateStorage might have set it to true optimistically
+      setRestoring(false)
+      return
+    }
 
     hasRunRef.current = true
     setRestoring(true)
