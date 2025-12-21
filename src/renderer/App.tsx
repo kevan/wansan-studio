@@ -44,6 +44,7 @@ import { SchemaWarningModal } from './components/modals/SchemaWarningModal'
 import { RefreshConfirmModal } from './components/modals/RefreshConfirmModal'
 import { SettingsDialog } from './components/settings/SettingsDialog'
 import { GlobalSqlLab } from './components/report/GlobalSqlLab'
+import { DataPreviewPanel } from './components/report/data-preview-panel'
 
 function App() {
   useBootSequence()
@@ -73,6 +74,8 @@ function App() {
   const { data: platform } = usePlatform()
   const [isStoreReady, setIsStoreReady] = useState(false)
   
+  const activeFileId = useProjectStore(state => state.activeFileId)
+  const activeView = useProjectStore(state => state.activeView)
   const isRestoring = useProjectStore(state => state.isRestoring)
   const isRefreshing = useProjectStore(state => state.isRefreshing)
   const isLoading = isRestoring || isRefreshing
@@ -457,7 +460,11 @@ function App() {
                       'rounded-lg border border-zinc-200 shadow-sm'
                   )}
                 >
-                  <DashboardCanvasV3 isPresentationMode={isPresentationMode} />
+                  {activeView === 'schema' ? (
+                    <DataPreviewPanel />
+                  ) : (
+                    <DashboardCanvasV3 isPresentationMode={isPresentationMode} />
+                  )}
                 </div>
               </div>
             </div>
