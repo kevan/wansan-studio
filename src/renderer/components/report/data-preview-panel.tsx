@@ -44,6 +44,14 @@ export function DataPreviewPanel() {
     )
   }
 
+  if (!file.tableName) {
+    return (
+      <div className="h-full w-full flex items-center justify-center text-red-400 text-sm">
+        Invalid file metadata: Missing table name
+      </div>
+    )
+  }
+
   return (
     <div className="h-full w-full bg-white flex flex-col p-4 overflow-hidden">
       <QueryPanel
