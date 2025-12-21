@@ -196,9 +196,16 @@ export const useProjectStore = create<ProjectState>()(
           pendingReplace.newPath,
           true
         )
+        const hasWarning = (pendingReplace.missing?.length || 0) > 0
+        const fileType = pendingReplace.newPath.split('.').pop()
+
         set({ pendingReplace: null })
 
         if (status === 'completed') {
+          Analytics.track('data_replaced', {
+            has_warning: hasWarning,
+            file_type: fileType,
+          })
           set({ showRefreshConfirm: true })
         }
       },
@@ -228,12 +235,17 @@ export const useProjectStore = create<ProjectState>()(
 
           newSession.dashboard.widgets.push(defaultTitleWidget)
 
+          const nextSessions = [...state.sessions, newSession]
+          Analytics.track('session_created', {
+            session_count: nextSessions.length,
+          })
+
           return {
             widgetRegistry: {
               ...state.widgetRegistry,
               [titleWidgetId]: defaultTitleData,
             },
-            sessions: [...state.sessions, newSession],
+            sessions: nextSessions,
             activeSessionId: newSession.id,
           }
         }),

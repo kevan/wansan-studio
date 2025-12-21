@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Input } from '@/components/ui/input'
 import { useTranslation } from 'react-i18next'
+import { Analytics } from '@/services/analytics'
 
 export interface ExportConfig {
   title: string
@@ -115,7 +116,10 @@ export function ExportConfigModal({
           </Button>
           <Button 
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-8"
-            onClick={() => onConfirm({ title, theme })}
+            onClick={() => {
+              Analytics.track('web_export_generated', { theme })
+              onConfirm({ title, theme })
+            }}
           >
             {t('generate_button')}
           </Button>
