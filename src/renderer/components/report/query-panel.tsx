@@ -65,11 +65,12 @@ export function QueryPanel({
   const [execTime, setExecTime] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
   const [showReasoning, setShowReasoning] = useState(true)
-  const { isActivated, checkGate } = useProGate()
+  const { isActivated, checkGate, gateNode } = useProGate()
 
-  const handleRunPreview = async (queryToRun: string) => {
+  const handleRunPreview = async (queryToRun: string, bypassGate = false) => {
     if (isRestoring) return
-    checkGate(t('pro_benefit_sql', { ns: 'common' }), async () => {
+
+    const run = async () => {
       setIsRunning(true)
       setPreviewError(null)
       const startTime = performance.now()
@@ -92,7 +93,13 @@ export function QueryPanel({
       } finally {
         setIsRunning(false)
       }
-    })
+    }
+
+    if (bypassGate) {
+      await run()
+    } else {
+      checkGate(t('pro_benefit_sql', { ns: 'common' }), run)
+    }
   }
 
   // Auto-format and run on mount if requested
@@ -115,7 +122,7 @@ export function QueryPanel({
       } catch (e) {
         // Ignore format error
       }
-      handleRunPreview(sqlToRun)
+      handleRunPreview(sqlToRun, true)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runOnMount, isRestoring, hasRunOnMount])
@@ -148,6 +155,7 @@ export function QueryPanel({
 
   return (
     <div className={cn("flex-1 flex flex-col min-h-0 gap-4 overflow-hidden", className)}>
+      {gateNode}
       {/* EDITOR AREA */}
       <div className="flex-1 border border-zinc-200 rounded-lg overflow-hidden relative flex flex-col min-h-0 shadow-sm bg-white">
         <div className="flex items-center justify-between px-3 py-2 border-b bg-zinc-50/80 shrink-0">

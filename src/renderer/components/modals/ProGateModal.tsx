@@ -20,9 +20,12 @@ export function ProGateModal({ isOpen, onClose, featureName }: Props) {
 
   const handleActivate = () => {
     onClose()
-    document.dispatchEvent(
-      new CustomEvent('open-settings', { detail: 'general' })
-    )
+    // Small delay to allow the current dialog to close properly before opening the next one
+    setTimeout(() => {
+      document.dispatchEvent(
+        new CustomEvent('open-settings', { detail: 'general' })
+      )
+    }, 100)
   }
 
   return (

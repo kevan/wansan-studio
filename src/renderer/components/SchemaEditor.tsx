@@ -106,7 +106,7 @@ export function SchemaEditor() {
 
   const handleReload = async () => {
     if (!currentFile) return
-    
+
     await toast.promise(
       async () => {
         const result = await reIngest.mutateAsync({
@@ -220,19 +220,12 @@ export function SchemaEditor() {
               </div>
 
               {/* Header Actions */}
-              <div className="absolute top-6 right-8 flex items-center gap-2">
-                <ExpandableAction
-                  icon={<Code className="w-4 h-4" />}
-                  label={t('preview_data')}
-                  onClick={handlePreview}
-                />
+              <div className="absolute top-6 right-4 flex items-center gap-2 p-1 bg-white/80 backdrop-blur border border-zinc-200 rounded-lg shadow-sm hover:shadow transition-shadow">
                 <ExpandableAction
                   icon={<RefreshCw className="w-4 h-4" />}
                   label={t('reload_data')}
                   onClick={handleReload}
                 />
-
-                <div className="w-px h-4 bg-zinc-200 mx-1" />
 
                 <ExpandableAction
                   icon={<FileInput className="w-4 h-4" />}

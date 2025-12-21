@@ -109,7 +109,19 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     useChatStore.getState().reset()
     useWorkbenchStore.getState().reset()
     useUIStore.getState().resetLayout()
-    useSettingsStore.getState().resetPreferences()
+    // Explicitly reset everything in settings for DevConsole reset
+    const settingsStore = useSettingsStore.getState()
+    settingsStore.updateSettings({
+      hasCompletedOnboarding: false,
+      isActivated: false,
+      apiKey: '',
+    })
+    settingsStore.resetPreferences()
+    
+    if (window.electronAPI) {
+      await window.electronAPI.secureSet('apiKey', '')
+    }
+
     useProjectStore.getState().reset()
     window.location.reload()
   }, [t])

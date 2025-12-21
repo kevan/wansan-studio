@@ -37,7 +37,7 @@ export function ReportTable({
         ? Object.keys(safeData[0])
         : []
   const [sorting, setSorting] = React.useState<SortingState>([])
-  
+
   const isCard = variant === 'chat' || variant === 'dashboard'
   const isModal = variant === 'preview' || variant === 'fullscreen'
 
@@ -94,8 +94,8 @@ export function ReportTable({
                       key={header.id}
                       className={cn(
                         'h-9 px-3 text-left transition-colors whitespace-nowrap',
-                        isCard 
-                          ? 'text-[10px] font-bold text-zinc-400 uppercase tracking-widest border-b border-zinc-100' 
+                        isCard
+                          ? 'text-[10px] font-bold text-zinc-400 uppercase tracking-widest border-b border-zinc-100'
                           : 'font-bold text-zinc-600 uppercase tracking-wider border-r border-b border-zinc-300 last:border-r-0',
                         header.column.getCanSort()
                           ? 'cursor-pointer select-none hover:bg-zinc-50'
@@ -130,8 +130,8 @@ export function ReportTable({
                   key={row.id}
                   className={cn(
                     'group transition-colors',
-                    isCard 
-                      ? 'border-b border-zinc-50 hover:bg-zinc-50/50' 
+                    isCard
+                      ? 'border-b border-zinc-50 hover:bg-zinc-50/50'
                       : i % 2 === 0 ? 'bg-white hover:bg-indigo-50/40' : 'bg-zinc-50/50 hover:bg-indigo-50/40',
                     !isCard && 'border-b border-zinc-100'
                   )}
@@ -139,10 +139,10 @@ export function ReportTable({
                   {row.getVisibleCells().map(cell => {
                     const val = cell.getValue()
                     const isNum = typeof val === 'number' || typeof val === 'bigint'
-                    
+
                     return (
-                      <td 
-                        key={cell.id} 
+                      <td
+                        key={cell.id}
                         className={cn(
                           "px-3 py-1.5 truncate max-w-[250px]",
                           !isCard && "border-r border-zinc-100 last:border-r-0",
@@ -173,38 +173,9 @@ export function ReportTable({
         </table>
       </div>
 
-      {/* 1. Modal Style (Floating Capsule) */}
-      {isModal && table.getPageCount() > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-2 py-1 bg-white/90 backdrop-blur border border-zinc-200 rounded-full shadow-lg transition-all hover:scale-105 z-30">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 rounded-full hover:bg-zinc-100 disabled:opacity-30"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-
-          <span className="text-[11px] font-bold font-mono text-zinc-600 min-w-[60px] text-center select-none">
-            {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
-          </span>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 rounded-full hover:bg-zinc-100 disabled:opacity-30"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-
-      {/* 2. Card Style (Static Footer) */}
-      {isCard && table.getPageCount() > 1 && (
-        <div className="flex items-center justify-end gap-2 py-2 px-1 border-t border-zinc-100 bg-white/50">
+      {/* Pagination Footer */}
+      {table.getPageCount() > 1 && (
+        <div className="flex items-center justify-end gap-2 py-2 px-1 border-t border-zinc-100 bg-white/50 shrink-0">
           <span className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider">
             {t('page_of', {
               page: table.getState().pagination.pageIndex + 1,
