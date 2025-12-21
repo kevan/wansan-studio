@@ -1,15 +1,13 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { ProjectData, Session, ViewMode, Relation } from '@shared/types/project'
+import { ProjectData, Relation, Session, ViewMode } from '@shared/types/project'
 import { Message } from '@shared/types/chat'
-import { ReportWidget, ReportData } from '@shared/types/dashboard'
-import { FileNode, ColumnSchema, SelectedNode, SyncStatus } from '@shared/types'
+import { ReportData, ReportWidget } from '@shared/types/dashboard'
+import { ColumnSchema, FileNode, SelectedNode } from '@shared/types'
 import { Layout } from 'react-grid-layout'
 import { createBigIntStorage } from '@shared/serialization'
 import { Analytics } from '../services/analytics'
 import { useSettingsStore } from './useSettingsStore'
-import { useToastStore } from './useToastStore'
-import i18n from '../i18n'
 
 // 生成唯一 ID
 const generateId = () =>
@@ -68,17 +66,30 @@ export interface ProjectState extends ProjectData {
   setSelectedNode: (node: SelectedNode | null) => void
   setRestoring: (val: boolean) => void
   setSuggestedPrompts: (prompts: string[]) => void
-  addFile: (file: Partial<FileNode> & { name: string; path: string; tableName: string }) => string
+  addFile: (
+    file: Partial<FileNode> & { name: string; path: string; tableName: string }
+  ) => string
   removeFile: (id: string) => Promise<void>
   updateFile: (id: string, updates: Partial<FileNode>) => void
-  updateColumn: (fileId: string, columnName: string, updates: Partial<ColumnSchema>) => void
+  updateColumn: (
+    fileId: string,
+    columnName: string,
+    updates: Partial<ColumnSchema>
+  ) => void
   toggleKeyColumn: (fileId: string, columnName: string) => void
   addRelation: (relation: Omit<Relation, 'id'>) => void
   removeRelation: (id: string) => void
   markAsStale: (ids: string[]) => void
   markFileMissing: (id: string) => void
-  reloadFile: (fileId: string, result: { lastModified: number; newColumns: ColumnSchema[] }) => number
-  replaceFile: (fileId: string, newPath: string, force?: boolean) => Promise<'completed' | 'cancelled' | 'pending' | 'error'>
+  reloadFile: (
+    fileId: string,
+    result: { lastModified: number; newColumns: ColumnSchema[] }
+  ) => number
+  replaceFile: (
+    fileId: string,
+    newPath: string,
+    force?: boolean
+  ) => Promise<'completed' | 'cancelled' | 'pending' | 'error'>
   loadProject: (data: ProjectData) => void
   serialize: () => string
   reset: () => void
@@ -176,9 +187,7 @@ export const useProjectStore = create<ProjectState>()(
                   tableData: data,
                   columnTypes: columnTypes,
                   columns:
-                    data.length > 0
-                      ? Object.keys(data[0])
-                      : reportData.columns,
+                    data.length > 0 ? Object.keys(data[0]) : reportData.columns,
                   timestamp: Date.now(),
                 }
                 hasUpdates = true
@@ -372,7 +381,9 @@ export const useProjectStore = create<ProjectState>()(
 
       updateMessage: (id, update) =>
         set(state => {
-          const session = state.sessions.find(s => s.id === state.activeSessionId)
+          const session = state.sessions.find(
+            s => s.id === state.activeSessionId
+          )
           if (!session) return state
 
           const existingMsg = session.messages.find(m => m.id === id)
@@ -411,7 +422,9 @@ export const useProjectStore = create<ProjectState>()(
 
       deleteMessage: id =>
         set(state => {
-          const session = state.sessions.find(s => s.id === state.activeSessionId)
+          const session = state.sessions.find(
+            s => s.id === state.activeSessionId
+          )
           if (!session) return state
 
           const message = session.messages.find(m => m.id === id)
@@ -550,7 +563,9 @@ export const useProjectStore = create<ProjectState>()(
 
       updateWidgetData: (id, update) =>
         set(state => {
-          const session = state.sessions.find(s => s.id === state.activeSessionId)
+          const session = state.sessions.find(
+            s => s.id === state.activeSessionId
+          )
           if (!session) return state
           const widget = session.dashboard.widgets.find(w => w.id === id)
           if (!widget) return state
@@ -564,7 +579,9 @@ export const useProjectStore = create<ProjectState>()(
               [wId]: { ...currentData, ...update } as ReportData,
             },
             sessions: state.sessions.map(s =>
-              s.id === state.activeSessionId ? { ...s, lastModified: Date.now() } : s
+              s.id === state.activeSessionId
+                ? { ...s, lastModified: Date.now() }
+                : s
             ),
           }
         }),
@@ -599,7 +616,9 @@ export const useProjectStore = create<ProjectState>()(
       updateReportTitle: (id: string, title: string) =>
         set(state => {
           // Need to update Registry
-          const session = state.sessions.find(s => s.id === state.activeSessionId)
+          const session = state.sessions.find(
+            s => s.id === state.activeSessionId
+          )
           if (!session) return state
           const widget = session.dashboard.widgets.find(w => w.id === id)
           if (!widget || !widget.widgetId) return state
@@ -612,7 +631,9 @@ export const useProjectStore = create<ProjectState>()(
               [widget.widgetId]: { ...oldData, title },
             },
             sessions: state.sessions.map(s =>
-              s.id === state.activeSessionId ? { ...s, lastModified: Date.now() } : s
+              s.id === state.activeSessionId
+                ? { ...s, lastModified: Date.now() }
+                : s
             ),
           }
         }),
@@ -803,7 +824,8 @@ export const useProjectStore = create<ProjectState>()(
             }
             return valid
           })
-          droppedRelationsCount = state.relations.length - activeRelations.length
+          droppedRelationsCount =
+            state.relations.length - activeRelations.length
           return {
             files: state.files.map(f =>
               f.id === fileId
@@ -821,11 +843,17 @@ export const useProjectStore = create<ProjectState>()(
         return droppedRelationsCount
       },
 
-      replaceFile: async (fileId: string, newPath: string, force: boolean = false) => {
+      replaceFile: async (
+        fileId: string,
+        newPath: string,
+        force: boolean = false
+      ) => {
         let file = get().files.find(f => f.id === fileId)
 
         if (!file) {
-          console.error(`replaceFile: File ${fileId} not found in project store`)
+          console.error(
+            `replaceFile: File ${fileId} not found in project store`
+          )
           return 'error'
         }
 
@@ -840,7 +868,11 @@ export const useProjectStore = create<ProjectState>()(
           if (!force) {
             // 1. Peek New Schema (Validation)
             const parseRes = await window.electronAPI.parseFile(newPath)
-            if (!parseRes.success || !parseRes.data || parseRes.data.length === 0) {
+            if (
+              !parseRes.success ||
+              !parseRes.data ||
+              parseRes.data.length === 0
+            ) {
               throw new Error(
                 parseRes.error || 'Failed to parse new file for validation'
               )
@@ -905,7 +937,11 @@ export const useProjectStore = create<ProjectState>()(
             const countRes = await window.electronAPI.runSQL(
               `SELECT COUNT(*) as c FROM "${file.tableName}" `
             )
-            if (countRes.success && countRes.data && countRes.data.data.length > 0) {
+            if (
+              countRes.success &&
+              countRes.data &&
+              countRes.data.data.length > 0
+            ) {
               const c = countRes.data.data[0].c
               rowCount = typeof c === 'bigint' ? Number(c) : Number(c)
             }
@@ -937,7 +973,9 @@ export const useProjectStore = create<ProjectState>()(
 
           set(state => ({
             files: state.files.map(f =>
-              f.id === fileId ? { ...f, status: 'error', error: errorMessage } : f
+              f.id === fileId
+                ? { ...f, status: 'error', error: errorMessage }
+                : f
             ),
           }))
           return 'error'

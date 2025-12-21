@@ -94,7 +94,7 @@ const initialSettingsState: Omit<
   language: detectDefaultLanguage(),
   hasCompletedOnboarding: false,
   isActivated: false,
-  validBetaCodes: ['WANSAN-BETA'],
+  validBetaCodes: [],
   remoteConfig: {},
   dismissedAnnouncementId: null,
 }
@@ -161,15 +161,6 @@ export const useSettingsStore = create<SettingsState>()(
           return true
         }
 
-        // Fallback hardcoded check
-        if (['WANSAN-BETA', 'INTERNAL-TEST'].includes(normalizedCode)) {
-          set({ isActivated: true })
-          Analytics.track('beta_activated', {
-            code_prefix: normalizedCode.substring(0, 4),
-          })
-          return true
-        }
-
         return false
       },
       setRemoteConfig: (cfg: RemoteConfig) => set({ remoteConfig: cfg }),
@@ -223,7 +214,7 @@ export const useSettingsStore = create<SettingsState>()(
           apiKey: state.apiKey,
           deviceId: state.deviceId,
           remoteConfig: state.remoteConfig,
-          provider: state.provider, // Preserve AI Provider choice too? Usually yes for "Preferences". 
+          provider: state.provider, // Preserve AI Provider choice too? Usually yes for "Preferences".
           // If user wants to reset AI, they can clear manually or we might need separate action.
           // The prompt said "Only clears UI preferences (Theme, Language), preserving License and Config"
           // AI Config (provider, baseurl, model) is technically config.
@@ -231,7 +222,7 @@ export const useSettingsStore = create<SettingsState>()(
           baseUrl: state.baseUrl,
           model: state.model,
           validBetaCodes: state.validBetaCodes,
-          dismissedAnnouncementId: state.dismissedAnnouncementId
+          dismissedAnnouncementId: state.dismissedAnnouncementId,
         }))
         // Do NOT clear secure storage apiKey
       },

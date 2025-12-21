@@ -1,20 +1,17 @@
 import { useState } from 'react'
 import {
-  Download,
-  ChevronDown,
-  FileImage,
-  FileText,
-  Monitor,
-  Printer,
-  ZoomIn,
-  ZoomOut,
-  Plus,
-  Minus,
-  Lock,
-  Type,
   ChevronLeft,
   ChevronRight,
+  Download,
+  FileImage,
+  FileText,
+  Lock,
+  Minus,
+  Monitor,
+  Plus,
+  Printer,
   Sparkles,
+  Type,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -23,35 +20,27 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
 import { CanvasLayout, useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
-import {
-  PAGE_GAP_PX,
-  PAGE_HEIGHT_PX,
-} from '@/components/dashboard-v3/page-layer'
+import { PAGE_GAP_PX } from '@/components/dashboard-v3/page-layer'
 import { useTranslation } from 'react-i18next'
 import { Analytics } from '../../services/analytics'
 import logo from '@/src/assets/logo.png'
 import { useExportWebReport } from '@/hooks/useIPC'
 import { ExportLoadingModal } from '../modals/ExportLoadingModal'
-import { ExportConfigModal, type ExportConfig } from '../modals/ExportConfigModal'
+import {
+  type ExportConfig,
+  ExportConfigModal,
+} from '../modals/ExportConfigModal'
 import { useProGate } from '@/hooks/use-pro-gate'
 
 export function DashboardHeader() {
@@ -107,8 +96,8 @@ export function DashboardHeader() {
     // Find max Y + H on this page
     let maxY = 0
     pageWidgets.forEach(w => {
-        const bottom = w.layout.y + w.layout.h
-        if (bottom > maxY) maxY = bottom
+      const bottom = w.layout.y + w.layout.h
+      if (bottom > maxY) maxY = bottom
     })
 
     let targetY = maxY
@@ -118,13 +107,13 @@ export function DashboardHeader() {
     const WIDGET_HEIGHT = 2
     const MAX_ROWS = 27
 
-    if (isA4 && (targetY + WIDGET_HEIGHT > MAX_ROWS)) {
-        // Move to next page
-        targetPage = currentPage + 1
-        targetY = 0
-        if (targetPage >= pageCount) {
-            setPageCount(targetPage + 1)
-        }
+    if (isA4 && targetY + WIDGET_HEIGHT > MAX_ROWS) {
+      // Move to next page
+      targetPage = currentPage + 1
+      targetY = 0
+      if (targetPage >= pageCount) {
+        setPageCount(targetPage + 1)
+      }
     }
 
     addWidget({
@@ -153,9 +142,9 @@ export function DashboardHeader() {
 
   const handleExport = async (type: 'pdf' | 'png' | 'raw' = 'pdf') => {
     if (type === 'raw') {
-        // Default to PDF for generic call
-        handleExport('pdf')
-        return
+      // Default to PDF for generic call
+      handleExport('pdf')
+      return
     }
 
     const node = document.getElementById('dashboard-export-root')
@@ -191,7 +180,9 @@ export function DashboardHeader() {
 
         const img = new Image()
         img.src = dataUrl
-        await new Promise(r => { img.onload = r })
+        await new Promise(r => {
+          img.onload = r
+        })
 
         const logoSize = Math.max(24, img.width * 0.025)
         const fontSize = Math.max(12, img.width * 0.012)
@@ -203,24 +194,27 @@ export function DashboardHeader() {
         const ctx = canvas.getContext('2d')
 
         if (ctx) {
-            ctx.fillStyle = '#ffffff'
-            ctx.fillRect(0, 0, canvas.width, canvas.height)
-            ctx.drawImage(img, 0, 0)
+          ctx.fillStyle = '#ffffff'
+          ctx.fillRect(0, 0, canvas.width, canvas.height)
+          ctx.drawImage(img, 0, 0)
 
-            ctx.globalAlpha = 0.6
-            const footerY = img.height + (footerHeightPx / 2) - (logoSize / 2)
-            const marginX = logoSize
-            ctx.drawImage(logoImg, marginX, footerY, logoSize, logoSize)
+          ctx.globalAlpha = 0.6
+          const footerY = img.height + footerHeightPx / 2 - logoSize / 2
+          const marginX = logoSize
+          ctx.drawImage(logoImg, marginX, footerY, logoSize, logoSize)
 
-            const textX = marginX + logoSize + (logoSize * 0.5)
-            const textY = footerY + (logoSize / 2)
-            ctx.font = `500 ${fontSize}px sans-serif`
-            ctx.fillStyle = '#71717a'
-            ctx.textBaseline = 'middle'
-            ctx.fillText('Created with Wansan Studio', textX, textY)
+          const textX = marginX + logoSize + logoSize * 0.5
+          const textY = footerY + logoSize / 2
+          ctx.font = `500 ${fontSize}px sans-serif`
+          ctx.fillStyle = '#71717a'
+          ctx.textBaseline = 'middle'
+          ctx.fillText('Created with Wansan Studio', textX, textY)
         }
 
-        await window.electronAPI?.saveImage(canvas.toDataURL('image/png'), fileName)
+        await window.electronAPI?.saveImage(
+          canvas.toDataURL('image/png'),
+          fileName
+        )
         return
       }
 
@@ -230,7 +224,9 @@ export function DashboardHeader() {
 
       const img = new Image()
       img.src = dataUrl
-      await new Promise(r => { img.onload = r })
+      await new Promise(r => {
+        img.onload = r
+      })
 
       const pdf = new jsPDF({
         orientation: isA4 ? 'portrait' : 'landscape',

@@ -61,22 +61,22 @@ export const useToastStore = create<ToastState>((set, get) => ({
           : promiseOrFunction
       const result = await promise
       get().dismissToast(id)
-      
+
       const successTitle =
         typeof messages.success === 'function'
           ? messages.success(result)
           : messages.success
-      
+
       get().addToast({
         title: successTitle,
         type: 'success',
         duration: 2000,
       })
-      
+
       return result
     } catch (error) {
       get().dismissToast(id)
-      
+
       let errorTitle = String(error)
       if (messages.error) {
         errorTitle =
@@ -84,7 +84,7 @@ export const useToastStore = create<ToastState>((set, get) => ({
             ? messages.error(error)
             : messages.error
       }
-      
+
       get().addToast({
         title: errorTitle,
         type: 'error',

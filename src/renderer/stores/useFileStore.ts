@@ -1,5 +1,14 @@
-import { useProjectStore, ProjectState as NewProjectState } from './useProjectStore'
-import { FileNode, ColumnSchema, SyncStatus, SelectedNode, SelectedNodeType } from '@shared/types'
+import {
+  ProjectState as NewProjectState,
+  useProjectStore,
+} from './useProjectStore'
+import {
+  ColumnSchema,
+  FileNode,
+  SelectedNode,
+  SelectedNodeType,
+  SyncStatus,
+} from '@shared/types'
 import { Relation } from '@shared/types/project'
 
 // Re-export shared types to maintain compatibility

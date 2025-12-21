@@ -5,9 +5,9 @@ import { useToastStore } from './useToastStore'
 import { Analytics } from '../services/analytics'
 import type { ChatMessage } from '../components/ChatInterface'
 import type {
-  TableSchema,
-  RelationSuggestion,
   AIAnalysisResult,
+  RelationSuggestion,
+  TableSchema,
 } from '@shared/types'
 import i18n from '../i18n'
 
@@ -270,10 +270,14 @@ const sendMessage = async (
   // Determine Context
   const manualContextMsg =
     replyToId &&
-    messages.find(m => m.id === replyToId && m.type === 'assistant' && m.reportData?.sql)
+    messages.find(
+      m => m.id === replyToId && m.type === 'assistant' && m.reportData?.sql
+    )
   const autoContextMsg =
     !manualContextMsg &&
-    [...messages].reverse().find(m => m.type === 'assistant' && m.reportData?.sql)
+    [...messages]
+      .reverse()
+      .find(m => m.type === 'assistant' && m.reportData?.sql)
   const selectedContext = manualContextMsg || autoContextMsg
   let context: { lastSql: string; lastQuery: string } | undefined
 
@@ -313,7 +317,8 @@ const sendMessage = async (
   useProjectStore.getState().setReplyTo(null)
 
   try {
-    if (abortController.signal.aborted) throw new Error('Generation aborted by user')
+    if (abortController.signal.aborted)
+      throw new Error('Generation aborted by user')
 
     const resolvedPrompt = resolveMentions(text)
     const planResponse = await window.electronAPI.askAI(
@@ -324,7 +329,8 @@ const sendMessage = async (
       language
     )
 
-    if (abortController.signal.aborted) throw new Error('Generation aborted by user')
+    if (abortController.signal.aborted)
+      throw new Error('Generation aborted by user')
     if (!planResponse.success || !planResponse.data)
       throw new Error(planResponse.error || 'AI request failed')
 
@@ -348,77 +354,63 @@ const sendMessage = async (
       contextRef,
     }))
 
-    if (abortController.signal.aborted) throw new Error('Generation aborted by user')
+    if (abortController.signal.aborted)
+      throw new Error('Generation aborted by user')
 
-          updateMessage(botMsgId, msg => ({ ...msg, status: 'executing' }))
+    updateMessage(botMsgId, msg => ({ ...msg, status: 'executing' }))
 
-    
+    const execution = await window.electronAPI.runSQL(plan.sql)
 
-          const execution = await window.electronAPI.runSQL(plan.sql)
+    if (!execution.success || !execution.data)
+      throw new Error(execution.error || 'SQL execution failed')
 
-          if (!execution.success || !execution.data)
+    const { data, columnTypes } = execution.data
 
-            throw new Error(execution.error || 'SQL execution failed')
+    const columns = data.length > 0 ? Object.keys(data[0]) : []
 
-    
+    const latency = Date.now() - startTime
 
-          const { data, columnTypes } = execution.data
+    Analytics.track('analysis_generated', {
+      viz_type: plan.visualization?.type || 'unknown',
 
-          const columns = data.length > 0 ? Object.keys(data[0]) : []
+      status: 'success',
+    })
 
-          const latency = Date.now() - startTime
+    updateMessage(botMsgId, msg => ({
+      ...msg,
 
-    
+      status: undefined,
 
-          Analytics.track('analysis_generated', {
+      content: plan.summary || '',
 
-            viz_type: plan.visualization?.type || 'unknown',
+      metadata: { latency },
 
-            status: 'success',
+      reportData: {
+        title: plan.title,
 
-          })
+        summary: plan.summary,
 
-    
+        sql: plan.sql,
 
-          updateMessage(botMsgId, msg => ({
+        reasoning: plan.reasoning,
 
-            ...msg,
+        suggestions: plan.suggestions,
 
-            status: undefined,
+        chartType: plan.visualization?.type,
 
-            content: plan.summary || '',
+        chartTitle: plan.title,
 
-            metadata: { latency },
+        tableData: data,
 
-            reportData: {
+        columns,
 
-              title: plan.title,
+        columnTypes,
 
-              summary: plan.summary,
+        vizConfig: plan.visualization?.config as any,
 
-              sql: plan.sql,
-
-              reasoning: plan.reasoning,
-
-              suggestions: plan.suggestions,
-
-              chartType: plan.visualization?.type,
-
-              chartTitle: plan.title,
-
-              tableData: data,
-
-              columns,
-
-              columnTypes,
-
-              vizConfig: plan.visualization?.config as any,
-
-              insights: [],
-
-            },
-
-          }))
+        insights: [],
+      },
+    }))
 
     // Auto-rename session if it's "New Session"
     const activeSessionId = useProjectStore.getState().activeSessionId
@@ -514,7 +506,8 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
   }
 
   try {
-    if (abortController.signal.aborted) throw new Error('Generation aborted by user')
+    if (abortController.signal.aborted)
+      throw new Error('Generation aborted by user')
 
     const resolvedPrompt = resolveMentions(originalQuery)
     const planResponse = await window.electronAPI.askAI(
@@ -525,7 +518,8 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
       language
     )
 
-    if (abortController.signal.aborted) throw new Error('Generation aborted by user')
+    if (abortController.signal.aborted)
+      throw new Error('Generation aborted by user')
     if (!planResponse.success || !planResponse.data)
       throw new Error(planResponse.error || 'AI request failed')
 
@@ -540,7 +534,8 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
       planReasoning: plan.reasoning,
     }))
 
-    if (abortController.signal.aborted) throw new Error('Generation aborted by user')
+    if (abortController.signal.aborted)
+      throw new Error('Generation aborted by user')
     updateMessage(messageId, msg => ({ ...msg, status: 'executing' }))
 
     const execution = await window.electronAPI.runSQL(plan.sql)
@@ -617,7 +612,7 @@ const autoFixMessage = async (
   updateMessage(messageId, msg => ({
     ...msg,
     status: 'executing',
-    content: '🔧 Attempting to auto-fix the SQL query...', 
+    content: '🔧 Attempting to auto-fix the SQL query...',
   }))
 
   try {
@@ -631,7 +626,11 @@ const autoFixMessage = async (
     if (!originalSql)
       throw new Error(i18n.t('error_no_sql_to_fix', { ns: 'chat' }))
 
-    const fixResult = await window.electronAPI.fixSQL(originalSql, error, schemas)
+    const fixResult = await window.electronAPI.fixSQL(
+      originalSql,
+      error,
+      schemas
+    )
     if (!fixResult.success || !fixResult.data)
       throw new Error(
         fixResult.error || i18n.t('error_failed_to_fix_sql', { ns: 'chat' })
@@ -657,7 +656,8 @@ const autoFixMessage = async (
         title: i18n.t('autofix_fixed_title', {
           ns: 'chat',
           query:
-            msg.originalQuery || i18n.t('autofix_fixed_query_fallback', { ns: 'chat' }),
+            msg.originalQuery ||
+            i18n.t('autofix_fixed_query_fallback', { ns: 'chat' }),
         }),
         summary: i18n.t('autofix_summary', { ns: 'chat', error, reasoning }),
         sql: fixedSql,
@@ -692,7 +692,8 @@ const autoFixMessage = async (
     useToastStore.getState().addToast({
       type: 'error',
       title: i18n.t('autofix_failed_toast_title', { ns: 'chat' }),
-      description: error?.message || i18n.t('autofix_failed_toast_desc', { ns: 'chat' }),
+      description:
+        error?.message || i18n.t('autofix_failed_toast_desc', { ns: 'chat' }),
       duration: 4000,
     })
   }
@@ -726,7 +727,9 @@ const reset = () => {
 
 // --- The Hook ---
 
-export const useChatStore = <T = ChatStore>(selector?: (state: ChatStore) => T): T => {
+export const useChatStore = <T = ChatStore>(
+  selector?: (state: ChatStore) => T
+): T => {
   const projectState = useProjectStore()
   const activeSession = projectState.sessions.find(
     s => s.id === projectState.activeSessionId
