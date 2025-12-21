@@ -181,7 +181,7 @@ export function DashboardWidget({
 
   // Default Chat Layout (Linear, scrollable)
   return (
-    <div className={cn('flex flex-col h-full p-6 bg-white', className)}>
+    <div className={cn('flex flex-col h-full p-4 bg-white', className)}>
       <A4Header
         title={title}
         subtitle={subtitle}
@@ -192,7 +192,7 @@ export function DashboardWidget({
 
       <div className="flex-1 min-h-0 overflow-y-auto space-y-6 pr-2">
         {summary && (
-          <div className="prose prose-sm text-zinc-600 leading-relaxed mb-4 px-4">
+          <div className="text-sm text-zinc-600 leading-relaxed mb-4 px-4">
             <A4Summary content={summary} insights={insights} />
           </div>
         )}

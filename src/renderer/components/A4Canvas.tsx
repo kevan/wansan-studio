@@ -44,7 +44,7 @@ export function A4Header({
   }
 
   return (
-    <header className={`border-b border-gray-200 pb-4 mb-6 ${className}`}>
+    <header className={`border-b border-gray-200 pb-4 mb-4 ${className}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           {isEditing ? (
@@ -205,9 +205,10 @@ export function A4Chart({
         trigger: type === 'pie' ? 'item' : 'axis',
       },
       grid: {
-        left: '3%',
+        top: '4%', // Reduce top padding as title is external
+        left: '4%',
         right: '4%',
-        bottom: '3%',
+        bottom: '4%',
         containLabel: true,
       },
       xAxis:
