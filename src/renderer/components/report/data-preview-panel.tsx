@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { QueryPanel } from './query-panel'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { useTranslation } from 'react-i18next'
+import { format } from 'sql-formatter'
 
 export function DataPreviewPanel() {
   const { activeFileId, files } = useProjectStore()
@@ -11,7 +12,17 @@ export function DataPreviewPanel() {
 
   useEffect(() => {
     if (file) {
-      setSql(`SELECT * FROM "${file.tableName}" LIMIT 100`)
+      const initialSql = `SELECT * FROM "${file.tableName}" LIMIT 100`
+      try {
+        const formatted = format(initialSql, {
+          language: 'postgresql',
+          tabWidth: 2,
+          keywordCase: 'upper',
+        })
+        setSql(formatted)
+      } catch (e) {
+        setSql(initialSql)
+      }
     }
   }, [file])
 
