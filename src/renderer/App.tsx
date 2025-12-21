@@ -440,7 +440,7 @@ function App() {
             className={`bg-zinc-100/60 dark:bg-zinc-900 transition-all duration-300 ${isRightCollapsed ? 'min-w-0' : ''}`}
           >
             <div className="h-full w-full flex flex-col bg-zinc-100/60 dark:bg-zinc-900">
-              {!isPresentationMode && (
+              {!isPresentationMode && activeView !== 'schema' && (
                 <div className="draggable shrink-0 border-b bg-white/50 backdrop-blur">
                   <div className="non-draggable">
                     <DashboardHeader />
