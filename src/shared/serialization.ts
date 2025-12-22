@@ -170,6 +170,19 @@ export function formatDateValue(
     if (/^\d+$/.test(val)) {
       dateObj = new Date(Number(val))
     } else {
+      // If it's already a clean date string (YYYY-MM-DD) and typeHint is date, return it
+      if (typeHint === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
+        return val
+      }
+      // If it's an ISO-like string (YYYY-MM-DDTHH:mm:ss...) and we want display format
+      if (
+        (typeHint === 'timestamp' || typeHint === 'date') &&
+        /^\d{4}-\d{2}-\d{2}T/.test(val)
+      ) {
+        if (typeHint === 'date') return val.split('T')[0]
+        return val.replace('T', ' ').split('.')[0]
+      }
+
       const d = new Date(val)
       if (!isNaN(d.getTime())) {
         dateObj = d

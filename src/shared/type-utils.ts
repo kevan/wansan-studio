@@ -85,7 +85,7 @@ export function normalizeDuckDBType(duckType: string): ColumnType {
   return 'VARCHAR' // Fallback for BLOBS, Structs, Lists (stringify them)
 }
 
-export type UIFormatType = 'number' | 'text' | 'date'
+export type UIFormatType = 'number' | 'text' | 'date' | 'timestamp'
 
 export function getUIFormatType(type: ColumnType): UIFormatType {
   switch (type) {
@@ -93,8 +93,9 @@ export function getUIFormatType(type: ColumnType): UIFormatType {
     case 'DOUBLE':
       return 'number'
     case 'DATE':
-    case 'TIMESTAMP':
       return 'date'
+    case 'TIMESTAMP':
+      return 'timestamp'
     case 'VARCHAR':
     case 'BOOLEAN':
     default:

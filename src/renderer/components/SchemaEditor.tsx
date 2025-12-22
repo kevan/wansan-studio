@@ -67,6 +67,12 @@ const FORMAT_CONFIG: Record<FormatType, FormatConfig> = {
     bgColor: 'bg-green-50',
     textColor: 'text-green-600',
   },
+  timestamp: {
+    label: 'format_datetime',
+    icon: Clock,
+    bgColor: 'bg-purple-50',
+    textColor: 'text-purple-600',
+  },
 }
 
 export function SchemaEditor() {
@@ -424,6 +430,9 @@ function ColumnRow({ fileId, column, onToggleKey, isLinked }: ColumnRowProps) {
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleTypeChange('DATE')}>
               <Calendar className="w-4 h-4 mr-2" /> {t('format_date')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleTypeChange('TIMESTAMP')}>
+              <Clock className="w-4 h-4 mr-2" /> {t('format_datetime')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleTypeChange('BOOLEAN')}>
               <ToggleLeft className="w-4 h-4 mr-2" /> {t('type_boolean')}
