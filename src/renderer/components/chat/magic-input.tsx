@@ -352,6 +352,9 @@ export function MagicInput({
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // 1. Fix IME composition: do not trigger submit during CJK input
+    if (e.nativeEvent.isComposing) return
+
     // TABLE TRIGGER
     if (triggerType === 'table' && filteredTables.length > 0) {
       if (e.key === 'ArrowDown') {
@@ -409,10 +412,12 @@ export function MagicInput({
       }
     }
 
+    // Handle Submit vs New Line
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSubmit()
     }
+    // Shift + Enter falls through to default browser behavior (new line)
   }
 
   useEffect(() => {
@@ -576,7 +581,7 @@ export function MagicInput({
               minRows={1}
               maxRows={6}
               placeholder={placeholder}
-              className="w-full resize-none bg-transparent border-none shadow-none outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 text-base text-zinc-900 placeholder:text-zinc-400 leading-relaxed"
+              className="w-full resize-none bg-transparent border-none shadow-none outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 pr-12 text-base text-zinc-900 placeholder:text-zinc-400 leading-relaxed"
               value={value}
               onChange={e => {
                 setValue(e.target.value)
