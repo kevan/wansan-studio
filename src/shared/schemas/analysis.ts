@@ -5,6 +5,7 @@ export const ParamSchema = z.object({
   label: z.string().optional().describe('Human readable label for the parameter'),
   column: z.string().describe('Target column name for distinct query'),
   table: z.string().describe('Target table name for distinct query'),
+  display_columns: z.array(z.string()).optional().describe('Columns to display for better context'),
   hint: z.string().optional().describe('Fuzzy search term provided by user')
 })
 

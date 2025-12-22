@@ -3,6 +3,7 @@ import { FilterParam } from '@shared/schemas/analysis'
 import { Button } from '@/components/ui/button'
 import { SlidersHorizontal, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/utils/cn'
+import { useTranslation } from 'react-i18next'
 
 interface AnalysisTemplateCardProps {
   result: {
@@ -19,6 +20,8 @@ export function AnalysisTemplateCard({
   onOpenModal,
   isExecuted,
 }: AnalysisTemplateCardProps) {
+  const { t } = useTranslation('chat')
+
   return (
     <div
       className={cn(
@@ -54,12 +57,11 @@ export function AnalysisTemplateCard({
               )}
             >
               {isExecuted
-                ? "Analysis Parameters Configured"
-                : "Parameter Configuration Required"}
+                ? t('template_configured_title')
+                : t('template_required_title')}
             </h4>
             <p className="text-[12px] text-zinc-500 leading-relaxed line-clamp-2">
-              {result.summary ||
-                "The AI generated a query template. Please refine the filter criteria to proceed."}
+              {result.summary || t('template_desc')}
             </p>
           </div>
         </div>
@@ -80,10 +82,10 @@ export function AnalysisTemplateCard({
             {isExecuted ? (
               <span className="flex items-center gap-1.5">
                 <SlidersHorizontal className="w-3 h-3" />
-                Modify Parameters
+                {t('modify_parameters')}
               </span>
             ) : (
-              "Configure Filters & Run"
+              t('configure_and_run')
             )}
           </Button>
         </div>

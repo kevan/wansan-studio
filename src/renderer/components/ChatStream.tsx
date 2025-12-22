@@ -7,8 +7,10 @@ import { useProjectStore } from '../stores/useProjectStore'
 import { SmartFilterModal } from './modals/SmartFilterModal'
 import { useToastStore } from '../stores/useToastStore'
 import { FilterParam } from '@shared/schemas/analysis'
+import { useTranslation } from 'react-i18next'
 
 export function ChatStream() {
+  const { t } = useTranslation('chat')
   const { files, relations } = useFileStore()
   const activeFileId = useProjectStore(s => s.activeFileId)
   const messages = useChatStore(state => state.messages)
@@ -89,8 +91,8 @@ export function ChatStream() {
                smartFilterRequest.reject(new Error('Cancelled'))
                addToast({
                    type: 'info',
-                   title: 'Analysis Cancelled',
-                   description: 'You cancelled the smart filter selection.',
+                   title: t('analysis_cancelled_title'),
+                   description: t('analysis_cancelled_desc'),
                    duration: 3000
                })
             }}

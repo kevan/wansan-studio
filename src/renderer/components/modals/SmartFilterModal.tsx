@@ -1,5 +1,10 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -9,6 +14,8 @@ import { Sparkles, Search, Loader2 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { FilterParam } from '@shared/schemas/analysis'
 import debounce from 'lodash.debounce'
+import { useTranslation } from 'react-i18next'
+import { useSmartOptions } from '@/hooks/useSmartOptions'
 
 interface SmartFilterModalProps {
   isOpen: boolean
@@ -25,40 +32,22 @@ export function SmartFilterModal({
   params,
   templateSql,
 }: SmartFilterModalProps) {
+  const { t } = useTranslation(['chat', 'common'])
   const [searchTerm, setSearchTerm] = useState('')
-  const [searchResults, setSearchResults] = useState<string[]>([])
   const [selectedValues, setSelectedValues] = useState<string[]>([])
-  const [isSearching, setIsSearching] = useState(false)
   const confirmedRef = useRef(false)
 
-  const activeParam = params[0]
+  const activeParam = params[0] || {
+    placeholder: '',
+    column: '',
+    table: '',
+    label: '',
+  }
 
-  const fetchOptions = useCallback(
-    async (term: string) => {
-      if (!activeParam) return
-      setIsSearching(true)
-      try {
-        let query = `SELECT DISTINCT "${activeParam.column}" as val FROM "${activeParam.table}" WHERE "${activeParam.column}" IS NOT NULL`
-        if (term) {
-          const safeTerm = term.replace(/'/g, "''")
-          query += ` AND "${activeParam.column}" ILIKE '%${safeTerm}%'`
-        }
-        query += ` LIMIT 100`
-
-        const result = await window.electronAPI.runSQL(query)
-        if (result.success && result.data) {
-          setSearchResults(result.data.data.map((row: any) => String(row.val)))
-        } else {
-          setSearchResults([])
-        }
-      } catch (e) {
-        console.error('Failed to fetch options', e)
-        setSearchResults([])
-      } finally {
-        setIsSearching(false)
-      }
-    },
-    [activeParam]
+  const { options, loading: isSearching, fetchOptions } = useSmartOptions(
+    activeParam.table,
+    activeParam.column,
+    activeParam.display_columns || []
   )
 
   const debouncedFetch = useMemo(
@@ -68,10 +57,10 @@ export function SmartFilterModal({
 
   useEffect(() => {
     if (isOpen) {
-      setSearchTerm(activeParam?.hint || '')
+      setSearchTerm(activeParam.hint || '')
       setSelectedValues([])
       confirmedRef.current = false
-      fetchOptions(activeParam?.hint || '')
+      fetchOptions(activeParam.hint || '')
     }
     return () => {
       debouncedFetch.cancel()
@@ -85,59 +74,126 @@ export function SmartFilterModal({
   }
 
   const toggleValue = (val: string) => {
-    setSelectedValues((prev) =>
-      prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val]
+    setSelectedValues(prev =>
+      prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]
     )
   }
 
   const handleConfirm = () => {
     if (selectedValues.length === 0) return
-    
+
     let finalSql = templateSql
-    // 为当前活动参数进行替换
-    if (activeParam) {
-      const sqlList = selectedValues.map((v) => `'${v.replace(/'/g, "''")}'`).join(', ')
+    if (activeParam.placeholder) {
+      const sqlList = selectedValues
+        .map(v => `'${String(v).replace(/'/g, "''")}'`)
+        .join(', ')
       finalSql = finalSql.replace(activeParam.placeholder, sqlList)
     }
-    
+
     confirmedRef.current = true
     onConfirm(finalSql)
   }
 
-  return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && !confirmedRef.current && onCancel()}>
-      <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden border-zinc-200 shadow-2xl bg-white block">
+  const renderOptionItem = (opt: any) => {
+    const val = String(opt.value)
+    const isChecked = selectedValues.includes(val)
+    
+    // Display Logic
+    let primaryText = val
+    let secondaryText = ''
+    
+    if (activeParam.display_columns && activeParam.display_columns.length > 0) {
+        const firstCol = activeParam.display_columns[0]
+        if (opt[firstCol]) primaryText = String(opt[firstCol])
         
-        {/* 1. Header Area with Gradient Hint */}
-        <div className="p-5 pb-4 border-b border-zinc-100 bg-gradient-to-b from-zinc-50/50 to-white">
+        const otherCols = activeParam.display_columns.slice(1)
+        const details = otherCols.map(c => opt[c]).filter(Boolean).join(' • ')
+        
+        if (details) {
+            secondaryText = `${details} (ID: ${val})`
+        } else if (primaryText !== val) {
+            secondaryText = `(ID: ${val})`
+        }
+    }
+
+    return (
+      <div
+        key={val}
+        onClick={() => toggleValue(val)}
+        className={cn(
+          'flex items-start space-x-3 px-3 py-2.5 rounded-lg cursor-pointer text-sm transition-all select-none border border-transparent',
+          isChecked
+            ? 'bg-indigo-50/60 border-indigo-100/50'
+            : 'hover:bg-zinc-100 hover:border-zinc-200/50'
+        )}
+      >
+        <Checkbox
+          checked={isChecked}
+          readOnly
+          className={cn(
+            'data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 transition-all duration-200 mt-0.5',
+            isChecked ? 'shadow-sm' : 'border-zinc-300'
+          )}
+        />
+        <div className="flex-1 min-w-0 flex flex-col">
+            <span
+              className={cn(
+                'truncate font-medium',
+                isChecked ? 'text-indigo-900' : 'text-zinc-700'
+              )}
+            >
+              {primaryText}
+            </span>
+            {secondaryText && (
+                <span className="text-[11px] text-zinc-400 truncate">
+                    {secondaryText}
+                </span>
+            )}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Dialog
+      open={isOpen}
+      onOpenChange={open => !open && !confirmedRef.current && onCancel()}
+    >
+      <DialogContent className="sm:max-w-[440px] p-0 gap-0 overflow-hidden border-zinc-200 shadow-2xl bg-white block duration-200">
+        {/* 1. Header */}
+        <div className="px-5 py-4 border-b border-zinc-100 bg-gradient-to-b from-white to-zinc-50/30">
           <div className="flex items-start gap-3">
-            <div className="p-2 bg-indigo-50 rounded-lg border border-indigo-100 mt-0.5">
+            <div className="p-2 bg-indigo-50/80 rounded-lg border border-indigo-100 shrink-0">
               <Sparkles className="w-4 h-4 text-indigo-600" />
             </div>
             <div className="space-y-1 text-left">
-              <h3 className="font-semibold text-zinc-900 leading-none">
-                Refine Analysis Criteria
-              </h3>
-              <p className="text-sm text-zinc-500">
-                The AI detected ambiguity for <span className="font-medium text-zinc-700 bg-zinc-100 px-1.5 py-0.5 rounded">{activeParam?.label || activeParam?.column || 'a column'}</span>. Please select specific values.
-              </p>
+              <DialogTitle className="text-base font-semibold text-zinc-900">
+                {t('refine_analysis_title')}
+              </DialogTitle>
+              <DialogDescription className="text-sm text-zinc-500 leading-normal">
+                {t('refine_analysis_desc_prefix')}{' '}
+                <span className="font-medium text-zinc-700 bg-zinc-100 px-1.5 py-0.5 rounded text-xs border border-zinc-200">
+                  {activeParam.label || activeParam.column}
+                </span>
+                {t('refine_analysis_desc_suffix')}
+              </DialogDescription>
             </div>
           </div>
         </div>
 
-        {/* 2. Search Input Area */}
-        <div className="px-4 py-3 border-b border-zinc-100 bg-white">
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
+        {/* 2. Search */}
+        <div className="p-3 border-b border-zinc-100 bg-white">
+          <div className="relative group">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400 group-focus-within:text-indigo-500 transition-colors" />
             <Input
-              placeholder={`Search in ${activeParam?.column}...`}
-              className="pl-9 bg-zinc-50 border-zinc-200 focus-visible:ring-indigo-500/20 focus-visible:border-indigo-500 transition-all h-9 text-sm"
+              placeholder={t('search_value_placeholder')}
+              className="pl-9 h-9 bg-zinc-50 border-zinc-200 text-sm focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-indigo-500/20 focus-visible:border-indigo-500 transition-all shadow-sm"
               value={searchTerm}
               onChange={handleSearchChange}
-              onKeyDown={(e) => {
+              onKeyDown={e => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
-                  if (selectedValues.length > 0 && searchResults.length === 0) {
+                  if (selectedValues.length > 0) {
                     handleConfirm()
                   }
                 }
@@ -150,67 +206,56 @@ export function SmartFilterModal({
           </div>
         </div>
 
-        {/* 3. List Area */}
-        <ScrollArea className="h-[280px] bg-white">
-          <div className="p-2 space-y-1">
-            {searchResults.length === 0 && !isSearching ? (
-              <div className="flex flex-col items-center justify-center h-[240px] text-zinc-400 space-y-3">
-                <div className="p-3 bg-zinc-50 rounded-full">
-                  <Search className="w-6 h-6 opacity-20" />
+        {/* 3. List */}
+        <ScrollArea className="h-[260px] bg-white">
+          <div className="p-2 space-y-0.5">
+            {options.length === 0 && !isSearching ? (
+              <div className="flex flex-col items-center justify-center h-[200px] text-zinc-400 space-y-3 animate-in fade-in zoom-in-95 duration-300">
+                <div className="w-12 h-12 rounded-full bg-zinc-50 flex items-center justify-center">
+                  <Search className="w-5 h-5 opacity-40" />
                 </div>
-                <span className="text-sm">No matching values found</span>
+                <span className="text-xs font-medium">
+                  {t('no_matching_values')}
+                </span>
               </div>
             ) : (
-              searchResults.map((val) => {
-                const isChecked = selectedValues.includes(val)
-                return (
-                  <div
-                    key={val}
-                    onClick={() => toggleValue(val)}
-                    className={cn(
-                      "flex items-center space-x-3 px-3 py-2.5 rounded-md cursor-pointer text-sm transition-all group border border-transparent select-none",
-                      isChecked 
-                        ? "bg-indigo-50 border-indigo-100 text-indigo-900" 
-                        : "hover:bg-zinc-50 hover:border-zinc-200 text-zinc-700"
-                    )}
-                  >
-                    <Checkbox checked={isChecked} readOnly />
-                    <span className="flex-1 truncate">{val}</span>
-                  </div>
-                )
-              })
+              options.map(opt => renderOptionItem(opt))
             )}
           </div>
         </ScrollArea>
 
         {/* 4. Footer */}
-        <div className="p-4 border-t border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="font-normal bg-white border-zinc-200 text-zinc-600 px-2 py-1">
-              {selectedValues.length} selected
-            </Badge>
-            {selectedValues.length > 0 && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-7 text-xs text-zinc-400 hover:text-zinc-700 hover:bg-transparent" 
-                onClick={() => setSelectedValues([])}
-              >
-                Clear
-              </Button>
+        <div className="p-3 px-4 border-t border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
+          <div className="text-xs text-zinc-500 font-medium">
+            {selectedValues.length > 0 ? (
+              <span className="text-indigo-600">
+                {t('selected_count', { count: selectedValues.length })}
+              </span>
+            ) : (
+              <span>{t('please_select')}</span>
             )}
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={onCancel} className="text-zinc-500 hover:text-zinc-900">
-              Cancel
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onCancel}
+              className="h-8 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50"
+            >
+              {t('common:cancel')}
             </Button>
-            <Button 
-              onClick={handleConfirm} 
+            <Button
+              onClick={handleConfirm}
               disabled={selectedValues.length === 0}
               size="sm"
-              className="bg-zinc-900 hover:bg-zinc-800 text-white font-medium px-4 h-8 shadow-sm"
+              className={cn(
+                'h-8 px-4 transition-all shadow-sm font-medium',
+                selectedValues.length > 0
+                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'
+                  : 'bg-zinc-200 text-zinc-400'
+              )}
             >
-              Run Analysis
+              {t('run_analysis')}
             </Button>
           </div>
         </div>

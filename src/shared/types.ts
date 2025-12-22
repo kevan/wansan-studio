@@ -54,6 +54,7 @@ export interface AIAnalysisResult {
     label?: string
     column: string
     table: string
+    display_columns?: string[]
     hint?: string
   }>
 }

@@ -136,7 +136,7 @@ export function ReportCard({
 
       {/* Toolbar */}
       <div className="flex items-center justify-end px-3 py-2 border-t border-zinc-50 bg-white">
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="flex items-center gap-1">
           {/* Viz Controls */}
           <VizControls
             vizType={reportData.chartType}
@@ -150,7 +150,7 @@ export function ReportCard({
           {reportData.is_template && onConfigure && (
             <ExpandableAction
               icon={<SlidersHorizontal className="h-3.5 w-3.5" />}
-              label="Params"
+              label={t('modify_parameters')}
               onClick={onConfigure}
             />
           )}
@@ -205,10 +205,13 @@ export function ReportCard({
       <div className="px-4 py-1.5 border-t border-zinc-50 bg-zinc-50/30 text-[10px] text-zinc-500 flex justify-between items-center select-none font-medium">
         <div className="flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
-          <span>Generated via DuckDB Local Engine</span>
+          <span>{t('lineage_engine')}</span>
         </div>
         <div className="font-mono tabular-nums opacity-70">
-          {rowCount.toLocaleString()} rows processed in {latency.toFixed(0)}ms
+          {t('lineage_stats', {
+            rowCount: rowCount.toLocaleString(),
+            latency: latency.toFixed(0),
+          })}
         </div>
       </div>
     </div>
