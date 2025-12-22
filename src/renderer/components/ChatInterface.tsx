@@ -21,6 +21,9 @@ import { useSettingsStore } from '../stores/useSettingsStore'
 import { cn } from '@/utils/cn'
 import { format } from 'sql-formatter'
 
+import { AnalysisTemplateCard } from './chat/analysis-template-card'
+import { FilterParam } from '@shared/schemas/analysis'
+
 export interface ChatMessage {
   id: string
   type: 'user' | 'assistant'
@@ -56,6 +59,8 @@ export interface ChatMessage {
       y_axis?: string | string[] | null
       series_name?: string
     }
+    is_template?: boolean
+    missing_params?: FilterParam[]
   }
 }
 
@@ -64,6 +69,7 @@ interface ChatInterfaceProps {
   columns?: string[]
   messages: ChatMessage[]
   onQuerySubmit: (query: string) => void
+  onConfigureTemplate?: (messageId: string, templateSql: string, params: FilterParam[]) => void
   loading?: LoadingType | null
   className?: string
 }
@@ -73,6 +79,7 @@ export function ChatInterface({
   columns = [],
   messages,
   onQuerySubmit,
+  onConfigureTemplate,
   loading = null,
   className = '',
 }: ChatInterfaceProps) {
@@ -224,12 +231,31 @@ export function ChatInterface({
                     )}
                     {message.reportData && (
                       <div className="w-full mt-2 space-y-4">
-                        <ReportCard
-                          messageId={message.id}
-                          message={message}
-                          reportData={message.reportData}
-                          className="w-full shadow-sm hover:shadow-md transition-shadow"
-                        />
+                        {message.reportData.is_template &&
+                          onConfigureTemplate && (
+                            <AnalysisTemplateCard
+                              result={message.reportData as any}
+                              onOpenModal={() =>
+                                onConfigureTemplate(
+                                  message.id,
+                                  message.reportData!.sql!,
+                                  message.reportData!.missing_params || []
+                                )
+                              }
+                              isExecuted={!!message.reportData.tableData}
+                            />
+                          )}
+
+                        {((message.reportData.tableData &&
+                          message.reportData.tableData.length > 0) ||
+                          !message.reportData.is_template) && (
+                          <ReportCard
+                            messageId={message.id}
+                            message={message}
+                            reportData={message.reportData}
+                            className="w-full shadow-sm hover:shadow-md transition-shadow"
+                          />
+                        )}
 
                         {/* Suggestions Chips */}
                         {message.reportData.suggestions &&

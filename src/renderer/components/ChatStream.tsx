@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useFileStore } from '../stores/useFileStore'
 import { ChatInterface } from './ChatInterface'
 import { TableSchema, RelationSuggestion } from '../../shared/types'
@@ -6,14 +6,21 @@ import { useChatStore } from '../stores/useChatStore'
 import { useProjectStore } from '../stores/useProjectStore'
 import { SmartFilterModal } from './modals/SmartFilterModal'
 import { useToastStore } from '../stores/useToastStore'
+import { FilterParam } from '@shared/schemas/analysis'
 
 export function ChatStream() {
   const { files, relations } = useFileStore()
   const activeFileId = useProjectStore(s => s.activeFileId)
   const messages = useChatStore(state => state.messages)
   const sendMessage = useChatStore(state => state.sendMessage)
+  const runTemplateSQL = useChatStore(state => state.runTemplateSQL)
   const smartFilterRequest = useProjectStore(s => s.smartFilterRequest)
   const { addToast } = useToastStore()
+  const [activeTemplate, setActiveTemplate] = useState<{
+    messageId: string
+    templateSql: string
+    params: FilterParam[]
+  } | null>(null)
   
   const readyFiles = files.filter(f => f.status === 'ready')
   const currentFile =
@@ -60,6 +67,9 @@ export function ChatStream() {
           columns={currentColumns}
           messages={messages}
           onQuerySubmit={onQuerySubmit}
+          onConfigureTemplate={(messageId, templateSql, params) => {
+            setActiveTemplate({ messageId, templateSql, params })
+          }}
           loading={
             messages.some(m => m.status === 'thinking')
               ? 'thinking'
@@ -92,6 +102,22 @@ export function ChatStream() {
             params={smartFilterRequest.params}
             templateSql={smartFilterRequest.templateSql}
             onConfirm={(sql) => smartFilterRequest.resolve(sql)}
+          />
+        )}
+
+        {activeTemplate && (
+          <SmartFilterModal
+            isOpen={true}
+            onOpenChange={(open) => {
+              if (!open) setActiveTemplate(null)
+            }}
+            onCancel={() => setActiveTemplate(null)}
+            params={activeTemplate.params}
+            templateSql={activeTemplate.templateSql}
+            onConfirm={(sql) => {
+              runTemplateSQL(activeTemplate.messageId, sql)
+              setActiveTemplate(null)
+            }}
           />
         )}
       </div>

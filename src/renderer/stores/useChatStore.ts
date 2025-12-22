@@ -48,6 +48,7 @@ interface ChatStore {
     originalQuery?: string,
     originalSql?: string
   ) => Promise<void>
+  runTemplateSQL: (messageId: string, sql: string) => Promise<void>
   resetLoading: () => void
   stopGeneration: () => void
   removeMessage: (id: string) => void
@@ -741,6 +742,45 @@ const autoFixMessage = async (
   }
 }
 
+const runTemplateSQL = async (messageId: string, sql: string) => {
+  const startTime = Date.now()
+  const abortController = new AbortController()
+  useProjectStore.getState().setAbortController(abortController)
+
+  updateMessage(messageId, msg => ({ ...msg, status: 'executing' }))
+
+  try {
+    const execution = await window.electronAPI.runSQL(sql)
+    if (!execution.success || !execution.data)
+      throw new Error(execution.error || 'SQL execution failed')
+
+    const { data, columnTypes } = execution.data
+    const columns = data.length > 0 ? Object.keys(data[0]) : []
+    const latency = Date.now() - startTime
+
+    updateMessage(messageId, msg => ({
+      ...msg,
+      status: undefined,
+      metadata: { latency },
+      reportData: {
+        ...msg.reportData!,
+        sql,
+        tableData: data,
+        columns,
+        columnTypes,
+      },
+    }))
+    useProjectStore.getState().setAbortController(null)
+  } catch (error: any) {
+    updateMessage(messageId, msg => ({
+      ...msg,
+      status: 'error',
+      content: `Error: ${error?.message || 'Unknown error'}`,
+    }))
+    useProjectStore.getState().setAbortController(null)
+  }
+}
+
 const removeMessage = (id: string) => {
   const { messages } = getSessionState()
   const index = messages.findIndex(m => m.id === id)
@@ -799,6 +839,7 @@ export const useChatStore = <T = ChatStore>(
     retryMessage,
     rerunAnalysis,
     autoFixMessage,
+    runTemplateSQL,
     resetLoading,
     stopGeneration,
     removeMessage,
@@ -824,6 +865,7 @@ useChatStore.getState = (): ChatStore => {
     retryMessage,
     rerunAnalysis,
     autoFixMessage,
+    runTemplateSQL,
     resetLoading,
     stopGeneration,
     removeMessage,
