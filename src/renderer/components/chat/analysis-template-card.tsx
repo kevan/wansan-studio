@@ -57,11 +57,11 @@ export function AnalysisTemplateCard({
               )}
             >
               {isExecuted
-                ? t('template_configured_title')
-                : t('template_required_title')}
+                ? t('chat:template_configured_title')
+                : t('chat:template_required_title')}
             </h4>
             <p className="text-[12px] text-zinc-500 leading-relaxed line-clamp-2">
-              {result.summary || t('template_desc')}
+              {result.summary || t('chat:template_desc')}
             </p>
           </div>
         </div>
@@ -82,10 +82,10 @@ export function AnalysisTemplateCard({
             {isExecuted ? (
               <span className="flex items-center gap-1.5">
                 <SlidersHorizontal className="w-3 h-3" />
-                {t('modify_parameters')}
+                {t('chat:modify_parameters')}
               </span>
             ) : (
-              t('configure_and_run')
+              t('chat:configure_and_run')
             )}
           </Button>
         </div>

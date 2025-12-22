@@ -44,7 +44,7 @@ export function ReportCard({
   const updateMessageData = useChatStore(state => state.updateMessageData)
   const addToast = useToastStore(state => state.addToast)
   const openSqlLab = useSqlLabStore(state => state.open)
-  const { t } = useTranslation('common')
+  const { t } = useTranslation(['common', 'chat'])
   const [isRerunning, setIsRerunning] = useState(false)
 
   const isPinned = pinnedReports.some(r => r.sourceMessageId === messageId)
@@ -150,7 +150,7 @@ export function ReportCard({
           {reportData.is_template && onConfigure && (
             <ExpandableAction
               icon={<SlidersHorizontal className="h-3.5 w-3.5" />}
-              label={t('modify_parameters')}
+              label={t('chat:modify_parameters')}
               onClick={onConfigure}
             />
           )}
@@ -169,7 +169,7 @@ export function ReportCard({
                 className={cn('h-3.5 w-3.5', isRerunning && 'animate-spin')}
               />
             }
-            label={t('rerun')}
+            label={t('chat:rerun')}
             onClick={handleRerun}
             disabled={isRerunning}
           />
@@ -177,7 +177,7 @@ export function ReportCard({
           {/* Refine Button */}
           <ExpandableAction
             icon={<Sparkles className="h-3.5 w-3.5" />}
-            label={t('refine')}
+            label={t('chat:refine')}
             onClick={() => setReplyTo(messageId)}
           />
 
@@ -191,7 +191,7 @@ export function ReportCard({
                 )}
               />
             }
-            label={isPinned ? t('pinned') : t('pin')}
+            label={isPinned ? t('chat:pinned') : t('chat:pin')}
             onClick={handlePinToggle}
             active={isPinned}
             className={
@@ -205,10 +205,10 @@ export function ReportCard({
       <div className="px-4 py-1.5 border-t border-zinc-50 bg-zinc-50/30 text-[10px] text-zinc-500 flex justify-between items-center select-none font-medium">
         <div className="flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
-          <span>{t('lineage_engine')}</span>
+          <span>{t('chat:lineage_engine')}</span>
         </div>
         <div className="font-mono tabular-nums opacity-70">
-          {t('lineage_stats', {
+          {t('chat:lineage_stats', {
             rowCount: rowCount.toLocaleString(),
             latency: latency.toFixed(0),
           })}

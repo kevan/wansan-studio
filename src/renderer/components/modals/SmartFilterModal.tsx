@@ -97,23 +97,23 @@ export function SmartFilterModal({
   const renderOptionItem = (opt: any) => {
     const val = String(opt.value)
     const isChecked = selectedValues.includes(val)
-    
+
     // Display Logic
-    let primaryText = val
-    let secondaryText = ''
-    
-    if (activeParam.display_columns && activeParam.display_columns.length > 0) {
-        const firstCol = activeParam.display_columns[0]
-        if (opt[firstCol]) primaryText = String(opt[firstCol])
-        
-        const otherCols = activeParam.display_columns.slice(1)
-        const details = otherCols.map(c => opt[c]).filter(Boolean).join(' • ')
-        
-        if (details) {
-            secondaryText = `${details} (ID: ${val})`
-        } else if (primaryText !== val) {
-            secondaryText = `(ID: ${val})`
-        }
+    let mainLabel = val
+    let subLabels = ''
+
+    if (
+      activeParam.display_columns &&
+      activeParam.display_columns.length > 0
+    ) {
+      const firstCol = activeParam.display_columns[0]
+      if (opt[firstCol]) mainLabel = String(opt[firstCol])
+
+      const otherCols = activeParam.display_columns.slice(1)
+      subLabels = otherCols
+        .map(c => opt[c])
+        .filter(Boolean)
+        .join(' • ')
     }
 
     return (
@@ -121,7 +121,7 @@ export function SmartFilterModal({
         key={val}
         onClick={() => toggleValue(val)}
         className={cn(
-          'flex items-start space-x-3 px-3 py-2.5 rounded-lg cursor-pointer text-sm transition-all select-none border border-transparent',
+          'flex items-center space-x-3 px-3 py-2.5 rounded-lg cursor-pointer text-sm transition-all select-none border border-transparent',
           isChecked
             ? 'bg-indigo-50/60 border-indigo-100/50'
             : 'hover:bg-zinc-100 hover:border-zinc-200/50'
@@ -131,24 +131,27 @@ export function SmartFilterModal({
           checked={isChecked}
           readOnly
           className={cn(
-            'data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 transition-all duration-200 mt-0.5',
+            'data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 transition-all duration-200 shrink-0',
             isChecked ? 'shadow-sm' : 'border-zinc-300'
           )}
         />
         <div className="flex-1 min-w-0 flex flex-col">
-            <span
-              className={cn(
-                'truncate font-medium',
-                isChecked ? 'text-indigo-900' : 'text-zinc-700'
-              )}
-            >
-              {primaryText}
-            </span>
-            {secondaryText && (
-                <span className="text-[11px] text-zinc-400 truncate">
-                    {secondaryText}
-                </span>
+          <span
+            className={cn(
+              'truncate font-medium',
+              isChecked ? 'text-indigo-900' : 'text-zinc-900'
             )}
+          >
+            {mainLabel}
+          </span>
+          {subLabels && (
+            <span className="text-xs text-zinc-500 truncate">{subLabels}</span>
+          )}
+        </div>
+
+        {/* ID Badge */}
+        <div className="ml-2 px-1.5 py-0.5 bg-zinc-100 text-[10px] font-mono text-zinc-400 rounded shrink-0">
+          {val}
         </div>
       </div>
     )
