@@ -13,7 +13,6 @@ import { Badge } from '@/components/ui/badge'
 import { Sparkles, Search, Loader2 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { FilterParam } from '@shared/schemas/analysis'
-import debounce from 'lodash.debounce'
 import { useTranslation } from 'react-i18next'
 import { useSmartOptions } from '@/hooks/useSmartOptions'
 
@@ -34,6 +33,7 @@ export function SmartFilterModal({
 }: SmartFilterModalProps) {
   const { t } = useTranslation(['chat', 'common'])
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedTerm, setDebouncedTerm] = useState('')
   const [selectedValues, setSelectedValues] = useState<string[]>([])
   const confirmedRef = useRef(false)
 
@@ -44,33 +44,32 @@ export function SmartFilterModal({
     label: '',
   }
 
-  const { options, loading: isSearching, fetchOptions } = useSmartOptions(
+  // Debounce search term
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedTerm(searchTerm)
+    }, 300)
+    return () => clearTimeout(handler)
+  }, [searchTerm])
+
+  const { options, loading: isSearching } = useSmartOptions(
     activeParam.table,
     activeParam.column,
-    activeParam.display_columns || []
-  )
-
-  const debouncedFetch = useMemo(
-    () => debounce(fetchOptions, 300),
-    [fetchOptions]
+    activeParam.display_columns || [],
+    debouncedTerm
   )
 
   useEffect(() => {
     if (isOpen) {
       setSearchTerm(activeParam.hint || '')
+      // setDebouncedTerm will update via effect above
       setSelectedValues([])
       confirmedRef.current = false
-      fetchOptions(activeParam.hint || '')
     }
-    return () => {
-      debouncedFetch.cancel()
-    }
-  }, [isOpen, activeParam, fetchOptions, debouncedFetch])
+  }, [isOpen, activeParam])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    setSearchTerm(val)
-    debouncedFetch(val)
+    setSearchTerm(e.target.value)
   }
 
   const toggleValue = (val: string) => {

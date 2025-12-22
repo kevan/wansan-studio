@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect } from 'react'
+import { useProjectStore } from '../stores/useProjectStore'
 
 export interface SmartOption {
   value: any
@@ -8,35 +9,51 @@ export interface SmartOption {
 export function useSmartOptions(
   table: string,
   column: string,
-  displayColumns: string[] = []
+  displayColumns: string[] = [],
+  searchTerm: string = ''
 ) {
   const [options, setOptions] = useState<SmartOption[]>([])
   const [loading, setLoading] = useState(false)
+  const files = useProjectStore((s) => s.files)
 
-  const fetchOptions = useCallback(
-    async (term: string) => {
-      if (!table || !column) return
+  useEffect(() => {
+    let active = true
+    const fetchData = async () => {
+      if (!table || !column) {
+        if (active) setOptions([])
+        return
+      }
+
+      // 1. Validation
+      const file = files.find((f) => f.tableName === table)
+      if (!file) {
+        // Table not found in metadata
+        if (active) setOptions([])
+        return
+      }
+
+      const availableCols = new Set(file.columns.map((c) => c.name))
+      if (!availableCols.has(column)) {
+        if (active) setOptions([])
+        return
+      }
+      const validDisplayCols = displayColumns.filter((c) => availableCols.has(c))
 
       setLoading(true)
       try {
-        // Build Select Clause
         const colsToSelect = [`"${column}" as value`]
-        // Deduplicate display columns vs value column to avoid SQL error?
-        // DuckDB allows selecting same col twice but alias helps.
-        // We'll select display columns as themselves.
-        
-        displayColumns.forEach(c => {
-            if (c !== column) colsToSelect.push(`"${c}"`)
+        validDisplayCols.forEach((c) => {
+          if (c !== column) colsToSelect.push(`"${c}"`)
         })
 
         let query = `SELECT DISTINCT ${colsToSelect.join(', ')} FROM "${table}"`
         query += ` WHERE "${column}" IS NOT NULL`
 
-        if (term) {
-          const safeTerm = term.replace(/'/g, "''")
+        if (searchTerm) {
+          const safeTerm = searchTerm.replace(/'/g, "''")
           const conditions = [`"${column}" ILIKE '%${safeTerm}%'`]
-          displayColumns.forEach(c => {
-             if (c !== column) conditions.push(`"${c}" ILIKE '%${safeTerm}%'`)
+          validDisplayCols.forEach((c) => {
+            if (c !== column) conditions.push(`"${c}" ILIKE '%${safeTerm}%'`)
           })
           query += ` AND (${conditions.join(' OR ')})`
         }
@@ -44,20 +61,28 @@ export function useSmartOptions(
         query += ` LIMIT 50`
 
         const result = await window.electronAPI.runSQL(query)
-        if (result.success && result.data) {
-          setOptions(result.data.data)
-        } else {
-          setOptions([])
+        if (active) {
+          if (result.success && result.data) {
+            setOptions(result.data.data)
+          } else {
+            setOptions([])
+          }
         }
       } catch (e) {
-        console.error('Failed to fetch options', e)
-        setOptions([])
+        if (active) {
+          console.error('Failed to fetch options', e)
+          setOptions([])
+        }
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
-    },
-    [table, column, JSON.stringify(displayColumns)]
-  )
+    }
 
-  return { options, loading, fetchOptions }
+    fetchData()
+    return () => {
+      active = false
+    }
+  }, [table, column, JSON.stringify(displayColumns), searchTerm, files])
+
+  return { options, loading }
 }
