@@ -443,6 +443,17 @@ const sendMessage = async (
 
     useProjectStore.getState().setAbortController(null)
   } catch (error: any) {
+    if (error?.message === 'Cancelled') {
+      updateMessage(botMsgId, msg => ({
+        ...msg,
+        status: undefined,
+        content: i18n.t('analysis_cancelled', { ns: 'chat', defaultValue: 'Analysis cancelled.' }),
+        error: undefined,
+      }))
+      useProjectStore.getState().setAbortController(null)
+      return
+    }
+
     Analytics.track('analysis_generated', {
       status: 'error',
       error_type: 'execution_failed',
@@ -593,6 +604,17 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
     }))
     useProjectStore.getState().setAbortController(null)
   } catch (error: any) {
+    if (error?.message === 'Cancelled') {
+      updateMessage(messageId, msg => ({
+        ...msg,
+        status: undefined,
+        content: i18n.t('analysis_cancelled', { ns: 'chat', defaultValue: 'Analysis cancelled.' }),
+        error: undefined,
+      }))
+      useProjectStore.getState().setAbortController(null)
+      return
+    }
+
     Analytics.track('analysis_generated', {
       status: 'error',
       error_type: 'execution_failed',

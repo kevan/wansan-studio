@@ -89,3 +89,15 @@ LIMIT 100
 * Body: 动态表单。目前主要支持 `Combobox` (带搜索的下拉框)。
 * Action: "Run Analysis".
 
+## 4.1 Cancellation Flow (取消流程)
+
+* **Trigger**: User clicks "Cancel" (X) or clicks outside the modal.
+* **Action**:
+    1.  `SmartFilterModal` calls `onCancel()`.
+    2.  **Parent Component**:
+        * Sets `showFilterModal = false`.
+        * Sets `isAnalyzing = false` (stops the spinner).
+        * (Optional) Updates the message status to `CANCELLED` to prevent auto-reopening.
+* **UI Feedback**:
+    * Show a small toast: "Analysis cancelled".
+    * The chat bubble remains text-only (no chart).

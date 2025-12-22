@@ -5,6 +5,7 @@ import { TableSchema, RelationSuggestion } from '../../shared/types'
 import { useChatStore } from '../stores/useChatStore'
 import { useProjectStore } from '../stores/useProjectStore'
 import { SmartFilterModal } from './modals/SmartFilterModal'
+import { useToastStore } from '../stores/useToastStore'
 
 export function ChatStream() {
   const { files, relations } = useFileStore()
@@ -12,6 +13,7 @@ export function ChatStream() {
   const messages = useChatStore(state => state.messages)
   const sendMessage = useChatStore(state => state.sendMessage)
   const smartFilterRequest = useProjectStore(s => s.smartFilterRequest)
+  const { addToast } = useToastStore()
   
   const readyFiles = files.filter(f => f.status === 'ready')
   const currentFile =
@@ -75,8 +77,17 @@ export function ChatStream() {
             isOpen={smartFilterRequest.isOpen}
             onOpenChange={(open) => {
               if (!open) {
-                smartFilterRequest.reject()
+                smartFilterRequest.reject(new Error('Cancelled'))
               }
+            }}
+            onCancel={() => {
+               smartFilterRequest.reject(new Error('Cancelled'))
+               addToast({
+                   type: 'info',
+                   title: 'Analysis Cancelled',
+                   description: 'You cancelled the smart filter selection.',
+                   duration: 3000
+               })
             }}
             params={smartFilterRequest.params}
             templateSql={smartFilterRequest.templateSql}

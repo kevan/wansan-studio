@@ -51,7 +51,7 @@ export interface AIAnalysisResult {
   is_template?: boolean
   missing_params?: Array<{
     placeholder: string
-    label: string
+    label?: string
     column: string
     table: string
     hint?: string

@@ -123,6 +123,8 @@ export class AIService {
             config: aiResult.viz_config as any,
           }
         : undefined,
+      is_template: aiResult.is_template,
+      missing_params: aiResult.missing_params,
     }
   }
 

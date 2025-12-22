@@ -5,6 +5,12 @@ import {
   RelationSuggestion,
   TableSchema,
 } from '@shared/types.ts'
+import {
+  AnalysisResultSchema,
+  RelationSuggestionSchema,
+  ContextAnalysisResultSchema,
+  FixSQLResultSchema,
+} from '@shared/schemas/analysis.ts'
 import { isDev } from '../utils/env'
 import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources'
 import { safeStringify, parse } from '@shared/serialization.ts'
@@ -21,41 +27,7 @@ function getModelToUse(preferredModel?: string) {
   return preferredModel || envModel || 'gpt-4-turbo-preview'
 }
 
-const AIGenerationSchema = z.object({
-  sql: z.string(),
-  title: z.string().optional(),
-  summary: z.string().optional(),
-  viz_type: z
-    .enum(['bar', 'line', 'pie', 'table', 'scatter', 'kpi'])
-    .optional(),
-  viz_config: z
-    .object({
-      x_axis: z.string().nullable().optional(),
-      y_axis: z
-        .union([z.string(), z.array(z.string())])
-        .nullable()
-        .optional(),
-      series_name: z.string().optional(),
-    })
-    .optional(),
-  reasoning: z.string().optional(),
-  suggestions: z.array(z.string()).optional(),
-  error: z.string().optional(),
-  // v1.2 Smart Filters
-  is_template: z.boolean().optional().default(false),
-  missing_params: z
-    .array(
-      z.object({
-        placeholder: z.string(),
-        label: z.string(),
-        column: z.string(),
-        table: z.string(),
-        hint: z.string().optional(),
-      })
-    )
-    .optional(),
-})
-type AIGenerationOutput = z.infer<typeof AIGenerationSchema>
+type AIGenerationOutput = z.infer<typeof AnalysisResultSchema>
 
 const SYSTEM_PROMPT = `
 ### SYSTEM PROMPT
@@ -74,10 +46,11 @@ Your mission is to translate natural language questions into executable **DuckDB
 ### 🔍 SMART FILTER RULE (TEMPLATE MODE)
 If the user asks for data regarding a specific dimension value (e.g., "sales in Beijing", "iPhone sales") but you are **not 100% sure** of the exact value in the database (e.g., is it "Beijing" or "Beijing City"? "iPhone" or "Apple iPhone 13"?):
 1.  **DO NOT GUESS**: Instead of guessing a WHERE clause like \`WHERE city = 'Beijing'\`, create a **TEMPLATE SQL**.
-2.  **USE PLACEHOLDER**: Use a placeholder in the SQL (e.g., \`WHERE city = '{{CITY}}'\`).
+2.  **USE IN OPERATOR**: Always use the \`IN\` operator syntax: \`column IN ({{PLACEHOLDER}})\`. Do not use \`=\`.
 3.  **FLAG AS TEMPLATE**: Set \`is_template: true\`.
 4.  **DEFINE PARAM**: Fill the \`missing_params\` array with the column to query and the user's hint.
     - \`placeholder\`: "{{CITY}}"
+    - \`label\`: "City" (A human-readable label for the UI)
     - \`column\`: "city"
     - \`table\`: "customers" (The table containing the column)
     - \`hint\`: "Beijing" (The term user used)
@@ -246,20 +219,6 @@ Structure:
 }
 `
 
-const RelationSuggestionSchema = z.object({
-  sourceTable: z.string(),
-  sourceColumn: z.string(),
-  targetTable: z.string(),
-  targetColumn: z.string(),
-  confidence: z.number().min(0.0).max(1.0),
-  reason: z.string(),
-})
-
-const ContextAnalysisResultSchema = z.object({
-  relationships: z.array(RelationSuggestionSchema),
-  suggestedPrompts: z.array(z.string().max(60)),
-})
-
 function serializeSchemas(schemas: TableSchema[]): string {
   return schemas
     .map(table => {
@@ -391,7 +350,7 @@ OUTPUT RULE: The "summary", "title", "reasoning", and "suggestions" fields MUST 
 
   try {
     const parsedResult = parse(resultJson)
-    return AIGenerationSchema.parse(parsedResult)
+    return AnalysisResultSchema.parse(parsedResult)
   } catch (error) {
     console.error('Failed to parse or validate AI response:', error)
     throw new Error(
@@ -469,11 +428,6 @@ OUTPUT RULE: The "suggestedPrompts" MUST be written in ${languageNote}.`,
     )
   }
 }
-
-const FixSQLResultSchema = z.object({
-  sql: z.string(),
-  reasoning: z.string(),
-})
 
 export async function fixSQL(
   openai: OpenAI,

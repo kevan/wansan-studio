@@ -22,7 +22,7 @@ export interface SmartFilterRequest {
   params: FilterParam[]
   templateSql: string
   resolve: (finalSql: string) => void
-  reject: () => void
+  reject: (reason?: any) => void
 }
 
 export interface ProjectState extends ProjectData {
