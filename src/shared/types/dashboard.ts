@@ -20,6 +20,8 @@ export interface ReportData {
     series_name?: string
   }
   timestamp?: number
+  is_template?: boolean
+  missing_params?: any[]
 }
 
 export interface ReportWidget {

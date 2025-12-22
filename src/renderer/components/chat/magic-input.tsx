@@ -563,8 +563,14 @@ export function MagicInput({
           </div>
         )}
 
-        <div className="w-full rounded-2xl border border-zinc-200 shadow-md bg-white/90 backdrop-blur flex items-end gap-3 px-4 py-3 transition-all duration-200">
-          <div className="flex-1 min-w-0">
+        <div
+          className={cn(
+            'w-full rounded-2xl border border-zinc-200 bg-white/80 backdrop-blur-xl flex items-end gap-3 px-4 py-3 transition-all duration-300 shadow-sm',
+            'focus-within:shadow-xl focus-within:border-indigo-200 focus-within:ring-1 focus-within:ring-indigo-100',
+            className
+          )}
+        >
+          <div className="flex-1 min-w-0 relative">
             <TextareaAutosize
               ref={textareaRef}
               minRows={1}
@@ -580,6 +586,10 @@ export function MagicInput({
               onKeyDown={handleKeyDown}
               disabled={loading || isRestoring}
             />
+            {/* Enter to send hint */}
+            <div className="absolute bottom-0 right-0 text-[10px] text-zinc-400 font-medium opacity-0 focus-within:opacity-50 transition-opacity select-none pointer-events-none mb-1">
+              ⏎ Enter
+            </div>
             <div className="flex items-center justify-between text-[11px] text-zinc-400 mt-1">
               <span>
                 {isRestoring ? t('restoring_session') : t('input_hint')}

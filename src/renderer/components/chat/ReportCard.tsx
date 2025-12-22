@@ -1,5 +1,12 @@
 import React, { useState } from 'react'
-import { Pin, Sparkles, RefreshCw, Code, Settings2 } from 'lucide-react'
+import {
+  Pin,
+  Sparkles,
+  RefreshCw,
+  Code,
+  Settings2,
+  SlidersHorizontal,
+} from 'lucide-react'
 import { DashboardWidget } from '../DashboardWidget'
 import { ReportData, useWorkbenchStore } from '../../stores/useWorkbenchStore'
 import { useChatStore } from '../../stores/useChatStore'
@@ -18,6 +25,7 @@ interface ReportCardProps {
   message: ChatMessage
   reportData: ReportData
   className?: string
+  onConfigure?: () => void
 }
 
 export function ReportCard({
@@ -25,6 +33,7 @@ export function ReportCard({
   message,
   reportData,
   className,
+  onConfigure,
 }: ReportCardProps) {
   const [isLogicOpen, setIsLogicOpen] = useState(false)
   const pinReport = useWorkbenchStore(state => state.pinReport)
@@ -137,6 +146,15 @@ export function ReportCard({
             onChange={updates => updateReportConfig(messageId, updates)}
           />
 
+          {/* Modify Parameters Button */}
+          {reportData.is_template && onConfigure && (
+            <ExpandableAction
+              icon={<SlidersHorizontal className="h-3.5 w-3.5" />}
+              label="Params"
+              onClick={onConfigure}
+            />
+          )}
+
           {/* Inspect Code & Logic Button */}
           <ExpandableAction
             icon={<Code className="h-3.5 w-3.5" />}
@@ -184,9 +202,9 @@ export function ReportCard({
       </div>
 
       {/* Data Lineage Footer */}
-      <div className="px-4 py-1.5 border-t border-zinc-50 bg-zinc-50/30 text-[10px] text-zinc-400 flex justify-between items-center select-none font-medium">
+      <div className="px-4 py-1.5 border-t border-zinc-50 bg-zinc-50/30 text-[10px] text-zinc-500 flex justify-between items-center select-none font-medium">
         <div className="flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
           <span>Generated via DuckDB Local Engine</span>
         </div>
         <div className="font-mono tabular-nums opacity-70">

@@ -62,10 +62,10 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
     title: { show: false },
     // 2. Clean Grid
     grid: {
-      top: 30,
+      top: 40,
       right: 20,
-      bottom: 20,
-      left: 20,
+      bottom: 30,
+      left: 10,
       containLabel: true,
       borderColor: 'transparent',
       ...(option.grid as any),
@@ -88,7 +88,17 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
       ...(option.legend as any),
       bottom: 0,
       icon: 'circle',
-      textStyle: { color: textColor },
+      itemWidth: 8,
+      itemHeight: 8,
+      itemGap: 20,
+      textStyle: {
+        color: isDark ? '#a1a1aa' : '#9ca3af',
+        fontSize: 12,
+      },
+      show:
+        option.series &&
+        Array.isArray(option.series) &&
+        option.series.length > 1,
     },
   }
 }
