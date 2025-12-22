@@ -1,13 +1,17 @@
 import React from 'react'
-import { SlidersHorizontal } from 'lucide-react'
+import { FilterParam } from '@shared/schemas/analysis'
 import { Button } from '@/components/ui/button'
+import { SlidersHorizontal, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/utils/cn'
-import { AIAnalysisResult } from '@shared/types'
 
 interface AnalysisTemplateCardProps {
-  result: AIAnalysisResult
+  result: {
+    summary?: string
+    missing_params?: FilterParam[]
+    title?: string
+  }
   onOpenModal: () => void
-  isExecuted?: boolean
+  isExecuted: boolean
 }
 
 export function AnalysisTemplateCard({
@@ -16,30 +20,72 @@ export function AnalysisTemplateCard({
   isExecuted,
 }: AnalysisTemplateCardProps) {
   return (
-    <div className="w-full rounded-lg border border-indigo-100 bg-indigo-50/30 p-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-      <div className="flex items-start gap-3">
-        <div className="mt-1 flex-shrink-0 rounded-full bg-indigo-100 p-2 text-indigo-600">
-          <SlidersHorizontal className="h-5 w-5" />
-        </div>
-        <div className="flex-1 space-y-2">
-          <h3 className="font-semibold text-zinc-900">
-            {result.title || "Analysis Template"}
-          </h3>
-          <p className="text-sm text-zinc-600 leading-relaxed">
-            {result.summary || "This analysis requires parameter configuration."}
-          </p>
-          
-          <div className="pt-2">
-            <Button 
-              onClick={onOpenModal} 
-              variant="outline" 
-              size="sm"
-              className="bg-white hover:bg-indigo-50 border-indigo-200 text-indigo-700"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5 mr-2" />
-              {isExecuted ? "Modify Parameters" : "Configure Parameters"}
-            </Button>
+    <div
+      className={cn(
+        "w-full max-w-md rounded-xl border transition-all duration-300 overflow-hidden",
+        isExecuted
+          ? "bg-zinc-50/50 border-zinc-100 mb-2 opacity-80 hover:opacity-100" // Subtle when done
+          : "bg-white border-indigo-100 shadow-sm ring-4 ring-indigo-50/50" // Prominent when pending
+      )}
+    >
+      <div className="p-4 flex flex-col gap-3">
+        {/* Header */}
+        <div className="flex items-start gap-3">
+          <div
+            className={cn(
+              "p-2 rounded-lg shrink-0 border transition-colors",
+              isExecuted
+                ? "bg-zinc-100 text-zinc-500 border-zinc-200"
+                : "bg-indigo-50 text-indigo-600 border-indigo-100"
+            )}
+          >
+            {isExecuted ? (
+              <CheckCircle2 className="w-4 h-4" />
+            ) : (
+              <SlidersHorizontal className="w-4 h-4" />
+            )}
           </div>
+
+          <div className="space-y-1 text-left">
+            <h4
+              className={cn(
+                "text-sm font-semibold",
+                isExecuted ? "text-zinc-700" : "text-indigo-900"
+              )}
+            >
+              {isExecuted
+                ? "Analysis Parameters Configured"
+                : "Parameter Configuration Required"}
+            </h4>
+            <p className="text-[12px] text-zinc-500 leading-relaxed line-clamp-2">
+              {result.summary ||
+                "The AI generated a query template. Please refine the filter criteria to proceed."}
+            </p>
+          </div>
+        </div>
+
+        {/* Action Area */}
+        <div className="pl-[44px]">
+          <Button
+            size="sm"
+            variant={isExecuted ? "outline" : "default"}
+            onClick={onOpenModal}
+            className={cn(
+              "w-full sm:w-auto h-8 text-[11px] font-medium",
+              isExecuted
+                ? "border-zinc-200 text-zinc-600 bg-white hover:bg-zinc-50 hover:text-zinc-900"
+                : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm border-none"
+            )}
+          >
+            {isExecuted ? (
+              <span className="flex items-center gap-1.5">
+                <SlidersHorizontal className="w-3 h-3" />
+                Modify Parameters
+              </span>
+            ) : (
+              "Configure Filters & Run"
+            )}
+          </Button>
         </div>
       </div>
     </div>

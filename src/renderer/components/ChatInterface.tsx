@@ -13,6 +13,7 @@ import {
   Zap,
   Trash2,
   Crown,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useChatStore } from '../stores/useChatStore'
@@ -230,59 +231,102 @@ export function ChatInterface({
                       </div>
                     )}
                     {message.reportData && (
-                      <div className="w-full mt-2 space-y-4">
-                        {message.reportData.is_template &&
-                          onConfigureTemplate && (
-                            <AnalysisTemplateCard
-                              result={message.reportData as any}
-                              onOpenModal={() =>
-                                onConfigureTemplate(
-                                  message.id,
-                                  message.reportData!.sql!,
-                                  message.reportData!.missing_params || []
-                                )
-                              }
-                              isExecuted={!!message.reportData.tableData}
-                            />
-                          )}
+                      <div className="w-full mt-2 space-y-2">
+                        {(() => {
+                          const report = message.reportData!
+                          const isTemplate = report.is_template
+                          const isExecuted = !!(
+                            report.tableData && report.tableData.length > 0
+                          )
 
-                        {((message.reportData.tableData &&
-                          message.reportData.tableData.length > 0) ||
-                          !message.reportData.is_template) && (
-                          <ReportCard
-                            messageId={message.id}
-                            message={message}
-                            reportData={message.reportData}
-                            className="w-full shadow-sm hover:shadow-md transition-shadow"
-                          />
-                        )}
+                          return (
+                            <>
+                              {/* CASE 1: Pending Template -> Show Big Card */}
+                              {isTemplate &&
+                                !isExecuted &&
+                                onConfigureTemplate && (
+                                  <AnalysisTemplateCard
+                                    result={report as any}
+                                    onOpenModal={() =>
+                                      onConfigureTemplate(
+                                        message.id,
+                                        report.sql!,
+                                        report.missing_params || []
+                                      )
+                                    }
+                                    isExecuted={false}
+                                  />
+                                )}
 
-                        {/* Suggestions Chips */}
-                        {message.reportData.suggestions &&
-                          message.reportData.suggestions.length > 0 && (
-                            <div className="flex flex-wrap items-center gap-2 animate-in fade-in slide-in-from-top-1">
-                              <div className="flex items-center gap-1.5 text-xs font-medium text-purple-600 mr-1">
-                                <Sparkles className="w-3.5 h-3.5" />
-                                {t('suggested')}
-                              </div>
-                              {message.reportData.suggestions.map(
-                                (suggestion, idx) => (
-                                  <button
-                                    key={idx}
-                                    onClick={() => {
-                                      if (!isChatLoading && !isRestoring) {
-                                        handleQuerySubmit(suggestion)
-                                      }
-                                    }}
-                                    disabled={isChatLoading || isRestoring}
-                                    className={`px-3 py-1.5 rounded-full bg-white border text-xs shadow-sm ${isChatLoading || isRestoring ? 'border-zinc-100 text-zinc-400 cursor-not-allowed' : 'border-zinc-200 text-zinc-600 hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700 transition-colors'}`}
-                                  >
-                                    {suggestion}
-                                  </button>
-                                )
+                              {/* CASE 2: Executed -> Show Chart + Mini Modify Trigger */}
+                              {isExecuted && (
+                                <>
+                                  {/* Minimal Modify Trigger (Only if it was a template) */}
+                                  {isTemplate && onConfigureTemplate && (
+                                    <div className="flex justify-end mb-1">
+                                      <button
+                                        onClick={() =>
+                                          onConfigureTemplate(
+                                            message.id,
+                                            report.sql!,
+                                            report.missing_params || []
+                                          )
+                                        }
+                                        className="flex items-center gap-1.5 text-xs font-medium text-indigo-500 hover:text-indigo-600 transition-colors bg-indigo-50/50 hover:bg-indigo-50 px-2 py-1 rounded-md shadow-sm border border-indigo-100/50"
+                                      >
+                                        <SlidersHorizontal className="w-3 h-3" />
+                                        <span>{t('modify_parameters', { defaultValue: 'Modify Parameters' })}</span>
+                                      </button>
+                                    </div>
+                                  )}
+
+                                  {/* The Actual Chart/Table */}
+                                  <ReportCard
+                                    messageId={message.id}
+                                    message={message}
+                                    reportData={report}
+                                    className="w-full shadow-sm hover:shadow-md transition-shadow"
+                                  />
+                                </>
                               )}
-                            </div>
-                          )}
+
+                              {/* SUGGESTIONS: Only show if NOT a pending template */}
+                              {(!isTemplate || isExecuted) &&
+                                report.suggestions &&
+                                report.suggestions.length > 0 && (
+                                  <div className="flex flex-wrap items-center gap-2 pt-2 animate-in fade-in slide-in-from-top-1">
+                                    <div className="flex items-center gap-1.5 text-xs font-medium text-purple-600 mr-1">
+                                      <Sparkles className="w-3.5 h-3.5" />
+                                      {t('suggested')}
+                                    </div>
+                                    {report.suggestions.map(
+                                      (suggestion, idx) => (
+                                        <button
+                                          key={idx}
+                                          onClick={() => {
+                                            if (
+                                              !isChatLoading &&
+                                              !isRestoring
+                                            ) {
+                                              handleQuerySubmit(suggestion)
+                                            }
+                                          }}
+                                          disabled={isChatLoading || isRestoring}
+                                          className={`px-3 py-1.5 rounded-full bg-white border text-xs shadow-sm ${
+                                            isChatLoading || isRestoring
+                                              ? 'border-zinc-100 text-zinc-400 cursor-not-allowed'
+                                              : 'border-zinc-200 text-zinc-600 hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700 transition-colors'
+                                          }`}
+                                        >
+                                          {suggestion}
+                                        </button>
+                                      )
+                                    )}
+                                  </div>
+                                )}
+                            </>
+                          )
+                        })()}
                       </div>
                     )}
                   </div>

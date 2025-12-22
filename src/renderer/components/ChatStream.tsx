@@ -85,11 +85,6 @@ export function ChatStream() {
         {smartFilterRequest && (
           <SmartFilterModal
             isOpen={smartFilterRequest.isOpen}
-            onOpenChange={(open) => {
-              if (!open) {
-                smartFilterRequest.reject(new Error('Cancelled'))
-              }
-            }}
             onCancel={() => {
                smartFilterRequest.reject(new Error('Cancelled'))
                addToast({
@@ -108,9 +103,6 @@ export function ChatStream() {
         {activeTemplate && (
           <SmartFilterModal
             isOpen={true}
-            onOpenChange={(open) => {
-              if (!open) setActiveTemplate(null)
-            }}
             onCancel={() => setActiveTemplate(null)}
             params={activeTemplate.params}
             templateSql={activeTemplate.templateSql}
