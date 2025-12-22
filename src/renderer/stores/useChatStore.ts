@@ -340,6 +340,23 @@ const sendMessage = async (
     if (plan.status === 'error' || !plan.sql)
       throw new Error(plan.error || 'AI returned an error')
 
+    if (plan.is_template) {
+      updateMessage(botMsgId, msg => ({
+        ...msg,
+        reportData: {
+          title: plan.title,
+          summary: plan.summary,
+          sql: plan.sql,
+          reasoning: plan.reasoning,
+          suggestions: plan.suggestions,
+          chartType: plan.visualization?.type,
+          vizConfig: plan.visualization?.config as any,
+          is_template: plan.is_template,
+          missing_params: plan.missing_params as any,
+        },
+      }))
+    }
+
     if (plan.is_template && plan.missing_params) {
       try {
         const finalSql = await new Promise<string>((resolve, reject) => {
@@ -428,6 +445,9 @@ const sendMessage = async (
         columnTypes,
 
         vizConfig: plan.visualization?.config as any,
+
+        is_template: plan.is_template,
+        missing_params: plan.missing_params as any,
 
         insights: [],
       },
@@ -559,6 +579,42 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
     if (plan.status === 'error' || !plan.sql)
       throw new Error(plan.error || 'AI returned an error')
 
+    if (plan.is_template) {
+      updateMessage(messageId, msg => ({
+        ...msg,
+        reportData: {
+          title: plan.title,
+          summary: plan.summary,
+          sql: plan.sql,
+          reasoning: plan.reasoning,
+          suggestions: plan.suggestions,
+          chartType: plan.visualization?.type,
+          vizConfig: plan.visualization?.config as any,
+          is_template: plan.is_template,
+          missing_params: plan.missing_params as any,
+        },
+      }))
+    }
+
+    if (plan.is_template && plan.missing_params) {
+      try {
+        const finalSql = await new Promise<string>((resolve, reject) => {
+          useProjectStore.getState().setSmartFilterRequest({
+            isOpen: true,
+            params: plan.missing_params as FilterParam[],
+            templateSql: plan.sql!,
+            resolve,
+            reject,
+          })
+        })
+        plan.sql = finalSql
+        useProjectStore.getState().setSmartFilterRequest(null)
+      } catch (e) {
+        useProjectStore.getState().setSmartFilterRequest(null)
+        throw e // Propagate error (cancellation)
+      }
+    }
+
     updateMessage(messageId, msg => ({
       ...msg,
       status: 'planning',
@@ -600,6 +656,8 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
         columns,
         columnTypes,
         vizConfig: plan.visualization?.config as any,
+        is_template: plan.is_template,
+        missing_params: plan.missing_params as any,
         insights: [],
       },
     }))

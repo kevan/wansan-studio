@@ -8,10 +8,10 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import { FilterParam } from '@shared/schemas/analysis'
-import { Loader2, Search } from 'lucide-react'
+import { Loader2, Search, Sparkles, Check } from 'lucide-react'
 import debounce from 'lodash.debounce'
 import { cn } from '@/utils/cn'
 
@@ -22,6 +22,19 @@ interface SmartFilterModalProps {
   templateSql: string
   onConfirm: (finalSql: string) => void
   onCancel: () => void
+}
+
+function SimpleCheckbox({ checked }: { checked: boolean }) {
+  return (
+    <div
+      className={cn(
+        "h-4 w-4 shrink-0 rounded-sm border border-zinc-900 ring-offset-background flex items-center justify-center transition-colors",
+        checked ? "bg-zinc-900 text-zinc-50 border-zinc-900" : "bg-transparent border-zinc-400"
+      )}
+    >
+      {checked && <Check className="h-3 w-3" />}
+    </div>
+  )
 }
 
 function FilterParamBlock({
@@ -70,7 +83,6 @@ function FilterParamBlock({
   )
 
   useEffect(() => {
-    // Initial fetch
     fetchOptions(searchTerm)
     return () => {
       debouncedFetch.cancel()
@@ -91,55 +103,73 @@ function FilterParamBlock({
     }
   }
 
+  const isSelected = (val: string) => selectedValues.includes(val)
+
   return (
-    <div className="space-y-2">
-      <Label className="text-zinc-700 font-medium">
-        Select values for <span className="text-primary">{param.label || param.column}</span>
-      </Label>
-      <div className="relative">
-        <Search className="absolute left-2 top-2.5 h-4 w-4 text-zinc-400" />
-        <Input
-          value={searchTerm}
-          onChange={handleSearchChange}
-          placeholder={`Search ${param.label || param.column}...`}
-          className="pl-8"
-        />
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Header for this param */}
+      <div className="px-6 py-4 pb-2 space-y-1 bg-white flex-none">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-indigo-500" />
+          <h3 className="text-lg font-semibold leading-none tracking-tight">Refine Analysis</h3>
+        </div>
+        <p className="text-sm text-zinc-500">
+          Select specific <strong>{param.label || param.column}</strong> values to filter by.
+        </p>
       </div>
-      
-      <div className="border rounded-md h-40 overflow-y-auto p-1 bg-zinc-50/50">
-        {loading ? (
-           <div className="flex justify-center items-center h-full">
-             <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
-           </div>
-        ) : options.length === 0 ? (
-           <div className="flex justify-center items-center h-full text-xs text-zinc-400">
-             No results found
+
+      {/* Search Input */}
+      <div className="px-6 py-2 border-b border-zinc-100 bg-white flex-none">
+        <div className="relative">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
+          <Input
+            value={searchTerm}
+            onChange={handleSearchChange}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                e.currentTarget.blur()
+              }
+            }}
+            placeholder={`Search ${param.label || param.column}...`}
+            className="pl-9 border-zinc-200 bg-zinc-50 focus-visible:ring-zinc-400 focus-visible:border-zinc-400"
+          />
+          {loading && (
+            <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-zinc-400" />
+          )}
+        </div>
+      </div>
+
+      {/* List Area */}
+      <div className="flex-1 overflow-y-auto p-2 min-h-[300px] max-h-[300px]">
+        {options.length === 0 && !loading ? (
+           <div className="h-full flex items-center justify-center text-sm text-zinc-400">
+             No matching values found.
            </div>
         ) : (
-           <div className="space-y-0.5">
+           <div className="space-y-1 p-2">
              {options.map(opt => (
                <div 
                  key={opt}
-                 className={cn(
-                   "flex items-center gap-2 px-2 py-1.5 rounded-sm cursor-pointer hover:bg-zinc-100 transition-colors text-sm",
-                   selectedValues.includes(opt) && "bg-indigo-50 text-indigo-700 font-medium"
-                 )}
                  onClick={() => toggleSelection(opt)}
+                 className={cn(
+                   "flex items-center space-x-3 p-2.5 rounded-md cursor-pointer text-sm transition-all select-none",
+                   isSelected(opt) ? "bg-zinc-100 font-medium text-zinc-900" : "hover:bg-zinc-50 text-zinc-600"
+                 )}
                >
-                 <input 
-                   type="checkbox" 
-                   checked={selectedValues.includes(opt)} 
-                   readOnly 
-                   className="h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer pointer-events-none"
-                 />
-                 <span className="truncate flex-1">{opt}</span>
+                 <SimpleCheckbox checked={isSelected(opt)} />
+                 <span>{opt}</span>
                </div>
              ))}
            </div>
         )}
       </div>
-      <div className="text-xs text-zinc-500 text-right">
-        {selectedValues.length} selected
+      
+      {/* Param Footer (if we had multiple params, this would be complex, but assuming 1 for this UI design) */}
+      <div className="px-6 py-4 bg-zinc-50/50 border-t border-zinc-100 flex justify-between items-center flex-none">
+         <Badge variant="secondary" className="px-2 font-normal text-zinc-500">
+            {selectedValues.length} selected
+         </Badge>
       </div>
     </div>
   )
@@ -167,10 +197,8 @@ export function SmartFilterModal({
     let finalSql = templateSql
     for (const param of params) {
         const vals = selections[param.placeholder] || []
-        // Convert to SQL list: 'A', 'B'
         const sqlList = vals.map(v => `'${v.replace(/'/g, "''")}'`).join(", ")
-        
-        finalSql = finalSql.replace(param.placeholder, sqlList)
+        finalSql = finalSql.replace(param.placeholder, sqlList || "''") // Fallback empty
     }
     setConfirmed(true)
     onConfirm(finalSql)
@@ -182,39 +210,50 @@ export function SmartFilterModal({
       onOpenChange(false)
   }
 
+  // Assuming single param for the polished UI, but supporting multiple by rendering multiple blocks?
+  // The polished UI design assumes a single list.
+  // If multiple params exist, we might need tabs or stacked sections.
+  // For now, I will render ONLY the first param if multiple, or map them stacked.
+  // To strictly follow the "clean" design, I'll stack them but remove the footer from inside FilterParamBlock
+  // and put it in the main modal footer.
+  
   const isAllSatisfied = params.every(p => (selections[p.placeholder]?.length || 0) > 0)
+  const totalSelected = Object.values(selections).reduce((acc, curr) => acc + curr.length, 0)
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
         if (!open && !confirmed) onCancel()
         onOpenChange(open)
     }}>
-      <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Smart Filter</DialogTitle>
-          <DialogDescription>
-             The AI found ambiguous criteria. Please refine your filter.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="flex-1 overflow-y-auto py-4 space-y-6">
-            {params.map(param => (
-                <FilterParamBlock 
-                  key={param.placeholder}
-                  param={param}
-                  selectedValues={selections[param.placeholder] || []}
-                  onChange={(vals) => setSelections(prev => ({...prev, [param.placeholder]: vals}))}
-                />
-            ))}
-        </div>
+      <DialogContent className="sm:max-w-[425px] gap-0 p-0 overflow-hidden border-zinc-200 shadow-2xl bg-white block">
+        {/* Render only the first param for now as the design is tailored for it.
+            If we support multiple, we should probably iterate. 
+            But FilterParamBlock includes Header/Input/List. 
+            Stacked headers look bad. 
+            I'll iterate but maybe visually separate? 
+            Or just assume 1 param which is 99% of cases.
+        */}
+        {params.map((param, idx) => (
+            <FilterParamBlock 
+              key={param.placeholder}
+              param={param}
+              selectedValues={selections[param.placeholder] || []}
+              onChange={(vals) => setSelections(prev => ({...prev, [param.placeholder]: vals}))}
+            />
+        ))}
 
-        <DialogFooter className="mt-2">
-          <Button variant="outline" onClick={handleCancel}>
-            Cancel
-          </Button>
-          <Button onClick={handleConfirm} disabled={!isAllSatisfied}>
-            Run Analysis
-          </Button>
+        <DialogFooter className="p-4 bg-zinc-50/50 border-t border-zinc-100 flex justify-between items-center sm:justify-between">
+          <Badge variant="secondary" className="px-2 font-normal text-zinc-500">
+            {totalSelected} selected
+          </Badge>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={handleCancel} className="text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50">
+              Cancel
+            </Button>
+            <Button onClick={handleConfirm} disabled={!isAllSatisfied} className="bg-zinc-900 hover:bg-zinc-800 text-white">
+              Run Analysis
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
