@@ -235,6 +235,21 @@ export class DatabaseService {
     this.db.registerFileText(filename, data)
   }
 
+  async dropFile(filename: string): Promise<void> {
+    await this.ensureReady()
+    if (!this.db) {
+      throw new Error('Database not initialized')
+    }
+
+    // Try to release the file from DuckDB's virtual FS
+    if (typeof this.db.dropFile === 'function') {
+      this.db.dropFile(filename)
+    } else {
+      // Fallback: Clear content if dropFile is not exposed
+      this.db.registerFileText(filename, '')
+    }
+  }
+
   getDb(): any {
     if (!this.db) {
       throw new Error('Database not initialized')

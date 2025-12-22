@@ -93,6 +93,9 @@ export class FileService {
         `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${tempCsvName}', SAMPLE_SIZE=-1, auto_detect=true)`
       )
 
+      // [OPTIMIZATION] Free memory
+      await this.databaseService.dropFile(tempCsvName)
+
       // Fetch schema using PRAGMA table_info for consistency
       const columnsResult = await this.databaseService.query(
         `PRAGMA table_info('${tableName}');`
@@ -159,6 +162,9 @@ export class FileService {
       await this.databaseService.exec(
         `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${tempJsonName}', format='auto', auto_detect=true)`
       )
+
+      // [OPTIMIZATION] Free memory
+      await this.databaseService.dropFile(tempJsonName)
 
       // Fetch schema using PRAGMA table_info for consistency
       const columnsResult = await this.databaseService.query(
@@ -278,6 +284,9 @@ export class FileService {
         `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${tempCsvName}', SAMPLE_SIZE=-1, auto_detect=true)`
       )
 
+      // [OPTIMIZATION] Free memory
+      await this.databaseService.dropFile(tempCsvName)
+
       // Fetch schema for the reloaded CSV
       const columnsResult = await this.databaseService.query(
         `PRAGMA table_info('${tableName}');`
@@ -313,6 +322,9 @@ export class FileService {
       await this.databaseService.exec(
         `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${tempJsonName}', format='auto', auto_detect=true)`
       )
+
+      // [OPTIMIZATION] Free memory
+      await this.databaseService.dropFile(tempJsonName)
 
       // Fetch schema for the reloaded JSON
       const columnsResult = await this.databaseService.query(

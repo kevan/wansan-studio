@@ -101,6 +101,9 @@ export async function ingestJsonData(
       FROM read_json_auto('${tempFileName}', format = 'auto', auto_detect = true)`
     )
 
+    // [OPTIMIZATION] Free memory: remove the virtual file as data is now in the table
+    await databaseService.dropFile(tempFileName)
+
     return fetchTableSchema(databaseService, tableName, 'Imported JSON Data')
   } finally {
   }
@@ -186,6 +189,9 @@ export async function ingestExcelFile(
                     SELECT *
                     FROM read_csv_auto('${tempFileName}', HEADER = TRUE, SAMPLE_SIZE = -1, auto_detect = true)`
             )
+
+            // [OPTIMIZATION] Free memory: remove the virtual file
+            await databaseService.dropFile(tempFileName)
 
             const description =
               allSheetsCount > 1 ? `${fileName} - ${sheetName}` : fileName
