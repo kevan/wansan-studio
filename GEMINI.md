@@ -91,25 +91,3 @@ You MUST follow this strict **Dual-Mode Protocol**. Do not write code unless ask
 *   Chat interface for "Text-to-SQL".
 *   Basic Dashboard/Report generation.
 *   PDF Export.
-
-## Gemini Added Memories
-- Added multilingual support (i18n) to Sidebar and SettingsDialog components, creating new keys in common.json and settings.json.
-- The project uses react-i18next with namespaces 'common' and 'settings' for localization.
-- Implemented gesture support (Zoom: Ctrl+Wheel, Pan: Space+Drag) in DashboardCanvasV3.
-- Fixed A4 dashboard scrolling issue by changing transform origin to 'top left' and using an explicitly sized wrapper with margin: auto.
-- Fixed A4 dashboard zoom overflow issue in DashboardCanvasV3 by using origin-top-left and a proxy wrapper div with scaled dimensions.
-- 每次任务完成后执行一次 type-check
-- 每次任务完成后，处理多语言适配
-- ElectronAPI 类型定义在 useIPC.ts
-- Implemented Markdown export functionality for chat history, restricted to Pro users. Added 'hide-on-export' class to PageLayer to clean up A4 exports. Fixed DialogContent accessibility warning in SettingsDialog.
-- Added support email (jin4074@gmail.com) to Settings > About section with mailto link functionality.
-- Changed default AI provider to DeepSeek in useSettingsStore. Added support email (jin4074@gmail.com) to Settings dialog.
-- Changed ReportCard UI to show controls only on hover. Adjusted A4 layout rows to 27 to fix overflow.
-- Refactored `parseCSVFile`, `parseJsonFile`, and `parseExcelFile` in `src/main/services/file.ts` to use consistent schema fetching (`PRAGMA table_info`) and sampling (`getSampleValues`) logic.
-- Implemented `inferTypeFromSemanticName` in `src/main/services/file.ts` to override numeric types (INT, BIGINT, etc.) to `TIMESTAMP` if column names suggest date/time (e.g., "created_at", "time").
-- Updated `processSampleValue` in `src/shared/serialization.ts` to prioritize `columnType` checking over generic BigInt stringification. This ensures that BigInt timestamps are correctly formatted as ISO strings instead of raw numeric strings, fixing the date display issue in the frontend.
-- Updated `formatDateValue` in `src/shared/serialization.ts` to explicitly handle `bigint` inputs AND numeric string inputs (e.g. "1735689600000"). This fixes the issue where AI context was receiving raw timestamp strings instead of formatted dates.
-- Updated `SchemaEditor.tsx` to handle numeric string timestamps (e.g., "1735689600000") by attempting conversion to Number before parsing with Date.
-- Removed manual `sanitizeValue` and `sanitizeFile` from `src/renderer/stores/useFileStore.ts`, allowing `createBigIntStorage` to handle BigInt serialization natively and preventing unnecessary conversion to Number.
-- Restored and enhanced schema preprocessing in `src/main/services/ai.ts` (`preprocessSchemas`). This ensures that even if the Store contains raw timestamps, the AI receives human-readable ISO date strings for better context understanding in `generatePlan`, `fixQuery`, and `getContextAnalysis`.
-- Localized `TreeNode` component's context menu items and tooltips (Data Tree), adding new keys to `common.json` for both English and Chinese.
