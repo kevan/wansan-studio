@@ -106,10 +106,13 @@ export function ReportCard({
     })
   }
 
+  const rowCount = reportData.tableData?.length || 0
+  const latency = message.metadata?.latency || 0
+
   return (
     <div
       className={cn(
-        'flex flex-col border border-zinc-200 rounded-lg bg-background shadow-sm transition-all overflow-hidden h-full',
+        'flex flex-col border border-zinc-200 rounded-xl bg-white shadow-sm transition-all overflow-hidden h-full group',
         className
       )}
     >
@@ -122,29 +125,9 @@ export function ReportCard({
         />
       </div>
 
-      {/* Compact Toolbar Footer */}
-      <div className="flex items-center justify-between p-3 border-t bg-zinc-50/50">
-        {/* Timestamp & Latency */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-zinc-400 tabular-nums">
-            {message.timestamp
-              ? new Date(message.timestamp).toLocaleString()
-              : ''}
-          </span>
-
-          {/* Execution Latency Badge */}
-          {message.metadata?.latency && (
-            <span
-              className="flex items-center gap-1 text-[10px] text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded-sm tabular-nums"
-              title="总执行时间 (AI + SQL)"
-            >
-              ⚡ {(message.metadata.latency / 1000).toFixed(1)}s
-            </span>
-          )}
-        </div>
-
-        {/* Action Toolbar */}
-        <div className="flex items-center gap-1">
+      {/* Toolbar */}
+      <div className="flex items-center justify-end px-3 py-2 border-t border-zinc-50 bg-white">
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           {/* Viz Controls */}
           <VizControls
             vizType={reportData.chartType}
@@ -156,7 +139,7 @@ export function ReportCard({
 
           {/* Inspect Code & Logic Button */}
           <ExpandableAction
-            icon={<Code className="h-4 w-4" />}
+            icon={<Code className="h-3.5 w-3.5" />}
             label="Code"
             onClick={handleOpenSqlLab}
           />
@@ -165,7 +148,7 @@ export function ReportCard({
           <ExpandableAction
             icon={
               <RefreshCw
-                className={cn('h-4 w-4', isRerunning && 'animate-spin')}
+                className={cn('h-3.5 w-3.5', isRerunning && 'animate-spin')}
               />
             }
             label={t('rerun')}
@@ -175,7 +158,7 @@ export function ReportCard({
 
           {/* Refine Button */}
           <ExpandableAction
-            icon={<Sparkles className="h-4 w-4" />}
+            icon={<Sparkles className="h-3.5 w-3.5" />}
             label={t('refine')}
             onClick={() => setReplyTo(messageId)}
           />
@@ -185,7 +168,7 @@ export function ReportCard({
             icon={
               <Pin
                 className={cn(
-                  'w-4 h-4',
+                  'w-3.5 h-3.5',
                   isPinned && 'fill-current text-orange-600'
                 )}
               />
@@ -193,8 +176,21 @@ export function ReportCard({
             label={isPinned ? t('pinned') : t('pin')}
             onClick={handlePinToggle}
             active={isPinned}
-            className={isPinned ? 'text-orange-600 bg-orange-50 border-orange-100' : ''}
+            className={
+              isPinned ? 'text-orange-600 bg-orange-50 border-orange-100' : ''
+            }
           />
+        </div>
+      </div>
+
+      {/* Data Lineage Footer */}
+      <div className="px-4 py-1.5 border-t border-zinc-50 bg-zinc-50/30 text-[10px] text-zinc-400 flex justify-between items-center select-none font-medium">
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
+          <span>Generated via DuckDB Local Engine</span>
+        </div>
+        <div className="font-mono tabular-nums opacity-70">
+          {rowCount.toLocaleString()} rows processed in {latency.toFixed(0)}ms
         </div>
       </div>
     </div>

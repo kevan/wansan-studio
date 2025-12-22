@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
 import type { EChartsOption, EChartsType } from 'echarts'
+import { applyWansanTheme } from '../../lib/echarts-theme'
 
 interface ReportChartProps {
   option: EChartsOption
@@ -39,14 +40,8 @@ export function ReportChart({ option, className, style }: ReportChartProps) {
 
   useEffect(() => {
     if (!instanceRef.current) return
-    // Disable ECharts default title to avoid duplication with our UI header
-    const optionWithHiddenTitle = {
-      title: {
-        show: false,
-      },
-      ...option,
-    }
-    instanceRef.current.setOption(optionWithHiddenTitle, { notMerge: true })
+    const themedOption = applyWansanTheme(option)
+    instanceRef.current.setOption(themedOption, { notMerge: true })
   }, [option])
 
   return <div ref={chartRef} className={className} style={style} />
