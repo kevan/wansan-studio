@@ -72,26 +72,15 @@ export async function ingestJsonData(
           const hours = val.getHours()
           const minutes = val.getMinutes()
           const seconds = val.getSeconds()
-          const ms = val.getMilliseconds()
 
-          // Smart formatting & Snap-to-Midnight (Sync with excelUtils)
-          const secondsInDay = hours * 3600 + minutes * 60 + seconds
-          const TOLERANCE = 60
-
-          if (secondsInDay < TOLERANCE) {
+          // Smart formatting: if time is midnight, use YYYY-MM-DD for DATE inference
+          if (hours === 0 && minutes === 0 && seconds === 0) {
             newRow[key] = `${year}-${month}-${day}`
-          } else if (86400 - secondsInDay < TOLERANCE) {
-            const nextDay = new Date(year, parseInt(month) - 1, Number(day) + 1)
-            const ndYear = nextDay.getFullYear()
-            const ndMonth = String(nextDay.getMonth() + 1).padStart(2, '0')
-            const ndDay = String(nextDay.getDate()).padStart(2, '0')
-            newRow[key] = `${ndYear}-${ndMonth}-${ndDay}`
           } else {
             const h = String(hours).padStart(2, '0')
             const min = String(minutes).padStart(2, '0')
             const s = String(seconds).padStart(2, '0')
-            const msec = String(ms).padStart(3, '0')
-            newRow[key] = `${year}-${month}-${day}T${h}:${min}:${s}.${msec}`
+            newRow[key] = `${year}-${month}-${day}T${h}:${min}:${s}.000`
           }
         } else {
           newRow[key] = val
