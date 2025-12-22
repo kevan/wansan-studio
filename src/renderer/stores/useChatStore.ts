@@ -9,6 +9,7 @@ import type {
   RelationSuggestion,
   TableSchema,
 } from '@shared/types'
+import { FilterParam } from '@shared/schemas/analysis'
 import i18n from '../i18n'
 
 // Types
@@ -337,6 +338,25 @@ const sendMessage = async (
     const plan = planResponse.data
     if (plan.status === 'error' || !plan.sql)
       throw new Error(plan.error || 'AI returned an error')
+
+    if (plan.is_template && plan.missing_params) {
+      try {
+        const finalSql = await new Promise<string>((resolve, reject) => {
+          useProjectStore.getState().setSmartFilterRequest({
+            isOpen: true,
+            params: plan.missing_params as FilterParam[],
+            templateSql: plan.sql!,
+            resolve,
+            reject,
+          })
+        })
+        plan.sql = finalSql
+        useProjectStore.getState().setSmartFilterRequest(null)
+      } catch (e) {
+        useProjectStore.getState().setSmartFilterRequest(null)
+        throw e // Propagate error (cancellation)
+      }
+    }
 
     const refinementHint =
       (plan.reasoning || '').toLowerCase().includes('modified previous sql') ||

@@ -46,6 +46,16 @@ export interface AIAnalysisResult {
       series_name?: string
     }
   }
+
+  // v1.2 Smart Filters
+  is_template?: boolean
+  missing_params?: Array<{
+    placeholder: string
+    label: string
+    column: string
+    table: string
+    hint?: string
+  }>
 }
 
 // [UPDATE] Add this new interface

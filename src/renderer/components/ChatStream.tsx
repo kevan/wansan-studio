@@ -4,12 +4,15 @@ import { ChatInterface } from './ChatInterface'
 import { TableSchema, RelationSuggestion } from '../../shared/types'
 import { useChatStore } from '../stores/useChatStore'
 import { useProjectStore } from '../stores/useProjectStore'
+import { SmartFilterModal } from './modals/SmartFilterModal'
 
 export function ChatStream() {
   const { files, relations } = useFileStore()
   const activeFileId = useProjectStore(s => s.activeFileId)
   const messages = useChatStore(state => state.messages)
   const sendMessage = useChatStore(state => state.sendMessage)
+  const smartFilterRequest = useProjectStore(s => s.smartFilterRequest)
+  
   const readyFiles = files.filter(f => f.status === 'ready')
   const currentFile =
     readyFiles.find(f => f.id === activeFileId) || readyFiles[0]
@@ -66,6 +69,20 @@ export function ChatStream() {
           }
           className="h-full"
         />
+        
+        {smartFilterRequest && (
+          <SmartFilterModal
+            isOpen={smartFilterRequest.isOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                smartFilterRequest.reject()
+              }
+            }}
+            params={smartFilterRequest.params}
+            templateSql={smartFilterRequest.templateSql}
+            onConfirm={(sql) => smartFilterRequest.resolve(sql)}
+          />
+        )}
       </div>
     </div>
   )

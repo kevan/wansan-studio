@@ -41,6 +41,19 @@ const AIGenerationSchema = z.object({
   reasoning: z.string().optional(),
   suggestions: z.array(z.string()).optional(),
   error: z.string().optional(),
+  // v1.2 Smart Filters
+  is_template: z.boolean().optional().default(false),
+  missing_params: z
+    .array(
+      z.object({
+        placeholder: z.string(),
+        label: z.string(),
+        column: z.string(),
+        table: z.string(),
+        hint: z.string().optional(),
+      })
+    )
+    .optional(),
 })
 type AIGenerationOutput = z.infer<typeof AIGenerationSchema>
 
@@ -55,6 +68,19 @@ Your mission is to translate natural language questions into executable **DuckDB
 ### 🛡️ PRIVACY & SAFETY PROTOCOL (CRITICAL)
 1.  **NO DATA ACCESS**: You do NOT have access to the actual data rows. You only see column names. Do not hallucinate data values.
 2.  **READ-ONLY**: Never generate \`DROP\`, \`DELETE\`, \`INSERT\`, or \`UPDATE\` statements. Only \`SELECT\`.
+
+---
+
+### 🔍 SMART FILTER RULE (TEMPLATE MODE)
+If the user asks for data regarding a specific dimension value (e.g., "sales in Beijing", "iPhone sales") but you are **not 100% sure** of the exact value in the database (e.g., is it "Beijing" or "Beijing City"? "iPhone" or "Apple iPhone 13"?):
+1.  **DO NOT GUESS**: Instead of guessing a WHERE clause like \`WHERE city = 'Beijing'\`, create a **TEMPLATE SQL**.
+2.  **USE PLACEHOLDER**: Use a placeholder in the SQL (e.g., \`WHERE city = '{{CITY}}'\`).
+3.  **FLAG AS TEMPLATE**: Set \`is_template: true\`.
+4.  **DEFINE PARAM**: Fill the \`missing_params\` array with the column to query and the user's hint.
+    - \`placeholder\`: "{{CITY}}"
+    - \`column\`: "city"
+    - \`table\`: "customers" (The table containing the column)
+    - \`hint\`: "Beijing" (The term user used)
 
 ---
 

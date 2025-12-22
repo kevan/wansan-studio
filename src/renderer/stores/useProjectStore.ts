@@ -8,6 +8,7 @@ import { Layout } from 'react-grid-layout'
 import { createBigIntStorage } from '@shared/serialization'
 import { Analytics } from '../services/analytics'
 import { useSettingsStore } from './useSettingsStore'
+import { FilterParam } from '@shared/schemas/analysis'
 
 // 生成唯一 ID
 const generateId = () =>
@@ -15,6 +16,14 @@ const generateId = () =>
 
 export type LayoutScenario = 'default' | 'print' | 'large' | 'ppt' | 'email'
 export type Language = 'en' | 'zh'
+
+export interface SmartFilterRequest {
+  isOpen: boolean
+  params: FilterParam[]
+  templateSql: string
+  resolve: (finalSql: string) => void
+  reject: () => void
+}
 
 export interface ProjectState extends ProjectData {
   sidebarMode: 'sessions' | 'data'
@@ -27,6 +36,7 @@ export interface ProjectState extends ProjectData {
   isRestoring: boolean
   isRefreshing: boolean
   abortControllers: Record<string, AbortController>
+  smartFilterRequest: SmartFilterRequest | null
 
   // Actions
   setSidebarMode: (mode: 'sessions' | 'data') => void
@@ -66,6 +76,7 @@ export interface ProjectState extends ProjectData {
   setSelectedNode: (node: SelectedNode | null) => void
   setRestoring: (val: boolean) => void
   setSuggestedPrompts: (prompts: string[]) => void
+  setSmartFilterRequest: (req: SmartFilterRequest | null) => void
   addFile: (
     file: Partial<FileNode> & { name: string; path: string; tableName: string }
   ) => string
@@ -140,6 +151,7 @@ export const useProjectStore = create<ProjectState>()(
       selectedNode: null,
       isRestoring: true,
       isRefreshing: false,
+      smartFilterRequest: null,
 
       setSidebarMode: mode =>
         set(state => {
@@ -164,6 +176,7 @@ export const useProjectStore = create<ProjectState>()(
       setPendingReplace: payload => set({ pendingReplace: payload }),
       setShowRefreshConfirm: open => set({ showRefreshConfirm: open }),
       setRefreshing: val => set({ isRefreshing: val }),
+      setSmartFilterRequest: req => set({ smartFilterRequest: req }),
 
       refreshSessionWidgets: async () => {
         const state = get()
@@ -1064,6 +1077,7 @@ export const useProjectStore = create<ProjectState>()(
           activeView,
           sidebarMode,
           selectedNode,
+          smartFilterRequest,
           ...rest
         } = state
         return rest
