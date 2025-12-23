@@ -3,6 +3,8 @@ import { Edit2 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import { ReportChart } from './report/ReportChart'
+import { DrillDownMenu } from './visualizations/drill-down-menu'
+import { useChatStore } from '../stores/useChatStore'
 
 // A4 画布的各个区域组件
 interface A4HeaderProps {
@@ -154,6 +156,41 @@ export function A4Chart({
   const containerRef = useRef<HTMLDivElement | null>(null)
   const { t } = useTranslation('common')
 
+  const [menuState, setMenuState] = useState<{
+    visible: boolean
+    x: number
+    y: number
+    name: string
+    seriesName?: string
+  } | null>(null)
+
+  const handleChartClick = (params: any) => {
+    if (params && params.event && params.event.event) {
+      const { clientX, clientY } = params.event.event
+      setMenuState({
+        visible: true,
+        x: clientX,
+        y: clientY,
+        name: params.name,
+        seriesName: params.seriesName,
+      })
+    }
+  }
+
+  const handleFocus = () => {
+    if (!menuState) return
+    const query = `Filter the analysis by ${menuState.name}`
+    useChatStore.getState().sendMessage(query)
+    setMenuState(null)
+  }
+
+  const handleViewData = () => {
+    if (!menuState) return
+    const query = `Show the first 20 raw data rows for '${menuState.name}'`
+    useChatStore.getState().sendMessage(query)
+    setMenuState(null)
+  }
+
   useEffect(() => {
     const handler = () => requestAnimationFrame(() => {})
     window.addEventListener('dashboard:layout-changed', handler)
@@ -268,11 +305,22 @@ export function A4Chart({
         option={option as any}
         className="relative h-full w-full"
         style={{ height: '100%', width: '100%', ...style }}
+        onChartClick={handleChartClick}
       />
       {!isRenderable && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-zinc-500">
           {t('no_chart_data')}
         </div>
+      )}
+      {menuState && (
+        <DrillDownMenu
+          x={menuState.x}
+          y={menuState.y}
+          dataName={menuState.name}
+          onFocus={handleFocus}
+          onViewData={handleViewData}
+          onClose={() => setMenuState(null)}
+        />
       )}
     </div>
   )

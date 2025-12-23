@@ -7,9 +7,15 @@ interface ReportChartProps {
   option: EChartsOption
   className?: string
   style?: React.CSSProperties
+  onChartClick?: (params: any) => void
 }
 
-export function ReportChart({ option, className, style }: ReportChartProps) {
+export function ReportChart({
+  option,
+  className,
+  style,
+  onChartClick,
+}: ReportChartProps) {
   const chartRef = useRef<HTMLDivElement | null>(null)
   const instanceRef = useRef<EChartsType | null>(null)
 
@@ -25,6 +31,13 @@ export function ReportChart({ option, className, style }: ReportChartProps) {
     const instance = echarts.init(el)
     instanceRef.current = instance
 
+    // Bind click listener
+    if (onChartClick) {
+      instance.on('click', params => {
+        onChartClick(params)
+      })
+    }
+
     const resize = () => instance.resize()
     const observer = new ResizeObserver(() => resize())
     observer.observe(el)
@@ -32,11 +45,14 @@ export function ReportChart({ option, className, style }: ReportChartProps) {
 
     return () => {
       window.removeEventListener('resize', resize)
+      if (onChartClick) {
+        instance.off('click')
+      }
       observer.disconnect()
       instance.dispose()
       instanceRef.current = null
     }
-  }, [])
+  }, [onChartClick])
 
   useEffect(() => {
     if (!instanceRef.current) return
