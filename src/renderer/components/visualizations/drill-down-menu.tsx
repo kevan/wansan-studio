@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface DrillDownMenuProps {
   x: number
@@ -18,6 +19,7 @@ export function DrillDownMenu({
   onClose,
 }: DrillDownMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null)
+  const { t } = useTranslation('common')
 
   // Close on click outside
   useEffect(() => {
@@ -46,7 +48,7 @@ export function DrillDownMenu({
     >
       <div className="px-3 py-2 border-b border-zinc-50 mb-1">
         <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
-          Selected
+          {t('selected_data')}
         </div>
         <div className="text-sm font-semibold text-zinc-800 truncate max-w-[180px]">
           {dataName}
@@ -60,7 +62,7 @@ export function DrillDownMenu({
         }}
         className="w-full text-left px-3 py-1.5 text-xs text-zinc-700 hover:bg-blue-50 hover:text-blue-700 rounded-md flex items-center gap-2 transition-colors"
       >
-        <span>🔍</span> Focus Analysis
+        <span>🔍</span> {t('focus_chat')}
       </button>
 
       <button
@@ -70,7 +72,7 @@ export function DrillDownMenu({
         }}
         className="w-full text-left px-3 py-1.5 text-xs text-zinc-700 hover:bg-zinc-50 rounded-md flex items-center gap-2 transition-colors"
       >
-        <span>📄</span> View Raw Data
+        <span>📄</span> {t('data_detail')}
       </button>
     </div>
   )
