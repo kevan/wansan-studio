@@ -8,6 +8,7 @@ import { SmartFilterModal } from './modals/SmartFilterModal'
 import { useToastStore } from '../stores/useToastStore'
 import { FilterParam } from '@shared/schemas/analysis'
 import { useTranslation } from 'react-i18next'
+import { mapFileToSchema } from '../utils/schema-mapper'
 
 export function ChatStream() {
   const { t } = useTranslation('chat')
@@ -29,10 +30,7 @@ export function ChatStream() {
     readyFiles.find(f => f.id === activeFileId) || readyFiles[0]
 
   // Map store files to TableSchema for AI
-  const schemas: TableSchema[] = readyFiles.map(f => ({
-    tableName: f.tableName || `table_${f.id}`,
-    columns: f.columns,
-  }))
+  const schemas: TableSchema[] = readyFiles.map(mapFileToSchema)
 
   // Convert internal relations to API expected format
   const apiRelations: RelationSuggestion[] = relations

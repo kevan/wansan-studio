@@ -8,6 +8,17 @@ import { DatabaseService } from '../database/duckdb'
 function validateSQL(sql: string): boolean {
   // A simple check for read-only commands.
   const upperSql = sql.trim().toUpperCase()
+
+  // [Smart Metrics] Allow View Creation
+  if (upperSql.startsWith('CREATE OR REPLACE VIEW')) {
+    return true
+  }
+
+  // [Introspection] Allow DESCRIBE
+  if (upperSql.startsWith('DESCRIBE') || upperSql.startsWith('DESC')) {
+    return true
+  }
+
   if (!upperSql.startsWith('SELECT') && !upperSql.startsWith('WITH')) {
     throw new Error('Only SELECT and WITH statements are allowed.')
   }
@@ -17,7 +28,7 @@ function validateSQL(sql: string): boolean {
     'DELETE',
     'INSERT',
     'UPDATE',
-    'CREATE',
+    // 'CREATE', // Allowed for Views (checked above for start)
     'ALTER',
   ]
   for (const keyword of forbiddenKeywords) {
@@ -27,6 +38,14 @@ function validateSQL(sql: string): boolean {
       )
     }
   }
+  // Explicitly check for CREATE in the middle if it's not a view creation
+  if (
+    upperSql.includes(' CREATE ') &&
+    !upperSql.startsWith('CREATE OR REPLACE VIEW')
+  ) {
+    throw new Error('Execution of forbidden SQL keyword "CREATE" is disabled.')
+  }
+
   return true
 }
 

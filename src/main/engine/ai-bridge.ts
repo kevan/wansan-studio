@@ -11,10 +11,15 @@ import {
   ContextAnalysisResultSchema,
   FixSQLResultSchema,
 } from '@shared/schemas/analysis.ts'
-import { SYSTEM_PROMPT, CONTEXT_ANALYSIS_SYSTEM_PROMPT } from './prompts.ts'
+import {
+  SYSTEM_PROMPT,
+  CONTEXT_ANALYSIS_SYSTEM_PROMPT,
+  serializeSchemas,
+} from './prompts.ts'
 import { isDev } from '../utils/env'
 import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources'
 import { safeStringify, parse } from '@shared/serialization.ts'
+import { extractJSON } from '@shared/utils/json-utils'
 
 function getModelToUse(preferredModel?: string) {
   const envModel = process.env.OPENAI_MODEL
@@ -29,47 +34,6 @@ function getModelToUse(preferredModel?: string) {
 }
 
 type AIGenerationOutput = z.infer<typeof AnalysisResultSchema>
-
-function serializeSchemas(schemas: TableSchema[]): string {
-  return schemas
-    .map(table => {
-      const columnsStr = table.columns
-        .map(col => {
-          let hint = ''
-          const lower = col.name.toLowerCase()
-          const isPrimaryKey = col.isPrimaryKey === true || col.isKey === true
-
-          if (lower.includes('id') || lower.includes('code') || isPrimaryKey)
-            hint += ' [ID/Key]'
-          if (
-            lower.includes('price') ||
-            lower.includes('amount') ||
-            lower.includes('销售') ||
-            lower.includes('money')
-          )
-            hint += ' [Money/Metric]'
-          if (
-            lower.includes('date') ||
-            lower.includes('time') ||
-            lower.includes('日期')
-          )
-            hint += ' [Time]'
-
-          const samples =
-            col.sampleValues && col.sampleValues.length > 0
-              ? ` (Samples: ${col.sampleValues.slice(0, 3).join(', ')})`
-              : ''
-
-          return `- "${col.name}" (${col.type})${hint}${samples}`
-        })
-        .join('\n')
-      const descStr = table.description
-        ? ` (Source: "${table.description}")`
-        : ''
-      return `Table: "${table.tableName}"${descStr}\nColumns:\n${columnsStr}`
-    })
-    .join('\n\n')
-}
 
 export async function generateAnalysis(
   openai: OpenAI,
@@ -160,7 +124,8 @@ OUTPUT RULE: The "summary", "title", "reasoning", and "suggestions" fields MUST 
   }
 
   try {
-    const parsedResult = parse(resultJson)
+    const cleanedJson = extractJSON(resultJson)
+    const parsedResult = parse(cleanedJson)
     return AnalysisResultSchema.parse(parsedResult)
   } catch (error) {
     console.error('Failed to parse or validate AI response:', error)
@@ -227,7 +192,8 @@ OUTPUT RULE: The "suggestedPrompts" MUST be written in ${languageNote}.`,
   }
 
   try {
-    const rawResult = parse(resultJson)
+    const cleanedJson = extractJSON(resultJson)
+    const rawResult = parse(cleanedJson)
     return ContextAnalysisResultSchema.parse(rawResult)
   } catch (error) {
     console.error(
@@ -286,7 +252,8 @@ Fix the SQL. Ensure all table/column names are double-quoted and match the schem
     console.log('fixSQL post request - resultJson:', resultJson)
   }
   try {
-    return FixSQLResultSchema.parse(parse(resultJson))
+    const cleanedJson = extractJSON(resultJson)
+    return FixSQLResultSchema.parse(parse(cleanedJson))
   } catch (e) {
     throw new Error(`Failed to parse fix result: ${resultJson}`)
   }

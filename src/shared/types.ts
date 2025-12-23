@@ -22,6 +22,7 @@ export interface TableSchema {
   tableName: string // Normalized table name (e.g., "t_orders")
   description?: string // Original file name for AI context (e.g., "Sales 2023.xlsx")
   columns: ColumnSchema[]
+  smartMetrics?: SmartMetric[] // Metrics to be displayed in the schema
 }
 
 export interface AIAnalysisResult {
@@ -84,6 +85,15 @@ export type SyncStatus =
   | 'out-of-sync'
   | 'missing'
 
+export interface SmartMetric {
+  id: string // UUID
+  name: string // Database column alias (e.g., "profit_margin")
+  label: string // Human readable (e.g., "Profit Margin")
+  sqlExpression: string // SQL Fragment (e.g., "amount - products__cost")
+  description?: string // Context for AI
+  dataType?: string // Cached type (e.g., "DOUBLE")
+}
+
 export interface FileNode {
   id: string
   name: string
@@ -97,6 +107,7 @@ export interface FileNode {
   error?: string
   lastModified: number // Timestamp (ms) of file modification
   createdAt: number
+  smartMetrics?: SmartMetric[] // Persisted metrics
 }
 
 export interface ReloadResult {

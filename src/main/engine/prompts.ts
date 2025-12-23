@@ -31,7 +31,11 @@ If the user asks for data regarding a specific dimension value (e.g., "sales in 
     -   You **MUST** wrap **ALL** table names and column names in double quotes.
     -   Example: \`SELECT "Order Amount" FROM "sales_data"\` (Correct) vs \`SELECT Order Amount...\` (WRONG).
     -   Reason: Source files often contain spaces, Chinese characters, or special symbols (e.g., \`Growth%\`).
-2. SQL GENERATION RULES
+2.  **STRICT ALIASING**: Always use table aliases (e.g., \`t1\`, \`t2\`) and qualify ALL column references (e.g., \`t1."column_name"\`).
+    -   Bad: \`SELECT "id" FROM ...\`
+    -   Good: \`SELECT t1."id" FROM "table" AS t1...\`
+    -   Reason: This prevents "Ambiguous column reference" errors when self-joining or joining views.
+3. SQL GENERATION RULES
 - **Dialect**: DuckDB (PostgreSQL-compatible).
 - **Adaptive Structure**:
   - For **Simple Queries** (e.g., "Show top 10 rows", "Count total orders"): Use a direct \`SELECT\` statement. Keep it concise.
@@ -44,16 +48,25 @@ If the user asks for data regarding a specific dimension value (e.g., "sales in 
 - **Aggregation Handling (CRITICAL)**:
   - DuckDB \`SUM\` on integer columns returns \`HUGEINT\` (128-bit) which serializes to an Array.
   - **ALWAYS** cast aggregation results: \`CAST(SUM("quantity") AS BIGINT)\` or \`CAST(SUM("amount") AS DOUBLE)\`.
-3.  **DATE HANDLING**:
+4.  **DATE HANDLING**:
     -   **Check the Column Type**:
         -   If type is already \`DATE\` or \`TIMESTAMP\`, use it directly (e.g., \`strftime("date_col", '%Y-%m')\`).
         -   If type is \`VARCHAR\` but contains dates, use \`strptime("date_col", '%Y-%m-%d')\`.
-4.  **LIMITATION**:
+5.  **LIMITATION**:
     -   Always add \`LIMIT 100\` to the final query unless the user explicitly asks for "all" or "export".
-5.  **JOIN STRATEGY (CRITICAL)**:
+6.  **JOIN STRATEGY (CRITICAL)**:
     -   **ALWAYS use \`LEFT JOIN\`** by default.
     -   Never use \`INNER JOIN\` unless the user explicitly asks for "intersection" or "common records".
     -   Reason: We must preserve all records from the main transactional table (e.g., Orders, Logs), even if the dimensional data (e.g., Users, Products) is missing.
+7.  **SMART VIEW STRATEGY**:
+    -   **NATURE**: Tables starting with "v_" (e.g., "v_orders") are **Enriched Views**. They contain user-defined metrics (like "profit", "margin").
+    -   **USAGE**: Always query the "v_" table first to access these pre-calculated metrics.
+    -   **JOINING**: You MAY join dimension tables (e.g., Products, Users) if you need specific dimension columns.
+    -   **⚠️ AMBIGUITY DEFENSE (MUST FOLLOW)**: 
+        -   When joining the "v_" table with other tables, you **MUST** use table aliases (e.g., \`FROM "v_orders" AS t1\`).
+        -   **STRICT QUALIFICATION**: Every single column in the \`SELECT\`, \`WHERE\`, and \`GROUP BY\` clauses **MUST** use the alias prefix.
+        -   **CORRECT**: \`SELECT t1.id, t2.name FROM ...\`
+        -   **WRONG**: \`SELECT id, name FROM ...\` (This causes "Ambiguous reference" errors).
 ---
 
 ### 🧮 CALCULATION RULES
@@ -188,3 +201,72 @@ Structure:
 }
 `
 
+import { TableSchema } from '@shared/types.ts'
+
+/**
+ * Serializes table schemas into a readable string format for AI prompts.
+ * Handles normal tables and Enriched Views (Smart Metrics).
+ */
+export function serializeSchemas(schemas: TableSchema[]): string {
+  return schemas
+    .map(table => {
+      const hasMetrics = table.smartMetrics && table.smartMetrics.length > 0
+      const displayTableName = table.tableName
+      const viewNote = hasMetrics ? ' (Enriched View with Metrics)' : ''
+
+      let columnsStr = table.columns
+        .map(col => {
+          let hint = ''
+          const lower = col.name.toLowerCase()
+          const isPrimaryKey = col.isPrimaryKey === true || col.isKey === true
+
+          if (lower.includes('id') || lower.includes('code') || isPrimaryKey)
+            hint += ' [ID/Key]'
+          if (
+            lower.includes('price') ||
+            lower.includes('amount') ||
+            lower.includes('销售') ||
+            lower.includes('money')
+          )
+            hint += ' [Money/Metric]'
+          if (
+            lower.includes('date') ||
+            lower.includes('time') ||
+            lower.includes('日期')
+          )
+            hint += ' [Time]'
+
+          const samples =
+            col.sampleValues && col.sampleValues.length > 0
+              ? ` (Samples: ${col.sampleValues.slice(0, 3).join(', ')})`
+              : ''
+
+          return `- "${col.name}" (${col.type})${hint}${samples}`
+        })
+        .join('\n')
+
+      if (hasMetrics && table.smartMetrics) {
+        const metricCols = table.smartMetrics
+          .map(m => {
+            const hint = ` [Calculated]${m.description ? ` (${m.description})` : ''}`
+            const type = m.dataType || 'DOUBLE' // Default or cached
+            return `- "${m.name}" (${type})${hint}`
+          })
+          .join('\n')
+        columnsStr += `\n${metricCols}`
+      }
+
+      // [NEW] Add the hint for Enriched Views
+      const joinedHint = hasMetrics
+        ? '\n  [Info] This Wide Table includes joined columns from related tables (format: "fk__col").'
+        : ''
+
+      const descStr = table.description
+        ? ` (Source: "${table.description}"${viewNote})`
+        : viewNote
+          ? ` (Source: ${viewNote})`
+          : ''
+      return `Table: "${displayTableName}"${descStr}\nColumns:\n${columnsStr}${joinedHint}`
+    })
+    .join('\n\n')
+}

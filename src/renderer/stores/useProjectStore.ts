@@ -3,12 +3,13 @@ import { persist } from 'zustand/middleware'
 import { ProjectData, Relation, Session, ViewMode } from '@shared/types/project'
 import { Message } from '@shared/types/chat'
 import { ReportData, ReportWidget } from '@shared/types/dashboard'
-import { ColumnSchema, FileNode, SelectedNode } from '@shared/types'
+import { ColumnSchema, FileNode, SelectedNode, SmartMetric } from '@shared/types'
 import { Layout } from 'react-grid-layout'
 import { createBigIntStorage } from '@shared/serialization'
 import { Analytics } from '../services/analytics'
 import { useSettingsStore } from './useSettingsStore'
 import { FilterParam } from '@shared/schemas/analysis'
+import { DuckDBViewManager } from '../lib/duckdb-view-manager'
 
 // 生成唯一 ID
 const generateId = () =>
@@ -90,6 +91,13 @@ export interface ProjectState extends ProjectData {
   toggleKeyColumn: (fileId: string, columnName: string) => void
   addRelation: (relation: Omit<Relation, 'id'>) => void
   removeRelation: (id: string) => void
+  addSmartMetric: (fileId: string, metric: SmartMetric) => Promise<void>
+  updateSmartMetric: (
+    fileId: string,
+    metricId: string,
+    updates: Partial<SmartMetric>
+  ) => Promise<void>
+  removeSmartMetric: (fileId: string, metricId: string) => Promise<void>
   markAsStale: (ids: string[]) => void
   markFileMissing: (id: string) => void
   reloadFile: (
@@ -763,7 +771,7 @@ export const useProjectStore = create<ProjectState>()(
         get().updateColumn(fileId, columnName, { isKey: !column.isKey })
       },
 
-      addRelation: relation => {
+      addRelation: async relation => {
         const exists = get().relations.some(
           r =>
             (r.fileAId === relation.fileAId &&
@@ -783,12 +791,192 @@ export const useProjectStore = create<ProjectState>()(
         set(state => ({
           relations: [...state.relations, { ...relation, id }],
         }))
+
+        // Rebuild View for Source
+        const state = get()
+        const fileA = state.files.find(f => f.id === relation.fileAId)
+        if (fileA) {
+          await DuckDBViewManager.rebuildView(
+            fileA,
+            state.files,
+            state.relations
+          )
+        }
       },
 
-      removeRelation: id => {
+      removeRelation: async id => {
+        const relation = get().relations.find(r => r.id === id)
         set(state => ({
           relations: state.relations.filter(r => r.id !== id),
         }))
+
+        if (relation) {
+          const state = get()
+          const fileA = state.files.find(f => f.id === relation.fileAId)
+          if (fileA) {
+            await DuckDBViewManager.rebuildView(
+              fileA,
+              state.files,
+              state.relations
+            )
+          }
+        }
+      },
+
+            addSmartMetric: async (fileId, metric) => {
+
+              set(state => ({
+
+                files: state.files.map(f =>
+
+                  f.id === fileId
+
+                    ? { ...f, smartMetrics: [...(f.smartMetrics || []), metric] }
+
+                    : f
+
+                ),
+
+              }))
+
+      
+
+              const state = get()
+
+              const updatedFile = state.files.find(f => f.id === fileId)
+
+              if (updatedFile) {
+
+                try {
+
+                  const typeMap = await DuckDBViewManager.rebuildView(
+
+                    updatedFile,
+
+                    state.files,
+
+                    state.relations
+
+                  )
+
+                  const inferredType = typeMap.get(metric.name)
+
+                  if (inferredType) {
+
+                    set(prev => ({
+
+                      files: prev.files.map(f =>
+
+                        f.id === fileId
+
+                          ? {
+
+                              ...f,
+
+                              smartMetrics: (f.smartMetrics || []).map(m =>
+
+                                m.id === metric.id
+
+                                  ? { ...m, dataType: inferredType }
+
+                                  : m
+
+                              ),
+
+                            }
+
+                          : f
+
+                      ),
+
+                    }))
+
+                  }
+
+                } catch (e) {
+
+                  console.error('Failed to sync metric type', e)
+
+                }
+
+              }
+
+            },
+
+      
+
+            updateSmartMetric: async (fileId, metricId, updates) => {
+
+              set(state => ({
+
+                files: state.files.map(f =>
+
+                  f.id === fileId
+
+                    ? {
+
+                        ...f,
+
+                        smartMetrics: (f.smartMetrics || []).map(m =>
+
+                          m.id === metricId ? { ...m, ...updates } : m
+
+                        ),
+
+                      }
+
+                    : f
+
+                ),
+
+              }))
+
+      
+
+              const state = get()
+
+              const updatedFile = state.files.find(f => f.id === fileId)
+
+              if (updatedFile) {
+
+                await DuckDBViewManager.rebuildView(
+
+                  updatedFile,
+
+                  state.files,
+
+                  state.relations
+
+                )
+
+              }
+
+            },
+
+      
+
+            removeSmartMetric: async (fileId, metricId) => {
+        set(state => ({
+          files: state.files.map(f =>
+            f.id === fileId
+              ? {
+                  ...f,
+                  smartMetrics: (f.smartMetrics || []).filter(
+                    m => m.id !== metricId
+                  ),
+                }
+              : f
+          ),
+        }))
+        const state = get()
+        const updatedFile = state.files.find(f => f.id === fileId)
+        if (updatedFile) {
+          await DuckDBViewManager.rebuildView(
+            updatedFile,
+            state.files,
+            state.relations
+          )
+        }
       },
 
       markAsStale: ids =>

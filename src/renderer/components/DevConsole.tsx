@@ -13,6 +13,7 @@ interface LogEntry {
   id: number
   type: 'log' | 'warn' | 'error' | 'info'
   message: string
+  source?: string
   timestamp: Date
 }
 
@@ -22,6 +23,7 @@ interface DevConsoleProps {
 
 // 生产环境不渲染
 export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
+  // 注意：如果是函数则需要调用 isDev()
   if (!isDev) return null
 
   const [isOpen, setIsOpen] = useState(defaultOpen)
@@ -45,7 +47,22 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     const createLogger =
       (type: LogEntry['type']) =>
       (...args: unknown[]) => {
-        originalConsole[type](...args)
+        // 1. 提取原始位置
+        const stack = new Error().stack?.split('\n') || []
+        // stack[0] 是 "Error"
+        // stack[1] 是 createLogger 的内部匿名函数
+        // stack[2] 是调用 console.xxx 的地方
+        const traceLine = stack[2] || ''
+        const sourceMatch = traceLine.match(/at\s+(.*)$/) || [null, 'unknown']
+        const fullSource = sourceMatch[1] || 'unknown'
+        // 简化路径，只保留文件名和行号
+        const source = fullSource.split('/').pop()?.replace(')', '')
+
+        // 2. 原生打印 (带上原始位置提示)
+        // 使用 %c 样式让位置信息不那么扎眼
+        originalConsole[type](...args, `\n  ↳ @ ${source}`)
+
+        // 3. 构造 UI 日志
         const message = args
           .map(arg =>
             typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
@@ -58,6 +75,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
             id: ++logIdRef.current,
             type,
             message,
+            source,
             timestamp: new Date(),
           },
         ])
@@ -82,7 +100,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
   }, [logs])
 
   const clearLogs = useCallback(() => setLogs([]), [])
-  
+
   const resetApp = useCallback(async () => {
     if (!confirm(t('reset_confirm'))) return
 
@@ -117,7 +135,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
       apiKey: '',
     })
     settingsStore.resetPreferences()
-    
+
     if (window.electronAPI) {
       await window.electronAPI.secureSet('apiKey', '')
     }
@@ -133,20 +151,22 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
 
       if (result.success && result.data && Array.isArray(result.data.tables)) {
         const tables = result.data.tables
-        console.log(`✅ Found ${tables.length} table(s):`, tables)
+        console.log(`✅ Found ${tables.length} table(s):`)
 
-        // 详细打印每个表的结构
-        tables.forEach((table: any, idx: number) => {
-          console.log(`\n${idx + 1}. Table: ${table.tableName || 'unnamed'}`)
-          console.log(`   Description: ${table.description || 'N/A'}`)
-          console.log(`   Columns: ${table.columns?.length || 0}`)
-
-          if (table.columns && Array.isArray(table.columns)) {
-            table.columns.forEach((col: any) => {
-              console.log(`     - ${col.name} (${col.type || 'unknown'})`)
-            })
+        // 以对象形式打印，方便在控制台折叠查看
+        const tableSummary = tables.reduce((acc: any, table: any) => {
+          acc[table.tableName || 'unnamed'] = {
+            description: table.description || 'N/A',
+            columnCount: table.columns?.length || 0,
+            columns: (table.columns || []).map((col: any) => ({
+              name: col.name,
+              type: col.type || 'unknown',
+            })),
           }
-        })
+          return acc
+        }, {})
+
+        console.log(tableSummary)
       } else {
         console.warn('No tables found or invalid response:', result)
       }
@@ -260,15 +280,22 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
               logs.map(log => (
                 <div
                   key={log.id}
-                  className={`px-2 py-1 rounded ${getLogColor(log.type)}`}
+                  className={`px-2 py-1 rounded ${getLogColor(log.type)} group/log`}
                 >
-                  <span className="text-gray-400 mr-2">
-                    [{log.timestamp.toLocaleTimeString()}]
-                  </span>
-                  <span className="uppercase mr-2 font-semibold">
-                    {log.type}
-                  </span>
-                  <span className="whitespace-pre-wrap break-all">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-[10px] text-zinc-500 font-mono">
+                      [{log.timestamp.toLocaleTimeString()}]
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-tight opacity-70">
+                      {log.type}
+                    </span>
+                    {log.source && (
+                      <span className="text-[10px] text-zinc-400 font-mono italic ml-auto opacity-0 group-hover/log:opacity-100 transition-opacity">
+                        @ {log.source}
+                      </span>
+                    )}
+                  </div>
+                  <span className="whitespace-pre-wrap break-all leading-relaxed">
                     {log.message}
                   </span>
                 </div>

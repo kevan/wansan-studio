@@ -11,6 +11,7 @@ import type {
 } from '@shared/types'
 import { FilterParam } from '@shared/schemas/analysis'
 import i18n from '../i18n'
+import { mapFileToSchema } from '../utils/schema-mapper'
 
 // Types
 interface ChatStore {
@@ -238,12 +239,7 @@ const sendMessage = async (
   const abortController = new AbortController()
   useProjectStore.getState().setAbortController(abortController)
 
-  const resolvedSchemas =
-    schemas ??
-    readyFiles.map(f => ({
-      tableName: f.tableName || `table_${f.id}`,
-      columns: f.columns,
-    }))
+  const resolvedSchemas = schemas ?? readyFiles.map(mapFileToSchema)
 
   const resolvedRelations =
     relations ??
@@ -258,10 +254,15 @@ const sendMessage = async (
           fileB.status !== 'ready'
         )
           return null
+
+        // Use the masked names from mapFileToSchema to keep consistency
+        const schemaA = mapFileToSchema(fileA)
+        const schemaB = mapFileToSchema(fileB)
+
         return {
-          sourceTable: fileA.tableName,
+          sourceTable: schemaA.tableName,
           sourceColumn: rel.columnA,
-          targetTable: fileB.tableName,
+          targetTable: schemaB.tableName,
           targetColumn: rel.columnB,
           confidence: 1,
           reason: 'User confirmed or auto-detected in session',
@@ -511,10 +512,7 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
   const abortController = new AbortController()
   useProjectStore.getState().setAbortController(abortController)
 
-  const schemas = readyFiles.map(f => ({
-    tableName: f.tableName || `table_${f.id}`,
-    columns: f.columns,
-  }))
+  const schemas = readyFiles.map(mapFileToSchema)
 
   const relations = fileState.relations
     .map(rel => {
@@ -718,10 +716,7 @@ const autoFixMessage = async (
   try {
     const fileState = useFileStore.getState()
     const readyFiles = fileState.files.filter(f => f.status === 'ready')
-    const schemas = readyFiles.map(f => ({
-      tableName: f.tableName || `table_${f.id}`,
-      columns: f.columns,
-    }))
+    const schemas = readyFiles.map(mapFileToSchema)
 
     if (!originalSql)
       throw new Error(i18n.t('error_no_sql_to_fix', { ns: 'chat' }))

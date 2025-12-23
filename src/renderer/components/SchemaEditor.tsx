@@ -1,11 +1,12 @@
 import { useFileStore } from '../stores/useFileStore'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useSqlLabStore } from '../stores/useSqlLabStore'
-import { ColumnType, ColumnSchema } from '@shared/types'
-import { getUIFormatType, UIFormatType as FormatType } from '@shared/type-utils'
+import { ColumnType, ColumnSchema, SmartMetric } from '@shared/types'
+import { getUIFormatType, UIFormatType as FormatType, normalizeDuckDBType } from '@shared/type-utils'
 import {
   AlignJustify,
   Calendar,
+  Calculator,
   Check,
   ChevronDown,
   Clock,
@@ -16,10 +17,12 @@ import {
   FileInput,
   FileSpreadsheet,
   Hash,
+  HelpCircle,
   Key,
   Link2,
   MoreVertical,
   RefreshCw,
+  Sparkles,
   ToggleLeft,
   Trash2,
   Type,
@@ -40,6 +43,7 @@ import { Input } from './ui/input'
 import { cn } from '@/utils/cn'
 import { ExpandableAction } from './ui/expandable-action'
 import { ConfirmDialog } from './modals/ConfirmDialog'
+import { MetricEditorModal } from './modals/metric-editor-modal'
 
 interface FormatConfig {
   label: string
@@ -81,6 +85,8 @@ export function SchemaEditor() {
   const openSqlLab = useSqlLabStore(s => s.open)
   const replaceFile = useProjectStore(s => s.replaceFile)
   const removeFile = useProjectStore(s => s.removeFile)
+  const addSmartMetric = useProjectStore(s => s.addSmartMetric)
+  const removeSmartMetric = useProjectStore(s => s.removeSmartMetric)
   const { t } = useTranslation('common')
   const toast = useToastStore()
   const reIngest = useReIngestFile()
@@ -98,6 +104,21 @@ export function SchemaEditor() {
   const currentFile = readyFiles.find(f => f.id === currentFileId)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isMetricModalOpen, setIsMetricModalOpen] = useState(false)
+  const [editingMetric, setEditingMetric] = useState<SmartMetric | undefined>(
+    undefined
+  )
+
+  // Compute Active Links
+  const activeLinks = currentFile
+    ? relations
+        .filter(r => r.fileAId === currentFile.id)
+        .map(r => {
+          const target = files.find(f => f.id === r.fileBId)
+          return target ? { id: r.id, tableName: target.tableName } : null
+        })
+        .filter(Boolean) as { id: string; tableName: string }[]
+    : []
 
   // --- Handlers ---
   const handlePreview = () => {
@@ -125,7 +146,7 @@ export function SchemaEditor() {
       {
         loading: t('reloading'),
         success: t('reload_success'),
-        error: (e) => `${t('reload_failed')}: ${String(e)}`
+        error: e => `${t('reload_failed')}: ${String(e)}`,
       }
     )
   }
@@ -138,13 +159,13 @@ export function SchemaEditor() {
         async () => {
           const status = await replaceFile(currentFile.id, result.data)
           if (status !== 'completed') {
-             throw new Error(t('replace_failed'))
+            throw new Error(t('replace_failed'))
           }
         },
         {
           loading: t('replacing_file'),
           success: t('file_replaced'),
-          error: (e) => `${t('replace_failed')}: ${String(e)}`
+          error: e => `${t('replace_failed')}: ${String(e)}`,
         }
       )
     }
@@ -160,6 +181,35 @@ export function SchemaEditor() {
     removeFile(currentFile.id)
     toast.addToast({
       title: t('file_removed'),
+      type: 'success',
+      duration: 2000,
+    })
+  }
+
+  const handleSaveMetric = async (metric: SmartMetric) => {
+    if (!currentFile) return
+    // Remove existing if editing, then add new
+    if (editingMetric) {
+      await removeSmartMetric(currentFile.id, editingMetric.id)
+    }
+    await addSmartMetric(currentFile.id, metric)
+    toast.addToast({
+      title: editingMetric ? 'Metric Updated' : 'Metric Added',
+      type: 'success',
+      duration: 2000,
+    })
+  }
+
+  const handleEditMetric = (metric: SmartMetric) => {
+    setEditingMetric(metric)
+    setIsMetricModalOpen(true)
+  }
+
+  const handleDeleteMetric = async (metricId: string) => {
+    if (!currentFile) return
+    await removeSmartMetric(currentFile.id, metricId)
+    toast.addToast({
+      title: 'Metric Removed',
       type: 'success',
       duration: 2000,
     })
@@ -200,6 +250,32 @@ export function SchemaEditor() {
 
                   <div className="w-px h-3 bg-zinc-200 shrink-0" />
 
+                  {/* Relations Badge */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Link2 className="w-3.5 h-3.5 text-indigo-400" />
+                    {activeLinks.length > 0 ? (
+                      <div className="flex gap-1">
+                        <span className="text-xs text-zinc-500">
+                          Linked to:
+                        </span>
+                        {activeLinks.map(link => (
+                          <span
+                            key={link.id}
+                            className="text-xs font-medium text-indigo-600 bg-indigo-50 px-1.5 rounded border border-indigo-100"
+                          >
+                            {link.tableName}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-zinc-400 italic">
+                        No links
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="w-px h-3 bg-zinc-200 shrink-0" />
+
                   {/* Stats */}
                   <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
                     <AlignJustify className="w-3.5 h-3.5 text-zinc-400" />
@@ -227,6 +303,16 @@ export function SchemaEditor() {
 
               {/* Header Actions */}
               <div className="absolute top-6 right-4 flex items-center gap-2 p-1 bg-white/80 backdrop-blur border border-zinc-200 rounded-lg shadow-sm hover:shadow transition-shadow">
+                <ExpandableAction
+                  icon={<Calculator className="w-4 h-4 text-purple-600" />}
+                  label="Add Metric"
+                  onClick={() => {
+                    setEditingMetric(undefined)
+                    setIsMetricModalOpen(true)
+                  }}
+                  className="hover:bg-purple-50 hover:border-purple-200"
+                />
+
                 <ExpandableAction
                   icon={<RefreshCw className="w-4 h-4" />}
                   label={t('reload_data')}
@@ -260,6 +346,39 @@ export function SchemaEditor() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
+                {/* Section 1: Smart Metrics */}
+                {currentFile.smartMetrics &&
+                  currentFile.smartMetrics.length > 0 && (
+                    <>
+                      <tr className="bg-zinc-50/80 border-y border-zinc-100">
+                        <td
+                          colSpan={3}
+                          className="px-4 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2"
+                        >
+                          <Sparkles className="w-3 h-3 text-purple-400" />{' '}
+                          Smart Metrics
+                        </td>
+                      </tr>
+                      {currentFile.smartMetrics.map(metric => (
+                        <SmartMetricRow
+                          key={metric.id}
+                          metric={metric}
+                          onEdit={() => handleEditMetric(metric)}
+                          onDelete={() => handleDeleteMetric(metric.id)}
+                        />
+                      ))}
+                    </>
+                  )}
+
+                {/* Section 2: Physical Columns */}
+                <tr className="bg-zinc-50/80 border-y border-zinc-100">
+                  <td
+                    colSpan={3}
+                    className="px-4 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2"
+                  >
+                    <Database className="w-3 h-3" /> Physical Columns
+                  </td>
+                </tr>
                 {currentFile.columns.map(col => (
                   <ColumnRow
                     key={col.name}
@@ -292,6 +411,16 @@ export function SchemaEditor() {
         confirmText={t('remove_file')}
         cancelText={t('cancel')}
       />
+
+      {currentFile && (
+        <MetricEditorModal
+          isOpen={isMetricModalOpen}
+          onClose={() => setIsMetricModalOpen(false)}
+          file={currentFile}
+          initialMetric={editingMetric}
+          onSave={handleSaveMetric}
+        />
+      )}
     </div>
   )
 }
@@ -463,6 +592,118 @@ function ColumnRow({ fileId, column, onToggleKey, isLinked }: ColumnRowProps) {
             {t('no_preview')}
           </span>
         )}
+      </td>
+    </tr>
+  )
+}
+
+function SmartMetricRow({
+  metric,
+  onEdit,
+  onDelete,
+}: {
+  metric: SmartMetric
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  const standardizedType = normalizeDuckDBType(metric.dataType || '')
+
+  let badgeConfig = {
+    color: 'bg-zinc-50 text-zinc-500 border-zinc-200',
+    icon: HelpCircle,
+    label: '?',
+  }
+
+  switch (standardizedType) {
+    case 'INTEGER':
+    case 'DOUBLE':
+      badgeConfig = {
+        color: 'bg-blue-50 text-blue-700 border-blue-200',
+        icon: Hash,
+        label: 'NUM',
+      }
+      break
+    case 'VARCHAR':
+      badgeConfig = {
+        color: 'bg-zinc-100 text-zinc-700 border-zinc-200',
+        icon: Type,
+        label: 'TEXT',
+      }
+      break
+    case 'DATE':
+    case 'TIMESTAMP':
+      badgeConfig = {
+        color: 'bg-green-50 text-green-700 border-green-200',
+        icon: Calendar,
+        label: 'DATE',
+      }
+      break
+    case 'BOOLEAN':
+      badgeConfig = {
+        color: 'bg-orange-50 text-orange-700 border-orange-200',
+        icon: ToggleLeft,
+        label: 'BOOL',
+      }
+      break
+  }
+
+  return (
+    <tr className="hover:bg-purple-50/50 transition-colors group">
+      {/* Name */}
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <div className="p-1 bg-purple-100 rounded text-purple-600">
+            <Calculator className="w-3 h-3" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-zinc-900">
+              {metric.label}
+            </span>
+            <span className="text-[10px] text-zinc-400 font-mono">
+              ({metric.name})
+            </span>
+          </div>
+        </div>
+      </td>
+
+      {/* Format */}
+      <td className="px-4 py-3">
+        <div
+          className={cn(
+            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border',
+            badgeConfig.color
+          )}
+        >
+          <badgeConfig.icon className="w-3 h-3" />
+          {badgeConfig.label}
+        </div>
+      </td>
+
+      {/* Expression Preview */}
+      <td className="px-4 py-3">
+        <div className="flex items-center justify-between group/row">
+          <code className="text-xs font-mono bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-600 truncate max-w-[200px]">
+            {metric.sqlExpression}
+          </code>
+          <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={onEdit}
+            >
+              <Edit2 className="w-3 h-3 text-zinc-400" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 hover:text-red-600 hover:bg-red-50"
+              onClick={onDelete}
+            >
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
       </td>
     </tr>
   )

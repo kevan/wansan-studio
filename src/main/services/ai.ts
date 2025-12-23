@@ -2,7 +2,6 @@ import Store from 'electron-store'
 import { OpenAI } from 'openai'
 import type { ClientOptions } from 'openai'
 import { generateAnalysis, analyzeContext } from '../engine/ai-bridge'
-import { processSampleValue } from '../../shared/serialization'
 import type {
   TableSchema,
   AIAnalysisResult,
@@ -69,18 +68,6 @@ export class AIService {
     return this.openai
   }
 
-  private preprocessSchemas(schemas: TableSchema[]): TableSchema[] {
-    return schemas.map(schema => ({
-      ...schema,
-      columns: schema.columns.map(col => ({
-        ...col,
-        sampleValues: (col.sampleValues || []).map(val =>
-          processSampleValue(val, col.type)
-        ),
-      })),
-    }))
-  }
-
   /**
    * Generates an analysis plan (SQL + viz config) without executing it.
    */
@@ -93,13 +80,10 @@ export class AIService {
   ): Promise<AIAnalysisResult> {
     const client = this.requireOpenAI()
 
-    // Preprocess schemas to ensure sample values are formatted (e.g. Dates)
-    const processedSchemas = this.preprocessSchemas(schemas)
-
     const aiResult = await generateAnalysis(
       client,
       userQuery,
-      processedSchemas,
+      schemas,
       relations,
       context,
       this.model,
@@ -142,10 +126,7 @@ export class AIService {
     const { fixSQL } = await import('../engine/ai-bridge')
     const client = this.requireOpenAI()
 
-    // Also preprocess schemas for fixQuery context
-    const processedSchemas = this.preprocessSchemas(schemas)
-
-    return fixSQL(client, originalSql, error, processedSchemas, this.model)
+    return fixSQL(client, originalSql, error, schemas, this.model)
   }
 
   /**
@@ -157,10 +138,7 @@ export class AIService {
   ): Promise<ContextAnalysisResult> {
     const client = this.requireOpenAI()
 
-    // Preprocess schemas to ensure sample values are formatted
-    const processedSchemas = this.preprocessSchemas(schemas)
-
-    return analyzeContext(client, processedSchemas, this.model, language)
+    return analyzeContext(client, schemas, this.model, language)
   }
 
   /**
