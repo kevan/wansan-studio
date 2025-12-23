@@ -44,7 +44,7 @@ export function ErrorCard({ message }: ErrorCardProps) {
     }
   }, [apiKey, message.error, message.id, messages, retryMessage])
 
-  const errorMessage = message.content || t('error_unknown')
+  const errorMessage = message.error || message.content || t('error_unknown')
   const hasSql = !!message.reportData?.sql || !!message.planSql
   const originalQuery = message.originalQuery
   const originalSql = message.reportData?.sql || message.planSql

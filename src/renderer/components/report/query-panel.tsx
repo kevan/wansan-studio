@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useImperativeHandle, forwardRef } from 'react'
 import Editor from 'react-simple-code-editor'
 import Prism from 'prismjs'
 import 'prismjs/components/prism-sql'
@@ -26,6 +26,10 @@ import { useProjectStore } from '@/stores/useProjectStore'
 import { Button } from '@/components/ui/button'
 import { ReportTable } from './report-table'
 
+export interface QueryPanelRef {
+  runQuery: (bypassGate?: boolean) => Promise<boolean>
+}
+
 interface QueryPanelProps {
   sql: string
   onChange: (sql: string) => void
@@ -38,69 +42,90 @@ interface QueryPanelProps {
   runOnMount?: boolean
 }
 
-export function QueryPanel({
-  sql,
-  onChange,
-  initialSql,
-  initialData = [],
-  initialColumns = [],
-  initialColumnTypes = {},
-  reasoning,
-  className,
-  runOnMount = false,
-}: QueryPanelProps) {
-  const { t } = useTranslation('analysis')
-  const [isRunning, setIsRunning] = useState(false)
-  const isRestoring = useProjectStore(s => s.isRestoring)
-  const [previewData, setPreviewData] = useState<any[] | null>(
-    initialData.length > 0 ? initialData : null
-  )
-  const [previewColumns, setPreviewColumns] = useState<string[] | null>(
-    initialColumns.length > 0 ? initialColumns : null
-  )
-  const [previewColumnTypes, setPreviewColumnTypes] = useState<Record<string, string>>(
-    initialColumnTypes
-  )
-  const [previewError, setPreviewError] = useState<string | null>(null)
-  const [execTime, setExecTime] = useState<number | null>(null)
-  const [copied, setCopied] = useState(false)
-  const [showReasoning, setShowReasoning] = useState(true)
-  const { isActivated, checkGate, gateNode } = useProGate()
+export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
+  (
+    {
+      sql,
+      onChange,
+      initialSql,
+      initialData = [],
+      initialColumns = [],
+      initialColumnTypes = {},
+      reasoning,
+      className,
+      runOnMount = false,
+    },
+    ref
+  ) => {
+    const { t } = useTranslation('analysis')
+    const [isRunning, setIsRunning] = useState(false)
+    const isRestoring = useProjectStore(s => s.isRestoring)
+    const [previewData, setPreviewData] = useState<any[] | null>(
+      initialData.length > 0 ? initialData : null
+    )
+    const [previewColumns, setPreviewColumns] = useState<string[] | null>(
+      initialColumns.length > 0 ? initialColumns : null
+    )
+    const [previewColumnTypes, setPreviewColumnTypes] = useState<
+      Record<string, string>
+    >(initialColumnTypes)
+    const [previewError, setPreviewError] = useState<string | null>(null)
+    const [execTime, setExecTime] = useState<number | null>(null)
+    const [copied, setCopied] = useState(false)
+    const [showReasoning, setShowReasoning] = useState(true)
+    const { isActivated, checkGate, gateNode } = useProGate()
 
-  const handleRunPreview = async (queryToRun: string, bypassGate = false) => {
-    if (isRestoring) return
+    const handleRunPreview = async (queryToRun: string, bypassGate = false) => {
+      if (isRestoring) return false
 
-    const run = async () => {
-      setIsRunning(true)
-      setPreviewError(null)
-      const startTime = performance.now()
-      try {
-        const res = await window.electronAPI.runSQL(queryToRun)
-        if (res.success && res.data) {
-          const { data, columnTypes } = res.data
-          setExecTime(Math.round(performance.now() - startTime))
-          setPreviewData(data)
-          setPreviewColumns(data.length > 0 ? Object.keys(data[0]) : [])
-          setPreviewColumnTypes(columnTypes || {})
-          setPreviewError(null)
-        } else {
-          throw new Error(res.error)
+      let success = false
+      const run = async () => {
+        setIsRunning(true)
+        setPreviewError(null)
+        const startTime = performance.now()
+        try {
+          const res = await window.electronAPI.runSQL(queryToRun)
+          if (res.success && res.data) {
+            const { data, columnTypes } = res.data
+            setExecTime(Math.round(performance.now() - startTime))
+            setPreviewData(data)
+            setPreviewColumns(data.length > 0 ? Object.keys(data[0]) : [])
+            setPreviewColumnTypes(columnTypes || {})
+            setPreviewError(null)
+            success = true
+          } else {
+            throw new Error(res.error)
+          }
+        } catch (e: any) {
+          setPreviewError(e.message || 'Execution failed')
+          setPreviewData([])
+          setPreviewColumns([])
+          success = false
+        } finally {
+          setIsRunning(false)
         }
-      } catch (e: any) {
-        setPreviewError(e.message || 'Execution failed')
-        setPreviewData([])
-        setPreviewColumns([])
-      } finally {
-        setIsRunning(false)
       }
+
+      if (bypassGate) {
+        await run()
+      } else {
+        await new Promise<void>(resolve => {
+          checkGate(t('pro_benefit_sql', { ns: 'common' }), async () => {
+            await run()
+            resolve()
+          })
+        })
+      }
+      return success
     }
 
-    if (bypassGate) {
-      await run()
-    } else {
-      checkGate(t('pro_benefit_sql', { ns: 'common' }), run)
-    }
-  }
+    useImperativeHandle(ref, () => ({
+      runQuery: async (bypassGate = false) => {
+        return await handleRunPreview(sql, bypassGate)
+      },
+    }))
+
+    // ... (rest of the component)
 
   // Auto-format and run on mount if requested
   const [hasRunOnMount, setHasRunOnMount] = useState(false)
@@ -350,4 +375,4 @@ export function QueryPanel({
       </div>
     </div>
   )
-}
+})

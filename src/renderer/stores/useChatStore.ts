@@ -144,11 +144,14 @@ const updateMessageData = (
   newColTypes?: Record<string, string>
 ) => {
   updateMessage(id, msg => {
-    if (!msg.reportData) return msg
+    // We update the data even if reportData is missing (might have been cleared)
+    const existingReportData = msg.reportData || ({} as any)
     return {
       ...msg,
+      status: undefined, // Clear error status
+      error: undefined, // Clear error message
       reportData: {
-        ...msg.reportData,
+        ...existingReportData,
         sql: newSql,
         tableData: newData,
         columns: newCols,
@@ -480,12 +483,11 @@ const sendMessage = async (
       error_type: 'execution_failed',
     })
 
-    updateMessage(botMsgId, msg => ({
-      ...msg,
-      status: 'error',
-      content: `Error: ${error?.message || 'Unknown error'}`,
-    }))
-
+        updateMessage(botMsgId, msg => ({
+          ...msg,
+          status: 'error',
+          error: error?.message || 'Unknown error',
+        }))
     useProjectStore.getState().setAbortController(null)
   }
 }
@@ -678,7 +680,7 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
     updateMessage(messageId, msg => ({
       ...msg,
       status: 'error',
-      content: `Error: ${error?.message || 'Unknown error'}`,
+      error: error?.message || 'Unknown error',
     }))
     useProjectStore.getState().setAbortController(null)
   }

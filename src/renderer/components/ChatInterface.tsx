@@ -232,15 +232,15 @@ export function ChatInterface({
                       </div>
                     )}
 
-                    {message.status === 'error' && (
-                      <div className="mb-4">
-                        <ErrorCard message={message} />
+                    {message.content && (
+                      <div className="mb-3 text-zinc-500 text-[14px] leading-relaxed">
+                        {message.content}
                       </div>
                     )}
 
-                    {message.status !== 'error' && message.content && (
-                      <div className="mb-3 text-zinc-500 text-[14px] leading-relaxed">
-                        {message.content}
+                    {message.status === 'error' && (
+                      <div className="mb-4">
+                        <ErrorCard message={message} />
                       </div>
                     )}
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { BarChart, FileSpreadsheet, Save } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useProGate } from '@/hooks/use-pro-gate'
@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { QueryPanel } from './query-panel'
+import { QueryPanel, QueryPanelRef } from './query-panel'
 
 interface SqlEditorModalProps {
   isOpen: boolean
@@ -18,9 +18,6 @@ interface SqlEditorModalProps {
   mode?: 'file' | 'widget'
   targetTitle?: string
   initialSql: string
-  initialData?: any[]
-  initialColumns?: string[]
-  initialColumnTypes?: Record<string, string>
   reasoning?: string
   onSave?: (sql: string) => Promise<void>
 }
@@ -31,15 +28,14 @@ export function SqlEditorModal({
   mode = 'widget',
   targetTitle,
   initialSql,
-  initialData = [],
-  initialColumns = [],
-  initialColumnTypes = {},
   reasoning,
   onSave,
 }: SqlEditorModalProps) {
   const { t } = useTranslation('analysis')
   const [sql, setSql] = useState(initialSql)
   const { checkGate, gateNode } = useProGate()
+  const [isSaving, setIsSaving] = useState(false)
+  const queryPanelRef = useRef<QueryPanelRef>(null)
 
   const isFileMode = mode === 'file'
 
@@ -48,15 +44,32 @@ export function SqlEditorModal({
   React.useEffect(() => {
     if (isOpen) {
       setSql(initialSql)
+      setIsSaving(false)
     }
   }, [isOpen, initialSql])
 
   if (!isOpen) return null
 
   const handleSave = async () => {
-    if (onSave) {
+    if (!onSave) return
+
+    setIsSaving(true)
+    try {
+      // 1. Run the query in QueryPanel to check validity and show error in preview if fails
+      const isOk = await queryPanelRef.current?.runQuery()
+      if (!isOk) {
+        // If query failed (error shown in QueryPanel), stop saving
+        setIsSaving(false)
+        return
+      }
+
+      // 2. If OK, call parent save
       await onSave(sql)
       onClose()
+    } catch (e: any) {
+      console.error('SQL validation failed during save:', e)
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -91,6 +104,7 @@ export function SqlEditorModal({
 
         <div className="flex-1 flex flex-col min-h-0 p-4 overflow-hidden">
           <QueryPanel
+            ref={queryPanelRef}
             sql={sql}
             onChange={setSql}
             initialSql={initialSql}
@@ -101,17 +115,22 @@ export function SqlEditorModal({
 
         <DialogFooter className="p-4 border-t bg-zinc-50/50 flex items-center justify-end shrink-0">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={onClose}>
+            <Button variant="ghost" onClick={onClose} disabled={isSaving}>
               {onSave ? t('sql_editor.cancel') : t('sql_editor.close')}
             </Button>
             {onSave && (
               <Button
+                disabled={isSaving}
                 onClick={() =>
                   checkGate(t('pro_benefit_sql', { ns: 'common' }), handleSave)
                 }
                 className="gap-2 bg-black text-white hover:bg-zinc-800 shadow-sm px-6"
               >
-                <Save className="w-4 h-4" />
+                {isSaving ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
                 {t('sql_editor.save')}
               </Button>
             )}
