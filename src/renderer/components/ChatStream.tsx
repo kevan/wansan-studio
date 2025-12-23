@@ -52,7 +52,7 @@ export function ChatStream() {
     .filter((r): r is RelationSuggestion => r !== null)
 
   const onQuerySubmit = (query: string) => {
-    sendMessage(query, schemas, apiRelations)
+    sendMessage(query, undefined, schemas, apiRelations)
   }
 
   // Get current columns for autocomplete

@@ -1,6 +1,6 @@
 import { dialog } from 'electron'
 import fs from 'fs-extra'
-import type { AIService } from './ai'
+import type { AIService } from './ai-service'
 
 export async function exportWebReport(
   aiService: AIService,

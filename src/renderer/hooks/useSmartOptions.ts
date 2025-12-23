@@ -25,7 +25,12 @@ export function useSmartOptions(
       }
 
       // 1. Validation
-      const file = files.find((f) => f.tableName === table)
+      // Handle v_ prefix (Smart Metrics View)
+      const isView = table.startsWith('v_')
+      const rawTableName = isView ? table.slice(2) : table
+      
+      const file = files.find((f) => f.tableName === rawTableName || f.tableName === table)
+      
       if (!file) {
         // Table not found in metadata
         if (active) setOptions([])
@@ -33,11 +38,21 @@ export function useSmartOptions(
       }
 
       const availableCols = new Set(file.columns.map((c) => c.name))
-      if (!availableCols.has(column)) {
-        if (active) setOptions([])
-        return
+
+      // If it's a view, we skip strict column validation because columns might be joined/calculated
+      // If it's a raw table, we strictly check columns to prevent SQL errors
+      if (!isView) {
+        if (!availableCols.has(column)) {
+          if (active) setOptions([])
+          return
+        }
       }
-      const validDisplayCols = displayColumns.filter((c) => availableCols.has(c))
+
+      // For views, we can't easily validate displayColumns against the file.columns (they might be virtual)
+      // So we only filter if it's NOT a view.
+      const validDisplayCols = isView 
+        ? displayColumns 
+        : displayColumns.filter((c) => availableCols.has(c))
 
       setLoading(true)
       try {

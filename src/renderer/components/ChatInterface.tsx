@@ -29,6 +29,7 @@ export interface ChatMessage {
   id: string
   type: 'user' | 'assistant'
   content: string
+  hiddenPrompt?: string
   timestamp: number
   status?: 'thinking' | 'planning' | 'executing' | 'error'
   error?: string

@@ -37,6 +37,7 @@ interface ChatStore {
   ) => void
   sendMessage: (
     text: string,
+    hiddenPrompt?: string,
     schemas?: TableSchema[],
     relations?: RelationSuggestion[],
     languageOverride?: 'en' | 'zh'
@@ -193,6 +194,7 @@ const stopGeneration = () => {
 
 const sendMessage = async (
   text: string,
+  hiddenPrompt?: string,
   schemas?: TableSchema[],
   relations?: RelationSuggestion[],
   languageOverride?: 'en' | 'zh'
@@ -307,6 +309,7 @@ const sendMessage = async (
     id: userMsgId,
     type: 'user',
     content: text,
+    hiddenPrompt,
     timestamp: Date.now(),
   } as any)
 
@@ -326,7 +329,7 @@ const sendMessage = async (
     if (abortController.signal.aborted)
       throw new Error('Generation aborted by user')
 
-    const resolvedPrompt = resolveMentions(text)
+    const resolvedPrompt = resolveMentions(hiddenPrompt || text)
     const { domainRules } = useSettingsStore.getState()
     const planResponse = await window.electronAPI.askAI(
       resolvedPrompt,

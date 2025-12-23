@@ -18,6 +18,8 @@
   "link_tip": "Tip: Use fields with matching values to link tables.",
   "link_tables": "Link Tables",
   "focus_chat": "Focus Chat",
+  "focus_analysis": "Focus Analysis: {{name}}",
+  "view_raw_data": "View Raw Data: {{name}}",
   "open_dashboard": "Open Dashboard",
   "show_dashboard": "Show Dashboard",
   "hide_dashboard": "Hide Dashboard",

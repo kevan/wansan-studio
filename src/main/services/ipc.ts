@@ -1,7 +1,7 @@
 import { ipcMain, dialog, BrowserWindow, shell } from 'electron'
 import { DatabaseService } from '../database/duckdb'
 import { FileService } from './file'
-import { AIService } from './ai'
+import { AIService } from './ai-service'
 import { getDeviceId } from './device'
 import { secureSet, secureGet } from './secure-storage'
 import { executeSQL } from '../engine/executor'

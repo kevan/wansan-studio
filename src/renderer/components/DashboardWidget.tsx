@@ -23,6 +23,7 @@ interface DashboardWidgetProps {
   className?: string
   variant?: 'chat' | 'dashboard'
   onTitleChange?: (newTitle: string) => void
+  messageId?: string
 }
 
 export function DashboardWidget({
@@ -38,6 +39,7 @@ export function DashboardWidget({
   variant = 'chat',
   onTitleChange,
   timestamp,
+  messageId,
 }: DashboardWidgetProps) {
   const [showSummary, setShowSummary] = useState(false)
   const { t } = useTranslation('common')
@@ -47,7 +49,7 @@ export function DashboardWidget({
     (chartType === 'table' || chartType === 'kpi') &&
     tableData &&
     tableData.length === 1 &&
-    Object.keys(tableData[0]).length > 0
+    Object.keys(tableData[0]).length === 1 // Only show Big Number if single row AND single column
   const shouldShowTable =
     tableData &&
     tableData.length > 0 &&
@@ -123,6 +125,7 @@ export function DashboardWidget({
                 data={tableData}
                 config={vizConfig}
                 className="h-full w-full"
+                messageId={messageId}
               />
             )}
 
@@ -209,6 +212,7 @@ export function DashboardWidget({
                 data={tableData}
                 config={vizConfig}
                 className="h-full w-full"
+                messageId={messageId}
               />
             </div>
           )}

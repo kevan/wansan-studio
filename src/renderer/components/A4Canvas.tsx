@@ -143,6 +143,7 @@ interface A4ChartProps {
   }
   className?: string
   style?: React.CSSProperties
+  messageId?: string
 }
 
 export function A4Chart({
@@ -152,6 +153,7 @@ export function A4Chart({
   config,
   className = '',
   style,
+  messageId,
 }: A4ChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const { t } = useTranslation('common')
@@ -179,15 +181,39 @@ export function A4Chart({
 
   const handleFocus = () => {
     if (!menuState) return
-    const query = `Filter the analysis by ${menuState.name}`
-    useChatStore.getState().sendMessage(query)
+    
+    // 1. User-Friendly Message
+    const displayMsg = `🔍 ${t('focus_analysis', { name: menuState.name })}`
+
+    // 2. Strict AI Instruction (Shadow Prompt)
+    const hiddenMsg = `Filter the current analysis by ${menuState.name}. 
+  CRITICAL CONSTRAINTS:
+  - Maintain the current visualization metrics (aggregation).
+  - DO NOT show raw data rows.
+  - Keep the same chart type if possible.`
+
+    // Lock context to the specific message this chart belongs to
+    if (messageId) {
+      useChatStore.getState().setReplyTo(messageId)
+    }
+
+    useChatStore.getState().sendMessage(displayMsg, hiddenMsg)
     setMenuState(null)
   }
 
   const handleViewData = () => {
     if (!menuState) return
-    const query = `Show the first 20 raw data rows for '${menuState.name}'`
-    useChatStore.getState().sendMessage(query)
+    
+    const displayMsg = `📄 ${t('view_raw_data', { name: menuState.name })}`
+    const hiddenMsg = `Show the first 20 raw data rows for '${menuState.name}'.
+    Constraint: Switch visualization type to 'table'.`
+
+    // Lock context to the specific message this chart belongs to
+    if (messageId) {
+      useChatStore.getState().setReplyTo(messageId)
+    }
+
+    useChatStore.getState().sendMessage(displayMsg, hiddenMsg)
     setMenuState(null)
   }
 

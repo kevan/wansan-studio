@@ -136,6 +136,7 @@ export function ReportCard({
           {...reportData}
           variant="chat"
           timestamp={message.timestamp}
+          messageId={messageId}
         />
       </div>
 

@@ -6,7 +6,7 @@ import debounce from 'lodash.debounce'
 
 import { setupIPC } from './services/ipc'
 import { DatabaseService } from './database/duckdb'
-import { AIService } from './services/ai' // Import AIService
+import { AIService } from './services/ai-service' // Import AIService
 
 class WansanApp {
   private mainWindow: BrowserWindow | null = null
