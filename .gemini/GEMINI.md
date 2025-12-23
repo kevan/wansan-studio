@@ -1,0 +1,43 @@
+## Gemini Added Memories
+- Added multilingual support (i18n) to Sidebar and SettingsDialog components, creating new keys in common.json and settings.json.
+- The project uses react-i18next with namespaces 'common' and 'settings' for localization.
+- Implemented gesture support (Zoom: Ctrl+Wheel, Pan: Space+Drag) in DashboardCanvasV3.
+- Fixed A4 dashboard scrolling issue by changing transform origin to 'top left' and using an explicitly sized wrapper with margin: auto.
+- Fixed A4 dashboard zoom overflow issue in DashboardCanvasV3 by using origin-top-left and a proxy wrapper div with scaled dimensions.
+- 每次任务完成后执行一次 type-check
+- 每次任务完成后，处理多语言适配
+- ElectronAPI 类型定义在 useIPC.ts
+- Implemented Markdown export functionality for chat history, restricted to Pro users. Added 'hide-on-export' class to PageLayer to clean up A4 exports. Fixed DialogContent accessibility warning in SettingsDialog.
+- Added support email (jin4074@gmail.com) to Settings > About section with mailto link functionality.
+- Changed default AI provider to DeepSeek in useSettingsStore. Added support email (jin4074@gmail.com) to Settings dialog.
+- Changed ReportCard UI to show controls only on hover. Adjusted A4 layout rows to 27 to fix overflow.
+- Refactored `parseCSVFile`, `parseJsonFile`, and `parseExcelFile` in `src/main/services/file.ts` to use consistent schema fetching (`PRAGMA table_info`) and sampling (`getSampleValues`) logic.
+- Implemented `inferTypeFromSemanticName` in `src/main/services/file.ts` to override numeric types (INT, BIGINT, etc.) to `TIMESTAMP` if column names suggest date/time (e.g., "created_at", "time").
+- Updated `processSampleValue` in `src/shared/serialization.ts` to prioritize `columnType` checking over generic BigInt stringification. This ensures that BigInt timestamps are correctly formatted as ISO strings instead of raw numeric strings, fixing the date display issue in the frontend.
+- Updated `formatDateValue` in `src/shared/serialization.ts` to explicitly handle `bigint` inputs AND numeric string inputs (e.g. "1735689600000"). This fixes the issue where AI context was receiving raw timestamp strings instead of formatted dates.
+- Updated `SchemaEditor.tsx` to handle numeric string timestamps (e.g., "1735689600000") by attempting conversion to Number before parsing with Date.
+- Removed manual `sanitizeValue` and `sanitizeFile` from `src/renderer/stores/useFileStore.ts`, allowing `createBigIntStorage` to handle BigInt serialization natively and preventing unnecessary conversion to Number.
+- Restored and enhanced schema preprocessing in `src/main/services/ai.ts` (`preprocessSchemas`). This ensures that even if the Store contains raw timestamps, the AI receives human-readable ISO date strings for better context understanding in `generatePlan`, `fixQuery`, and `getContextAnalysis`.
+- Localized `TreeNode` component's context menu items and tooltips (Data Tree), adding new keys to `common.json` for both English and Chinese.
+- Scaffolded Project Store V2: Created src/shared/types/project.ts, src/shared/types/chat.ts, src/shared/types/dashboard.ts, and src/renderer/stores/useProjectStore.ts. Verified with type-check.
+- Refactored Sidebar: Implemented dual-mode (Sessions vs Data Assets) in `src/renderer/components/Sidebar.tsx` and created sub-components `DataAssetsView` and `SessionListView`.
+- Connected UI to Project Store: Refactored `useChatStore` and `useWorkbenchStore` to implement the Bridge pattern, proxying state and actions to `useProjectStore`. Updated `useProjectStore` to support required actions and state.
+- Fixed bug where sent messages were not appearing: Added `useProjectInit` hook to ensure a default session exists on app startup, as `ProjectStore` starts empty and `addMessage` requires an active session.
+- Implemented Data Replace Feature: Added `replaceFile` action to `useProjectStore` (new) and `useFileStore` (legacy) to support re-ingesting a file with a new path while preserving metadata. Added "Replace Data Source" context menu item to `TreeNode`.
+- Optimized Data Mode Layout: Configured the Sidebar to hide the license footer and settings when in 'data' view mode to maximize vertical space for the data tree.
+- The project uses `tsup` to build the Electron main process and preload scripts. I fixed the `package.json` `dev` script to ensure `npm run build:main` is executed before starting the dev server, as it was previously missing and caused stale code issues.
+- Implemented Smart Filters (v1.2 Template Mode) using Zod schema updates, a new modal, and intercepted chat flow in useChatStore and useProjectStore.
+- Consolidated all Zod schemas (AnalysisResult, RelationSuggestion, ContextAnalysis, FixSQL) into src/shared/schemas/analysis.ts and updated ai-bridge.ts imports.
+- Implemented cancellation logic for Smart Filters modal, including toast notification and proper chat state reset (handling 'Cancelled' error in useChatStore).
+- Refactored SmartFilterModal to support multi-select and search filtering for ambiguous AI parameters, updating system prompt to enforce SQL IN operator usage.
+- Implemented Re-triggerable Smart Filters: Created AnalysisTemplateCard, runTemplateSQL action, and manual configuration flow in ChatStream to allow users to modify analysis parameters.
+- Polished SmartFilterModal UI to match Wansan Minimalist design (Shadcn-like) with custom Badge and Checkbox components, optimizing layout for search and multi-selection.
+- Fixed race condition in SmartFilterModal cancellation logic by using useRef for confirmed state, ensuring onCancel is not triggered after a successful confirmation.
+- Polished Report Card UI with Data Lineage footer and applied standardized Wansan ECharts theme to ReportChart.
+- Implemented AI-Driven Smart Filter Options: Updated schema for display_columns, enhanced system prompt, created useSmartOptions hook, and upgraded SmartFilterModal to support multi-column display.
+- Implemented Smart Filters v2 with AI-Driven Dimension Lookup: Created useSmartOptions hook to fetch dimension options independently, and updated SmartFilterModal UI to show multi-column context and ID badges for better user selection.
+- Implemented Smart Filters v2.1: Optimized useSmartOptions hook with schema validation and reactive design, refined SmartFilterModal with local debouncing and multi-column display.
+- Upgraded SmartFilterModal to support multiple parameters with a Sidebar + Content layout, extracting filter logic to FilterPanel.
+- Implemented Smart Metrics type inference using DuckDB DESCRIBE in rebuildView, enabling automatic data type detection for calculated columns.
+- Updated validateSQL in main/engine/executor.ts to explicitly allow 'CREATE OR REPLACE VIEW' and 'DESCRIBE' statements, enabling Smart Metrics features while maintaining general read-only safety for other operations.
+- Implemented a central mapFileToSchema utility in renderer/utils/schema-mapper.ts that handles the conversion of FileNode to TableSchema, including the "Schema Masking" logic (v_ prefix for tables with Smart Metrics). simplified ai-bridge.ts to use this pre-masked tableName.

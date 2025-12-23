@@ -9,91 +9,102 @@ function escapeRegExp(string: string) {
   return string.replace(/[.*+?^${}()|[\\]/g, '\\$&')
 }
 
+/**
+ * Internal helper to build column mappings and JOIN clauses.
+ */
+function prepareViewContext(
+  file: FileNode,
+  allFiles: FileNode[],
+  relations: Relation[]
+) {
+  const colMap = new Map<string, string>()
+  const selectDimensionClauses: string[] = []
+  const joinClauses: string[] = []
+
+  // 1. Map Native Columns
+  file.columns.forEach(col => {
+    colMap.set(col.name, `T1."${col.name}" `)
+  })
+
+  // 2. Identify Relations & Build Joins
+  const activeRelations = relations.filter(r => r.fileAId === file.id)
+
+  activeRelations.forEach((rel, index) => {
+    const targetFile = allFiles.find(f => f.id === rel.fileBId)
+    if (!targetFile) return
+
+    const alias = `T_${index + 2}` // T1 is base
+    const prefix = rel.columnA
+
+    joinClauses.push(
+      `LEFT JOIN "${targetFile.tableName}" AS ${alias} ON T1."${rel.columnA}" = ${alias}."${rel.columnB}"`
+    )
+
+    targetFile.columns.forEach(col => {
+      const userColName = getJoinedColumnName(prefix, col.name)
+      const physicalPath = `${alias}."${col.name}"`
+      selectDimensionClauses.push(`${physicalPath} AS "${userColName}" `)
+      colMap.set(userColName, physicalPath)
+    })
+  })
+
+  return { colMap, selectDimensionClauses, joinClauses }
+}
+
+/**
+ * Resolves a user-friendly SQL expression into a physical one using table aliases.
+ */
+function resolveExpression(expression: string, colMap: Map<string, string>) {
+  let resolvedExpr = expression
+  const sortedUserCols = Array.from(colMap.keys()).sort(
+    (a, b) => b.length - a.length
+  )
+
+  sortedUserCols.forEach(userCol => {
+    const physicalPath = colMap.get(userCol)!
+    const regex = new RegExp(`"?\\b${escapeRegExp(userCol)}\\b"?`, 'g')
+    resolvedExpr = resolvedExpr.replace(regex, physicalPath)
+  })
+
+  return resolvedExpr
+}
+
 export const DuckDBViewManager = {
   /**
    * Rebuilds the "Wide View" (v_{tableName}) for a given file.
-   * Strategy:
-   * 1. Eagerly LEFT JOIN all defined relations.
-   * 2. Use FK column name as prefix for joined columns.
-   * 3. Resolve Ambiguity: Automatically map user columns to physical paths (T1."col", T_n."col").
-   * 4. Introspect types for metrics.
    */
   rebuildView: async (
     file: FileNode,
     allFiles: FileNode[],
     relations: Relation[]
   ): Promise<Map<string, string>> => {
-    const tableName = file.tableName
-    const viewName = `v_${tableName}`
+    const { colMap, selectDimensionClauses, joinClauses } = prepareViewContext(
+      file,
+      allFiles,
+      relations
+    )
 
-    // 1. Setup Base Map
-    const colMap = new Map<string, string>()
-    file.columns.forEach(col => {
-      colMap.set(col.name, `T1."${col.name}" `)
-    })
+    const selectClauses = [`T1.*`, ...selectDimensionClauses]
 
-    // 2. Identify Relations & Build Joins
-    const activeRelations = relations.filter(r => r.fileAId === file.id)
-    const selectClauses: string[] = [`T1.*`] // Keep all native columns
-    const joinClauses: string[] = []
-
-    activeRelations.forEach((rel, index) => {
-      const targetFile = allFiles.find(f => f.id === rel.fileBId)
-      if (!targetFile) return
-
-      const alias = `T_${index + 2}` // T1 is base
-      const prefix = rel.columnA // Naming: product_id__category
-
-      // JOIN Logic
-      joinClauses.push(
-        `LEFT JOIN "${targetFile.tableName}" AS ${alias} ON T1."${rel.columnA}" = ${alias}."${rel.columnB}"`
-      )
-
-      // SELECT Dimension Columns & Fill ColMap
-      targetFile.columns.forEach(col => {
-        const userColName = `${prefix}__${col.name}`
-        const physicalPath = `${alias}."${col.name}"`
-        selectClauses.push(`${physicalPath} AS "${userColName}" `)
-        colMap.set(userColName, physicalPath)
-      })
-    })
-
-    // 3. Resolve & Add Metrics
+    // Add Smart Metrics
     if (file.smartMetrics && file.smartMetrics.length > 0) {
-      // Sort keys by length descending to prevent partial replacements (e.g. "tax_rate" before "tax")
-      const sortedUserCols = Array.from(colMap.keys()).sort(
-        (a, b) => b.length - a.length
-      )
-
       file.smartMetrics.forEach(metric => {
-        let resolvedExpr = metric.sqlExpression
-
-        sortedUserCols.forEach(userCol => {
-          const physicalPath = colMap.get(userCol)!
-          // [FIX] Matches optional surrounding quotes (e.g. "col" or col) to prevent "T1."col"" syntax
-          const regex = new RegExp(`"?\\b${escapeRegExp(userCol)}\\b"?`, 'g')
-          resolvedExpr = resolvedExpr.replace(regex, physicalPath)
-        })
-
+        const resolvedExpr = resolveExpression(metric.sqlExpression, colMap)
         selectClauses.push(`(${resolvedExpr}) AS "${metric.name}" `)
       })
     }
 
-    // 4. Create View
+    const viewName = `v_${file.tableName}`
     const sql = `
       CREATE OR REPLACE VIEW "${viewName}" AS
       SELECT
         ${selectClauses.join(',\n        ')}
-      FROM "${tableName}" AS T1
+      FROM "${file.tableName}" AS T1
       ${joinClauses.join('\n      ')}
     `
 
-    console.log('[DuckDBViewManager] Rebuilding View:', viewName)
-
     try {
-      // Execute via IPC
       await window.electronAPI.runSQL(sql)
-      // Introspect Types using DESCRIBE
       const descRes = await window.electronAPI.runSQL(`DESCRIBE "${viewName}" `)
       const typeMap = new Map<string, string>()
 
@@ -102,11 +113,44 @@ export const DuckDBViewManager = {
           typeMap.set(row.column_name, row.column_type)
         })
       }
-
       return typeMap
     } catch (e) {
       console.error('[DuckDBViewManager] Rebuild failed:', e)
       throw e
+    }
+  },
+
+  /**
+   * Tests a single metric expression using the same JOIN and resolution rules.
+   */
+  testMetricExpression: async (
+    file: FileNode,
+    expression: string,
+    allFiles: FileNode[],
+    relations: Relation[]
+  ): Promise<{ value: any; dataType: string }> => {
+    const { colMap, joinClauses } = prepareViewContext(file, allFiles, relations)
+    const resolvedExpr = resolveExpression(expression, colMap)
+
+    const testSql = `
+      SELECT (${resolvedExpr}) AS test_result
+      FROM "${file.tableName}" AS T1
+      ${joinClauses.join('\n      ')}
+      LIMIT 1
+    `
+
+    const res = await window.electronAPI.runSQL(testSql)
+    if (!res.success || !res.data) {
+      throw new Error(res.error || 'Test query failed')
+    }
+
+    const row = res.data.data[0]
+    const val = row ? row.test_result : null
+    const type = res.data.columnTypes ? res.data.columnTypes['test_result'] : 'UNKNOWN'
+
+    return {
+      value: val,
+      dataType: type || 'UNKNOWN',
     }
   },
 }
