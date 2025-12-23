@@ -88,6 +88,7 @@ export function SchemaEditor() {
   const addSmartMetric = useProjectStore(s => s.addSmartMetric)
   const removeSmartMetric = useProjectStore(s => s.removeSmartMetric)
   const { t } = useTranslation('common')
+  const { t: tAnalysis } = useTranslation('analysis')
   const toast = useToastStore()
   const reIngest = useReIngestFile()
   const readyFiles = files.filter(f => f.status === 'ready')
@@ -194,7 +195,9 @@ export function SchemaEditor() {
     }
     await addSmartMetric(currentFile.id, metric)
     toast.addToast({
-      title: editingMetric ? 'Metric Updated' : 'Metric Added',
+      title: editingMetric
+        ? tAnalysis('smart_metric.toast_updated')
+        : tAnalysis('smart_metric.toast_added'),
       type: 'success',
       duration: 2000,
     })
@@ -209,7 +212,7 @@ export function SchemaEditor() {
     if (!currentFile) return
     await removeSmartMetric(currentFile.id, metricId)
     toast.addToast({
-      title: 'Metric Removed',
+      title: tAnalysis('smart_metric.toast_removed'),
       type: 'success',
       duration: 2000,
     })
@@ -256,7 +259,7 @@ export function SchemaEditor() {
                     {activeLinks.length > 0 ? (
                       <div className="flex gap-1">
                         <span className="text-xs text-zinc-500">
-                          Linked to:
+                          {tAnalysis('smart_metric.linked_to')}
                         </span>
                         {activeLinks.map(link => (
                           <span
@@ -269,7 +272,7 @@ export function SchemaEditor() {
                       </div>
                     ) : (
                       <span className="text-xs text-zinc-400 italic">
-                        No links
+                        {tAnalysis('smart_metric.no_links')}
                       </span>
                     )}
                   </div>
@@ -305,7 +308,7 @@ export function SchemaEditor() {
               <div className="absolute top-6 right-4 flex items-center gap-2 p-1 bg-white/80 backdrop-blur border border-zinc-200 rounded-lg shadow-sm hover:shadow transition-shadow">
                 <ExpandableAction
                   icon={<Calculator className="w-4 h-4 text-purple-600" />}
-                  label="Add Metric"
+                  label={tAnalysis('smart_metric.add_title')}
                   onClick={() => {
                     setEditingMetric(undefined)
                     setIsMetricModalOpen(true)
@@ -356,7 +359,7 @@ export function SchemaEditor() {
                           className="px-4 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2"
                         >
                           <Sparkles className="w-3 h-3 text-purple-400" />{' '}
-                          Smart Metrics
+                          {tAnalysis('smart_metric.section_title')}
                         </td>
                       </tr>
                       {currentFile.smartMetrics.map(metric => (
@@ -376,7 +379,8 @@ export function SchemaEditor() {
                     colSpan={3}
                     className="px-4 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2"
                   >
-                    <Database className="w-3 h-3" /> Physical Columns
+                    <Database className="w-3 h-3" />{' '}
+                    {tAnalysis('smart_metric.physical_columns')}
                   </td>
                 </tr>
                 {currentFile.columns.map(col => (

@@ -22,6 +22,7 @@ import {
 import { cn } from '@/utils/cn'
 import { getJoinedColumnName } from '@shared/naming-utils'
 import { DuckDBViewManager } from '../../lib/duckdb-view-manager'
+import { useTranslation } from 'react-i18next'
 
 // Code Editor
 import Editor from 'react-simple-code-editor'
@@ -44,6 +45,7 @@ export function MetricEditorModal({
   initialMetric,
   onSave,
 }: MetricEditorModalProps) {
+  const { t } = useTranslation('analysis')
   const [name, setName] = useState('')
   const [label, setLabel] = useState('')
   const [expression, setExpression] = useState('')
@@ -91,7 +93,7 @@ export function MetricEditorModal({
 
     // 1. Native Columns
     groups.push({
-      title: 'Current Table',
+      title: t('smart_metric.current_table'),
       icon: Database,
       columns: file.columns.map(col => ({
         name: col.name,
@@ -107,7 +109,7 @@ export function MetricEditorModal({
       if (targetFile) {
         const prefix = rel.columnA
         groups.push({
-          title: `Linked via ${prefix}`,
+          title: `${t('smart_metric.linked_via')} ${prefix}`,
           icon: Link2,
           columns: targetFile.columns.map(col => ({
             name: getJoinedColumnName(prefix, col.name),
@@ -149,7 +151,7 @@ export function MetricEditorModal({
       await onSave(newMetric)
       onClose()
     } catch (e: any) {
-      setTestError(e.message || 'Validation failed')
+      setTestError(e.message || t('smart_metric.validation_failed'))
     } finally {
       setIsTesting(false)
     }
@@ -173,10 +175,10 @@ export function MetricEditorModal({
         setTestResult(String(result.value ?? '(null)'))
         setDataType(result.dataType)
       } else {
-        setTestResult('(No rows returned)')
+        setTestResult(t('smart_metric.no_rows'))
       }
     } catch (e: any) {
-      setTestError(e.message || 'Syntax Error')
+      setTestError(e.message || t('smart_metric.syntax_error'))
     } finally {
       setIsTesting(false)
     }
@@ -186,9 +188,9 @@ export function MetricEditorModal({
     const textarea = document.getElementById(
       'metric-sql-editor'
     ) as HTMLTextAreaElement
-    
+
     const textToInsert = `"${text}"`
-    
+
     if (!textarea) {
       setExpression(prev => prev + textToInsert)
       return
@@ -217,7 +219,9 @@ export function MetricEditorModal({
         <DialogHeader className="px-6 py-4 border-b shrink-0 bg-white">
           <DialogTitle className="flex items-center gap-2">
             <Calculator className="w-5 h-5 text-purple-600" />
-            {initialMetric ? 'Edit Smart Metric' : 'Add Smart Metric'}
+            {initialMetric
+              ? t('smart_metric.edit_title')
+              : t('smart_metric.add_title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -227,7 +231,9 @@ export function MetricEditorModal({
             <div className="p-6 pb-0 flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-zinc-500 uppercase">Metric Name (SQL Alias)</Label>
+                  <Label className="text-xs font-bold text-zinc-500 uppercase">
+                    {t('smart_metric.name_label')}
+                  </Label>
                   <Input
                     placeholder="e.g. profit_margin"
                     value={name}
@@ -235,11 +241,13 @@ export function MetricEditorModal({
                     className="font-mono bg-zinc-50 border-zinc-200"
                   />
                   <p className="text-[10px] text-zinc-400 leading-tight">
-                    Identifier for SQL queries. Use lowercase and underscores.
+                    {t('smart_metric.name_desc')}
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-zinc-500 uppercase">Display Label</Label>
+                  <Label className="text-xs font-bold text-zinc-500 uppercase">
+                    {t('smart_metric.display_label')}
+                  </Label>
                   <Input
                     placeholder="e.g. Profit Margin %"
                     value={label}
@@ -252,8 +260,10 @@ export function MetricEditorModal({
 
             <div className="flex-1 p-6 flex flex-col min-h-0 gap-2">
               <Label className="flex justify-between items-center text-xs font-bold text-zinc-500 uppercase">
-                <span>SQL Expression</span>
-                <span className="text-[10px] text-zinc-400 font-normal normal-case">DuckDB Syntax Supported</span>
+                <span>{t('smart_metric.sql_expression')}</span>
+                <span className="text-[10px] text-zinc-400 font-normal normal-case">
+                  {t('smart_metric.duckdb_syntax')}
+                </span>
               </Label>
 
               <div className="flex-1 border border-zinc-200 rounded-lg bg-zinc-50 font-mono text-sm overflow-hidden relative flex flex-col focus-within:border-purple-300 transition-colors shadow-inner">
@@ -289,14 +299,18 @@ export function MetricEditorModal({
                     ) : (
                       <Play className="w-3 h-3 fill-current text-zinc-400" />
                     )}
-                    Quick Test
+                    {t('smart_metric.quick_test')}
                   </Button>
 
                   {testResult !== null && (
                     <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 px-2.5 py-1 rounded border border-green-100 animate-in fade-in">
                       <Check className="w-3.5 h-3.5" />
-                      <span className="font-mono font-bold tracking-tight">{testResult}</span>
-                      <span className="text-[10px] uppercase font-bold opacity-50 px-1 border-l border-green-200">{dataType}</span>
+                      <span className="font-mono font-bold tracking-tight">
+                        {testResult}
+                      </span>
+                      <span className="text-[10px] uppercase font-bold opacity-50 px-1 border-l border-green-200">
+                        {dataType}
+                      </span>
                     </div>
                   )}
 
@@ -317,8 +331,8 @@ export function MetricEditorModal({
           {/* Right: Available Columns Sidebar */}
           <div className="w-72 border-l border-zinc-200 bg-zinc-50/50 flex flex-col min-h-0">
             <div className="px-4 py-3 border-b border-zinc-200 bg-zinc-100/50 flex justify-between items-center">
-              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                Field Assistant
+              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">
+                {t('smart_metric.available_fields')}
               </span>
             </div>
 
@@ -355,9 +369,15 @@ export function MetricEditorModal({
         </div>
 
         <DialogFooter className="px-6 py-4 border-t border-zinc-200 bg-white shrink-0">
-          <Button variant="ghost" onClick={onClose} disabled={isTesting} className="text-zinc-500">
-            Cancel
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            disabled={isTesting}
+            className="text-zinc-500"
+          >
+            {t('smart_metric.cancel')}
           </Button>
+
           <Button
             onClick={validateAndSave}
             disabled={!name || !expression || isTesting}
@@ -366,12 +386,12 @@ export function MetricEditorModal({
             {isTesting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Validating...
+                {t('smart_metric.validating')}
               </>
             ) : (
               <>
                 <Calculator className="w-4 h-4" />
-                Save Metric
+                {t('smart_metric.save')}
               </>
             )}
           </Button>

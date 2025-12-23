@@ -24,5 +24,33 @@
     "widget_edit": "Edit Widget",
     "mode_read_only": "READ-ONLY PREVIEW",
     "mode_editing": "EDITING SQL LOGIC"
+  },
+  "smart_metric": {
+    "add_title": "Add Smart Metric",
+    "edit_title": "Edit Smart Metric",
+    "name_label": "Metric Name (SQL Alias)",
+    "name_desc": "Unique identifier for SQL queries (no spaces).",
+    "display_label": "Display Label",
+    "sql_expression": "SQL Expression",
+    "duckdb_syntax": "DuckDB Syntax Supported",
+    "quick_test": "Quick Test",
+    "verified": "Verified",
+    "validating": "Validating...",
+    "save": "Save Metric",
+    "cancel": "Cancel",
+    "field_assistant": "Field Assistant",
+    "available_fields": "Available Fields",
+    "current_table": "Current Table",
+    "linked_via": "Linked via",
+    "validation_failed": "Validation failed",
+    "syntax_error": "Syntax Error",
+    "no_rows": "(No rows returned)",
+    "toast_added": "Metric Added",
+    "toast_updated": "Metric Updated",
+    "toast_removed": "Metric Removed",
+    "section_title": "Smart Metrics",
+    "physical_columns": "Physical Columns",
+    "linked_to": "Linked to:",
+    "no_links": "No links"
   }
 }

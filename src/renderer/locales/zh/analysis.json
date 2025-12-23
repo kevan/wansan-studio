@@ -24,5 +24,33 @@
     "widget_edit": "编辑组件",
     "mode_read_only": "只读预览模式",
     "mode_editing": "编辑 SQL 逻辑"
+  },
+  "smart_metric": {
+    "add_title": "添加智能指标",
+    "edit_title": "编辑智能指标",
+    "name_label": "指标名称 (SQL 别名)",
+    "name_desc": "SQL 查询中的唯一标识符 (无空格)。",
+    "display_label": "显示名称",
+    "sql_expression": "SQL 表达式",
+    "duckdb_syntax": "支持 DuckDB 语法",
+    "quick_test": "快速测试",
+    "verified": "已验证",
+    "validating": "验证中...",
+    "save": "保存指标",
+    "cancel": "取消",
+    "field_assistant": "字段助手",
+    "available_fields": "可用字段",
+    "current_table": "当前表",
+    "linked_via": "关联于",
+    "validation_failed": "验证失败",
+    "syntax_error": "语法错误",
+    "no_rows": "(无返回行)",
+    "toast_added": "指标已添加",
+    "toast_updated": "指标已更新",
+    "toast_removed": "指标已移除",
+    "section_title": "智能指标",
+    "physical_columns": "物理列",
+    "linked_to": "已关联:",
+    "no_links": "无关联"
   }
 }
