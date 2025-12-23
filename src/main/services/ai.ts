@@ -8,6 +8,7 @@ import type {
   RelationSuggestion,
   ContextAnalysisResult,
   AIConfig,
+  DomainRule,
 } from '@shared/types.ts'
 
 // Define schema for electron-store
@@ -76,7 +77,8 @@ export class AIService {
     schemas: TableSchema[],
     relations: RelationSuggestion[],
     context?: { lastSql: string; lastQuery: string },
-    language: 'en' | 'zh' = 'en'
+    language: 'en' | 'zh' = 'en',
+    domainRules: DomainRule[] = []
   ): Promise<AIAnalysisResult> {
     const client = this.requireOpenAI()
 
@@ -87,7 +89,8 @@ export class AIService {
       relations,
       context,
       this.model,
-      language
+      language,
+      domainRules
     )
 
     if (aiResult.error) {
@@ -118,7 +121,8 @@ export class AIService {
   async fixQuery(
     originalSql: string,
     error: string,
-    schemas: TableSchema[]
+    schemas: TableSchema[],
+    domainRules: DomainRule[] = []
   ): Promise<{ sql: string; reasoning: string }> {
     // Import dynamically to avoid circular dependencies if any, or just use the imported function
     // We already imported generateAnalysis, so let's import fixSQL too
@@ -126,7 +130,7 @@ export class AIService {
     const { fixSQL } = await import('../engine/ai-bridge')
     const client = this.requireOpenAI()
 
-    return fixSQL(client, originalSql, error, schemas, this.model)
+    return fixSQL(client, originalSql, error, schemas, this.model, domainRules)
   }
 
   /**

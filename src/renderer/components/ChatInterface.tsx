@@ -232,7 +232,8 @@ export function ChatInterface({
                       </div>
                     )}
 
-                    {message.content && (
+                    {/* ONLY show content if it's NOT already in reportData.summary to avoid double display */}
+                    {message.content && !message.reportData?.summary && (
                       <div className="mb-3 text-zinc-500 text-[14px] leading-relaxed">
                         {message.content}
                       </div>

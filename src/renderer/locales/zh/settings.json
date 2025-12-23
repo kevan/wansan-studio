@@ -7,9 +7,17 @@
   "title": "设置",
   "tabs": {
     "ai": "AI 模型",
+    "domain": "领域知识",
     "general": "通用",
     "data": "数据",
     "about": "关于"
+  },
+  "domain": {
+    "title": "领域知识",
+    "description": "定义 AI 应始终遵循的自定义业务规则（例如：财年从 4 月开始）。",
+    "placeholder": "输入业务规则...",
+    "add": "添加规则",
+    "empty": "暂无规则。添加一条规则来教导 AI！"
   },
   "ai": {
     "provider_label": "AI 服务商",

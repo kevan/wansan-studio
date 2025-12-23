@@ -5,8 +5,7 @@ export interface SqlLabSession {
   targetId: string // widgetId or tableName
   targetTitle?: string // <--- Added
   initialSql: string
-  initialColumns?: string[]
-  initialColumnTypes?: Record<string, string>
+  reasoning?: string
   onSave?: (sql: string) => Promise<void>
 }
 

@@ -177,7 +177,7 @@ const resetLoading = () => {
     ) {
       useProjectStore.getState().updateMessage(m.id, {
         status: 'error',
-        content: i18n.t('interrupted_retry', { ns: 'chat' }),
+        error: i18n.t('interrupted_retry', { ns: 'chat' }),
       } as any)
     }
   })
@@ -327,12 +327,14 @@ const sendMessage = async (
       throw new Error('Generation aborted by user')
 
     const resolvedPrompt = resolveMentions(text)
+    const { domainRules } = useSettingsStore.getState()
     const planResponse = await window.electronAPI.askAI(
       resolvedPrompt,
       resolvedSchemas,
       resolvedRelations,
       context,
-      language
+      language,
+      domainRules
     )
 
     if (abortController.signal.aborted)
@@ -561,12 +563,14 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
       throw new Error('Generation aborted by user')
 
     const resolvedPrompt = resolveMentions(originalQuery)
+    const { domainRules } = useSettingsStore.getState()
     const planResponse = await window.electronAPI.askAI(
       resolvedPrompt,
       schemas,
       relations,
       context,
-      language
+      language,
+      domainRules
     )
 
     if (abortController.signal.aborted)
@@ -723,10 +727,12 @@ const autoFixMessage = async (
     if (!originalSql)
       throw new Error(i18n.t('error_no_sql_to_fix', { ns: 'chat' }))
 
+    const { domainRules } = useSettingsStore.getState()
     const fixResult = await window.electronAPI.fixSQL(
       originalSql,
       error,
-      schemas
+      schemas,
+      domainRules
     )
     if (!fixResult.success || !fixResult.data)
       throw new Error(
@@ -781,10 +787,7 @@ const autoFixMessage = async (
     updateMessage(messageId, msg => ({
       ...msg,
       status: 'error',
-      content: i18n.t('autofix_failed_content', {
-        ns: 'chat',
-        error: error?.message || i18n.t('error_unknown', { ns: 'chat' }),
-      }),
+      error: error?.message || i18n.t('error_unknown', { ns: 'chat' }),
     }))
     useToastStore.getState().addToast({
       type: 'error',
@@ -829,7 +832,7 @@ const runTemplateSQL = async (messageId: string, sql: string) => {
     updateMessage(messageId, msg => ({
       ...msg,
       status: 'error',
-      content: `Error: ${error?.message || 'Unknown error'}`,
+      error: error?.message || 'Unknown error',
     }))
     useProjectStore.getState().setAbortController(null)
   }

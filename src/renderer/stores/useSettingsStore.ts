@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { AI_PROVIDERS, type AIProviderKey } from '@/src/lib/constants'
 import { createBigIntStorage } from '@shared/serialization.ts'
-import type { AIConfig } from '@shared/types'
+import type { AIConfig, DomainRule } from '@shared/types'
 import { Analytics } from '../services/analytics'
 
 export type SettingsLanguage = 'en' | 'zh'
@@ -41,11 +41,16 @@ export interface SettingsState {
   validBetaCodes: string[]
   remoteConfig: RemoteConfig
   dismissedAnnouncementId: string | null
+  domainRules: DomainRule[]
   setProvider: (provider: AIProviderKey) => void
   activateLicense: (code: string) => boolean
   loadSensitiveData: () => Promise<void>
   setRemoteConfig: (cfg: RemoteConfig) => void
   dismissAnnouncement: (id: string) => void
+  addDomainRule: (content: string) => void
+  toggleDomainRule: (id: string) => void
+  removeDomainRule: (id: string) => void
+  updateDomainRule: (id: string, content: string) => void
   updateSettings: (
     patch: Partial<
       Omit<
@@ -87,6 +92,10 @@ const initialSettingsState: Omit<
   | 'loadSensitiveData'
   | 'setRemoteConfig'
   | 'dismissAnnouncement'
+  | 'addDomainRule'
+  | 'toggleDomainRule'
+  | 'removeDomainRule'
+  | 'updateDomainRule'
 > = {
   provider: 'deepseek',
   apiKey: '',
@@ -97,6 +106,7 @@ const initialSettingsState: Omit<
   validBetaCodes: [],
   remoteConfig: {},
   dismissedAnnouncementId: null,
+  domainRules: [],
 }
 
 export const SETTINGS_STORAGE_KEY = 'wansan-settings-v1'
@@ -165,6 +175,34 @@ export const useSettingsStore = create<SettingsState>()(
       },
       setRemoteConfig: (cfg: RemoteConfig) => set({ remoteConfig: cfg }),
       dismissAnnouncement: (id: string) => set({ dismissedAnnouncementId: id }),
+      addDomainRule: content =>
+        set(state => ({
+          domainRules: [
+            ...state.domainRules,
+            {
+              id: crypto.randomUUID(),
+              content,
+              isEnabled: true,
+              createdAt: Date.now(),
+            },
+          ],
+        })),
+      toggleDomainRule: id =>
+        set(state => ({
+          domainRules: state.domainRules.map(r =>
+            r.id === id ? { ...r, isEnabled: !r.isEnabled } : r
+          ),
+        })),
+      removeDomainRule: id =>
+        set(state => ({
+          domainRules: state.domainRules.filter(r => r.id !== id),
+        })),
+      updateDomainRule: (id, content) =>
+        set(state => ({
+          domainRules: state.domainRules.map(r =>
+            r.id === id ? { ...r, content } : r
+          ),
+        })),
       updateSettings: patch =>
         set(state => {
           let nextState = { ...state, ...patch }

@@ -15,6 +15,7 @@ import type {
   FileNode,
   RelationSuggestion,
   ContextAnalysisResult,
+  DomainRule,
 } from '../../shared/types'
 
 export function setupIPC(
@@ -141,7 +142,8 @@ export function setupIPC(
       schemas: TableSchema[],
       relations: RelationSuggestion[],
       context?: { lastSql: string; lastQuery: string },
-      language?: 'en' | 'zh'
+      language?: 'en' | 'zh',
+      domainRules: DomainRule[] = []
     ) => {
       try {
         const result = await aiService.generatePlan(
@@ -149,7 +151,8 @@ export function setupIPC(
           schemas,
           relations,
           context,
-          language
+          language,
+          domainRules
         )
         return { success: true, data: result }
       } catch (error) {
@@ -169,10 +172,16 @@ export function setupIPC(
       _event,
       originalSql: string,
       error: string,
-      schemas: TableSchema[]
+      schemas: TableSchema[],
+      domainRules: DomainRule[] = []
     ) => {
       try {
-        const result = await aiService.fixQuery(originalSql, error, schemas)
+        const result = await aiService.fixQuery(
+          originalSql,
+          error,
+          schemas,
+          domainRules
+        )
         return { success: true, data: result }
       } catch (error) {
         console.error('Fix SQL error:', error)

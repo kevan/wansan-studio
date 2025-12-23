@@ -121,6 +121,13 @@ export interface AIConfig {
   model?: string
 }
 
+export interface DomainRule {
+  id: string
+  content: string
+  isEnabled: boolean
+  createdAt: number
+}
+
 // 选中节点类型
 export type SelectedNodeType = 'file' | 'column' | 'relation' | null
 

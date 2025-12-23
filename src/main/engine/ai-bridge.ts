@@ -2,6 +2,7 @@ import { OpenAI } from 'openai'
 import { z } from 'zod'
 import {
   ContextAnalysisResult,
+  DomainRule,
   RelationSuggestion,
   TableSchema,
 } from '@shared/types.ts'
@@ -12,7 +13,7 @@ import {
   FixSQLResultSchema,
 } from '@shared/schemas/analysis.ts'
 import {
-  SYSTEM_PROMPT,
+  getSystemPrompt,
   CONTEXT_ANALYSIS_SYSTEM_PROMPT,
   serializeSchemas,
 } from './prompts.ts'
@@ -42,10 +43,10 @@ export async function generateAnalysis(
   relations: RelationSuggestion[],
   context?: { lastSql: string; lastQuery: string },
   model?: string,
-  language: 'en' | 'zh' = 'en'
+  language: 'en' | 'zh' = 'en',
+  domainRules: DomainRule[] = []
 ): Promise<AIGenerationOutput> {
   if (isDev()) {
-    // Use a custom replacer to handle BigInt serialization
     console.log(
       'generateAnalysis pre request - schemas:',
       safeStringify(schemas, 2)
@@ -70,11 +71,7 @@ export async function generateAnalysis(
     contextSection = `
 ### 🕒 PREVIOUS CONTEXT
 Last Query: "${context.lastQuery}"
-Last SQL: "${context.lastSql.replace(/"/g, '\\"')}"
-
-If the current query is a follow-up (e.g. "remove outliers", "change to line chart"), modify the Last SQL.
-If it's a new topic, IGNORE the context.
-`
+Last SQL: "${context.lastSql.replace(/\n/g, '\\n')}"`
   }
 
   const userPrompt = `### 📅 CONTEXT
@@ -87,8 +84,7 @@ ${schemaContext}
 
 ### 🔗 KNOWN RELATIONSHIPS (HINT FOR JOINING)
 Use these valid relationships to join tables if the user query requires data from multiple sources.
-${relationsContext}
-${contextSection}
+${relationsContext}${contextSection}
 ### 👤 USER QUESTION
 "${userQuery}"
 
@@ -102,7 +98,7 @@ ${contextSection}
     messages: [
       {
         role: 'system',
-        content: `${SYSTEM_PROMPT}
+        content: `${getSystemPrompt(domainRules)}
 
 OUTPUT RULE: The "summary", "title", "reasoning", and "suggestions" fields MUST be in ${languageNote}.`,
       },
@@ -145,7 +141,6 @@ export async function analyzeContext(
   language: 'en' | 'zh' = 'en'
 ): Promise<ContextAnalysisResult> {
   if (isDev()) {
-    // Use a custom replacer to handle BigInt serialization
     console.log(
       'analyzeContext pre request - schemas:',
       safeStringify(schemas, 2)
@@ -211,12 +206,16 @@ export async function fixSQL(
   originalSql: string,
   errorMessage: string,
   schemas: TableSchema[],
-  model?: string
+  model?: string,
+  domainRules: DomainRule[] = []
 ): Promise<{ sql: string; reasoning: string }> {
   const schemaContext = serializeSchemas(schemas)
 
   const systemPrompt = `You are a DuckDB SQL Repair Expert.
 Your goal is to FIX a broken SQL query based on the error message and table schema.
+
+Additional Context:
+${getSystemPrompt(domainRules)}
 
 OUTPUT: JSON object { "sql": "FIXED_SQL", "reasoning": "Brief explanation of the fix (supplementary to the original plan)" }`
 

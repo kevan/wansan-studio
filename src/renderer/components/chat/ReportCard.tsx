@@ -1,20 +1,11 @@
 import React, { useState } from 'react'
-import {
-  Pin,
-  Sparkles,
-  RefreshCw,
-  Code,
-  Settings2,
-  SlidersHorizontal,
-} from 'lucide-react'
+import { Code, Pin, RefreshCw, SlidersHorizontal, Sparkles } from 'lucide-react'
 import { DashboardWidget } from '../DashboardWidget'
 import { ReportData, useWorkbenchStore } from '../../stores/useWorkbenchStore'
-import { useChatStore } from '../../stores/useChatStore'
-import { useSqlLabStore } from '../../stores/useSqlLabStore'
-import { useToastStore } from '../../stores/useToastStore'
-import { useProjectStore } from '../../stores/useProjectStore'
-import { cn } from '../../utils/cn'
-import { SqlEditorModal } from '../report/sql-editor-modal'
+import { useChatStore } from '@/stores/useChatStore.ts'
+import { useSqlLabStore } from '@/stores/useSqlLabStore.ts'
+import { useToastStore } from '@/stores/useToastStore.ts'
+import { cn } from '@/utils/cn.ts'
 import type { ChatMessage } from '../ChatInterface'
 import { useTranslation } from 'react-i18next'
 import { VizControls } from '@/components/report/viz-controls'
@@ -57,7 +48,13 @@ export function ReportCard({
       if (result.success && result.data) {
         const data = result.data.data
         const columns = data.length > 0 ? Object.keys(data[0]) : []
-        updateMessageData(messageId, reportData.sql, data, columns, result.data.columnTypes)
+        updateMessageData(
+          messageId,
+          reportData.sql,
+          data,
+          columns,
+          result.data.columnTypes
+        )
         addToast({
           type: 'success',
           title: t('refresh_success', 'Data refreshed'),
@@ -70,7 +67,10 @@ export function ReportCard({
       addToast({
         type: 'error',
         title: t('execution_failed', 'Execution Failed'),
-        description: t('refresh_failed_desc', 'Unable to refresh data. Please check your data source or SQL.'),
+        description: t(
+          'refresh_failed_desc',
+          'Unable to refresh data. Please check your data source or SQL.'
+        ),
       })
     } finally {
       setIsRerunning(false)
@@ -96,7 +96,13 @@ export function ReportCard({
     if (result.success && result.data) {
       const data = result.data.data
       const columns = data.length > 0 ? Object.keys(data[0]) : []
-      updateMessageData(messageId, newSql, data, columns, result.data.columnTypes)
+      updateMessageData(
+        messageId,
+        newSql,
+        data,
+        columns,
+        result.data.columnTypes
+      )
     } else {
       throw new Error(result.error || 'Execution failed')
     }
@@ -109,8 +115,7 @@ export function ReportCard({
       targetId: messageId,
       targetTitle: reportData.title,
       initialSql: reportData.sql,
-      initialColumns: reportData.columns,
-      initialColumnTypes: reportData.columnTypes,
+      reasoning: reportData.reasoning,
       onSave: handleRunSql,
     })
   }

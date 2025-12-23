@@ -1,4 +1,4 @@
-import { ReloadResult } from './types'
+import { ReloadResult, DomainRule } from './types'
 import {
   IPCResponse,
   RunSQLResponse,
@@ -42,12 +42,14 @@ export interface ElectronAPI {
     schemas: any[],
     relations: any[],
     context?: { lastSql: string; lastQuery: string },
-    language?: 'en' | 'zh'
+    language?: 'en' | 'zh',
+    domainRules?: DomainRule[]
   ) => Promise<IPCResponse>
   fixSQL: (
     originalSql: string,
     error: string,
-    schemas: any[]
+    schemas: any[],
+    domainRules?: DomainRule[]
   ) => Promise<IPCResponse>
   analyzeContext: (
     schemas: any[],

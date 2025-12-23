@@ -29,11 +29,24 @@ const electronAPI: ElectronAPI = {
     schemas: any[],
     relations: any[],
     context?: { lastSql: string; lastQuery: string },
-    language?: 'en' | 'zh'
+    language?: 'en' | 'zh',
+    domainRules?: any[]
   ) =>
-    ipcRenderer.invoke('ask-ai', query, schemas, relations, context, language),
-  fixSQL: (originalSql: string, error: string, schemas: any[]) =>
-    ipcRenderer.invoke('ask-ai-fix', originalSql, error, schemas),
+    ipcRenderer.invoke(
+      'ask-ai',
+      query,
+      schemas,
+      relations,
+      context,
+      language,
+      domainRules
+    ),
+  fixSQL: (
+    originalSql: string,
+    error: string,
+    schemas: any[],
+    domainRules?: any[]
+  ) => ipcRenderer.invoke('ask-ai-fix', originalSql, error, schemas, domainRules),
   analyzeContext: (schemas: any[], language?: 'en' | 'zh') =>
     ipcRenderer.invoke('analyze-context', schemas, language),
   getAIConfig: () => ipcRenderer.invoke('get-ai-config'),

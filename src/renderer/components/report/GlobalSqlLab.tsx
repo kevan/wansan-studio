@@ -14,6 +14,7 @@ export function GlobalSqlLab() {
       mode={session.mode}
       targetTitle={session.targetTitle}
       initialSql={session.initialSql}
+      reasoning={session.reasoning}
       onSave={
         session.onSave
           ? async sql => {

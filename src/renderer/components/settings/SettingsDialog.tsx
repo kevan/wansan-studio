@@ -9,6 +9,7 @@ import {
   Settings2,
   Sparkles,
   Bug,
+  BrainCircuit,
 } from 'lucide-react'
 
 import {
@@ -39,6 +40,7 @@ import { AI_PROVIDERS, type AIProviderKey } from '@/src/lib/constants'
 import { exportDebugLog } from '../../utils/debug-exporter'
 import { DISCLAIMER_TEXT_ZH, DISCLAIMER_TEXT_EN } from '../../lib/legal-text'
 import { SimpleMarkdown } from '@/components/ui/simple-markdown'
+import { DomainKnowledgeTab } from './domain-knowledge-tab'
 
 type VerifyStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -184,9 +186,12 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
           className="flex flex-col flex-1 overflow-hidden"
         >
           <div className="px-6 pt-4 shrink-0">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="ai" className="flex gap-2">
                 <Sparkles className="w-4 h-4" /> {t('tabs.ai')}
+              </TabsTrigger>
+              <TabsTrigger value="domain" className="flex gap-2">
+                <BrainCircuit className="w-4 h-4" /> {t('tabs.domain')}
               </TabsTrigger>
               <TabsTrigger value="general" className="flex gap-2">
                 <Settings2 className="w-4 h-4" /> {t('tabs.general')}
@@ -354,6 +359,14 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
               </section>
               <div className="h-10" />
             </div>
+          </TabsContent>
+
+          {/* TAB: DOMAIN KNOWLEDGE */}
+          <TabsContent
+            value="domain"
+            className="flex-1 overflow-y-auto px-6 py-4"
+          >
+            <DomainKnowledgeTab />
           </TabsContent>
 
           {/* TAB: GENERAL */}

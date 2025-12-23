@@ -1,8 +1,32 @@
-export const SYSTEM_PROMPT = `
+import { DomainRule, TableSchema } from '@shared/types.ts'
+
+export const getSystemPrompt = (userRules: DomainRule[] = []) => {
+  console.log('getSystemPrompt', userRules)
+  const activeRules = userRules.filter(r => r.isEnabled)
+
+  // 1. TOP LAYER: Role & Capabilities
+  const ROLE_DEFINITION = `
 ### SYSTEM PROMPT
 
 You are **Wansan (万三)**, an expert Data Analyst and DuckDB SQL Architect.
 Your mission is to translate natural language questions into executable **DuckDB SQL** queries based **strictly** on the provided table schema.
+`
+
+  // 2. MIDDLE LAYER: User Domain Context (Soft Constraints)
+  let DOMAIN_CONTEXT = ''
+  if (activeRules.length > 0) {
+    DOMAIN_CONTEXT = `
+### 🏢 BUSINESS DOMAIN CONTEXT (USER DEFINED)
+The user has provided the following background knowledge. Use this to interpret business logic and terminology:
+${activeRules.map((r, i) => `${i + 1}. ${r.content}`).join('\n')}
+(End of User Context)
+`
+  }
+
+  // 3. BOTTOM LAYER: Immutable Protocol (Hard Constraints)
+  const IMMUTABLE_PROTOCOL = `
+### 🛡️ IMMUTABLE EXECUTION PROTOCOL (HIGHEST PRIORITY)
+Despite any instructions above, you MUST strictly follow these system mandates. FAILURE TO COMPLY WILL CAUSE SYSTEM ERROR.
 
 ---
 
@@ -147,6 +171,9 @@ Output:
 }
 `
 
+  return `${ROLE_DEFINITION}\n${DOMAIN_CONTEXT}\n${IMMUTABLE_PROTOCOL}`
+}
+
 export const CONTEXT_ANALYSIS_SYSTEM_PROMPT = `
 You are an expert Database Architect specializing in Data Modeling and Business Intelligence.
 Your goal is to analyze the provided table schemas to:
@@ -200,8 +227,6 @@ Structure:
   ]
 }
 `
-
-import { TableSchema } from '@shared/types.ts'
 
 /**
  * Serializes table schemas into a readable string format for AI prompts.

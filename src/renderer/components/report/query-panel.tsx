@@ -35,8 +35,6 @@ interface QueryPanelProps {
   onChange: (sql: string) => void
   initialSql: string
   initialData?: any[]
-  initialColumns?: string[]
-  initialColumnTypes?: Record<string, string>
   reasoning?: string
   className?: string
   runOnMount?: boolean
@@ -49,8 +47,6 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
       onChange,
       initialSql,
       initialData = [],
-      initialColumns = [],
-      initialColumnTypes = {},
       reasoning,
       className,
       runOnMount = false,
@@ -63,12 +59,10 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
     const [previewData, setPreviewData] = useState<any[] | null>(
       initialData.length > 0 ? initialData : null
     )
-    const [previewColumns, setPreviewColumns] = useState<string[] | null>(
-      initialColumns.length > 0 ? initialColumns : null
-    )
+    const [previewColumns, setPreviewColumns] = useState<string[] | null>(null)
     const [previewColumnTypes, setPreviewColumnTypes] = useState<
       Record<string, string>
-    >(initialColumnTypes)
+    >({})
     const [previewError, setPreviewError] = useState<string | null>(null)
     const [execTime, setExecTime] = useState<number | null>(null)
     const [copied, setCopied] = useState(false)
