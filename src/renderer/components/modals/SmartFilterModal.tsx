@@ -66,8 +66,8 @@ export function SmartFilterModal({
         !open && !confirmedRef.current && onCancel()
       }
     >
-      <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden border-zinc-200 shadow-2xl bg-white block duration-200">
-        {/* 1. Header */}
+      <DialogContent className="sm:max-w-200 p-0 gap-0 overflow-hidden border-zinc-200 shadow-2xl bg-white transition-all">
+        {/* 1. Header (Span Full Width) */}
         <div className="px-5 py-4 border-b border-zinc-100 bg-gradient-to-b from-white to-zinc-50/30">
           <div className="flex items-start gap-3">
             <div className="p-2 bg-indigo-50/80 rounded-lg border border-indigo-100 shrink-0">
@@ -88,33 +88,37 @@ export function SmartFilterModal({
           </div>
         </div>
 
-        {/* 2. Content Grid */}
-        <div className="flex border-b border-zinc-100 h-[350px]">
-          {/* Sidebar */}
-          <div className="w-[160px] border-r border-zinc-100 bg-zinc-50/30 py-2 overflow-y-auto">
-            {params.map((p, i) => (
-              <button
-                key={p.placeholder}
-                onClick={() => setActiveIdx(i)}
-                className={cn(
-                  'w-full text-left px-4 py-3 text-sm flex items-center justify-between transition-colors outline-none focus-visible:bg-zinc-100',
-                  activeIdx === i
-                    ? 'bg-white shadow-sm font-medium text-zinc-900 border-l-2 border-indigo-600'
-                    : 'text-zinc-500 hover:bg-zinc-50 border-l-2 border-transparent'
-                )}
-              >
-                <span className="truncate pr-2" title={p.label || p.column}>
-                  {p.label || p.column}
-                </span>
-                {(paramValues[p.placeholder]?.length || 0) > 0 && (
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                )}
-              </button>
-            ))}
+        {/* 2. Split View Body */}
+        <div className="flex h-100">
+          {/* Left Sidebar */}
+          <div className="w-[160px] flex-shrink-0 border-r border-zinc-100 bg-zinc-50/40 flex flex-col py-2 overflow-y-auto">
+            {params.map((p, i) => {
+              const isActive = activeIdx === i
+              const hasValue = (paramValues[p.placeholder]?.length || 0) > 0
+              return (
+                <button
+                  key={i}
+                  onClick={() => setActiveIdx(i)}
+                  className={cn(
+                    'text-left px-4 py-3 text-sm flex items-center justify-between transition-colors relative outline-none',
+                    isActive
+                      ? 'bg-white text-indigo-900 font-medium shadow-[inset_3px_0_0_0_#4f46e5]'
+                      : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700'
+                  )}
+                >
+                  <span className="truncate pr-2" title={p.label || p.column}>
+                    {p.label || p.column}
+                  </span>
+                  {hasValue && (
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.4)]" />
+                  )}
+                </button>
+              )
+            })}
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1 min-w-0 bg-white">
+          {/* Right Content Area */}
+          <div className="flex-1 min-w-0 bg-white relative flex flex-col">
             {activeParam && (
               <FilterPanel
                 key={activeParam.placeholder}
@@ -131,8 +135,8 @@ export function SmartFilterModal({
           </div>
         </div>
 
-        {/* 3. Footer */}
-        <div className="p-3 px-4 border-t border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
+        {/* 3. Footer (Span Full Width) */}
+        <div className="p-3 px-4 border-t border-zinc-100 bg-white flex justify-between items-center z-10">
           <div className="text-xs text-zinc-500 font-medium">
             {totalSelected > 0 ? (
               <span className="text-indigo-600">
