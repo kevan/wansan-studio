@@ -8,6 +8,7 @@ import {
 } from '@shared/types.ts'
 import {
   AnalysisResultSchema,
+  AnalysisResult,
   RelationSuggestionSchema,
   ContextAnalysisResultSchema,
   FixSQLResultSchema,
@@ -34,8 +35,6 @@ function getModelToUse(preferredModel?: string) {
   return preferredModel || envModel || 'gpt-4-turbo-preview'
 }
 
-type AIGenerationOutput = z.infer<typeof AnalysisResultSchema>
-
 export async function generateAnalysis(
   openai: OpenAI,
   userQuery: string,
@@ -45,7 +44,7 @@ export async function generateAnalysis(
   model?: string,
   language: 'en' | 'zh' = 'en',
   domainRules: DomainRule[] = []
-): Promise<AIGenerationOutput> {
+): Promise<AnalysisResult> {
   if (isDev()) {
     console.log(
       'generateAnalysis pre request - schemas:',
@@ -71,7 +70,7 @@ export async function generateAnalysis(
     contextSection = `
 ### 🕒 PREVIOUS CONTEXT
 Last Query: "${context.lastQuery}"
-Last SQL: "${context.lastSql.replace(/\n/g, '\\n')}"`
+Last SQL: "${context.lastSql.replace(/\s+/g, ' ').trim()}"`
   }
 
   const userPrompt = `### 📅 CONTEXT
