@@ -26,8 +26,9 @@
     "mode_editing": "编辑 SQL 逻辑"
   },
   "smart_metric": {
-    "add_title": "添加智能指标",
-    "edit_title": "编辑智能指标",
+    "add_title": "添加指标",
+    "add_button": "指标",
+    "edit_title": "编辑指标",
     "name_label": "指标名称 (SQL 别名)",
     "name_desc": "SQL 查询中的唯一标识符 (无空格)。",
     "display_label": "显示名称",

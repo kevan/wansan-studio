@@ -91,18 +91,18 @@ export function SchemaEditor() {
   const { t: tAnalysis } = useTranslation('analysis')
   const toast = useToastStore()
   const reIngest = useReIngestFile()
-  const readyFiles = files.filter(f => f.status === 'ready')
+  const visibleFiles = files // Show all files regardless of status
 
-  // 如果没有 ready 的文件，不显示
-  if (readyFiles.length === 0) return null
+  // 如果没有文件，不显示
+  if (visibleFiles.length === 0) return null
 
   // 确保有选中的文件
   const currentFileId =
-    activeFileId && readyFiles.find(f => f.id === activeFileId)
+    activeFileId && visibleFiles.find(f => f.id === activeFileId)
       ? activeFileId
-      : readyFiles[0]?.id
+      : visibleFiles[0]?.id
 
-  const currentFile = readyFiles.find(f => f.id === currentFileId)
+  const currentFile = visibleFiles.find(f => f.id === currentFileId)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isMetricModalOpen, setIsMetricModalOpen] = useState(false)
@@ -306,27 +306,31 @@ export function SchemaEditor() {
 
               {/* Header Actions */}
               <div className="absolute top-6 right-4 flex items-center gap-2 p-1 bg-white/80 backdrop-blur border border-zinc-200 rounded-lg shadow-sm hover:shadow transition-shadow">
-                <ExpandableAction
-                  icon={<Calculator className="w-4 h-4 text-purple-600" />}
-                  label={tAnalysis('smart_metric.add_title')}
-                  onClick={() => {
-                    setEditingMetric(undefined)
-                    setIsMetricModalOpen(true)
-                  }}
-                  className="hover:bg-purple-50 hover:border-purple-200"
-                />
+                {currentFile.status === 'ready' && (
+                  <>
+                    <ExpandableAction
+                      icon={<Calculator className="w-4 h-4 text-purple-600" />}
+                      label={tAnalysis('smart_metric.add_button')}
+                      onClick={() => {
+                        setEditingMetric(undefined)
+                        setIsMetricModalOpen(true)
+                      }}
+                      className="hover:bg-purple-50 hover:border-purple-200"
+                    />
 
-                <ExpandableAction
-                  icon={<RefreshCw className="w-4 h-4" />}
-                  label={t('reload_data')}
-                  onClick={handleReload}
-                />
+                    <ExpandableAction
+                      icon={<RefreshCw className="w-4 h-4" />}
+                      label={t('reload_data')}
+                      onClick={handleReload}
+                    />
 
-                <ExpandableAction
-                  icon={<FileInput className="w-4 h-4" />}
-                  label={t('replace_source')}
-                  onClick={handleReplace}
-                />
+                    <ExpandableAction
+                      icon={<FileInput className="w-4 h-4" />}
+                      label={t('replace_source')}
+                      onClick={handleReplace}
+                    />
+                  </>
+                )}
 
                 <ExpandableAction
                   icon={<Trash2 className="w-4 h-4" />}
@@ -338,69 +342,72 @@ export function SchemaEditor() {
             </div>
 
             {/* 列表格 */}
-            <table className="w-full text-left border-collapse">
-              <thead className="sticky top-[40px] z-30 bg-white shadow-sm">
-                <tr className="text-xs font-semibold text-zinc-500 uppercase tracking-wider bg-white">
-                  <th className="px-6 py-3 w-1/3 border-b">
-                    {t('field_name')}
-                  </th>
-                  <th className="px-6 py-3 w-1/4 border-b">{t('format')}</th>
-                  <th className="px-6 py-3 border-b">{t('preview')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {/* Section 1: Smart Metrics */}
-                {currentFile.smartMetrics &&
-                  currentFile.smartMetrics.length > 0 && (
-                    <>
-                      <tr className="bg-zinc-50/80 border-y border-zinc-100">
-                        <td
-                          colSpan={3}
-                          className="px-4 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2"
-                        >
-                          <Sparkles className="w-3 h-3 text-purple-400" />{' '}
-                          {tAnalysis('smart_metric.section_title')}
-                        </td>
-                      </tr>
-                      {currentFile.smartMetrics.map(metric => (
-                        <SmartMetricRow
-                          key={metric.id}
-                          metric={metric}
-                          onEdit={() => handleEditMetric(metric)}
-                          onDelete={() => handleDeleteMetric(metric.id)}
-                        />
-                      ))}
-                    </>
-                  )}
-
-                {/* Section 2: Physical Columns */}
-                <tr className="bg-zinc-50/80 border-y border-zinc-100">
-                  <td
-                    colSpan={3}
-                    className="px-4 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2"
-                  >
-                    <Database className="w-3 h-3" />{' '}
-                    {tAnalysis('smart_metric.physical_columns')}
-                  </td>
-                </tr>
-                {currentFile.columns.map(col => (
-                  <ColumnRow
-                    key={col.name}
-                    fileId={currentFile.id}
-                    column={col}
-                    onToggleKey={() =>
-                      toggleKeyColumn(currentFile.id, col.name)
-                    }
-                    isLinked={relations.some(
-                      r =>
-                        (r.fileAId === currentFile.id &&
-                          r.columnA === col.name) ||
-                        (r.fileBId === currentFile.id && r.columnB === col.name)
+            {currentFile.status === 'ready' && (
+              <table className="w-full text-left border-collapse">
+                <thead className="sticky top-[40px] z-30 bg-white shadow-sm">
+                  <tr className="text-xs font-semibold text-zinc-500 uppercase tracking-wider bg-white">
+                    <th className="px-6 py-3 w-1/3 border-b">
+                      {t('field_name')}
+                    </th>
+                    <th className="px-6 py-3 w-1/4 border-b">{t('format')}</th>
+                    <th className="px-6 py-3 border-b">{t('preview')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {/* Section 1: Smart Metrics */}
+                  {currentFile.smartMetrics &&
+                    currentFile.smartMetrics.length > 0 && (
+                      <>
+                        <tr className="bg-zinc-50/80 border-y border-zinc-100">
+                          <td
+                            colSpan={3}
+                            className="px-4 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2"
+                          >
+                            <Sparkles className="w-3 h-3 text-purple-400" />{' '}
+                            {tAnalysis('smart_metric.section_title')}
+                          </td>
+                        </tr>
+                        {currentFile.smartMetrics.map(metric => (
+                          <SmartMetricRow
+                            key={metric.id}
+                            metric={metric}
+                            onEdit={() => handleEditMetric(metric)}
+                            onDelete={() => handleDeleteMetric(metric.id)}
+                          />
+                        ))}
+                      </>
                     )}
-                  />
-                ))}
-              </tbody>
-            </table>
+
+                  {/* Section 2: Physical Columns */}
+                  <tr className="bg-zinc-50/80 border-y border-zinc-100">
+                    <td
+                      colSpan={3}
+                      className="px-4 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2"
+                    >
+                      <Database className="w-3 h-3" />{' '}
+                      {tAnalysis('smart_metric.physical_columns')}
+                    </td>
+                  </tr>
+                  {currentFile.columns.map(col => (
+                    <ColumnRow
+                      key={col.name}
+                      fileId={currentFile.id}
+                      column={col}
+                      onToggleKey={() =>
+                        toggleKeyColumn(currentFile.id, col.name)
+                      }
+                      isLinked={relations.some(
+                        r =>
+                          (r.fileAId === currentFile.id &&
+                            r.columnA === col.name) ||
+                          (r.fileBId === currentFile.id &&
+                            r.columnB === col.name)
+                      )}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         )}
       </div>

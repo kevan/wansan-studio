@@ -159,8 +159,13 @@
   "pro_benefit_export": "PDF 与网页报告导出",
   "pro_benefit_sql": "高级 SQL 编辑器",
   "enter_license": "输入激活码",
+  "import_failed": "导入失败",
+  "invalid_metadata_table": "无效的文件元数据：缺少表名",
   "sidebar": {
     "electron_api_unavailable": "Electron API 不可用",
+    "uploading": "正在上传...",
+    "import_failed_title": "导入失败",
+    "delete_and_retry": "请移除此文件并重试。",
     "duplicate_file_skipped_title": "跳过重复文件",
     "duplicate_file_skipped_desc": "{{fileName}} 已经导入，无需重复添加。",
     "import_failed_title": "导入失败",

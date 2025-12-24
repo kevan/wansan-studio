@@ -26,6 +26,7 @@
     "mode_editing": "EDITING SQL LOGIC"
   },
   "smart_metric": {
+    "add_button": "Metric",
     "add_title": "Add Smart Metric",
     "edit_title": "Edit Smart Metric",
     "name_label": "Metric Name (SQL Alias)",

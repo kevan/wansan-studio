@@ -41,12 +41,14 @@ import { RefreshConfirmModal } from './components/modals/RefreshConfirmModal'
 import { SettingsDialog } from './components/settings/SettingsDialog'
 import { GlobalSqlLab } from './components/report/GlobalSqlLab'
 import { DataPreviewPanel } from './components/report/data-preview-panel'
+import { useAutoCleanup } from './hooks/use-auto-cleanup'
 
 function App() {
   useBootSequence()
   useRemoteConfig()
   useDataRehydrate()
   useProjectInit()
+  useAutoCleanup()
   // useStoreMigration()
 
   const [isChatCollapsed, setIsChatCollapsed] = useState(false)

@@ -159,8 +159,13 @@
   "pro_benefit_export": "PDF & Web Report Export",
   "pro_benefit_sql": "Advanced SQL Editor",
   "enter_license": "Enter License Key",
+  "import_failed": "Import Failed",
+  "invalid_metadata_table": "Invalid file metadata: Missing table name",
   "sidebar": {
     "electron_api_unavailable": "Electron API unavailable",
+    "uploading": "Uploading...",
+    "import_failed_title": "Import Failed",
+    "delete_and_retry": "Please remove this file and try again.",
     "duplicate_file_skipped_title": "Duplicate file skipped",
     "duplicate_file_skipped_desc": "{{fileName}} already imported, skipping.",
     "import_failed_title": "Import Failed",

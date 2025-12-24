@@ -97,7 +97,7 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
       // 更新状态为 error
       updateFile(fileId, {
         status: 'error',
-        error: error instanceof Error ? error.message : '解析失败',
+        error: error instanceof Error ? error.message : t('sidebar.parse_failed'),
       })
       console.error('File processing error:', error)
       return false
@@ -223,7 +223,7 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
     })
 
     if (validFiles.length === 0) {
-      alert('不支持的文件类型，请选择 Excel (.xlsx, .xls) 或 CSV (.csv) 文件')
+      alert(t('unsupported_file_type'))
       return
     }
 
@@ -288,9 +288,12 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
           <div className="py-8">
             <div className="w-16 h-16 mx-auto mb-6 wansan-spinner"></div>
             <p className="text-lg font-medium text-zinc-700 mb-2">
-              正在处理 {processingCount + 1}/{totalCount} 个文件...
+              {t('processing_files_count', {
+                current: processingCount + 1,
+                total: totalCount,
+              })}
             </p>
-            <p className="text-sm text-zinc-500">Cleaning merged cells...</p>
+            <p className="text-sm text-zinc-500">{t('cleaning_cells')}</p>
             {/* 进度条 */}
             <div className="w-48 mx-auto mt-4 h-1.5 bg-zinc-200 rounded-full overflow-hidden">
               <div

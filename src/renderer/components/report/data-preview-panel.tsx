@@ -3,7 +3,7 @@ import { QueryPanel } from './query-panel'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { useTranslation } from 'react-i18next'
 import { format } from 'sql-formatter'
-import { Loader2 } from 'lucide-react'
+import { Loader2, AlertCircle, CloudUpload } from 'lucide-react'
 
 export function DataPreviewPanel() {
   const { activeFileId, files, isRestoring } = useProjectStore()
@@ -44,10 +44,68 @@ export function DataPreviewPanel() {
     )
   }
 
+  // Handle Uploading State
+  if (file.status === 'uploading') {
+    return (
+      <div className="h-full w-full bg-zinc-50/30 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-300">
+        <div className="p-4 bg-indigo-50 rounded-full">
+          <CloudUpload className="w-8 h-8 text-indigo-500 animate-bounce" />
+        </div>
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-sm font-semibold text-zinc-900">
+            {t('sidebar.uploading')}
+          </span>
+          <span className="text-xs text-zinc-400 font-mono">
+            {file.name}
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  // Handle Processing State (New file being ingested)
+  if (file.status === 'processing') {
+    return (
+      <div className="h-full w-full bg-zinc-50/30 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-300">
+        <div className="w-10 h-10 rounded-full border-4 border-indigo-100 border-t-indigo-600 animate-spin" />
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-sm font-semibold text-zinc-900">
+            {t('importing')}
+          </span>
+          <span className="text-xs text-zinc-400 font-mono italic">
+            {file.name}
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  // Handle Error State
+  if (file.status === 'error') {
+    return (
+      <div className="h-full w-full bg-red-50/10 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
+        <div className="p-4 bg-red-50 rounded-full mb-4">
+          <AlertCircle className="w-8 h-8 text-red-500" />
+        </div>
+        <h3 className="text-sm font-bold text-red-900 mb-2">
+          {t('sidebar.import_failed_title')}
+        </h3>
+        <p className="text-xs text-red-600/80 max-w-xs mb-6 line-clamp-4 leading-relaxed font-mono">
+          {file.error || t('import_failed')}
+        </p>
+        <div className="flex gap-3">
+          <span className="text-[10px] text-zinc-400 italic">
+            {t('sidebar.delete_and_retry')}
+          </span>
+        </div>
+      </div>
+    )
+  }
+
   if (!file.tableName) {
     return (
       <div className="h-full w-full flex items-center justify-center text-red-400 text-sm">
-        Invalid file metadata: Missing table name
+        {t('invalid_metadata_table')}
       </div>
     )
   }

@@ -110,6 +110,7 @@ export interface ProjectState extends ProjectData {
     force?: boolean
   ) => Promise<'completed' | 'cancelled' | 'pending' | 'error'>
   loadProject: (data: ProjectData) => void
+  cleanupZombieFiles: () => void
   serialize: () => string
   reset: () => void
 }
@@ -1182,6 +1183,19 @@ export const useProjectStore = create<ProjectState>()(
       },
 
       loadProject: (data: ProjectData) => set({ ...data }),
+
+      cleanupZombieFiles: () =>
+        set(state => ({
+          files: state.files.map(f =>
+            f.status === 'uploading' || f.status === 'processing'
+              ? {
+                  ...f,
+                  status: 'error',
+                  error: 'App closed unexpectedly during processing',
+                }
+              : f
+          ),
+        })),
 
       serialize: () => {
         // Destructure actions to exclude them from serialization
