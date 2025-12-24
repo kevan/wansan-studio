@@ -1,10 +1,10 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -12,11 +12,11 @@ import { Label } from '../ui/label'
 import { FileNode, SmartMetric } from '@shared/types'
 import { useProjectStore } from '../../stores/useProjectStore'
 import {
+  AlertCircle,
   Calculator,
+  Check,
   Database,
   Link2,
-  Check,
-  AlertCircle,
   Play,
   Wand2,
 } from 'lucide-react'
@@ -48,8 +48,9 @@ export function MetricEditorModal({
 }: MetricEditorModalProps) {
   const { t } = useTranslation('analysis')
   const [name, setName] = useState('')
+  const [safeName, setSafeName] = useState('')
   const [expression, setExpression] = useState('')
-  const [dataType, setDataType] = useState('DOUBLE')
+  const [type, setType] = useState('DOUBLE')
 
   // Test Run State
   const [isTesting, setIsTesting] = useState(false)
@@ -63,19 +64,33 @@ export function MetricEditorModal({
   useEffect(() => {
     if (isOpen) {
       if (initialMetric) {
-        setName(initialMetric.label)
+        setName(initialMetric.name)
+        setSafeName(initialMetric.safeName || '')
         setExpression(initialMetric.sqlExpression)
-        setDataType(initialMetric.dataType || 'DOUBLE')
+        setType(initialMetric.type || 'DOUBLE')
       } else {
         setName('')
+        setSafeName('')
         setExpression('')
-        setDataType('DOUBLE')
+        setType('DOUBLE')
       }
       setTestResult(null)
       setTestError(null)
       setIsGenerating(false)
     }
   }, [isOpen, initialMetric])
+
+  // Auto-generate safeName from name if not editing
+  useEffect(() => {
+    if (!initialMetric && name) {
+      const generated = name
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '')
+      setSafeName(generated)
+    }
+  }, [name, initialMetric])
 
   // Clear test feedback when expression changes
   useEffect(() => {
@@ -139,13 +154,13 @@ export function MetricEditorModal({
       )
 
       // If valid, apply data type and save
-      const finalDataType = result.dataType || 'DOUBLE'
+      // const finalType = result.dataType || 'DOUBLE'
       const newMetric: SmartMetric = {
         id: initialMetric?.id || crypto.randomUUID(),
-        name: name.trim(), // Use name as both identifier and label
-        label: name.trim(),
+        name: name.trim(),
+        safeName: safeName.trim(),
         sqlExpression: expression,
-        dataType: finalDataType,
+        type: result.dataType,
       }
 
       await onSave(newMetric)
@@ -173,7 +188,7 @@ export function MetricEditorModal({
 
       if (result.value !== undefined) {
         setTestResult(String(result.value ?? '(null)'))
-        setDataType(result.dataType)
+        setType(result.dataType)
       } else {
         setTestResult(t('smart_metric.no_rows'))
       }
@@ -341,7 +356,7 @@ export function MetricEditorModal({
                         {testResult}
                       </span>
                       <span className="text-[10px] uppercase font-bold opacity-50 px-1 border-l border-green-200">
-                        {dataType}
+                        {type}
                       </span>
                     </div>
                   )}

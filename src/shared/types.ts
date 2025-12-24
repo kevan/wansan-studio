@@ -87,11 +87,12 @@ export type SyncStatus =
 
 export interface SmartMetric {
   id: string // UUID
-  name: string // Database column alias (e.g., "profit_margin")
-  label: string // Human readable (e.g., "Profit Margin")
+  name: string // Main name / identifier (e.g., "Profit Margin")
+  safeName?: string // Technical identifier (reserved)
+  alias?: string // User defined alias
   sqlExpression: string // SQL Fragment (e.g., "amount - products__cost")
   description?: string // Context for AI
-  dataType?: string // Cached type (e.g., "DOUBLE")
+  type?: ColumnType // Cached type (e.g., "DOUBLE")
 }
 
 export interface FileNode {

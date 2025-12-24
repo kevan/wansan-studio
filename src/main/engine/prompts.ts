@@ -274,7 +274,7 @@ export function serializeSchemas(schemas: TableSchema[]): string {
         const metricCols = table.smartMetrics
           .map(m => {
             const hint = ` [Calculated]${m.description ? ` (${m.description})` : ''}`
-            const type = m.dataType || 'DOUBLE' // Default or cached
+            const type = m.type || 'DOUBLE' // Default or cached
             return `- "${m.name}" (${type})${hint}`
           })
           .join('\n')

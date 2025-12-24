@@ -165,9 +165,9 @@ export function useDataRehydrate() {
             let hasTypeChanges = false
             const updatedMetrics = file.smartMetrics.map(m => {
               const inferredType = typeMap.get(m.name)
-              if (inferredType && inferredType !== m.dataType) {
+              if (inferredType && inferredType !== m.type) {
                 hasTypeChanges = true
-                return { ...m, dataType: inferredType }
+                return { ...m, type: inferredType as any }
               }
               return m
             })

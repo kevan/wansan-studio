@@ -884,39 +884,43 @@ export const useProjectStore = create<ProjectState>()(
 
                   )
 
-                  const inferredType = typeMap.get(metric.name)
+                                    const inferredType = typeMap.get(metric.safeName)
 
-                  if (inferredType) {
+                  
 
-                    set(prev => ({
+                                    if (inferredType) {
 
-                      files: prev.files.map(f =>
+                                      set(prev => ({
 
-                        f.id === fileId
+                                        files: prev.files.map(f =>
 
-                          ? {
+                                          f.id === fileId
 
-                              ...f,
+                                            ? {
 
-                              smartMetrics: (f.smartMetrics || []).map(m =>
+                                                ...f,
 
-                                m.id === metric.id
+                                                smartMetrics: (f.smartMetrics || []).map(m =>
 
-                                  ? { ...m, dataType: inferredType }
+                                                  m.id === metric.id
 
-                                  : m
+                                                    ? { ...m, type: inferredType as any }
 
-                              ),
+                                                    : m
 
-                            }
+                                                ),
 
-                          : f
+                                              }
 
-                      ),
+                                            : f
 
-                    }))
+                                        ),
 
-                  }
+                                      }))
+
+                                    }
+
+                  
 
                 } catch (e) {
 

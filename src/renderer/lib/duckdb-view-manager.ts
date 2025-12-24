@@ -1,6 +1,7 @@
-import { FileNode } from '@shared/types'
+import { ColumnType, FileNode } from '@shared/types'
 import { Relation } from '@shared/types/project'
 import { getJoinedColumnName } from '@shared/naming-utils'
+import { normalizeDuckDBType } from '@shared/type-utils.ts'
 
 /**
  * Escapes regex special characters.
@@ -139,7 +140,7 @@ export const DuckDBViewManager = {
     expression: string,
     allFiles: FileNode[],
     relations: Relation[]
-  ): Promise<{ value: any; dataType: string }> => {
+  ): Promise<{ value: any; dataType: ColumnType }> => {
     const { colMap, joinClauses } = prepareViewContext(file, allFiles, relations)
     const resolvedExpr = resolveExpression(expression, colMap)
 
@@ -157,11 +158,13 @@ export const DuckDBViewManager = {
 
     const row = res.data.data[0]
     const val = row ? row.test_result : null
-    const type = res.data.columnFields.find(f => f.name === 'test_result')?.type || 'UNKNOWN'
+    const type =
+      res.data.columnFields.find(f => f.name === 'test_result')?.type ||
+      'UNKNOWN'
 
     return {
       value: val,
-      dataType: type,
+      dataType: normalizeDuckDBType(type),
     }
   },
 }

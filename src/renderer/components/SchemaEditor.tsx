@@ -1,26 +1,23 @@
 import { useFileStore } from '../stores/useFileStore'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useSqlLabStore } from '../stores/useSqlLabStore'
-import { ColumnType, ColumnSchema, SmartMetric } from '@shared/types'
-import { getUIFormatType, UIFormatType as FormatType, normalizeDuckDBType } from '@shared/type-utils'
+import { ColumnSchema, ColumnType, SmartMetric } from '@shared/types'
+import { getUIFormatType, UIFormatType as FormatType } from '@shared/type-utils'
 import {
   AlignJustify,
-  Calendar,
   Calculator,
+  Calendar,
   Check,
   ChevronDown,
   Clock,
-  Code,
   Database,
   Edit2,
-  Eye,
   FileInput,
   FileSpreadsheet,
   Hash,
   HelpCircle,
   Key,
   Link2,
-  MoreVertical,
   RefreshCw,
   Sparkles,
   ToggleLeft,
@@ -34,7 +31,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { useToastStore } from '../stores/useToastStore'
 import { useReIngestFile } from '../hooks/useIPC'
@@ -112,13 +108,13 @@ export function SchemaEditor() {
 
   // Compute Active Links
   const activeLinks = currentFile
-    ? relations
+    ? (relations
         .filter(r => r.fileAId === currentFile.id)
         .map(r => {
           const target = files.find(f => f.id === r.fileBId)
           return target ? { id: r.id, tableName: target.tableName } : null
         })
-        .filter(Boolean) as { id: string; tableName: string }[]
+        .filter(Boolean) as { id: string; tableName: string }[])
     : []
 
   // --- Handlers ---
@@ -618,7 +614,7 @@ function SmartMetricRow({
   onEdit: () => void
   onDelete: () => void
 }) {
-  const standardizedType = normalizeDuckDBType(metric.dataType || '')
+  const standardizedType = metric.type || 'DOUBLE'
 
   let badgeConfig = {
     color: 'bg-zinc-50 text-zinc-500 border-zinc-200',
@@ -669,11 +665,13 @@ function SmartMetricRow({
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-medium text-zinc-900">
-              {metric.label}
+              {metric.name}
             </span>
-            {/*<span className="text-[10px] text-zinc-400 font-mono">*/}
-            {/*  ({metric.name})*/}
-            {/*</span>*/}
+            {/*{metric.safeName && (*/}
+            {/*  <span className="text-[10px] text-zinc-400 font-mono">*/}
+            {/*    ({metric.safeName})*/}
+            {/*  </span>*/}
+            {/*)}*/}
           </div>
         </div>
       </td>
