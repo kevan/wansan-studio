@@ -159,16 +159,26 @@ export function formatDateValue(
 
   if (val instanceof Date) {
     dateObj = val
-  } else if (typeof val === 'number') {
-    dateObj = new Date(val)
-  } else if (typeof val === 'bigint') {
-    // Convert BigInt to number for Date constructor
-    // Note: Precision loss possible for extremely large values, but safe for standard timestamps
-    dateObj = new Date(Number(val))
+  } else if (typeof val === 'number' || typeof val === 'bigint') {
+    let numVal = typeof val === 'bigint' ? Number(val) : val
+
+    // Heuristic: DuckDB timestamps are often in microseconds
+    // If > 10^14, it's likely microseconds (10^12 is ~1970 in ms, 10^15 is ~5000 in ms)
+    if (numVal > 100000000000000) {
+      numVal = Math.floor(numVal / 1000)
+    }
+
+    const d = new Date(numVal)
+    if (!isNaN(d.getTime())) {
+      dateObj = d
+    }
   } else if (typeof val === 'string') {
     // Check if string is a numeric timestamp
     if (/^\d+$/.test(val)) {
-      dateObj = new Date(Number(val))
+      const numVal = Number(val)
+      // Apply same microsecond heuristic for numeric strings
+      const finalVal = numVal > 100000000000000 ? Math.floor(numVal / 1000) : numVal
+      dateObj = new Date(finalVal)
     } else {
       // If it's already a clean date string (YYYY-MM-DD) and typeHint is date, return it
       if (typeHint === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
@@ -189,16 +199,14 @@ export function formatDateValue(
       }
     }
   }
-  // Note: We deliberately EXCLUDE number/bigint here to prevent 
-  // false positive date conversions for IDs or Metrics.
 
-    if (dateObj && !isNaN(dateObj.getTime())) {
-      const iso = dateObj.toISOString()
-  
-      if (typeHint === 'date') return iso.split('T')[0] // YYYY-MM-DD
-      if (typeHint === 'time') return iso.split('T')[1].split('.')[0] // HH:mm:ss
-      return iso.replace('T', ' ').split('.')[0] // YYYY-MM-DD HH:mm:ss
-    }
+  if (dateObj && !isNaN(dateObj.getTime())) {
+    const iso = dateObj.toISOString()
+
+    if (typeHint === 'date') return iso.split('T')[0] // YYYY-MM-DD
+    if (typeHint === 'time') return iso.split('T')[1].split('.')[0] // HH:mm:ss
+    return iso.replace('T', ' ').split('.')[0] // YYYY-MM-DD HH:mm:ss
+  }
   return null
 }
 
@@ -223,12 +231,14 @@ export function formatForDisplay(value: any, typeHint?: string): string {
     // For UI display, we keep a mild heuristic for dates but prioritize number formatting
     const minTimestamp = 946684800000 // 2000-01-01
     const maxTimestamp = 1893456000000 // 2030-01-01
-    
+
     // Only format as date if it's clearly in ms timestamp range AND not a small integer
     if (value >= minTimestamp && value <= maxTimestamp) {
       try {
         return new Date(value).toLocaleString()
-      } catch { /* fall through */ }
+      } catch {
+        /* fall through */
+      }
     }
 
     return new Intl.NumberFormat('en-US', {
@@ -244,17 +254,19 @@ export function formatForDisplay(value: any, typeHint?: string): string {
  * Handles: BigInt, Date (ISO), JSON summarization, and string truncation
  */
 export function processSampleValue(val: any, columnType?: ColumnType): any {
-  // 1. Strict Type Check: If it's a numeric type, NEVER format as date
-  const isNumericType = columnType === 'INTEGER' || columnType === 'DOUBLE'
-
-  // 2. Handle Date/Time Types if columnType is provided
-  if (!isNumericType && (columnType === 'DATE' || columnType === 'TIMESTAMP')) {
+  // 1. Handle Date/Time Types if columnType is provided
+  // We prioritize this over generic numeric checks because DuckDB often returns 
+  // timestamps as bigints (microseconds).
+  if (columnType === 'DATE' || columnType === 'TIMESTAMP') {
     const formattedDate = formatDateValue(
       val,
       columnType === 'DATE' ? 'date' : 'timestamp'
     )
     if (formattedDate) return formattedDate
   }
+
+  // 2. Strict Type Check: If it's a numeric type, NEVER format as date fallback
+  const isNumericType = columnType === 'INTEGER' || columnType === 'DOUBLE'
 
   // 3. Handle BigInt (Generic fallback)
   if (typeof val === 'bigint') {
@@ -293,7 +305,7 @@ export function processSampleValue(val: any, columnType?: ColumnType): any {
       } catch (e) {
         // Try to handle \"unescaped\" JSON
         try {
-          const unescaped = val.replace(/\\"/g, '"')
+          const unescaped = val.replace(/\\\"/g, '"')
           const parsed = JSON.parse(unescaped)
           const summary = summarizeJson(parsed)
           return JSON.stringify(summary)

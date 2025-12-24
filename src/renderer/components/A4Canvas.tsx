@@ -182,7 +182,7 @@ export function A4Chart({
 
   const handleFocus = () => {
     if (!menuState) return
-    
+
     // 1. User-Friendly Message
     const displayMsg = `🔍 ${t('focus_analysis', { name: menuState.name })}`
 
@@ -204,9 +204,9 @@ export function A4Chart({
 
   const handleViewData = () => {
     if (!menuState) return
-    
+
     const displayMsg = `📄 ${t('view_raw_data', { name: menuState.name })}`
-    const hiddenMsg = `Show the first 20 raw data rows for '${menuState.name}'.
+    const hiddenMsg = `Show the first 100 raw data rows for '${menuState.name}'.
     Constraint: Switch visualization type to 'table'.`
 
     // Lock context to the specific message this chart belongs to

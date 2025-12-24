@@ -3,8 +3,10 @@ import { useReIngestFile } from './useIPC'
 import { useFileStore } from '@/stores/useFileStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { DuckDBViewManager } from '@/lib/duckdb-view-manager'
+import { useTranslation } from 'react-i18next'
 
 export function useDataRehydrate() {
+  const { t } = useTranslation('common')
   const files = useFileStore(state => state.files)
   const relations = useFileStore(state => state.relations)
   const markAsStale = useFileStore(state => state.markAsStale)
@@ -22,7 +24,7 @@ export function useDataRehydrate() {
 
   useEffect(() => {
     console.log('[Rehydrate] Init hook, checking hydration...')
-    
+
     // Check if already hydrated
     if (useFileStore.persist?.hasHydrated?.()) {
       console.log('[Rehydrate] Store already hydrated')
@@ -64,11 +66,11 @@ export function useDataRehydrate() {
     setRestoring(true)
     let cancelled = false
 
-    const toastId = addToast({
-      title: 'Restoring session data...',
-      type: 'info',
-      duration: Infinity,
-    })
+    // const toastId = addToast({
+    //   title: 'Restoring session data...',
+    //   type: 'info',
+    //   duration: Infinity,
+    // })
 
     const restore = async () => {
       let successCount = 0
@@ -121,7 +123,7 @@ export function useDataRehydrate() {
             }
 
             addToast({
-              title: 'Restore failed',
+              title: t('rehydrate.restore_failed'),
               description: `${file.name}: ${errorMessage}`,
               type: 'error',
               duration: 5000,
@@ -171,7 +173,9 @@ export function useDataRehydrate() {
             })
 
             if (hasTypeChanges) {
-              console.log(`[Rehydrate] Syncing metric types for ${file.tableName}`)
+              console.log(
+                `[Rehydrate] Syncing metric types for ${file.tableName}`
+              )
               updateFile(file.id, { smartMetrics: updatedMetrics })
             }
           }
@@ -193,7 +197,7 @@ export function useDataRehydrate() {
           })
 
           addToast({
-            title: 'View reconstruction failed',
+            title: t('rehydrate.view_rebuild_failed'),
             description: `${file.name}: ${errorMessage}`,
             type: 'error',
             duration: 5000,
@@ -203,17 +207,20 @@ export function useDataRehydrate() {
 
       console.log('[Rehydrate] Restoration process finished')
       setRestoring(false)
-      dismissToast(toastId)
+      // dismissToast(toastId)
       if (failCount > 0) {
         addToast({
-          title: 'Session restored with issues',
-          description: `Restored ${successCount} file(s). ${failCount} failed.`,
+          title: t('rehydrate.restore_with_issues'),
+          description: t('rehydrate.restore_summary', {
+            success: successCount,
+            fail: failCount,
+          }),
           type: 'warning',
           duration: 4000,
         })
       } else if (successCount > 0) {
         addToast({
-          title: 'Session restored',
+          title: t('rehydrate.restore_success'),
           type: 'success',
           duration: 2000,
         })
@@ -229,7 +236,7 @@ export function useDataRehydrate() {
       cancelled = true
       // Don't log "cancelled" here unless we are sure it's an abnormal termination
       setRestoring(false)
-      dismissToast(toastId)
+      // dismissToast(toastId)
     }
   }, [
     addToast,

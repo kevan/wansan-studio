@@ -11,7 +11,6 @@ import { Button } from '../ui/button'
 import { useToastStore } from '../../stores/useToastStore'
 import { useTranslation } from 'react-i18next'
 import { useProGate } from '@/hooks/use-pro-gate'
-import { normalizeDuckDBType } from '@shared/type-utils'
 import { ColumnSchema } from '@shared/types'
 
 const MAX_SIZE = 100 * 1024 * 1024 // 100MB
@@ -84,6 +83,9 @@ export function DataAssetsView() {
               size: fileData.size,
             })
 
+            // Switch to active file immediately
+            useProjectStore.getState().setActiveFile(fileId)
+
             updateFile(fileId, { status: 'processing' })
             const parseResults = await parseFileMutation.mutateAsync(filePath)
             console.log(
@@ -126,53 +128,12 @@ export function DataAssetsView() {
                 continue
               }
 
-              // 从 preview 数据中提取每列的样本值
+              // Use server-provided schema directly
               const columns = (res.schema?.columns || []).map(
-                (
-                  col: ColumnSchema,
-                  colIndex: number
-                ) => {
-                  // preview 可能是 [[header...], [row1...], ...] 或 [{col: val}, ...]
-                  const preview = res.preview || []
-                  const sampleValues: string[] = []
-
-                  // 如果是对象数组格式 (CSV 解析结果)
-                  if (
-                    preview.length > 0 &&
-                    typeof preview[0] === 'object' &&
-                    !Array.isArray(preview[0])
-                  ) {
-                    for (const row of preview.slice(0, 5)) {
-                      const val = row[col.name]
-                      if (
-                        val !== null &&
-                        val !== undefined &&
-                        val !== '' &&
-                        sampleValues.length < 3
-                      ) {
-                        sampleValues.push(String(val))
-                      }
-                    }
-                  } else if (Array.isArray(preview[0])) {
-                    // 如果是二维数组格式 (Excel 解析结果)，跳过第一行（表头）
-                    for (const row of preview.slice(1, 6)) {
-                      const val = row[colIndex]
-                      if (
-                        val !== null &&
-                        val !== undefined &&
-                        val !== '' &&
-                        sampleValues.length < 3
-                      ) {
-                        sampleValues.push(String(val))
-                      }
-                    }
-                  }
-
+                (col: ColumnSchema) => {
                   return {
                     ...col,
-                    type: normalizeDuckDBType(col.type),
                     safeName: col.name, // Default safeName
-                    sampleValues,
                   }
                 }
               )
@@ -191,8 +152,6 @@ export function DataAssetsView() {
               if (!placeholderUsed) {
                 updateFile(fileId, fileData)
                 placeholderUsed = true
-                // Set active file only after it is ready
-                useProjectStore.getState().setActiveFile(fileId)
               } else {
                 try {
                   addFile({
