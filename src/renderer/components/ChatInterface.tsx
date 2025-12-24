@@ -1,20 +1,18 @@
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import type { LoadingType } from '../../shared/types'
 import { ReportCard } from './chat/ReportCard'
 import { ErrorCard } from './chat/error-card'
 import { EmptyState } from './chat/empty-state'
 import { MagicInput } from './chat/magic-input'
 import {
-  User,
   Bot,
-  Sparkles,
-  GitBranch,
   Brain,
-  Zap,
-  Trash2,
-  Crown,
-  SlidersHorizontal,
   ChevronDown,
+  Crown,
+  GitBranch,
+  Sparkles,
+  Trash2,
+  Zap,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useChatStore } from '../stores/useChatStore'
@@ -42,6 +40,8 @@ export interface ChatMessage {
   }
   originalQuery?: string
   metadata?: {
+    aiLatency?: number
+    dbLatency?: number
     latency?: number
   }
   widgetId?: string

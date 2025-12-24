@@ -16,7 +16,9 @@ export interface Message {
   }
   originalQuery?: string
   metadata?: {
-    latency?: number
+    aiLatency?: number
+    dbLatency?: number
+    latency?: number // Keep for backward compatibility
   }
   widgetId?: string
   reportData?: ReportData

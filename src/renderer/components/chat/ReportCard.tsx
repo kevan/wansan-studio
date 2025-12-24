@@ -121,7 +121,9 @@ export function ReportCard({
   }
 
   const rowCount = reportData.tableData?.length || 0
-  const latency = message.metadata?.latency || 0
+  const aiLatency = message.metadata?.aiLatency || 0
+  const dbLatency =
+    message.metadata?.dbLatency || message.metadata?.latency || 0
 
   return (
     <div
@@ -213,11 +215,22 @@ export function ReportCard({
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
           <span>{t('chat:lineage_engine')}</span>
         </div>
-        <div className="font-mono tabular-nums opacity-70">
-          {t('chat:lineage_stats', {
-            rowCount: rowCount.toLocaleString(),
-            latency: latency.toFixed(0),
-          })}
+        <div className="font-mono tabular-nums opacity-70 flex gap-2">
+          <span>
+            {t('chat:lineage_stats', { rowCount: rowCount.toLocaleString() })}
+          </span>
+          <span className="opacity-40">|</span>
+          <span>
+            {message.metadata?.aiLatency !== undefined &&
+            message.metadata?.dbLatency !== undefined
+              ? t('chat:lineage_latency_split', {
+                  aiLatency: message.metadata.aiLatency.toFixed(0),
+                  dbLatency: message.metadata.dbLatency.toFixed(0),
+                })
+              : t('chat:lineage_latency_total', {
+                  latency: (message.metadata?.latency || 0).toFixed(0),
+                })}
+          </span>
         </div>
       </div>
     </div>

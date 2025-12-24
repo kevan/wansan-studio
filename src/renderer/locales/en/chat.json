@@ -114,8 +114,10 @@
   "template_required_title": "Parameter Configuration Required",
   "template_desc": "The AI generated a query template. Please refine the filter criteria to proceed.",
   "configure_and_run": "Configure Filters & Run",
-  "lineage_engine": "Generated via DuckDB Local Engine",
-  "lineage_stats": "{{rowCount}} rows processed in {{latency}}ms",
+  "lineage_engine": "Powered by DuckDB (Local)",
+  "lineage_stats": "{{rowCount}} rows",
+  "lineage_latency_split": "AI Inference: {{aiLatency}}ms · DuckDB: {{dbLatency}}ms",
+  "lineage_latency_total": "Latency: {{latency}}ms",
   "clear_selection": "Clear",
   "run_analysis": "Run Analysis"
 }

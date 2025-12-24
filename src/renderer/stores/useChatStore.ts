@@ -331,6 +331,8 @@ const sendMessage = async (
 
     const resolvedPrompt = resolveMentions(hiddenPrompt || text)
     const { domainRules } = useSettingsStore.getState()
+    
+    const aiStartTime = Date.now()
     const planResponse = await window.electronAPI.askAI(
       resolvedPrompt,
       resolvedSchemas,
@@ -339,6 +341,7 @@ const sendMessage = async (
       language,
       domainRules
     )
+    const aiLatency = Date.now() - aiStartTime
 
     if (abortController.signal.aborted)
       throw new Error('Generation aborted by user')
@@ -352,6 +355,7 @@ const sendMessage = async (
     if (plan.is_template) {
       updateMessage(botMsgId, msg => ({
         ...msg,
+        metadata: { aiLatency },
         reportData: {
           title: plan.title,
           summary: plan.summary,
@@ -399,6 +403,7 @@ const sendMessage = async (
       planSql: plan.sql,
       planReasoning: plan.reasoning,
       contextRef,
+      metadata: { ...msg.metadata, aiLatency },
     }))
 
     if (abortController.signal.aborted)
@@ -406,7 +411,9 @@ const sendMessage = async (
 
     updateMessage(botMsgId, msg => ({ ...msg, status: 'executing' }))
 
+    const dbStartTime = Date.now()
     const execution = await window.electronAPI.runSQL(plan.sql)
+    const dbLatency = Date.now() - dbStartTime
 
     if (!execution.success || !execution.data)
       throw new Error(execution.error || 'SQL execution failed')
@@ -415,23 +422,16 @@ const sendMessage = async (
 
     const columns = data.length > 0 ? Object.keys(data[0]) : []
 
-    const latency = Date.now() - startTime
-
     Analytics.track('analysis_generated', {
       viz_type: plan.visualization?.type || 'unknown',
-
       status: 'success',
     })
 
     updateMessage(botMsgId, msg => ({
       ...msg,
-
       status: undefined,
-
       content: plan.summary || '',
-
-      metadata: { latency },
-
+      metadata: { aiLatency, dbLatency, latency: aiLatency + dbLatency },
       reportData: {
         title: plan.title,
 
@@ -567,6 +567,8 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
 
     const resolvedPrompt = resolveMentions(originalQuery)
     const { domainRules } = useSettingsStore.getState()
+    
+    const aiStartTime = Date.now()
     const planResponse = await window.electronAPI.askAI(
       resolvedPrompt,
       schemas,
@@ -575,6 +577,7 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
       language,
       domainRules
     )
+    const aiLatency = Date.now() - aiStartTime
 
     if (abortController.signal.aborted)
       throw new Error('Generation aborted by user')
@@ -588,6 +591,7 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
     if (plan.is_template) {
       updateMessage(messageId, msg => ({
         ...msg,
+        metadata: { ...msg.metadata, aiLatency },
         reportData: {
           title: plan.title,
           summary: plan.summary,
@@ -626,19 +630,22 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
       status: 'planning',
       planSql: plan.sql,
       planReasoning: plan.reasoning,
+      metadata: { ...msg.metadata, aiLatency },
     }))
 
     if (abortController.signal.aborted)
       throw new Error('Generation aborted by user')
     updateMessage(messageId, msg => ({ ...msg, status: 'executing' }))
 
+    const dbStartTime = Date.now()
     const execution = await window.electronAPI.runSQL(plan.sql)
+    const dbLatency = Date.now() - dbStartTime
+
     if (!execution.success || !execution.data)
       throw new Error(execution.error || 'SQL execution failed')
 
     const { data, columnTypes } = execution.data
     const columns = data.length > 0 ? Object.keys(data[0]) : []
-    const latency = Date.now() - startTime
 
     Analytics.track('analysis_generated', {
       viz_type: plan.visualization?.type || 'unknown',
@@ -649,7 +656,7 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
       ...msg,
       status: undefined,
       content: plan.summary || '',
-      metadata: { latency },
+      metadata: { aiLatency, dbLatency, latency: aiLatency + dbLatency },
       reportData: {
         title: plan.title,
         summary: plan.summary,
