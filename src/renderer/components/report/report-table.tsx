@@ -16,14 +16,14 @@ import { Button } from '../ui/button'
 interface ReportTableProps {
   data: Array<Record<string, any>>
   columns: string[]
-  columnTypes?: Record<string, string>
+  columnTypes: Record<string, string>
   variant: 'chat' | 'dashboard' | 'preview' | 'fullscreen'
 }
 
 export function ReportTable({
   data = [],
   columns = [],
-  columnTypes = {},
+  columnTypes,
   variant,
 }: ReportTableProps) {
   const { t } = useTranslation('common')

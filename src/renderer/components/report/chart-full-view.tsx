@@ -58,6 +58,7 @@ export function ChartFullView() {
   }
 
   const data = report.reportData.tableData || []
+  const columnTypes = report.reportData.columnTypes || {}
   const columns =
     (report.reportData.columns && report.reportData.columns.length > 0
       ? report.reportData.columns
@@ -152,6 +153,7 @@ export function ChartFullView() {
                     <ReportTable
                       data={data}
                       columns={columns}
+                      columnTypes={columnTypes}
                       variant="dashboard"
                     />
                   </div>

@@ -14,6 +14,7 @@ interface DashboardWidgetProps {
   chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi' | 'text'
   chartTitle?: string
   tableData?: Array<Record<string, any>>
+  columnTypes?: Record<string, string>
   vizConfig?: {
     x_axis?: string | null
     y_axis?: string | string[] | null
@@ -34,6 +35,7 @@ export function DashboardWidget({
   chartType = 'bar',
   chartTitle,
   tableData,
+  columnTypes = {},
   vizConfig,
   className,
   variant = 'chat',
@@ -173,6 +175,7 @@ export function DashboardWidget({
               <ReportTable
                 data={tableData}
                 columns={tableColumns}
+                columnTypes={columnTypes}
                 variant="dashboard"
               />
             </div>
@@ -237,6 +240,7 @@ export function DashboardWidget({
             <ReportTable
               data={tableData}
               columns={tableColumns}
+              columnTypes={columnTypes}
               variant="chat"
             />
           </div>
