@@ -59,7 +59,7 @@ function validateSQL(sql: string): boolean {
 export async function executeSQL(
   sql: string,
   databaseService: DatabaseService
-): Promise<{ data: any[]; columnTypes: Record<string, string> }> {
+): Promise<{ data: any[]; columnFields: Array<{ name: string; type: string }> }> {
   validateSQL(sql)
 
   try {

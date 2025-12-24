@@ -46,15 +46,8 @@ export function ReportCard({
     try {
       const result = await window.electronAPI.runSQL(reportData.sql)
       if (result.success && result.data) {
-        const data = result.data.data
-        const columns = data.length > 0 ? Object.keys(data[0]) : []
-        updateMessageData(
-          messageId,
-          reportData.sql,
-          data,
-          columns,
-          result.data.columnTypes
-        )
+        const { data, columnFields } = result.data
+        updateMessageData(messageId, reportData.sql, data, columnFields)
         addToast({
           type: 'success',
           title: t('refresh_success', 'Data refreshed'),
@@ -94,15 +87,8 @@ export function ReportCard({
   const handleRunSql = async (newSql: string) => {
     const result = await window.electronAPI.runSQL(newSql)
     if (result.success && result.data) {
-      const data = result.data.data
-      const columns = data.length > 0 ? Object.keys(data[0]) : []
-      updateMessageData(
-        messageId,
-        newSql,
-        data,
-        columns,
-        result.data.columnTypes
-      )
+      const { data, columnFields } = result.data
+      updateMessageData(messageId, newSql, data, columnFields)
     } else {
       throw new Error(result.error || 'Execution failed')
     }
@@ -149,7 +135,7 @@ export function ReportCard({
           <VizControls
             vizType={reportData.chartType}
             vizConfig={reportData.vizConfig}
-            columns={reportData.columns}
+            columns={(reportData.columnFields || []).map(f => f.name)}
             data={reportData.tableData}
             onChange={updates => updateReportConfig(messageId, updates)}
           />

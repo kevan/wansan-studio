@@ -8,7 +8,7 @@ export interface IPCResponse<T = any> {
 
 export type RunSQLResponse = IPCResponse<{
   data: any[]
-  columnTypes: Record<string, string>
+  columnFields: Array<{ name: string; type: string }>
 }>
 
 export type ParseFileResponse = IPCResponse<

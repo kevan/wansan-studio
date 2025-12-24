@@ -104,9 +104,8 @@ export function ErrorCard({ message }: ErrorCardProps) {
   const handleRunSql = async (newSql: string) => {
     const result = await window.electronAPI.runSQL(newSql)
     if (result.success && result.data) {
-      const data = result.data.data
-      const columns = data.length > 0 ? Object.keys(data[0]) : []
-      updateMessageData(message.id, newSql, data, columns, result.data.columnTypes)
+      const { data, columnFields } = result.data
+      updateMessageData(message.id, newSql, data, columnFields)
     } else {
       throw new Error(result.error || 'Execution failed')
     }

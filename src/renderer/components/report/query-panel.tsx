@@ -59,10 +59,9 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
     const [previewData, setPreviewData] = useState<any[] | null>(
       initialData.length > 0 ? initialData : null
     )
-    const [previewColumns, setPreviewColumns] = useState<string[] | null>(null)
-    const [previewColumnTypes, setPreviewColumnTypes] = useState<
-      Record<string, string>
-    >({})
+    const [previewColumnFields, setPreviewColumnFields] = useState<
+      Array<{ name: string; type: string }>
+    >([])
     const [previewError, setPreviewError] = useState<string | null>(null)
     const [execTime, setExecTime] = useState<number | null>(null)
     const [copied, setCopied] = useState(false)
@@ -78,25 +77,22 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
         setPreviewError(null)
         const startTime = performance.now()
         try {
-          const res = await window.electronAPI.runSQL(queryToRun)
-          if (res.success && res.data) {
-            const { data, columnTypes } = res.data
-            setExecTime(Math.round(performance.now() - startTime))
-            setPreviewData(data)
-            setPreviewColumns(data.length > 0 ? Object.keys(data[0]) : [])
-            setPreviewColumnTypes(columnTypes || {})
-            setPreviewError(null)
-            success = true
-          } else {
+        const res = await window.electronAPI.runSQL(queryToRun)
+        if (res.success && res.data) {
+          const { data, columnFields } = res.data
+          setExecTime(Math.round(performance.now() - startTime))
+          setPreviewData(data)
+          setPreviewColumnFields(columnFields || [])
+          setPreviewError(null)
+        } else {
             throw new Error(res.error)
           }
-        } catch (e: any) {
-          setPreviewError(e.message || 'Execution failed')
-          setPreviewData([])
-          setPreviewColumns([])
-          success = false
-        } finally {
-          setIsRunning(false)
+              } catch (e: any) {
+                setPreviewError(e.message || 'Execution failed')
+                setPreviewData([])
+                setPreviewColumnFields([])
+                success = false
+              } finally {          setIsRunning(false)
         }
       }
 
@@ -360,8 +356,7 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
           ) : (
             <ReportTable
               data={previewData || []}
-              columns={previewColumns || []}
-              columnTypes={previewColumnTypes}
+              columnFields={previewColumnFields}
               variant="preview"
             />
           )}

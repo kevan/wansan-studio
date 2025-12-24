@@ -36,7 +36,8 @@ const mockIPC: ElectronAPI = {
   runSQL: async (sql: string): Promise<RunSQLResponse> => {
     console.log(`[IPC] runSQL called: ${sql.slice(0, 50)}...`)
     // mock implementation
-    return { success: true, data: { data: [], columnTypes: {} } }
+    await new Promise(r => setTimeout(r, 500))
+    return { success: true, data: { data: [], columnFields: [] } }
   },
   getSchema: async (tableName?: string): Promise<IPCResponse> => {
     console.log(`Mock getSchema: ${tableName}`)

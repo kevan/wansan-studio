@@ -32,8 +32,7 @@ interface ChatStore {
     messageId: string,
     newSql: string,
     newData: any[],
-    newCols: string[],
-    newColTypes?: Record<string, string>
+    columnFields: Array<{ name: string; type: string }>
   ) => void
   sendMessage: (
     text: string,
@@ -141,8 +140,7 @@ const updateMessageData = (
   id: string,
   newSql: string,
   newData: any[],
-  newCols: string[],
-  newColTypes?: Record<string, string>
+  columnFields: Array<{ name: string; type: string }>
 ) => {
   updateMessage(id, msg => {
     // We update the data even if reportData is missing (might have been cleared)
@@ -155,8 +153,7 @@ const updateMessageData = (
         ...existingReportData,
         sql: newSql,
         tableData: newData,
-        columns: newCols,
-        columnTypes: newColTypes,
+        columnFields,
       },
     }
   })
@@ -418,9 +415,7 @@ const sendMessage = async (
     if (!execution.success || !execution.data)
       throw new Error(execution.error || 'SQL execution failed')
 
-    const { data, columnTypes } = execution.data
-
-    const columns = data.length > 0 ? Object.keys(data[0]) : []
+    const { data, columnFields } = execution.data
 
     Analytics.track('analysis_generated', {
       viz_type: plan.visualization?.type || 'unknown',
@@ -434,30 +429,17 @@ const sendMessage = async (
       metadata: { aiLatency, dbLatency, latency: aiLatency + dbLatency },
       reportData: {
         title: plan.title,
-
         summary: plan.summary,
-
         sql: plan.sql,
-
         reasoning: plan.reasoning,
-
         suggestions: plan.suggestions,
-
         chartType: plan.visualization?.type,
-
         chartTitle: plan.title,
-
         tableData: data,
-
-        columns,
-
-        columnTypes,
-
+        columnFields,
         vizConfig: plan.visualization?.config as any,
-
         is_template: plan.is_template,
         missing_params: plan.missing_params as any,
-
         insights: [],
       },
     }))
@@ -644,8 +626,7 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
     if (!execution.success || !execution.data)
       throw new Error(execution.error || 'SQL execution failed')
 
-    const { data, columnTypes } = execution.data
-    const columns = data.length > 0 ? Object.keys(data[0]) : []
+    const { data, columnFields } = execution.data
 
     Analytics.track('analysis_generated', {
       viz_type: plan.visualization?.type || 'unknown',
@@ -666,8 +647,7 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
         chartType: plan.visualization?.type,
         chartTitle: plan.title,
         tableData: data,
-        columns,
-        columnTypes,
+        columnFields,
         vizConfig: plan.visualization?.config as any,
         is_template: plan.is_template,
         missing_params: plan.missing_params as any,
@@ -757,8 +737,7 @@ const autoFixMessage = async (
           i18n.t('error_fixed_sql_execution_failed', { ns: 'chat' })
       )
 
-    const { data, columnTypes } = execution.data
-    const columns = data.length > 0 ? Object.keys(data[0]) : []
+    const { data, columnFields } = execution.data
 
     updateMessage(messageId, msg => ({
       ...msg,
@@ -781,8 +760,7 @@ const autoFixMessage = async (
         chartType: 'table',
         chartTitle: i18n.t('autofix_chart_title', { ns: 'chat' }),
         tableData: data,
-        columns,
-        columnTypes,
+        columnFields,
         vizConfig: {},
         insights: [],
       },
@@ -821,8 +799,7 @@ const runTemplateSQL = async (messageId: string, sql: string) => {
     if (!execution.success || !execution.data)
       throw new Error(execution.error || 'SQL execution failed')
 
-    const { data, columnTypes } = execution.data
-    const columns = data.length > 0 ? Object.keys(data[0]) : []
+    const { data, columnFields } = execution.data
     const latency = Date.now() - startTime
 
     updateMessage(messageId, msg => ({
@@ -833,8 +810,7 @@ const runTemplateSQL = async (messageId: string, sql: string) => {
         ...msg.reportData!,
         sql,
         tableData: data,
-        columns,
-        columnTypes,
+        columnFields,
       },
     }))
     useProjectStore.getState().setAbortController(null)

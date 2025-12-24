@@ -12,8 +12,7 @@ export interface ReportData {
   chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi' | 'text'
   chartTitle?: string
   tableData?: Array<Record<string, any>>
-  columns?: string[]
-  columnTypes?: Record<string, string>
+  columnFields?: Array<{ name: string; type: string }>
   vizConfig?: {
     x_axis?: string | null
     y_axis?: string | string[] | null

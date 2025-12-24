@@ -14,7 +14,7 @@ interface DashboardWidgetProps {
   chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi' | 'text'
   chartTitle?: string
   tableData?: Array<Record<string, any>>
-  columnTypes?: Record<string, string>
+  columnFields?: Array<{ name: string; type: string }>
   vizConfig?: {
     x_axis?: string | null
     y_axis?: string | string[] | null
@@ -35,7 +35,7 @@ export function DashboardWidget({
   chartType = 'bar',
   chartTitle,
   tableData,
-  columnTypes = {},
+  columnFields = [],
   vizConfig,
   className,
   variant = 'chat',
@@ -45,8 +45,6 @@ export function DashboardWidget({
 }: DashboardWidgetProps) {
   const [showSummary, setShowSummary] = useState(false)
   const { t } = useTranslation('common')
-  const tableColumns =
-    tableData && tableData.length > 0 ? Object.keys(tableData[0]) : []
   const showBigNumber =
     (chartType === 'table' || chartType === 'kpi') &&
     tableData &&
@@ -174,8 +172,7 @@ export function DashboardWidget({
               )}
               <ReportTable
                 data={tableData}
-                columns={tableColumns}
-                columnTypes={columnTypes}
+                columnFields={columnFields}
                 variant="dashboard"
               />
             </div>
@@ -239,8 +236,7 @@ export function DashboardWidget({
             </h4>
             <ReportTable
               data={tableData}
-              columns={tableColumns}
-              columnTypes={columnTypes}
+              columnFields={columnFields}
               variant="chat"
             />
           </div>

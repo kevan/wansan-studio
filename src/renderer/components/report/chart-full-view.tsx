@@ -58,10 +58,10 @@ export function ChartFullView() {
   }
 
   const data = report.reportData.tableData || []
-  const columnTypes = report.reportData.columnTypes || {}
+  const columnFields = report.reportData.columnFields || []
   const columns =
-    (report.reportData.columns && report.reportData.columns.length > 0
-      ? report.reportData.columns
+    (columnFields.length > 0
+      ? columnFields.map(f => f.name)
       : data[0]
         ? Object.keys(data[0])
         : []) || []
@@ -152,8 +152,7 @@ export function ChartFullView() {
                   <div className="h-full w-full overflow-auto">
                     <ReportTable
                       data={data}
-                      columns={columns}
-                      columnTypes={columnTypes}
+                      columnFields={columnFields}
                       variant="dashboard"
                     />
                   </div>

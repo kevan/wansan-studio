@@ -146,11 +146,11 @@ export const DuckDBViewManager = {
 
     const row = res.data.data[0]
     const val = row ? row.test_result : null
-    const type = res.data.columnTypes ? res.data.columnTypes['test_result'] : 'UNKNOWN'
+    const type = res.data.columnFields.find(f => f.name === 'test_result')?.type || 'UNKNOWN'
 
     return {
       value: val,
-      dataType: type || 'UNKNOWN',
+      dataType: type,
     }
   },
 }

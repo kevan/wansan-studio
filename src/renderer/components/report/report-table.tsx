@@ -15,38 +15,29 @@ import { Button } from '../ui/button'
 
 interface ReportTableProps {
   data: Array<Record<string, any>>
-  columns: string[]
-  columnTypes: Record<string, string>
+  columnFields: Array<{ name: string; type: string }>
   variant: 'chat' | 'dashboard' | 'preview' | 'fullscreen'
 }
 
 export function ReportTable({
   data = [],
-  columns = [],
-  columnTypes,
+  columnFields = [],
   variant,
 }: ReportTableProps) {
   const { t } = useTranslation('common')
   const safeData = data || []
-  const safeColumns = columns || []
 
-  const columnKeys =
-    safeColumns.length > 0
-      ? safeColumns
-      : safeData.length > 0
-        ? Object.keys(safeData[0])
-        : []
   const [sorting, setSorting] = React.useState<SortingState>([])
 
   const isCard = variant === 'chat' || variant === 'dashboard'
   const isModal = variant === 'preview' || variant === 'fullscreen'
 
-  const columnDefs: ColumnDef<Record<string, any>>[] = columnKeys.map(key => ({
-    accessorKey: key,
-    header: key,
+  const columnDefs: ColumnDef<Record<string, any>>[] = columnFields.map(field => ({
+    accessorKey: field.name,
+    header: field.name,
     cell: info => {
       const value = info.getValue()
-      const display = formatForDisplay(value, columnTypes[key])
+      const display = formatForDisplay(value, field.type)
       return (
         <span className="truncate" title={display}>
           {display}
@@ -162,7 +153,7 @@ export function ReportTable({
             ) : (
               <tr>
                 <td
-                  colSpan={columnKeys.length || 1}
+                  colSpan={columnFields.length || 1}
                   className="px-4 py-12 text-center text-sm text-zinc-400 italic"
                 >
                   {t('no_data')}

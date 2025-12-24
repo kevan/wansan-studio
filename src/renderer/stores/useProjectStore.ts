@@ -202,13 +202,11 @@ export const useProjectStore = create<ProjectState>()(
             try {
               const res = await window.electronAPI.runSQL(reportData.sql)
               if (res.success && res.data) {
-                const { data, columnTypes } = res.data
+                const { data, columnFields } = res.data
                 updatedRegistry[w.widgetId] = {
                   ...reportData,
                   tableData: data,
-                  columnTypes: columnTypes,
-                  columns:
-                    data.length > 0 ? Object.keys(data[0]) : reportData.columns,
+                  columnFields,
                   timestamp: Date.now(),
                 }
                 hasUpdates = true
