@@ -66,12 +66,6 @@ export function useDataRehydrate() {
     setRestoring(true)
     let cancelled = false
 
-    // const toastId = addToast({
-    //   title: 'Restoring session data...',
-    //   type: 'info',
-    //   duration: Infinity,
-    // })
-
     const restore = async () => {
       let successCount = 0
       let failCount = 0
@@ -207,7 +201,6 @@ export function useDataRehydrate() {
 
       console.log('[Rehydrate] Restoration process finished')
       setRestoring(false)
-      // dismissToast(toastId)
       if (failCount > 0) {
         addToast({
           title: t('rehydrate.restore_with_issues'),
@@ -217,12 +210,6 @@ export function useDataRehydrate() {
           }),
           type: 'warning',
           duration: 4000,
-        })
-      } else if (successCount > 0) {
-        addToast({
-          title: t('rehydrate.restore_success'),
-          type: 'success',
-          duration: 2000,
         })
       }
     }
@@ -236,7 +223,6 @@ export function useDataRehydrate() {
       cancelled = true
       // Don't log "cancelled" here unless we are sure it's an abnormal termination
       setRestoring(false)
-      // dismissToast(toastId)
     }
   }, [
     addToast,
