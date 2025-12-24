@@ -37,16 +37,19 @@ export function ReportCard({
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const setEditingReportId = useWorkbenchStore(state => state.setEditingReportId)
   const setReplyTo = useChatStore(state => state.setReplyTo)
+  const updateReportConfig = useChatStore(state => state.updateReportConfig)
   const updateMessageData = useChatStore(state => state.updateMessageData)
   const addToast = useToastStore(state => state.addToast)
   const openSqlLab = useSqlLabStore(state => state.open)
   const { t } = useTranslation(['common', 'chat'])
   const [isRerunning, setIsRerunning] = useState(false)
 
-  const isPinned = pinnedReports.some(r => r.sourceMessageId === messageId)
+  if (!reportData) return null
+
+  const isPinned = pinnedReports.some(r => r?.sourceMessageId === messageId)
 
   const handleRerun = async () => {
-    if (!reportData.sql || isRerunning) return
+    if (!reportData?.sql || isRerunning) return
     setIsRerunning(true)
     try {
       const result = await window.electronAPI.runSQL(reportData.sql)
@@ -78,7 +81,7 @@ export function ReportCard({
   const handlePinToggle = () => {
     if (isPinned) {
       const pinnedReport = pinnedReports.find(
-        r => r.sourceMessageId === messageId
+        r => r?.sourceMessageId === messageId
       )
       if (pinnedReport) {
         removeReport(pinnedReport.id)
@@ -94,7 +97,7 @@ export function ReportCard({
     let editId = message.widgetId
 
     if (isPinned) {
-      const pinned = pinnedReports.find(r => r.sourceMessageId === messageId)
+      const pinned = pinnedReports.find(r => r?.sourceMessageId === messageId)
       if (pinned) editId = pinned.id
     }
 
@@ -115,7 +118,7 @@ export function ReportCard({
   }
 
   const handleOpenSqlLab = () => {
-    if (!reportData.sql) return
+    if (!reportData?.sql) return
     openSqlLab({
       mode: 'widget',
       targetId: messageId,
@@ -126,7 +129,7 @@ export function ReportCard({
     })
   }
 
-  const rowCount = reportData.tableData?.length || 0
+  const rowCount = reportData?.tableData?.length || 0
   const aiLatency = message.metadata?.aiLatency || 0
   const dbLatency =
     message.metadata?.dbLatency || message.metadata?.latency || 0
@@ -140,12 +143,14 @@ export function ReportCard({
     >
       {/* Content */}
       <div className="flex-1 min-h-0">
-        <DashboardWidget
-          {...reportData}
-          variant="chat"
-          timestamp={message.timestamp}
-          messageId={messageId}
-        />
+        {reportData && (
+          <DashboardWidget
+            {...reportData}
+            variant="chat"
+            timestamp={message.timestamp}
+            messageId={messageId}
+          />
+        )}
       </div>
 
       {/* Toolbar */}
@@ -159,7 +164,7 @@ export function ReportCard({
           />
 
           {/* Modify Parameters Button */}
-          {reportData.is_template && onConfigure && (
+          {reportData?.is_template && onConfigure && (
             <ExpandableAction
               icon={<SlidersHorizontal className="h-3.5 w-3.5" />}
               label={t('chat:modify_parameters')}

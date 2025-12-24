@@ -353,9 +353,11 @@ export const useProjectStore = create<ProjectState>()(
           const session = state.sessions.find(s => s.id === sessionId)
           if (!session) return state
 
-          const widgetIdsToRemove = new Set(
-            session.messages.map(m => m.widgetId).filter(Boolean)
-          )
+          // Collect all widget IDs from both messages AND dashboard
+          const widgetIdsToRemove = new Set([
+            ...session.messages.map(m => m.widgetId).filter(Boolean),
+            ...session.dashboard.widgets.map(w => w.widgetId).filter(Boolean),
+          ])
 
           const newRegistry = { ...state.widgetRegistry }
           widgetIdsToRemove.forEach(id => {
@@ -366,7 +368,12 @@ export const useProjectStore = create<ProjectState>()(
             widgetRegistry: newRegistry,
             sessions: state.sessions.map(s =>
               s.id === sessionId
-                ? { ...s, messages: [], lastModified: Date.now() }
+                ? {
+                    ...s,
+                    messages: [],
+                    dashboard: { ...s.dashboard, widgets: [] },
+                    lastModified: Date.now(),
+                  }
                 : s
             ),
           }
@@ -1311,15 +1318,49 @@ export const useProjectStore = create<ProjectState>()(
           smartFilterRequest,
           ...rest
         } = state
-        return rest
+
+        // Exclude large, non-serializable, or transient data from persistence
+        const sanitizedRegistry: Record<string, Partial<ReportData>> = {}
+        for (const key in rest.widgetRegistry) {
+          const { tableData, columnFields, ...dataToKeep } =
+            rest.widgetRegistry[key]
+          sanitizedRegistry[key] = dataToKeep
+        }
+
+        return { ...rest, widgetRegistry: sanitizedRegistry }
       },
       onRehydrateStorage: () => state => {
         if (state) {
+          // Get all valid widget IDs from messages and dashboard
+          const allWidgetIds = new Set<string>()
+          state.sessions.forEach(s => {
+            s.messages.forEach(m => {
+              if (m.widgetId) allWidgetIds.add(m.widgetId)
+            })
+            s.dashboard.widgets.forEach(w => {
+              if (w.widgetId) allWidgetIds.add(w.widgetId)
+            })
+          })
+
+          // 1. Clean the registry: only keep entries that are actually referenced.
+          const cleanedRegistry: Record<string, ReportData> = {}
+          for (const id of allWidgetIds) {
+            // Also ensure the entry itself is not malformed
+            if (state.widgetRegistry[id] && typeof state.widgetRegistry[id] === 'object') {
+              cleanedRegistry[id] = state.widgetRegistry[id]
+            }
+          }
+          state.widgetRegistry = cleanedRegistry
+
+          // 2. Clean the dashboard: remove any widgets that point to non-existent registry entries.
+          state.sessions.forEach(s => {
+            s.dashboard.widgets = s.dashboard.widgets.filter(w => w.widgetId && cleanedRegistry[w.widgetId])
+          });
+
+          // 3. Set restoring state
           const hasFilesToRestore = state.files.some(
             f => f.status === 'ready' && f.tableName
           )
-          // Set restoring state based on whether we actually have files to restore
-          // This overrides the default 'true' if no files exist, allowing immediate interaction
           state.setRestoring(hasFilesToRestore)
         }
       },

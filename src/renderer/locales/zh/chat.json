@@ -117,10 +117,10 @@
   "template_required_title": "需要配置参数",
   "template_desc": "AI 生成了查询模板。请完善筛选条件以继续。",
   "configure_and_run": "配置筛选并运行",
-  "lineage_engine": "DuckDB 驱动本地分析",
+  "lineage_engine": "Wansan 本地引擎",
   "lineage_stats": "{{rowCount}} 行数据",
-  "lineage_latency_split": "AI推理: {{aiLatency}}ms · DuckDB: {{dbLatency}}ms",
-  "lineage_latency_total": "耗时: {{latency}}ms",
+  "lineage_latency_split": "AI 推理: {{aiLatency}}ms · 数据引擎: {{dbLatency}}ms",
+  "lineage_latency_total": "总耗时: {{latency}}ms",
   "clear_selection": "清除",
   "run_analysis": "运行分析"
 }

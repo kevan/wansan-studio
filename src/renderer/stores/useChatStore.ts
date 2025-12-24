@@ -798,12 +798,17 @@ const runTemplateSQL = async (messageId: string, sql: string) => {
       throw new Error(execution.error || 'SQL execution failed')
 
     const { data, columnFields } = execution.data
-    const latency = Date.now() - startTime
+    const dbLatency = Date.now() - startTime
 
     updateMessage(messageId, msg => ({
       ...msg,
       status: undefined,
-      metadata: { latency },
+      metadata: {
+        ...msg.metadata,
+        aiLatency: msg.metadata?.aiLatency || 0,
+        dbLatency,
+        latency: (msg.metadata?.aiLatency || 0) + dbLatency,
+      },
       reportData: {
         ...msg.reportData!,
         sql,

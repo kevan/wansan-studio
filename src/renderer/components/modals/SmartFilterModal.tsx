@@ -43,7 +43,12 @@ export function SmartFilterModal({
         const sqlList = vals
           .map((v) => `'${String(v).replace(/'/g, "''")}'`)
           .join(', ')
-        finalSql = finalSql.replace(p.placeholder, sqlList)
+        
+        // [FIX] Use regex to match the placeholder AND optional surrounding single quotes.
+        // This prevents ''Value'' when template is already '{{PLACEHOLDER}}'.
+        const escapedPlaceholder = p.placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const regex = new RegExp(`'${escapedPlaceholder}'|${escapedPlaceholder}`, 'g')
+        finalSql = finalSql.replace(regex, sqlList)
       }
     })
 
