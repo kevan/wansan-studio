@@ -68,6 +68,7 @@ export interface ProjectState extends ProjectData {
     update: Partial<ReportWidget> | ((w: ReportWidget) => ReportWidget)
   ) => void
   updateWidgetData: (id: string, update: Partial<ReportData>) => void
+  updateRegistryEntry: (widgetId: string, updates: Partial<ReportData>) => void
   updateLayout: (layout: Layout[]) => void
   updateReportTitle: (id: string, title: string) => void
   setCanvasConfig: (config: any) => void
@@ -598,6 +599,23 @@ export const useProjectStore = create<ProjectState>()(
             widgetRegistry: {
               ...state.widgetRegistry,
               [wId]: { ...currentData, ...update } as ReportData,
+            },
+            sessions: state.sessions.map(s =>
+              s.id === state.activeSessionId
+                ? { ...s, lastModified: Date.now() }
+                : s
+            ),
+          }
+        }),
+
+      updateRegistryEntry: (widgetId, updates) =>
+        set(state => {
+          const currentData = state.widgetRegistry[widgetId]
+          if (!currentData) return state
+          return {
+            widgetRegistry: {
+              ...state.widgetRegistry,
+              [widgetId]: { ...currentData, ...updates } as ReportData,
             },
             sessions: state.sessions.map(s =>
               s.id === state.activeSessionId

@@ -671,9 +671,9 @@ function SmartMetricRow({
             <span className="text-sm font-medium text-zinc-900">
               {metric.label}
             </span>
-            <span className="text-[10px] text-zinc-400 font-mono">
-              ({metric.name})
-            </span>
+            {/*<span className="text-[10px] text-zinc-400 font-mono">*/}
+            {/*  ({metric.name})*/}
+            {/*</span>*/}
           </div>
         </div>
       </td>

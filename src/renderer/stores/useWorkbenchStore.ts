@@ -359,25 +359,52 @@ export const useWorkbenchStore = <T = WorkbenchState>(
 
     pinReport,
     removeReport: id => useProjectStore.getState().removeWidget(id),
-    updateReportTitle: (id, title) =>
-      useProjectStore.getState().updateReportTitle(id, title),
+    updateReportTitle: (id, title) => {
+      const { dashboard, projectState } = getSessionState()
+      const widget = dashboard?.widgets.find(w => w.id === id)
+
+      if (widget) {
+        useProjectStore.getState().updateReportTitle(id, title)
+      } else {
+        // Try registry
+        const currentData = projectState.widgetRegistry[id]
+        if (currentData) {
+          useProjectStore.getState().updateRegistryEntry(id, { title })
+        }
+      }
+    },
     updateReportConfig: (id, updates) => {
       const { dashboard, projectState } = getSessionState()
       const widget = dashboard?.widgets.find(w => w.id === id)
-      if (!widget) return
 
-      const currentData = projectState.widgetRegistry[widget.widgetId]
-      if (!currentData) return
+      if (widget) {
+        const currentData = projectState.widgetRegistry[widget.widgetId]
+        if (!currentData) return
 
-      const nextVizConfig =
-        updates.config !== undefined
-          ? { ...currentData.vizConfig, ...updates.config }
-          : currentData.vizConfig
+        const nextVizConfig =
+          updates.config !== undefined
+            ? { ...currentData.vizConfig, ...updates.config }
+            : currentData.vizConfig
 
-      useProjectStore.getState().updateWidgetData(id, {
-        chartType: updates.type ?? currentData.chartType,
-        vizConfig: nextVizConfig,
-      })
+        useProjectStore.getState().updateWidgetData(id, {
+          chartType: updates.type ?? currentData.chartType,
+          vizConfig: nextVizConfig,
+        })
+      } else {
+        // Try direct registry update
+        const currentData = projectState.widgetRegistry[id]
+        if (currentData) {
+          const nextVizConfig =
+            updates.config !== undefined
+              ? { ...currentData.vizConfig, ...updates.config }
+              : currentData.vizConfig
+
+          useProjectStore.getState().updateRegistryEntry(id, {
+            chartType: updates.type ?? currentData.chartType,
+            vizConfig: nextVizConfig,
+          })
+        }
+      }
     },
     updateLayout,
     updateGlobalLayout,

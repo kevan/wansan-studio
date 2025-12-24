@@ -1,5 +1,12 @@
 import React, { useState } from 'react'
-import { Code, Pin, RefreshCw, SlidersHorizontal, Sparkles } from 'lucide-react'
+import {
+  Code,
+  Pin,
+  RefreshCw,
+  Settings2,
+  SlidersHorizontal,
+  Sparkles,
+} from 'lucide-react'
 import { DashboardWidget } from '../DashboardWidget'
 import { ReportData, useWorkbenchStore } from '../../stores/useWorkbenchStore'
 import { useChatStore } from '@/stores/useChatStore.ts'
@@ -8,7 +15,6 @@ import { useToastStore } from '@/stores/useToastStore.ts'
 import { cn } from '@/utils/cn.ts'
 import type { ChatMessage } from '../ChatInterface'
 import { useTranslation } from 'react-i18next'
-import { VizControls } from '@/components/report/viz-controls'
 import { ExpandableAction } from '../ui/expandable-action'
 
 interface ReportCardProps {
@@ -26,12 +32,11 @@ export function ReportCard({
   className,
   onConfigure,
 }: ReportCardProps) {
-  const [isLogicOpen, setIsLogicOpen] = useState(false)
   const pinReport = useWorkbenchStore(state => state.pinReport)
   const removeReport = useWorkbenchStore(state => state.removeReport)
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
+  const setEditingReportId = useWorkbenchStore(state => state.setEditingReportId)
   const setReplyTo = useChatStore(state => state.setReplyTo)
-  const updateReportConfig = useChatStore(state => state.updateReportConfig)
   const updateMessageData = useChatStore(state => state.updateMessageData)
   const addToast = useToastStore(state => state.addToast)
   const openSqlLab = useSqlLabStore(state => state.open)
@@ -84,6 +89,21 @@ export function ReportCard({
     }
   }
 
+  const handleEditViz = () => {
+    // Determine which ID to use for editing
+    let editId = message.widgetId
+
+    if (isPinned) {
+      const pinned = pinnedReports.find(r => r.sourceMessageId === messageId)
+      if (pinned) editId = pinned.id
+    }
+
+    if (!editId) return
+
+    setEditingReportId(editId)
+    window.dispatchEvent(new Event('wansan:open-dashboard'))
+  }
+
   const handleRunSql = async (newSql: string) => {
     const result = await window.electronAPI.runSQL(newSql)
     if (result.success && result.data) {
@@ -131,13 +151,11 @@ export function ReportCard({
       {/* Toolbar */}
       <div className="flex items-center justify-end px-3 py-2 border-t border-zinc-50 bg-white">
         <div className="flex items-center gap-1">
-          {/* Viz Controls */}
-          <VizControls
-            vizType={reportData.chartType}
-            vizConfig={reportData.vizConfig}
-            columns={(reportData.columnFields || []).map(f => f.name)}
-            data={reportData.tableData}
-            onChange={updates => updateReportConfig(messageId, updates)}
+          {/* Edit Viz Button (Replaces inline VizControls) */}
+          <ExpandableAction
+            icon={<Settings2 className="h-3.5 w-3.5" />}
+            label={t('common:edit_viz')}
+            onClick={handleEditViz}
           />
 
           {/* Modify Parameters Button */}

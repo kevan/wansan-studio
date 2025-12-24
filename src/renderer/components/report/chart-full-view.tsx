@@ -1,14 +1,43 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { X, Save } from 'lucide-react'
+import {
+  X,
+  Save,
+  BarChart3,
+  LineChart,
+  PieChart,
+  Table2,
+  Gauge,
+  ArrowUpDown,
+  Check,
+} from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
-import { VizControls } from './viz-controls'
+import { useProjectStore } from '@/stores/useProjectStore'
 import { A4Chart } from '../A4Canvas'
 import { ReportTable } from './report-table'
 import { BigNumberDisplay } from '../BigNumberDisplay'
 import { cn } from '@/utils/cn'
-import type { ReportData, DenormalizedReportWidget } from '@/stores/useWorkbenchStore'
+import type {
+  ReportData,
+  DenormalizedReportWidget,
+} from '@/stores/useWorkbenchStore'
 import { useTranslation } from 'react-i18next'
+import { adaptChartConfig } from '@/lib/viz-adapter'
+import type { AIAnalysisResult } from '@shared/types'
+
+type VizType = NonNullable<AIAnalysisResult['visualization']>['type']
+
+const chartTypeOptions: Array<{
+  value: VizType
+  label: string
+  icon: React.ComponentType<any>
+}> = [
+  { value: 'bar', label: 'chart_bar', icon: BarChart3 },
+  { value: 'line', label: 'chart_line', icon: LineChart },
+  { value: 'pie', label: 'chart_pie', icon: PieChart },
+  { value: 'table', label: 'chart_table', icon: Table2 },
+  { value: 'kpi', label: 'chart_kpi', icon: Gauge },
+]
 
 export function ChartFullView() {
   const editingReportId = useWorkbenchStore(state => state.editingReportId)
@@ -20,12 +49,27 @@ export function ChartFullView() {
     state => state.updateReportConfig
   )
   const updateReportTitle = useWorkbenchStore(state => state.updateReportTitle)
+  const widgetRegistry = useProjectStore(state => state.widgetRegistry)
   const { t } = useTranslation('common')
 
-  const report = useMemo(
-    () => pinnedReports.find(r => r.id === editingReportId) as DenormalizedReportWidget | undefined,
-    [editingReportId, pinnedReports]
-  )
+  const report = useMemo(() => {
+    // 1. Check pinned
+    const pinned = pinnedReports.find(r => r.id === editingReportId)
+    if (pinned) return pinned
+
+    // 2. Check registry (Unpinned)
+    if (editingReportId && widgetRegistry[editingReportId]) {
+      return {
+        id: editingReportId, // Use registry ID as ID
+        widgetId: editingReportId,
+        reportData: widgetRegistry[editingReportId],
+        layout: { i: editingReportId, x: 0, y: 0, w: 0, h: 0 },
+        pageIndex: 0,
+        sourceMessageId: '',
+      } as DenormalizedReportWidget
+    }
+    return undefined
+  }, [editingReportId, pinnedReports, widgetRegistry])
 
   const [localType, setLocalType] = useState<ReportData['chartType']>('bar')
   const [localConfig, setLocalConfig] = useState<
@@ -48,20 +92,12 @@ export function ChartFullView() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [setEditingReportId])
 
-  if (!editingReportId) return null
-  if (!report) {
-    console.error('Report not found for editing id:', editingReportId)
-    return null
-  }
-  if (typeof window === 'undefined') {
-    return null
-  }
+  // --- Safe Data Extraction for Hooks ---
+  const data = report?.reportData.tableData || []
+  const columnFields = report?.reportData.columnFields || []
+  const legacyColumns = report?.reportData.columns || []
+  const legacyColumnTypes = report?.reportData.columnTypes || {}
 
-  const data = report.reportData.tableData || []
-  const columnFields = report.reportData.columnFields || []
-  const legacyColumns = report.reportData.columns || []
-  const legacyColumnTypes = report.reportData.columnTypes || {}
-  
   const columns =
     (columnFields.length > 0
       ? columnFields.map(f => f.name)
@@ -71,17 +107,65 @@ export function ChartFullView() {
           ? Object.keys(data[0])
           : []) || []
 
-  const effectiveType = localType ?? report.reportData.chartType ?? 'bar'
+  // --- Inline Viz Controls Logic (Hooks must be unconditional) ---
 
-  const isBigNumber =
-    (effectiveType === 'table' || effectiveType === 'kpi') &&
-    data.length === 1 &&
-    Object.keys(data[0] || {}).length > 0
+  const availableColumns = columns
 
-  const showTable =
-    data.length > 0 &&
-    !isBigNumber &&
-    (effectiveType === 'table' || !localConfig?.x_axis || !localConfig?.y_axis)
+  const yAxisValues = useMemo(() => {
+    const raw = localConfig?.y_axis
+    if (Array.isArray(raw)) return raw.filter(Boolean) as string[]
+    if (typeof raw === 'string' && raw) return [raw]
+    return []
+  }, [localConfig?.y_axis])
+
+  const yAxisOptions = useMemo(
+    () => availableColumns.filter(col => col !== localConfig?.x_axis),
+    [availableColumns, localConfig?.x_axis]
+  )
+
+  const effectiveType = localType ?? report?.reportData.chartType ?? 'bar'
+
+  const handleChartTypeChange = (type: VizType) => {
+    const adapted = adaptChartConfig(
+      type,
+      effectiveType as VizType,
+      localConfig,
+      data || []
+    )
+    setLocalType(adapted.type as any)
+    setLocalConfig(prev => ({ ...(prev || {}), ...adapted.config }))
+  }
+
+  const handleXAxisChange = (value: string) => {
+    setLocalConfig(prev => ({
+      ...(prev || {}),
+      x_axis: value || null,
+    }))
+  }
+
+  const handleYAxisToggle = (value: string) => {
+    const isSelected = yAxisValues.includes(value)
+    const nextY = isSelected
+      ? yAxisValues.filter(v => v !== value)
+      : [...yAxisValues, value]
+
+    setLocalConfig(prev => ({
+      ...(prev || {}),
+      y_axis: nextY.length > 0 ? nextY : null,
+    }))
+  }
+
+  const handleSwapAxes = () => {
+    if (!localConfig?.x_axis || yAxisValues.length === 0) return
+    const nextX = yAxisValues[0]
+    const nextY = [localConfig.x_axis, ...yAxisValues.slice(1)]
+
+    setLocalConfig(prev => ({
+      ...(prev || {}),
+      x_axis: nextX,
+      y_axis: nextY,
+    }))
+  }
 
   const handleSave = () => {
     if (!report) return
@@ -95,12 +179,20 @@ export function ChartFullView() {
     setEditingReportId(null)
   }
 
-  const handleConfigChange = (updates: { type?: any; config?: any }) => {
-    if (updates.type !== undefined) setLocalType(updates.type)
-    if (updates.config !== undefined) {
-      setLocalConfig(prev => ({ ...(prev || {}), ...updates.config }))
-    }
-  }
+  const isBigNumber =
+    (effectiveType === 'table' || effectiveType === 'kpi') &&
+    data.length === 1 &&
+    Object.keys(data[0] || {}).length > 0
+
+  const showTable =
+    data.length > 0 &&
+    !isBigNumber &&
+    (effectiveType === 'table' || !localConfig?.x_axis || !localConfig?.y_axis)
+
+  const showAxisControls =
+    effectiveType !== 'table' &&
+    effectiveType !== 'kpi' &&
+    availableColumns.length > 0
 
   const content = (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
@@ -174,25 +266,128 @@ export function ChartFullView() {
             </div>
 
             <div
-              className={cn('w-[320px] border-l border-zinc-200 bg-white p-4 overflow-y-auto')}
+              className={cn(
+                'w-[320px] border-l border-zinc-200 bg-white p-4 overflow-y-auto'
+              )}
             >
               <div className="mb-4 text-xs font-bold text-zinc-400 uppercase tracking-widest">
                 {t('visualization')}
               </div>
-              <VizControls
-                vizType={localType}
-                vizConfig={localConfig}
-                columns={columns}
-                data={data}
-                onChange={handleConfigChange}
-                inline={true}
-              />
+
+              <div className="space-y-4">
+                <div>
+                  <div className="text-xs font-medium text-zinc-500 mb-2">
+                    {t('chart_type')}
+                  </div>
+                  <div className="grid grid-cols-5 gap-2">
+                    {chartTypeOptions.map(option => {
+                      const Icon = option.icon
+                      const isActive = effectiveType === option.value
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() =>
+                            handleChartTypeChange(option.value as VizType)
+                          }
+                          className={cn(
+                            'flex flex-col items-center gap-1 rounded-md border px-2 py-2 text-[11px] font-medium transition-colors',
+                            isActive
+                              ? 'border-orange-200 bg-orange-50 text-orange-700'
+                              : 'border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50'
+                          )}
+                        >
+                          <Icon className="w-4 h-4" />
+                          {t(option.label)}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {showAxisControls && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-xs text-zinc-500">
+                      <span className="font-medium text-zinc-600">
+                        {t('axes')}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleSwapAxes}
+                        className="inline-flex items-center gap-1 rounded-md border border-zinc-200 px-2 py-1 text-[11px] font-medium text-zinc-600 hover:bg-zinc-50 transition-colors"
+                      >
+                        <ArrowUpDown className="w-3 h-3" />
+                        {t('swap')}
+                      </button>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+                        {t('x_axis')}
+                      </div>
+                      <select
+                        value={localConfig?.x_axis ?? ''}
+                        onChange={e => handleXAxisChange(e.target.value)}
+                        className="w-full rounded-md border border-zinc-200 px-2 py-2 text-sm text-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                      >
+                        <option value="">{t('select_column')}</option>
+                        {availableColumns.map(col => (
+                          <option key={col} value={col}>
+                            {col}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+                        {t('y_axis')}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {yAxisOptions.map(col => {
+                          const isSelected = yAxisValues.includes(col)
+                          return (
+                            <button
+                              key={col}
+                              type="button"
+                              onClick={() => handleYAxisToggle(col)}
+                              className={cn(
+                                'flex items-center gap-1 rounded-full border px-2 py-1.5 text-xs font-medium transition-colors',
+                                isSelected
+                                  ? 'border-orange-200 bg-orange-50 text-orange-700'
+                                  : 'border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50'
+                              )}
+                            >
+                              {isSelected && <Check className="w-3 h-3" />}
+                              {col}
+                            </button>
+                          )
+                        })}
+                        {yAxisOptions.length === 0 && (
+                          <span className="text-xs text-zinc-400">
+                            {t('select_x_first')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
   )
+
+  if (!editingReportId) return null
+  if (!report) {
+    // console.error('Report not found for editing id:', editingReportId)
+    return null
+  }
+  if (typeof window === 'undefined') {
+    return null
+  }
 
   return createPortal(content, document.body)
 }
