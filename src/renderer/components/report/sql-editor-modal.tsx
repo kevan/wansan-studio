@@ -48,8 +48,6 @@ export function SqlEditorModal({
     }
   }, [isOpen, initialSql])
 
-  if (!isOpen) return null
-
   const handleSave = async () => {
     if (!onSave) return
 
@@ -57,6 +55,7 @@ export function SqlEditorModal({
     try {
       // 1. Run the query in QueryPanel to check validity and show error in preview if fails
       const isOk = await queryPanelRef.current?.runQuery()
+      console.log('handleSave', isOk)
       if (!isOk) {
         // If query failed (error shown in QueryPanel), stop saving
         setIsSaving(false)

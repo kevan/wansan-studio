@@ -16,6 +16,7 @@ export interface ElectronAPI {
   parseFile: (filePath: string) => Promise<ParseFileResponse>
   checkFilesConsistency: (files: any[]) => Promise<IPCResponse>
   reIngestFile: (
+    fileId: string,
     filePath: string,
     tableName: string,
     sheetName?: string
@@ -83,10 +84,14 @@ export interface ElectronAPI {
   version: NodeJS.ProcessVersions
   
   // Window Control
-  windowControl: (
-    action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
-  ) => void
-  onWindowStateChanged: (
-    callback: (state: { isFullScreen: boolean }) => void
-  ) => () => void
-}
+    windowControl: (
+      action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
+    ) => void
+    onWindowStateChanged: (
+      callback: (state: { isFullScreen: boolean }) => void
+    ) => () => void
+    onFileProgress: (
+      callback: (data: { fileId: string; progress: number }) => void
+    ) => () => void
+  }
+  

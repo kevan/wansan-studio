@@ -16,6 +16,7 @@ import {
   Database,
   AlertCircle,
   FileWarning,
+  Loader2,
 } from 'lucide-react'
 import { MouseEvent } from 'react'
 import { useFileStore } from '../../stores/useFileStore'
@@ -33,8 +34,19 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
   const { files } = useFileStore()
   const { t } = useTranslation('common')
 
+  const file =
+    data.type === 'file' && data.fileId
+      ? files.find(f => f.id === data.fileId)
+      : undefined
+  const isProcessing = file?.status === 'processing'
+  const progress = file?.progress
+
   // --- Icon Logic ---
   const getIcon = () => {
+    if (isProcessing) {
+      return <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+    }
+
     if (data.type === 'folder') {
       return node.isOpen ? (
         <FolderOpen className="w-4 h-4 text-zinc-400" />
@@ -162,6 +174,13 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
         title={isMissing ? t('file_missing_tooltip') : undefined}
       >
         {data.name}
+        {isProcessing && progress !== undefined && (
+          <span className="text-xs text-indigo-500 ml-2 font-mono">
+            {progress > 100
+              ? `${progress.toLocaleString()} rows`
+              : `${Math.round(progress)}%`}
+          </span>
+        )}
       </span>
 
       {/* Badges / Indicators */}

@@ -1,21 +1,29 @@
 import { parentPort, workerData } from 'worker_threads'
-import { processExcelBufferExcelJS } from './exceljsUtils'
+import { processExcelFileStreaming } from './exceljsUtils'
 
 interface WorkerData {
-  fileBuffer: Buffer
+  filePath: string
+  outputDir: string
   targetSheetName?: string
   targetTableName?: string
 }
 
 async function run() {
   try {
-    const { fileBuffer, targetSheetName, targetTableName } =
+    const { filePath, outputDir, targetSheetName, targetTableName } =
       workerData as WorkerData
 
-    const { results, allSheetsCount } = await processExcelBufferExcelJS(
-      fileBuffer,
+    const { results, allSheetsCount } = await processExcelFileStreaming(
+      filePath,
+      outputDir,
       targetSheetName,
-      targetTableName
+      targetTableName,
+      (rowCount) => {
+        parentPort?.postMessage({
+          type: 'progress',
+          rowCount
+        })
+      }
     )
 
     parentPort?.postMessage({

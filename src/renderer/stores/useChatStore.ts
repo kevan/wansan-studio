@@ -706,7 +706,6 @@ const autoFixMessage = async (
   updateMessage(messageId, msg => ({
     ...msg,
     status: 'executing',
-    content: '🔧 Attempting to auto-fix the SQL query...',
   }))
 
   try {
@@ -743,7 +742,6 @@ const autoFixMessage = async (
       ...msg,
       type: 'assistant',
       status: undefined,
-      content: i18n.t('autofix_successful_content', { ns: 'chat' }),
       reportData: {
         title: i18n.t('autofix_fixed_title', {
           ns: 'chat',

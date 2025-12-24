@@ -47,6 +47,7 @@ const mockIPC: ElectronAPI = {
     return { success: true }
   },
   reIngestFile: async (
+    _fileId: string,
     _filePath: string,
     _tableName: string,
     _sheetName?: string
@@ -108,15 +109,10 @@ const mockIPC: ElectronAPI = {
   ) => {
     console.log('Mock windowControl', _action)
   },
-  onWindowStateChanged: (_callback: any) => () => {
-    console.log('Mock onWindowStateChanged')
-  },
-  platform: 'darwin', // Mock platform
-  version: {
-    electron: 'mock',
-    chrome: 'mock',
-    node: 'mock',
-  } as NodeJS.ProcessVersions, // Mock versions
+  platform: 'darwin',
+  version: { node: 'mock', chrome: 'mock', electron: 'mock' } as any,
+  onWindowStateChanged: () => () => {},
+  onFileProgress: () => () => {},
 }
 
 function getIpc() {
@@ -258,15 +254,17 @@ export function useExportWebReport() {
 export function useReIngestFile() {
   return useMutation({
     mutationFn: async ({
+      fileId,
       filePath,
       tableName,
       sheetName,
     }: {
+      fileId: string
       filePath: string
       tableName: string
       sheetName?: string
     }) => {
-      const response = await getIpc().reIngestFile(filePath, tableName, sheetName)
+      const response = await getIpc().reIngestFile(fileId, filePath, tableName, sheetName)
       if (!response.success) {
         throw new Error(response.error || 'Failed to re-ingest file')
       }

@@ -1,5 +1,6 @@
 import { app } from 'electron'
 import * as path from 'path'
+import fs from 'fs-extra'
 import { Worker } from 'worker_threads'
 import { DatabaseService } from '../database/duckdb'
 import { ColumnSchema, ColumnType, TableSchema } from '../../shared/types'
@@ -128,11 +129,12 @@ export async function getSampleValues(
 }
 
 export async function ingestExcelFile(
-  fileBuffer: Buffer,
+  filePath: string,
   databaseService: DatabaseService,
   fileName: string,
   targetTableName?: string,
-  targetSheetName?: string
+  targetSheetName?: string,
+  onProgress?: (rowCount: number) => void
 ): Promise<TableSchema[]> {
   // Resolve worker path
   let workerPath: string
@@ -151,21 +153,33 @@ export async function ingestExcelFile(
     )
   }
 
+  const outputDir = app.getPath('temp')
+
   return new Promise((resolve, reject) => {
     const worker = new Worker(workerPath, {
-      workerData: { fileBuffer, targetSheetName, targetTableName },
+      workerData: { filePath, outputDir, targetSheetName, targetTableName },
     })
 
     worker.on('message', async message => {
+      if (message.type === 'progress') {
+        if (onProgress) onProgress(message.rowCount)
+        return
+      }
+
       if (message.success) {
         const results: TableSchema[] = []
         const { data, allSheetsCount } = message
 
         try {
-          for (const { sheetName, csvData, error } of data) {
+          for (const { sheetName, csvFilePath, error } of data) {
             if (error) {
               console.error(`Worker failed for sheet ${sheetName}:`, error)
               continue
+            }
+
+            if (!csvFilePath || !(await fs.pathExists(csvFilePath))) {
+                 console.error(`Worker returned invalid CSV path for sheet ${sheetName}`)
+                 continue
             }
 
             let tableName: string
@@ -181,17 +195,16 @@ export async function ingestExcelFile(
               )
             }
 
-            const tempFileName = `${tableName}.csv`
-            await databaseService.registerFileText(tempFileName, csvData)
-
+            // Ingest directly from filesystem path (DuckDB optimization)
+            // No need to load content into memory or registerFileText
             await databaseService.exec(
               `CREATE TABLE "${tableName}" AS
                     SELECT *
-                    FROM read_csv_auto('${tempFileName}', HEADER = TRUE, SAMPLE_SIZE = -1, auto_detect = true)`
+                    FROM read_csv_auto('${csvFilePath}', HEADER = TRUE, SAMPLE_SIZE = -1, auto_detect = true)`
             )
 
-            // [OPTIMIZATION] Free memory: remove the virtual file
-            await databaseService.dropFile(tempFileName)
+            // [OPTIMIZATION] Free disk space: remove the temp csv file
+            await fs.unlink(csvFilePath).catch(e => console.error('Failed to cleanup temp CSV:', e))
 
             const description =
               allSheetsCount > 1 ? `${fileName} - ${sheetName}` : fileName

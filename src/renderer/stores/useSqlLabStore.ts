@@ -15,8 +15,8 @@ interface SqlLabState {
   close: () => void
 }
 
-export const useSqlLabStore = create<SqlLabState>(set => ({
+export const useSqlLabStore = create<SqlLabState>(() => ({
   session: null,
-  open: session => set({ session }),
-  close: () => set({ session: null }),
+  open: session => useSqlLabStore.setState({ session }),
+  close: () => useSqlLabStore.setState({ session: null }),
 }))

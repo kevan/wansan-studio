@@ -34,10 +34,9 @@ export class FileService {
 
   private async parseExcelFile(filePath: string) {
     try {
-      const fileBuffer = await fs.readFile(filePath)
       const fileName = basename(filePath)
       const schemas = await ingestExcelFile(
-        fileBuffer,
+        filePath,
         this.databaseService,
         fileName
       )
@@ -83,18 +82,10 @@ export class FileService {
       const fileName = basename(filePath)
       const tableName = await getUniqueTableName(this.databaseService, fileName)
 
-      // Read CSV content and register as virtual file
-      const csvContent = await fs.readFile(filePath, 'utf-8')
-      const tempCsvName = `${tableName}.csv`
-      await this.databaseService.registerFileText(tempCsvName, csvContent)
-
-      // Use DuckDB's read_csv_auto to handle the CSV
+      // Use DuckDB's read_csv_auto to handle the CSV directly from the file path
       await this.databaseService.exec(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${tempCsvName}', SAMPLE_SIZE=-1, auto_detect=true)`
+        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${filePath}', SAMPLE_SIZE=-1, auto_detect=true)`
       )
-
-      // [OPTIMIZATION] Free memory
-      await this.databaseService.dropFile(tempCsvName)
 
       // Fetch schema using PRAGMA table_info for consistency
       const columnsResult = await this.databaseService.query(
@@ -153,18 +144,10 @@ export class FileService {
       const fileName = basename(filePath)
       const tableName = await getUniqueTableName(this.databaseService, fileName)
 
-      // Read JSON content and register as virtual file
-      const jsonContent = await fs.readFile(filePath, 'utf-8')
-      const tempJsonName = `${tableName}.json`
-      await this.databaseService.registerFileText(tempJsonName, jsonContent)
-
-      // Use DuckDB's read_json_auto to handle the JSON
+      // Use DuckDB's read_json_auto to handle the JSON directly from the file path
       await this.databaseService.exec(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${tempJsonName}', format='auto', auto_detect=true)`
+        `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${filePath}', format='auto', auto_detect=true)`
       )
-
-      // [OPTIMIZATION] Free memory
-      await this.databaseService.dropFile(tempJsonName)
 
       // Fetch schema using PRAGMA table_info for consistency
       const columnsResult = await this.databaseService.query(
@@ -218,11 +201,11 @@ export class FileService {
       )
     }
   }
-
   async reIngestFile(
     filePath: string,
     tableName: string,
-    sheetName?: string // New optional param
+    sheetName?: string, // New optional param
+    onProgress?: (rowCount: number) => void
   ): Promise<ReloadResult> {
     // 处理 Demo 数据（DEMO_MEMORY 路径）
     if (filePath === 'DEMO_MEMORY') {
@@ -249,15 +232,15 @@ export class FileService {
     let columns: ColumnSchema[] = []
 
     if (ext === '.xlsx' || ext === '.xls') {
-      const fileBuffer = await fs.readFile(filePath)
       const fileName = basename(filePath)
       // ingestExcelFile returns TableSchema[]
       const schemas = await ingestExcelFile(
-        fileBuffer,
+        filePath,
         this.databaseService,
         fileName,
         tableName,
-        sheetName
+        sheetName,
+        onProgress
       )
       // Since we pass tableName (and maybe sheetName), we expect 1 result which matches our target.
       // If we didn't pass sheetName and there are multiple sheets, ingestExcelFile might behave legacy (first sheet) or return all?
@@ -274,18 +257,10 @@ export class FileService {
     } else if (ext === '.csv') {
       await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
 
-      // Read CSV content and register as virtual file
-      const csvContent = await fs.readFile(filePath, 'utf-8')
-      const tempCsvName = `${tableName}.csv`
-      await this.databaseService.registerFileText(tempCsvName, csvContent)
-
-      // Use DuckDB's read_csv_auto to handle the CSV
+      // Use DuckDB's read_csv_auto to handle the CSV directly from the file path
       await this.databaseService.exec(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${tempCsvName}', SAMPLE_SIZE=-1, auto_detect=true)`
+        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${filePath}', SAMPLE_SIZE=-1, auto_detect=true)`
       )
-
-      // [OPTIMIZATION] Free memory
-      await this.databaseService.dropFile(tempCsvName)
 
       // Fetch schema for the reloaded CSV
       const columnsResult = await this.databaseService.query(
@@ -313,18 +288,10 @@ export class FileService {
     } else if (ext === '.json') {
       await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
 
-      // Read JSON content and register as virtual file
-      const jsonContent = await fs.readFile(filePath, 'utf-8')
-      const tempJsonName = `${tableName}.json`
-      await this.databaseService.registerFileText(tempJsonName, jsonContent)
-
-      // Use DuckDB's read_json_auto to re-ingest JSON file
+      // Use DuckDB's read_json_auto to re-ingest JSON file directly from path
       await this.databaseService.exec(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${tempJsonName}', format='auto', auto_detect=true)`
+        `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${filePath}', format='auto', auto_detect=true)`
       )
-
-      // [OPTIMIZATION] Free memory
-      await this.databaseService.dropFile(tempJsonName)
 
       // Fetch schema for the reloaded JSON
       const columnsResult = await this.databaseService.query(

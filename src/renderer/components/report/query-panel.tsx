@@ -84,6 +84,7 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
           setPreviewData(data)
           setPreviewColumnFields(columnFields || [])
           setPreviewError(null)
+          success = true // <--- THIS IS THE FIX
         } else {
             throw new Error(res.error)
           }

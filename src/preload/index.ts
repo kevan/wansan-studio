@@ -61,8 +61,8 @@ const electronAPI: ElectronAPI = {
   // 文件同步
   checkFilesConsistency: (files: any[]) =>
     ipcRenderer.invoke('check-files-consistency', files),
-  reIngestFile: (filePath: string, tableName: string, sheetName?: string) =>
-    ipcRenderer.invoke('re-ingest-file', filePath, tableName, sheetName),
+  reIngestFile: (fileId: string, filePath: string, tableName: string, sheetName?: string) =>
+    ipcRenderer.invoke('re-ingest-file', fileId, filePath, tableName, sheetName),
 
   // 导出功能
   exportPDF: (data: any) => ipcRenderer.invoke('export-pdf', data),
@@ -99,6 +99,11 @@ const electronAPI: ElectronAPI = {
     const listener = (_event: any, state: { isFullScreen: boolean }) => callback(state)
     ipcRenderer.on('window-state-changed', listener)
     return () => ipcRenderer.removeListener('window-state-changed', listener)
+  },
+  onFileProgress: (callback: (data: { fileId: string; progress: number }) => void) => {
+    const listener = (_event: any, data: { fileId: string; progress: number }) => callback(data)
+    ipcRenderer.on('file:progress', listener)
+    return () => ipcRenderer.removeListener('file:progress', listener)
   },
 }
 

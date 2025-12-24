@@ -235,36 +235,50 @@ function App() {
 
   // 监听窗口全屏状态变化（处理系统级退出全屏）
   useEffect(() => {
-    if (!window.electronAPI?.onWindowStateChanged) return
+    if (!window.electronAPI) return
 
-    const unsub = window.electronAPI.onWindowStateChanged(
-      ({ isFullScreen }) => {
-        const left = leftPanelRef.current
-        const middle = middlePanelRef.current
-        const right = rightPanelRef.current
-        if (!left || !middle || !right) return
+    let unsubWindow: (() => void) | undefined
+    if (window.electronAPI.onWindowStateChanged) {
+      unsubWindow = window.electronAPI.onWindowStateChanged(
+        ({ isFullScreen }) => {
+          const left = leftPanelRef.current
+          const middle = middlePanelRef.current
+          const right = rightPanelRef.current
+          if (!left || !middle || !right) return
 
-        if (isFullScreen && !isPresentationMode) {
-          // 进入全屏 -> 开启演示模式 UI
-          left.collapse?.()
-          middle.collapse?.()
-          right.expand?.()
-          setIsLeftCollapsed(true)
-          setIsChatCollapsed(true)
-          setIsPresentationMode(true)
-        } else if (!isFullScreen && isPresentationMode) {
-          // 退出全屏 -> 还原 UI
-          left.expand?.()
-          middle.expand?.()
-          right.resize?.(mainPanelLayout[2] || 45)
-          setIsLeftCollapsed(false)
-          setIsChatCollapsed(false)
-          setIsPresentationMode(false)
+          if (isFullScreen && !isPresentationMode) {
+            // 进入全屏 -> 开启演示模式 UI
+            left.collapse?.()
+            middle.collapse?.()
+            right.expand?.()
+            setIsLeftCollapsed(true)
+            setIsChatCollapsed(true)
+            setIsPresentationMode(true)
+          } else if (!isFullScreen && isPresentationMode) {
+            // 退出全屏 -> 还原 UI
+            left.expand?.()
+            middle.expand?.()
+            right.resize?.(mainPanelLayout[2] || 45)
+            setIsLeftCollapsed(false)
+            setIsChatCollapsed(false)
+            setIsPresentationMode(false)
+          }
         }
-      }
-    )
+      )
+    }
 
-    return unsub
+    // Listen for file progress
+    let unsubProgress: (() => void) | undefined
+    if (window.electronAPI.onFileProgress) {
+      unsubProgress = window.electronAPI.onFileProgress(({ fileId, progress }) => {
+        useProjectStore.getState().updateFileProgress(fileId, progress)
+      })
+    }
+
+    return () => {
+      unsubWindow?.()
+      unsubProgress?.()
+    }
   }, [isPresentationMode, mainPanelLayout])
 
   const handleHeaderDoubleClick = useCallback(() => {

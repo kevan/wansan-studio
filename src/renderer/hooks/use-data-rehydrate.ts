@@ -86,6 +86,7 @@ export function useDataRehydrate() {
               `[Rehydrate] Restoring physical table: ${file.tableName} from ${file.path}`
             )
             const result = await reIngestFile({
+              fileId: file.id,
               filePath: file.path,
               tableName: file.tableName,
               sheetName: file.sheetName,

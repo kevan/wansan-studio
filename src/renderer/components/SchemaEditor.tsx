@@ -138,6 +138,7 @@ export function SchemaEditor() {
     await toast.promise(
       async () => {
         const result = await reIngest.mutateAsync({
+          fileId: currentFile.id,
           filePath: currentFile.path,
           tableName: currentFile.tableName,
           sheetName: currentFile.sheetName,

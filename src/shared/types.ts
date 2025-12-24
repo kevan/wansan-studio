@@ -101,6 +101,7 @@ export interface FileNode {
   tableName: string // DuckDB table name
   sheetName?: string // Excel Sheet Name
   status: SyncStatus
+  progress?: number // 0-100
   size?: number
   columns: ColumnSchema[]
   rowCount?: number

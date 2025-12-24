@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import * as XLSX from 'xlsx'
+import * as ExcelJS from 'exceljs'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import { DatabaseService } from '../../database/duckdb'
@@ -30,61 +30,41 @@ describe('Engine Robustness & Integration', () => {
     await dbService.initialize()
 
     // 2. Generate Nasty Excel
-    const wb = XLSX.utils.book_new()
-    const headers = [
-      '日期',
-      'Category',
-      'Sub-Category',
-      '销售额',
-      'Profit %',
-      'Test',
-      'Test',
-    ]
-    const data = [
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('NastySheet')
+    ws.addRows([
       [null, null, null, null, null, null, null],
       [null, null, null, null, null, null, null],
-      headers,
+      ['日期', 'Category', 'Sub-Category', '销售额', 'Profit %', 'Test', 'Test'],
       ['2023-01-01', 'Electronics', 'Phone', 1000, 0.1, 'A', 'B'],
-      ['2023-01-02', null, 'Laptop', 2000, 0.2, 'C', 'D'],
+      [null, 'Laptop', 2000, 0.2, 'C', 'D'], // Intentionally shifted
       ['2023-01-01', 'Clothing', 'Shirt', 500, 0.3, 'E', 'F'],
-      ['2023-01-02', null, 'Pants', 600, 0.4, 'G', 'H'],
-    ]
-    const ws = XLSX.utils.aoa_to_sheet(data)
-    ws['!merges'] = [
-      { s: { r: 3, c: 1 }, e: { r: 4, c: 1 } },
-      { s: { r: 5, c: 1 }, e: { r: 6, c: 1 } },
-    ]
-    XLSX.utils.book_append_sheet(wb, ws, 'NastySheet')
-    XLSX.writeFile(wb, TEST_FILE_PATH)
+      [null, 'Pants', 600, 0.4, 'G', 'H'],
+    ])
+    ws.mergeCells('B4:B5')
+    ws.mergeCells('B6:B7')
+    await wb.xlsx.writeFile(TEST_FILE_PATH)
 
     // 3. Generate Orders & Customers for Join Test
-    const wbOrders = XLSX.utils.book_new()
-    const ordersData = [
+    const wbOrders = new ExcelJS.Workbook()
+    const wsOrders = wbOrders.addWorksheet('Orders')
+    wsOrders.addRows([
       ['order_id', 'customer_id', 'amount'],
       [101, 'C001', 100],
       [102, 'C001', 200],
       [103, 'C002', 500],
-    ]
-    XLSX.utils.book_append_sheet(
-      wbOrders,
-      XLSX.utils.aoa_to_sheet(ordersData),
-      'Orders'
-    )
-    XLSX.writeFile(wbOrders, ORDERS_FILE_PATH)
+    ])
+    await wbOrders.xlsx.writeFile(ORDERS_FILE_PATH)
 
-    const wbCustomers = XLSX.utils.book_new()
-    const custData = [
+    const wbCustomers = new ExcelJS.Workbook()
+    const wsCustomers = wbCustomers.addWorksheet('Customers')
+    wsCustomers.addRows([
       ['id', 'name', 'region'],
       ['C001', 'Alice', 'North'],
       ['C002', 'Bob', 'South'],
       ['C003', 'Charlie', 'North'],
-    ]
-    XLSX.utils.book_append_sheet(
-      wbCustomers,
-      XLSX.utils.aoa_to_sheet(custData),
-      'Customers'
-    )
-    XLSX.writeFile(wbCustomers, CUSTOMERS_FILE_PATH)
+    ])
+    await wbCustomers.xlsx.writeFile(CUSTOMERS_FILE_PATH)
 
     if (process.env.OPENAI_API_KEY) {
       openai = new OpenAI({
@@ -99,8 +79,8 @@ describe('Engine Robustness & Integration', () => {
   })
 
   it('Task A: Ingestion should handle nasty files', async () => {
-    const fileBuffer = await fs.readFile(TEST_FILE_PATH)
-    const result = await ingestExcelFile(fileBuffer, dbService, 'nasty.xlsx')
+    // const fileBuffer = await fs.readFile(TEST_FILE_PATH)
+    const result = await ingestExcelFile(TEST_FILE_PATH, dbService, 'nasty.xlsx')
     schema = result[0]
 
     expect(schema).toBeDefined()
@@ -184,14 +164,14 @@ describe('Engine Robustness & Integration', () => {
 
     // Ingest
     const ordersResult = await ingestExcelFile(
-      await fs.readFile(ORDERS_FILE_PATH),
+      ORDERS_FILE_PATH,
       dbService,
       'orders.xlsx'
     )
     ordersSchema = ordersResult[0]
 
     const customersResult = await ingestExcelFile(
-      await fs.readFile(CUSTOMERS_FILE_PATH),
+      CUSTOMERS_FILE_PATH,
       dbService,
       'customers.xlsx'
     )

@@ -83,6 +83,7 @@ export interface ProjectState extends ProjectData {
   ) => string
   removeFile: (id: string) => Promise<void>
   updateFile: (id: string, updates: Partial<FileNode>) => void
+  updateFileProgress: (id: string, progress: number) => void
   updateColumn: (
     fileId: string,
     columnName: string,
@@ -745,6 +746,13 @@ export const useProjectStore = create<ProjectState>()(
           files: state.files.map(f => (f.id === id ? { ...f, ...updates } : f)),
         })),
 
+      updateFileProgress: (id, progress) =>
+        set(state => ({
+          files: state.files.map(f =>
+            f.id === id ? { ...f, progress } : f
+          ),
+        })),
+
       updateColumn: (fileId, columnName, updates) => {
         set(state => ({
           files: state.files.map(f =>
@@ -1007,7 +1015,7 @@ export const useProjectStore = create<ProjectState>()(
                 userType: oldCol.userType,
                 alias: oldCol.alias,
                 isKey: oldCol.isKey,
-                type: oldCol.type,
+                type: newCol.type,
               }
             } else {
               return newCol
@@ -1120,6 +1128,7 @@ export const useProjectStore = create<ProjectState>()(
 
           // 2. Trigger Backend Re-ingest
           const result = await window.electronAPI.reIngestFile(
+            fileId,
             newPath,
             file.tableName,
             file.sheetName

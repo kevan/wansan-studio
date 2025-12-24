@@ -327,12 +327,17 @@ export function setupIPC(
   // 重新摄取文件
   ipcMain.handle(
     're-ingest-file',
-    async (_event, filePath: string, tableName: string, sheetName?: string) => {
+    async (event, fileId: string, filePath: string, tableName: string, sheetName?: string) => {
       try {
+        const onProgress = (rowCount: number) => {
+          event.sender.send('file:progress', { fileId, progress: rowCount })
+        }
+        
         const result = await fileService.reIngestFile(
           filePath,
           tableName,
-          sheetName
+          sheetName,
+          onProgress
         )
         return { success: true, data: result }
       } catch (error) {
