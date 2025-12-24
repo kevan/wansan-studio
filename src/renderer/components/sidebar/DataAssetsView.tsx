@@ -83,8 +83,6 @@ export function DataAssetsView() {
               sheetName: undefined,
               size: fileData.size,
             })
-            
-            useProjectStore.getState().setActiveFile(fileId)
 
             updateFile(fileId, { status: 'processing' })
             const parseResults = await parseFileMutation.mutateAsync(filePath)
@@ -193,6 +191,8 @@ export function DataAssetsView() {
               if (!placeholderUsed) {
                 updateFile(fileId, fileData)
                 placeholderUsed = true
+                // Set active file only after it is ready
+                useProjectStore.getState().setActiveFile(fileId)
               } else {
                 try {
                   addFile({

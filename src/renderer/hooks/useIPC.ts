@@ -1,215 +1,171 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import type { ReloadResult } from '../../shared/types'
-import type {
+import {
   IPCResponse,
-  RunSQLResponse,
-  ParseFileResponse,
   AIConfigResponse,
-} from '../../shared/api-types'
-import { ElectronAPI } from '../../shared/electron-api'
+  RunSQLResponse,
+} from '@shared/api-types'
+import { ElectronAPI } from '@shared/electron-api'
 
-// 模拟 IPC 调用（实际实现将在主进程完成后替换）
+/**
+ * Mock IPC implementation for development/testing when electronAPI is not available.
+ * This ensures the renderer can still run in a browser environment if needed.
+ */
 const mockIPC: ElectronAPI = {
-  invoke: async (channel: string, ...args: any[]): Promise<IPCResponse> => {
-    console.log(`IPC Mock (invoke): ${channel}`, args)
-    return { success: true, data: null }
-  },
-  selectFile: async (): Promise<IPCResponse<string>> => {
-    return { success: true, data: 'mock/path/to/file.xlsx' }
-  },
-  selectFiles: async (): Promise<IPCResponse<{ path: string; size: number }[]>> => {
-    return {
-      success: true,
-      data: [
-        { path: 'mock/path/to/file1.xlsx', size: 1024 },
-        { path: 'mock/path/to/file2.csv', size: 2048 },
-      ],
-    }
-  },
-  parseFile: async (filePath: string): Promise<ParseFileResponse> => {
-    console.log(`Mock parseFile: ${filePath}`)
-    return {
-      success: true,
-      data: [{ tableName: 'mock_table', schema: { columns: [], tableName: 'mock_table', description: '' }, rowCount: 0 }],
-    }
-  },
-  runSQL: async (sql: string): Promise<RunSQLResponse> => {
-    console.log(`[IPC] runSQL called: ${sql.slice(0, 50)}...`)
-    // mock implementation
+  invoke: async () => ({ success: true }),
+  selectFile: async () => ({ success: true, data: '' }),
+  selectFiles: async () => ({ success: true, data: [] }),
+  parseFile: async () => ({ success: true, data: [] }),
+  runSQL: async (): Promise<RunSQLResponse> => {
     await new Promise(r => setTimeout(r, 500))
     return { success: true, data: { data: [], columnFields: [] } }
   },
-  getSchema: async (tableName?: string): Promise<IPCResponse> => {
-    console.log(`Mock getSchema: ${tableName}`)
-    return { success: true, data: { columns: [] } }
-  },
-  deleteTable: async (tableName?: string): Promise<IPCResponse> => {
-    console.log(`Mock deleteTable: ${tableName}`)
-    return { success: true }
-  },
-  generateSQL: async (prompt: string, schema: any): Promise<IPCResponse> => {
-    console.log(`Mock generateSQL: ${prompt}`)
-    return { success: true, data: 'SELECT * FROM mock' }
-  },
-  askAI: async (...args: any[]): Promise<IPCResponse> => {
-    console.log('Mock askAI', args)
-    return {
-      success: true,
-      data: {
-        sql: 'SELECT * FROM mock_table',
-        reasoning: 'Mock reasoning',
-        title: 'Mock Analysis',
-        summary: 'Mock summary',
-      },
-    }
-  },
-  fixSQL: async (...args: any[]): Promise<IPCResponse> => {
-    console.log('Mock fixSQL', args)
-    return { success: true, data: { sql: 'SELECT * FROM fixed', reasoning: 'Fixed' } }
-  },
-  analyzeContext: async (...args: any[]): Promise<IPCResponse> => {
-    console.log('Mock analyzeContext', args)
-    return { success: true, data: { relationships: [] } }
-  },
+  getSchema: async () => ({ success: true, data: { tables: [] } }),
+  deleteTable: async () => ({ success: true }),
+  generateSQL: async () => ({ success: true, data: '' }),
+  askAI: async () => ({ success: true, data: {} }),
+  fixSQL: async () => ({
+    success: true,
+    data: { sql: '', reasoning: '' },
+  }),
+  analyzeContext: async () => ({
+    success: true,
+    data: { relationships: [], suggestedPrompts: [] },
+  }),
+  generateMetricExpression: async () => ({
+    success: true,
+    data: '1 + 1',
+  }),
   getAIConfig: async (): Promise<AIConfigResponse> => {
-    return { success: true, data: { apiKey: 'mock-key' } }
+    return { success: true, data: {} }
   },
-  setAIConfig: async (config: any): Promise<IPCResponse> => {
-    console.log('Mock setAIConfig', config)
-    return { success: true }
-  },
+  setAIConfig: async () => ({ success: true }),
   clearAIConfig: async (): Promise<IPCResponse> => {
-    console.log('Mock clearAIConfig')
     return { success: true }
   },
   checkFilesConsistency: async (files: any[]): Promise<IPCResponse> => {
     console.log('Mock checkFilesConsistency', files)
-    return { success: true, data: [] }
+    return { success: true }
   },
   reIngestFile: async (
-    filePath: string,
-    tableName: string,
-    sheetName?: string
-  ): Promise<IPCResponse<ReloadResult>> => {
-    console.log(`Mock reIngestFile: ${filePath} ${sheetName || ''}`)
-    return { success: true, data: { lastModified: Date.now(), newColumns: [] } }
+    _filePath: string,
+    _tableName: string,
+    _sheetName?: string
+  ): Promise<IPCResponse<any>> => {
+    return {
+      success: true,
+      data: { lastModified: Date.now(), newColumns: [] },
+    }
   },
   getDeviceId: async (): Promise<IPCResponse<string>> => {
     return { success: true, data: 'mock-device-id' }
   },
-  secureSet: async (key: string, value: string): Promise<IPCResponse<boolean>> => {
-    console.log(`Mock secureSet: ${key}=${value}`)
+  secureSet: async (
+    _key: string,
+    _value: string
+  ): Promise<IPCResponse<boolean>> => {
     return { success: true, data: true }
   },
-  secureGet: async (key: string): Promise<IPCResponse<string | null>> => {
-    console.log(`Mock secureGet: ${key}`)
-    return { success: true, data: 'mock-value' }
+  secureGet: async (_key: string): Promise<IPCResponse<string | null>> => {
+    return { success: true, data: null }
   },
-  exportPDF: async (data: any): Promise<IPCResponse> => {
-    console.log(`Mock exportPDF: ${data}`)
+  exportPDF: async (_data: any): Promise<IPCResponse> => {
     return { success: true }
   },
-  exportReport: async (payload: any): Promise<IPCResponse> => {
-    console.log('Mock exportReport', payload)
+  exportReport: async (_payload: any): Promise<IPCResponse> => {
     return { success: true }
   },
-  exportWebReport: async (widgets: any[], config: any): Promise<IPCResponse> => {
-    console.log('Mock exportWebReport', widgets)
+  exportWebReport: async (
+    _widgets: any[],
+    _config: any
+  ): Promise<IPCResponse> => {
     return { success: true }
   },
   resetDB: async (): Promise<IPCResponse> => {
-    console.log('Mock resetDB')
     return { success: true }
   },
   resetApp: async (): Promise<IPCResponse> => {
-    console.log('Mock resetApp')
     return { success: true }
   },
-  saveImage: async (dataUrl: string, name?: string): Promise<IPCResponse> => {
-    console.log('Mock saveImage')
+  saveImage: async (_dataUrl: string, _name?: string): Promise<IPCResponse> => {
     return { success: true }
   },
-  saveFile: async (content: string, extension: string, name: string): Promise<IPCResponse<boolean>> => {
-    console.log('Mock saveFile')
+  saveFile: async (
+    _content: string,
+    _extension: string,
+    _name: string
+  ): Promise<IPCResponse<boolean>> => {
     return { success: true, data: true }
   },
-  openExternal: async (url: string): Promise<IPCResponse> => {
-    console.log('Mock openExternal', url)
+  openExternal: async (_url: string): Promise<IPCResponse> => {
     return { success: true }
   },
   getUserInfo: async (): Promise<IPCResponse<{ username: string }>> => {
-    return { success: true, data: { username: 'MockUser' } }
+    return { success: true, data: { username: 'Guest' } }
   },
   getPathForFile: (file: File) => file.name, // Mock
   windowControl: (
-    action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
+    _action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
   ) => {
-    console.log('Mock windowControl', action)
+    console.log('Mock windowControl', _action)
   },
-  onWindowStateChanged: (callback: any) => () => {},
+  onWindowStateChanged: (_callback: any) => () => {
+    console.log('Mock onWindowStateChanged')
+  },
   platform: 'darwin', // Mock platform
-  version: { electron: 'mock', chrome: 'mock', node: 'mock' } as NodeJS.ProcessVersions, // Mock versions
+  version: {
+    electron: 'mock',
+    chrome: 'mock',
+    node: 'mock',
+  } as NodeJS.ProcessVersions, // Mock versions
 }
 
 function getIpc() {
-  // 在 Electron 环境中，window.electronAPI 会被注入
   if (window.electronAPI) {
     return window.electronAPI
   } else if (import.meta.env.DEV) {
-    // 在开发模式下，如果不在 Electron 环境，则使用 mockIPC
-    console.warn(
-      'Running in non-Electron environment or electronAPI not yet available. Using mock IPC.'
-    )
     return mockIPC
-  } else {
-    // 在生产环境下，如果 electronAPI 不可用，则抛出错误
-    throw new Error('Electron API is not available.')
   }
+  throw new Error('Electron API not available')
 }
 
-// 文件解析 Hook
-export const useParseFile = () => {
-  return useMutation({
-    mutationFn: async (filePath: string) => {
-      const response = await getIpc().parseFile(filePath)
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to parse file')
-      }
-      return response.data
-    },
-  })
-}
-
-// SQL 执行 Hook
-export const useRunSQL = () => {
+export function useRunSQL() {
   return useMutation({
     mutationFn: async (sql: string) => {
       const response = await getIpc().runSQL(sql)
       if (!response.success) {
-        throw new Error(response.error || 'Failed to execute SQL')
+        throw new Error(response.error || 'SQL execution failed')
       }
       return response.data
     },
   })
 }
 
-// 获取数据库 Schema Hook
-export const useGetSchema = (tableName?: string) => {
+export function useGetSchema() {
   return useQuery({
-    queryKey: ['schema', tableName],
+    queryKey: ['schema'],
     queryFn: async () => {
-      const response = await getIpc().getSchema(tableName)
+      const response = await getIpc().getSchema()
       if (!response.success) {
-        throw new Error(response.error || 'Failed to get schema')
+        throw new Error(response.error || 'Failed to fetch schema')
       }
       return response.data
     },
-    enabled: !!tableName,
   })
 }
 
-// AI 生成 SQL Hook
-export const useGenerateSQL = () => {
+export function useDeleteTable() {
+  return useMutation({
+    mutationFn: async (tableName: string) => {
+      const response = await getIpc().deleteTable(tableName)
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to delete table')
+      }
+      return response.data
+    },
+  })
+}
+
+export function useGenerateSQL() {
   return useMutation({
     mutationFn: async ({ prompt, schema }: { prompt: string; schema: any }) => {
       const response = await getIpc().generateSQL(prompt, schema)
@@ -221,34 +177,20 @@ export const useGenerateSQL = () => {
   })
 }
 
-// 导出 PDF Hook
-export const useExportPDF = () => {
-  return useMutation({
-    mutationFn: async (data: any) => {
-      const response = await getIpc().exportPDF(data)
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to export PDF')
-      }
-      return response.data
-    },
-  })
-}
-
-// AI 配置 Hook
-export const useAIConfig = () => {
+export function useAIConfig() {
   return useQuery({
     queryKey: ['ai-config'],
     queryFn: async () => {
       const response = await getIpc().getAIConfig()
       if (!response.success) {
-        throw new Error(response.error || 'Failed to get AI config')
+        throw new Error(response.error || 'Failed to fetch AI config')
       }
       return response.data
     },
   })
 }
 
-export const useSetAIConfig = () => {
+export function useSetAIConfig() {
   return useMutation({
     mutationFn: async (config: any) => {
       const response = await getIpc().setAIConfig(config)
@@ -260,85 +202,23 @@ export const useSetAIConfig = () => {
   })
 }
 
-// 清理 AI 配置 Hook
-export const useClearAIConfig = () => {
+export function useParseFile() {
   return useMutation({
-    mutationFn: async () => {
-      const response = await getIpc().clearAIConfig()
+    mutationFn: async (filePath: string) => {
+      const response = await getIpc().parseFile(filePath)
       if (!response.success) {
-        throw new Error(response.error || 'Failed to clear AI config')
+        throw new Error(response.error || 'Failed to parse file')
       }
       return response.data
     },
   })
 }
 
-// 关系推断 Hook
-export const useContextAnalysis = () => {
-  return useMutation({
-    mutationFn: async (
-      params: any[] | { schemas: any[]; language?: 'en' | 'zh' }
-    ) => {
-      const { schemas, language } = Array.isArray(params)
-        ? { schemas: params, language: undefined }
-        : params
-      const response = await getIpc().analyzeContext(
-        schemas,
-        language
-      )
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to analyze context')
-      }
-      return response.data
-    },
-  })
-}
-
-// SQL 修复 Hook
-export const useFixSQL = () => {
-  return useMutation({
-    mutationFn: async ({
-      sql,
-      error,
-      schemas,
-    }: {
-      sql: string
-      error: string
-      schemas: any[]
-    }) => {
-      const response = await getIpc().fixSQL(sql, error, schemas)
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to fix SQL')
-      }
-      return response.data
-    },
-  })
-}
-
-// 文件选择 Hook
-export const useSelectFile = () => {
-  return useMutation({
-    mutationFn: async () => {
-      const response = await getIpc().selectFile()
-      if (!response.success) {
-        if (response.error === 'User cancelled') {
-          return null
-        }
-        throw new Error(response.error || 'Failed to select file')
-      }
-      return response.data
-    },
-  })
-}
-
-export const useSelectFiles = () => {
+export function useSelectFiles() {
   return useMutation({
     mutationFn: async () => {
       const response = await getIpc().selectFiles()
       if (!response.success) {
-        if (response.error === 'User cancelled') {
-          return []
-        }
         throw new Error(response.error || 'Failed to select files')
       }
       return response.data
@@ -346,55 +226,36 @@ export const useSelectFiles = () => {
   })
 }
 
-// 获取平台信息 Hook
-export const usePlatform = () => {
-  return useQuery({
-    queryKey: ['platform'],
-    queryFn: async () => getIpc().platform,
-    staleTime: Infinity,
-  })
-}
-
-// 获取版本信息 Hook
-export const useVersion = () => {
-  return useQuery({
-    queryKey: ['version'],
-    queryFn: async () => getIpc().version,
-    staleTime: Infinity,
-  })
-}
-
-// 获取用户信息 Hook
-export const useUserInfo = () => {
+export function useUserInfo() {
   return useQuery({
     queryKey: ['user-info'],
     queryFn: async () => {
       const response = await getIpc().getUserInfo()
       if (!response.success) {
-        // Fallback or ignore error
-        return { username: 'User' }
+        throw new Error(response.error || 'Failed to fetch user info')
       }
       return response.data
     },
-    staleTime: Infinity,
   })
 }
 
-// 检查文件一致性 Hook
-export const useCheckFilesConsistency = () => {
+export function usePlatform() {
+  return getIpc().platform
+}
+
+export function useExportWebReport() {
   return useMutation({
-    mutationFn: async (files: any[]) => {
-      const response = await getIpc().checkFilesConsistency(files)
+    mutationFn: async ({ widgets, config }: { widgets: any[]; config: any }) => {
+      const response = await getIpc().exportWebReport(widgets, config)
       if (!response.success) {
-        throw new Error(response.error || 'Failed to check files consistency')
+        throw new Error(response.error || 'Failed to export web report')
       }
       return response.data
     },
   })
 }
 
-// 重新摄取文件 Hook
-export const useReIngestFile = () => {
+export function useReIngestFile() {
   return useMutation({
     mutationFn: async ({
       filePath,
@@ -405,33 +266,39 @@ export const useReIngestFile = () => {
       tableName: string
       sheetName?: string
     }) => {
-      const response = await getIpc().reIngestFile(
-        filePath,
-        tableName,
-        sheetName
-      )
+      const response = await getIpc().reIngestFile(filePath, tableName, sheetName)
       if (!response.success) {
         throw new Error(response.error || 'Failed to re-ingest file')
       }
-      return response.data as ReloadResult
+      return response.data
     },
   })
 }
 
-// AI Web 导出 Hook
-export const useExportWebReport = () => {
+export function useContextAnalysis() {
   return useMutation({
     mutationFn: async ({
-      widgets,
-      config,
+      schemas,
+      language,
     }: {
-      widgets: any[]
-      config: any
+      schemas: any[]
+      language?: 'en' | 'zh'
     }) => {
-      const response = await getIpc().exportWebReport(widgets, config)
+      const response = await getIpc().analyzeContext(schemas, language)
       if (!response.success) {
-        if (response.error === 'Cancelled') return
-        throw new Error(response.error || 'Failed to export web report')
+        throw new Error(response.error || 'Failed to analyze context')
+      }
+      return response.data
+    },
+  })
+}
+
+export function useCheckFilesConsistency() {
+  return useMutation({
+    mutationFn: async (files: any[]) => {
+      const response = await getIpc().checkFilesConsistency(files)
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to check consistency')
       }
       return response.data
     },

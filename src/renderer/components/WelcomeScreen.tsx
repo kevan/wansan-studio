@@ -46,9 +46,6 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
       size: fileSize,
       columns: [],
     })
-    
-    // Update active file
-    useProjectStore.getState().setActiveFile(fileId)
 
     try {
       // 更新状态为 processing
@@ -71,6 +68,9 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
         columns: firstResult.schema?.columns || [],
         rowCount: firstResult.rowCount,
       })
+
+      // Update active file after it's ready
+      useProjectStore.getState().setActiveFile(fileId)
 
       // Handle additional results (e.g. extra sheets)
       for (let i = 1; i < parseResults.length; i++) {

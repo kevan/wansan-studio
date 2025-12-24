@@ -67,7 +67,7 @@ function App() {
   const middlePanelRef = useRef<ImperativePanelHandle>(null)
   const rightPanelRef = useRef<ImperativePanelHandle>(null)
   const { t } = useTranslation('common')
-  const { data: platform } = usePlatform()
+  const platform = usePlatform()
   const [isStoreReady, setIsStoreReady] = useState(false)
 
   const activeFileId = useProjectStore(state => state.activeFileId)

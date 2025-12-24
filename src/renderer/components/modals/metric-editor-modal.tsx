@@ -283,9 +283,9 @@ export function MetricEditorModal({
               <div className="flex-1 border border-zinc-200 rounded-lg bg-zinc-50 font-mono text-sm overflow-hidden relative flex flex-col focus-within:border-purple-300 transition-colors shadow-inner">
                 <div className="absolute right-2 top-2 z-10">
                   <Button
-                    size="xs"
+                    size="sm"
                     variant="ghost"
-                    className="h-6 gap-1 text-purple-600 hover:bg-purple-50 hover:text-purple-700"
+                    className="h-6 gap-1 text-purple-600 hover:bg-purple-50 hover:text-purple-700 text-[10px]"
                     onClick={handleAiGenerate}
                     disabled={
                       isGenerating || (!expression.trim() && !name.trim())
