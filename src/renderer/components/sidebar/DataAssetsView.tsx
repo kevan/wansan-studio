@@ -13,8 +13,6 @@ import { useTranslation } from 'react-i18next'
 import { useProGate } from '@/hooks/use-pro-gate'
 import { ColumnSchema } from '@shared/types'
 
-const MAX_SIZE = 100 * 1024 * 1024 // 100MB
-
 export function DataAssetsView() {
   const { addFile, updateFile } = useFileStore()
   const { isActivated, checkGate, gateNode } = useProGate()
@@ -23,6 +21,8 @@ export function DataAssetsView() {
   const { checkAutoLink } = useAutoLink()
   const addToast = useToastStore(state => state.addToast)
   const { t } = useTranslation('common')
+
+  const maxSize = isActivated ? 200 * 1024 * 1024 : 50 * 1024 * 1024 // 200MB vs 50MB
 
   // Enable automatic file synchronization checks
   useFileSync()
@@ -49,11 +49,12 @@ export function DataAssetsView() {
       if (result.success && result.data && result.data.length > 0) {
         console.log('handleImportClick: Files selected', result.data.length)
 
-        const oversizedFiles = result.data.filter(f => f.size > MAX_SIZE)
+        const oversizedFiles = result.data.filter(f => f.size > maxSize)
         if (oversizedFiles.length > 0) {
           addToast({
             title: t('sidebar.file_too_large_title'),
             description: t('sidebar.file_too_large_desc', {
+              limit: isActivated ? '200MB' : '50MB',
               files: oversizedFiles
                 .map(f => f.path.split('/').pop())
                 .join(', '),
@@ -63,7 +64,7 @@ export function DataAssetsView() {
           })
         }
 
-        const validFiles = result.data.filter(f => f.size <= MAX_SIZE)
+        const validFiles = result.data.filter(f => f.size <= maxSize)
 
         for (const fileData of validFiles) {
           const filePath = fileData.path

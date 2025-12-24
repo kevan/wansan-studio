@@ -29,7 +29,7 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
   const [isLoadingDemo, setIsLoadingDemo] = useState(false)
 
   const allowedExtensions = ['.xlsx', '.xls', '.csv', '.json']
-  const MAX_SIZE = 100 * 1024 * 1024 // 100MB
+  const maxSize = isActivated ? 200 * 1024 * 1024 : 50 * 1024 * 1024 // 200MB vs 50MB
 
   // 处理单个文件
   const processFile = async (
@@ -149,13 +149,14 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
           size: fileData.size,
         }))
 
-        const oversizedFiles = filesToProcess.filter(f => f.size > MAX_SIZE)
-        const validSizeFiles = filesToProcess.filter(f => f.size <= MAX_SIZE)
+        const oversizedFiles = filesToProcess.filter(f => f.size > maxSize)
+        const validSizeFiles = filesToProcess.filter(f => f.size <= maxSize)
 
         if (oversizedFiles.length > 0) {
           addToast({
             title: t('file_too_large_title'),
             description: t('file_too_large_desc', {
+              limit: isActivated ? '200MB' : '50MB',
               files: oversizedFiles.map(f => f.name).join(', '),
             }),
             type: 'warning',
@@ -203,13 +204,14 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
     const droppedFiles = Array.from(e.dataTransfer.files)
     console.log('handleDrop', droppedFiles)
 
-    const oversizedFiles = droppedFiles.filter(f => f.size > MAX_SIZE)
-    const validSizeFiles = droppedFiles.filter(f => f.size <= MAX_SIZE)
+    const oversizedFiles = droppedFiles.filter(f => f.size > maxSize)
+    const validSizeFiles = droppedFiles.filter(f => f.size <= maxSize)
 
     if (oversizedFiles.length > 0) {
       addToast({
         title: t('file_too_large_title'),
         description: t('file_too_large_desc', {
+          limit: isActivated ? '200MB' : '50MB',
           files: oversizedFiles.map(f => f.name).join(', '),
         }),
         type: 'warning',

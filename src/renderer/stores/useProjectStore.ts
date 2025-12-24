@@ -182,7 +182,12 @@ export const useProjectStore = create<ProjectState>()(
           }
           return { activeView: view, sidebarMode: newSidebarMode }
         }),
-      setActiveFile: id => set({ activeFileId: id }),
+      setActiveFile: id =>
+        set({
+          activeFileId: id,
+          sidebarMode: 'data',
+          selectedNode: id ? { id, type: 'file' } : null,
+        }),
       setActiveSession: id => set({ activeSessionId: id }),
       setPendingReplace: payload => set({ pendingReplace: payload }),
       setShowRefreshConfirm: open => set({ showRefreshConfirm: open }),
