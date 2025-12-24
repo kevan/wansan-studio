@@ -13,6 +13,8 @@ export interface ReportData {
   chartTitle?: string
   tableData?: Array<Record<string, any>>
   columnFields?: Array<{ name: string; type: string }>
+  columns?: string[] // Legacy support
+  columnTypes?: Record<string, string> // Legacy support
   vizConfig?: {
     x_axis?: string | null
     y_axis?: string | string[] | null

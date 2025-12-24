@@ -59,12 +59,17 @@ export function ChartFullView() {
 
   const data = report.reportData.tableData || []
   const columnFields = report.reportData.columnFields || []
+  const legacyColumns = report.reportData.columns || []
+  const legacyColumnTypes = report.reportData.columnTypes || {}
+  
   const columns =
     (columnFields.length > 0
       ? columnFields.map(f => f.name)
-      : data[0]
-        ? Object.keys(data[0])
-        : []) || []
+      : legacyColumns.length > 0
+        ? legacyColumns
+        : data[0]
+          ? Object.keys(data[0])
+          : []) || []
 
   const effectiveType = localType ?? report.reportData.chartType ?? 'bar'
 
@@ -153,6 +158,8 @@ export function ChartFullView() {
                     <ReportTable
                       data={data}
                       columnFields={columnFields}
+                      columns={legacyColumns}
+                      columnTypes={legacyColumnTypes}
                       variant="dashboard"
                     />
                   </div>

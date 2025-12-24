@@ -15,6 +15,8 @@ interface DashboardWidgetProps {
   chartTitle?: string
   tableData?: Array<Record<string, any>>
   columnFields?: Array<{ name: string; type: string }>
+  columns?: string[] // Legacy support
+  columnTypes?: Record<string, string> // Legacy support
   vizConfig?: {
     x_axis?: string | null
     y_axis?: string | string[] | null
@@ -36,6 +38,8 @@ export function DashboardWidget({
   chartTitle,
   tableData,
   columnFields = [],
+  columns = [],
+  columnTypes = {},
   vizConfig,
   className,
   variant = 'chat',
@@ -173,6 +177,8 @@ export function DashboardWidget({
               <ReportTable
                 data={tableData}
                 columnFields={columnFields}
+                columns={columns}
+                columnTypes={columnTypes}
                 variant="dashboard"
               />
             </div>
@@ -237,6 +243,8 @@ export function DashboardWidget({
             <ReportTable
               data={tableData}
               columnFields={columnFields}
+              columns={columns}
+              columnTypes={columnTypes}
               variant="chat"
             />
           </div>
