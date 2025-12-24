@@ -20,6 +20,7 @@ export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
   const [searchTerm, setSearchTerm] = useState(param.hint || '')
   const [debouncedTerm, setDebouncedTerm] = useState(param.hint || '')
   const inputRef = useRef<HTMLInputElement>(null)
+  const hasAutoSelected = useRef(false)
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -34,6 +35,15 @@ export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
     param.display_columns || [],
     debouncedTerm
   )
+
+  // Auto-select if only one option exists (and we haven't auto-selected yet)
+  useEffect(() => {
+    if (!isLoading && options.length === 1 && value.length === 0 && !hasAutoSelected.current) {
+      hasAutoSelected.current = true
+      const singleVal = String(options[0].value)
+      onChange([singleVal])
+    }
+  }, [options, isLoading, value, onChange])
 
   const toggleValue = (val: string) => {
     if (value.includes(val)) {

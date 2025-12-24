@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import type { LoadingType } from '../../shared/types'
 import { ReportCard } from './chat/ReportCard'
 import { ErrorCard } from './chat/error-card'
@@ -14,6 +14,7 @@ import {
   Trash2,
   Crown,
   SlidersHorizontal,
+  ChevronDown,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useChatStore } from '../stores/useChatStore'
@@ -303,35 +304,16 @@ export function ChatInterface({
                               {(!isTemplate || isExecuted) &&
                                 report.suggestions &&
                                 report.suggestions.length > 0 && (
-                                  <div className="flex flex-wrap items-center gap-2 pt-2 animate-in fade-in slide-in-from-top-1">
-                                    <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-400 mr-1">
-                                      <Sparkles className="w-3 h-3" />
-                                      {t('suggested')}
-                                    </div>
-                                    {report.suggestions.map(
-                                      (suggestion, idx) => (
-                                        <button
-                                          key={idx}
-                                          onClick={() => {
-                                            if (
-                                              !isChatLoading &&
-                                              !isRestoring
-                                            ) {
-                                              handleQuerySubmit(suggestion)
-                                            }
-                                          }}
-                                          disabled={isChatLoading || isRestoring}
-                                          className={`px-3 py-1.5 rounded-full bg-zinc-50 border border-zinc-200 text-zinc-600 text-xs shadow-sm ${
-                                            isChatLoading || isRestoring
-                                              ? 'opacity-50 cursor-not-allowed'
-                                              : 'hover:bg-white hover:border-indigo-200 transition-colors'
-                                          }`}
-                                        >
-                                          {suggestion}
-                                        </button>
-                                      )
-                                    )}
-                                  </div>
+                                  <MessageSuggestions
+                                    suggestions={report.suggestions}
+                                    isLast={
+                                      messages.indexOf(message) ===
+                                      messages.length - 1
+                                    }
+                                    onSelect={handleQuerySubmit}
+                                    isChatLoading={isChatLoading}
+                                    isRestoring={isRestoring}
+                                  />
                                 )}
                             </>
                           )
@@ -359,6 +341,96 @@ export function ChatInterface({
           placeholder={t('placeholder_default')}
         />
       </div>
+    </div>
+  )
+}
+
+/**
+ * Collapsible suggestions component.
+ * Automatically expands if it's the latest message.
+ */
+function MessageSuggestions({
+  suggestions,
+  isLast,
+  onSelect,
+  isChatLoading,
+  isRestoring,
+}: {
+  suggestions: string[]
+  isLast: boolean
+  onSelect: (query: string) => void
+  isChatLoading: boolean
+  isRestoring: boolean
+}) {
+  const { t } = useTranslation('chat')
+  const [isExpanded, setIsExpanded] = useState(isLast)
+
+  // Auto-expand when it becomes the last message (though usually it starts as last)
+  useEffect(() => {
+    if (isLast) setIsExpanded(true)
+  }, [isLast])
+
+  return (
+    <div className="flex flex-col gap-3 pt-3 animate-in fade-in slide-in-from-top-1">
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className={cn(
+            'flex items-center gap-1.5 px-2 py-1 rounded-md transition-all outline-none border group',
+            isExpanded
+              ? 'bg-indigo-50 border-indigo-100 text-indigo-600'
+              : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:bg-zinc-100 hover:border-zinc-300'
+          )}
+        >
+          <Sparkles
+            className={cn(
+              'w-3 h-3 transition-transform duration-300',
+              isExpanded ? 'fill-current scale-110' : 'group-hover:rotate-12'
+            )}
+          />
+          <span className="text-[10px] font-bold uppercase tracking-wider">
+            {t('suggested')}
+          </span>
+          <ChevronDown
+            className={cn(
+              'w-3 h-3 transition-transform duration-300',
+              isExpanded ? 'rotate-180' : 'opacity-50'
+            )}
+          />
+        </button>
+
+        {!isExpanded && (
+          <span className="text-[10px] text-zinc-400 font-mono bg-zinc-100/50 px-1.5 py-0.5 rounded border border-zinc-100">
+            {suggestions.length}
+          </span>
+        )}
+      </div>
+
+      {isExpanded && (
+        <div className="flex flex-wrap items-center gap-2 animate-in fade-in slide-in-from-top-1 zoom-in-95 duration-200">
+          {suggestions.map((suggestion, idx) => (
+            <button
+              key={idx}
+              onClick={() => {
+                if (!isChatLoading && !isRestoring) {
+                  onSelect(suggestion)
+                  // Optionally collapse after selection
+                  setIsExpanded(false)
+                }
+              }}
+              disabled={isChatLoading || isRestoring}
+              className={cn(
+                'px-3 py-1.5 rounded-full bg-white border border-zinc-200 text-zinc-600 text-xs shadow-sm transition-all',
+                isChatLoading || isRestoring
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'hover:border-indigo-200 hover:text-indigo-600 hover:shadow-md hover:shadow-indigo-500/10 active:scale-95'
+              )}
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
