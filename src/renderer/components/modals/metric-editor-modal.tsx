@@ -18,6 +18,7 @@ import {
   Check,
   AlertCircle,
   Play,
+  Wand2,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { getJoinedColumnName } from '@shared/naming-utils'
@@ -47,12 +48,12 @@ export function MetricEditorModal({
 }: MetricEditorModalProps) {
   const { t } = useTranslation('analysis')
   const [name, setName] = useState('')
-  const [label, setLabel] = useState('')
   const [expression, setExpression] = useState('')
   const [dataType, setDataType] = useState('DOUBLE')
 
   // Test Run State
   const [isTesting, setIsTesting] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
   const [testResult, setTestResult] = useState<string | null>(null)
   const [testError, setTestError] = useState<string | null>(null)
 
@@ -62,18 +63,17 @@ export function MetricEditorModal({
   useEffect(() => {
     if (isOpen) {
       if (initialMetric) {
-        setName(initialMetric.name)
-        setLabel(initialMetric.label)
+        setName(initialMetric.label)
         setExpression(initialMetric.sqlExpression)
         setDataType(initialMetric.dataType || 'DOUBLE')
       } else {
         setName('')
-        setLabel('')
         setExpression('')
         setDataType('DOUBLE')
       }
       setTestResult(null)
       setTestError(null)
+      setIsGenerating(false)
     }
   }, [isOpen, initialMetric])
 
@@ -121,7 +121,7 @@ export function MetricEditorModal({
     })
 
     return groups
-  }, [file, files, relations])
+  }, [file, files, relations, t])
 
   const validateAndSave = async () => {
     if (!name || !expression) return
@@ -142,8 +142,8 @@ export function MetricEditorModal({
       const finalDataType = result.dataType || 'DOUBLE'
       const newMetric: SmartMetric = {
         id: initialMetric?.id || crypto.randomUUID(),
-        name,
-        label: label || name,
+        name: name.trim(), // Use name as both identifier and label
+        label: name.trim(),
         sqlExpression: expression,
         dataType: finalDataType,
       }
@@ -181,6 +181,36 @@ export function MetricEditorModal({
       setTestError(e.message || t('smart_metric.syntax_error'))
     } finally {
       setIsTesting(false)
+    }
+  }
+
+  const handleAiGenerate = async () => {
+    const isRefining = !!expression.trim()
+    const input = isRefining ? expression : name
+
+    if (!input.trim()) return
+
+    setIsGenerating(true)
+    try {
+      // 1. Gather all available columns with their types
+      const contextColumns = columnGroups.flatMap(g =>
+        g.columns.map(c => ({ name: c.name, type: c.type }))
+      )
+
+      // 2. Call AI API with mode detection
+      const result = await window.electronAPI.generateMetricExpression({
+        input,
+        columns: contextColumns,
+        mode: isRefining ? 'refine' : 'generate',
+      })
+
+      if (result.success && result.data) {
+        setExpression(result.data)
+      }
+    } catch (err) {
+      console.error('AI Generation failed', err)
+    } finally {
+      setIsGenerating(false)
     }
   }
 
@@ -229,32 +259,16 @@ export function MetricEditorModal({
           {/* Left: Form & Editor */}
           <div className="flex-1 flex flex-col min-w-0 bg-white shadow-sm">
             <div className="p-6 pb-0 flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-zinc-500 uppercase">
-                    {t('smart_metric.name_label')}
-                  </Label>
-                  <Input
-                    placeholder="e.g. profit_margin"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    className="font-mono bg-zinc-50 border-zinc-200"
-                  />
-                  <p className="text-[10px] text-zinc-400 leading-tight">
-                    {t('smart_metric.name_desc')}
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-zinc-500 uppercase">
-                    {t('smart_metric.display_label')}
-                  </Label>
-                  <Input
-                    placeholder="e.g. Profit Margin %"
-                    value={label}
-                    onChange={e => setLabel(e.target.value)}
-                    className="bg-zinc-50 border-zinc-200"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-zinc-500 uppercase">
+                  {t('smart_metric.display_label')}
+                </Label>
+                <Input
+                  placeholder="e.g. Profit Margin %"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className="focus:outline-none focus-within:border-purple-300 transition-colors focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
+                />
               </div>
             </div>
 
@@ -267,6 +281,24 @@ export function MetricEditorModal({
               </Label>
 
               <div className="flex-1 border border-zinc-200 rounded-lg bg-zinc-50 font-mono text-sm overflow-hidden relative flex flex-col focus-within:border-purple-300 transition-colors shadow-inner">
+                <div className="absolute right-2 top-2 z-10">
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    className="h-6 gap-1 text-purple-600 hover:bg-purple-50 hover:text-purple-700"
+                    onClick={handleAiGenerate}
+                    disabled={
+                      isGenerating || (!expression.trim() && !name.trim())
+                    }
+                  >
+                    <Wand2
+                      className={cn('w-3 h-3', isGenerating && 'animate-spin')}
+                    />
+                    {isGenerating
+                      ? t('smart_metric.generating')
+                      : t('smart_metric.ai_magic')}
+                  </Button>
+                </div>
                 <div className="flex-1 overflow-auto relative">
                   <Editor
                     value={expression}

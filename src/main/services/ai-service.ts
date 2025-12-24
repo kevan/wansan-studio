@@ -200,6 +200,87 @@ export class AIService {
   }
 
   /**
+   * Generates a SQL expression for a smart metric based on a natural language description.
+   */
+  async generateMetricExpression(options: {
+    input: string
+    columns: { name: string; type: string }[]
+    mode: 'generate' | 'refine'
+  }): Promise<string> {
+    const { input, columns, mode } = options
+    const client = this.requireOpenAI()
+
+    const columnList = columns.map(c => `- ${c.name} (${c.type})`).join('\n')
+
+    const quotingRule = `
+CRITICAL SYNTAX RULES:
+1. **ALWAYS** wrap column names in DOUBLE QUOTES ("). 
+   - Example: "Sales", "Total Cost", "毛利率".
+   - NEVER output raw identifiers like sales or cost.
+2. Return **ONLY** the SQL expression, DO NOT use "SELECT", "FROM", or "AS".                                                                                  │
+3. Use the EXACT column names provided above.                                                                             │
+4. Handle NULLs if appropriate (e.g. COALESCE).                                                                           │
+5. If division is involved, use "NULLIF(col, 0)" to prevent errors.
+6. Handle NULLs and Division by Zero safely (e.g. NULLIF(col, 0)).
+7. NO Markdown, NO explanations.
+`
+
+    let systemPrompt = ''
+
+    if (mode === 'generate') {
+      systemPrompt = `
+You are a DuckDB SQL Formula Generator.
+Task: Create a SQL expression based on the user's intended metric name.
+
+### AVAILABLE COLUMNS:
+${columnList}
+
+${quotingRule}
+
+### EXAMPLE:
+Input: "Gross Profit"
+Columns: [sales, cost]
+Output: "sales" - "cost"
+`
+    } else {
+      systemPrompt = `
+You are a SQL Refinement Agent.
+The user input contains existing SQL mixed with natural language instructions.
+Task: Update or complete the SQL logic based on the text.
+
+### AVAILABLE COLUMNS:
+${columnList}
+
+${quotingRule}
+
+### EXAMPLE:
+Input: "\\"price\\" * \\"qty\\" minus tax"
+Output: "price" * "qty" - "tax"
+`
+    }
+
+    const response = await client.chat.completions.create({
+      model: this.model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: input },
+      ],
+      temperature: 0.1,
+    })
+
+    let result = response.choices[0]?.message?.content || ''
+
+    // Cleanup: Remove any potential markdown backticks
+    result = result
+      .replace(/^```sql/, '')
+      .replace(/^```/, '')
+      .replace(/```$/, '')
+      .trim()
+
+    return result
+  }
+
+  /**
    * Clears all AI configuration from the persistent store.
    */
   clearConfig() {

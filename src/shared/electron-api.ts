@@ -51,13 +51,15 @@ export interface ElectronAPI {
     schemas: any[],
     domainRules?: DomainRule[]
   ) => Promise<IPCResponse>
-  analyzeContext: (
-    schemas: any[],
-    language?: 'en' | 'zh'
-  ) => Promise<IPCResponse>
-  
-  // AI Config
-  getAIConfig: () => Promise<AIConfigResponse>
+    analyzeContext: (
+      schemas: any[],
+      language?: 'en' | 'zh'
+    ) => Promise<IPCResponse>
+        generateMetricExpression: (options: {
+          input: string
+          columns: Array<{ name: string; type: string }>
+          mode: 'generate' | 'refine'
+        }) => Promise<IPCResponse<string>>    // AI Config  getAIConfig: () => Promise<AIConfigResponse>
   setAIConfig: (config: any) => Promise<IPCResponse>
   clearAIConfig: () => Promise<IPCResponse>
 

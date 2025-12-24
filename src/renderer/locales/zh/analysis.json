@@ -34,6 +34,8 @@
     "sql_expression": "SQL 表达式",
     "duckdb_syntax": "支持 DuckDB 语法",
     "quick_test": "快速测试",
+    "ai_magic": "AI",
+    "generating": "正在生成...",
     "verified": "已验证",
     "validating": "验证中...",
     "save": "保存指标",

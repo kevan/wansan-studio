@@ -49,6 +49,11 @@ const electronAPI: ElectronAPI = {
   ) => ipcRenderer.invoke('ask-ai-fix', originalSql, error, schemas, domainRules),
   analyzeContext: (schemas: any[], language?: 'en' | 'zh') =>
     ipcRenderer.invoke('analyze-context', schemas, language),
+  generateMetricExpression: (options: {
+    input: string
+    columns: Array<{ name: string; type: string }>
+    mode: 'generate' | 'refine'
+  }) => ipcRenderer.invoke('ai:generate-metric-expression', options),
   getAIConfig: () => ipcRenderer.invoke('get-ai-config'),
   setAIConfig: (config: any) => ipcRenderer.invoke('set-ai-config', config),
   clearAIConfig: () => ipcRenderer.invoke('clear-ai-config'),

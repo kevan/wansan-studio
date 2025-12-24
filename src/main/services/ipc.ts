@@ -193,6 +193,23 @@ export function setupIPC(
     }
   )
 
+  // AI 智能指标生成
+  ipcMain.handle(
+    'ai:generate-metric-expression',
+    async (_event, options: any) => {
+      try {
+        const result = await aiService.generateMetricExpression(options)
+        return { success: true, data: result }
+      } catch (error) {
+        console.error('Generate metric expression error:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      }
+    }
+  )
+
   // AI 分析上下文 (关系 + 提示词)
   ipcMain.handle(
     'analyze-context',
