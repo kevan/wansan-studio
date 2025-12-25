@@ -87,6 +87,14 @@ const mockIPC: ElectronAPI = {
   resetApp: async (): Promise<IPCResponse> => {
     return { success: true }
   },
+  testNativeDB: async () => {
+    console.log('Mock testNativeDB')
+    return { status: 'Native DuckDB is Alive' }
+  },
+  runNativeSQL: async (sql: string) => {
+    console.log('Mock runNativeSQL', sql)
+    return [{ answer: 42 }]
+  },
   saveImage: async (_dataUrl: string, _name?: string): Promise<IPCResponse> => {
     return { success: true }
   },

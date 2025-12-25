@@ -285,6 +285,18 @@ function App() {
     window.electronAPI?.windowControl?.('toggle-maximize')
   }, [])
 
+  const handleTestNativeDB = async () => {
+    try {
+      console.log('[NativeDB] Testing Native DuckDB (Utility Process)...')
+      const result = await window.electronAPI.testNativeDB()
+      console.log('[NativeDB] Result from Utility Process:', result)
+      alert(`Native DB Success!\nStatus: ${result.status}`)
+    } catch (err: any) {
+      console.error('[NativeDB] Test failed:', err)
+      alert(`Native DB Failed: ${err.message}`)
+    }
+  }
+
   // if (!hasCompletedOnboarding) {
   //   return (
   //     <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
@@ -347,6 +359,14 @@ function App() {
           />
           {/* RIGHT ZONE */}
           <div className="flex items-center gap-2 non-draggable shrink-0">
+            {isDev && (
+              <button
+                className="h-8 px-3 rounded-md border border-zinc-200 text-xs font-medium text-amber-600 hover:bg-amber-50 transition-colors"
+                onClick={handleTestNativeDB}
+              >
+                Test Native DB
+              </button>
+            )}
             {!isRightCollapsed && (
               <button
                 className={`h-8 gap-2 px-3 rounded-md border border-transparent text-xs font-medium flex items-center transition-colors ${

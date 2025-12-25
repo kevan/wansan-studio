@@ -35,6 +35,8 @@ export interface ElectronAPI {
   deleteTable: (tableName?: string) => Promise<IPCResponse>
   resetDB: () => Promise<IPCResponse>
   resetApp: () => Promise<IPCResponse>
+  testNativeDB: () => Promise<any>
+  runNativeSQL: (sql: string) => Promise<any[]>
 
   // AI & Analysis
   generateSQL: (prompt: string, schema: any) => Promise<IPCResponse>

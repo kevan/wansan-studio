@@ -325,14 +325,15 @@ export function processSampleValue(val: any, columnType?: ColumnType): any {
 
 /**
  * Sanitize values for IPC transmission and general usage.
- * - Converts BigInt to number (safe for IPC)
+ * - Converts BigInt to number (if safe) or string (if unsafe)
  * - Rounds floating point numbers
  * - Converts Date to timestamp
  * - Recursively handles Arrays and Objects
  */
 export function sanitizeValue(value: any): any {
   if (typeof value === 'bigint') {
-    return Number(value)
+    const num = Number(value)
+    return Number.isSafeInteger(num) ? num : value.toString()
   }
   if (typeof value === 'number') {
     // Round to 6 decimal places to avoid floating point artifacts (e.g. 0.1 + 0.2)
@@ -357,3 +358,4 @@ export function sanitizeValue(value: any): any {
   }
   return value
 }
+    

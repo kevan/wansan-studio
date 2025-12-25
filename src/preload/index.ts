@@ -22,6 +22,8 @@ const electronAPI: ElectronAPI = {
     ipcRenderer.invoke('delete-table', tableName),
   resetDB: () => ipcRenderer.invoke('reset-db'),
   resetApp: () => ipcRenderer.invoke('reset-app'),
+  testNativeDB: () => ipcRenderer.invoke('db:test-native'),
+  runNativeSQL: (sql: string) => ipcRenderer.invoke('db:native-query', sql),
 
   // AI 功能
   askAI: (

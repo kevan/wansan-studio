@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeImage } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeImage, utilityProcess } from 'electron'
 import { join } from 'path'
 import { isDev } from './utils/env'
 import Store from 'electron-store'
@@ -7,11 +7,14 @@ import debounce from 'lodash.debounce'
 import { setupIPC } from './services/ipc'
 import { DatabaseService } from './database/duckdb'
 import { AIService } from './services/ai-service' // Import AIService
+import { dbClient } from './services/db-service/client'
 
 class WansanApp {
   private mainWindow: BrowserWindow | null = null
   private databaseService: DatabaseService | null = null
   private aiService: AIService | null = null // Add AIService property
+  // private duckdbNativeService: any = null // Removed: now in dbClient
+  // private pendingQueries = new Map<string, { resolve: Function; reject: Function }>() // Removed
 
   constructor() {
     this.init()
@@ -40,6 +43,13 @@ class WansanApp {
     // 等待 Electron 准备就绪
     await app.whenReady()
 
+    // 初始化 DuckDB Native POC
+    try {
+      await dbClient.init()
+    } catch (err) {
+      console.error('[Main] Failed to init dbClient:', err)
+    }
+
     // 创建 AI Service 实例
     this.aiService = new AIService()
 
@@ -56,6 +66,7 @@ class WansanApp {
 
     // 设置 IPC 通信
     this.setupIPC()
+    this.setupNativeDB_IPC()
 
     // 在开发模式下启动时清理 AI 配置
     // if (isDev()) {
@@ -214,6 +225,17 @@ class WansanApp {
       if (this.databaseService) {
         await this.databaseService.close()
       }
+      await dbClient.stop()
+    })
+  }
+
+  private setupNativeDB_IPC() {
+    ipcMain.handle('db:test-native', async () => {
+      return dbClient.executeQuery("SELECT 'Native DuckDB is Alive' as status").then(rows => rows[0])
+    })
+
+    ipcMain.handle('db:native-query', async (_event, sql) => {
+      return dbClient.executeQuery(sql)
     })
   }
 
