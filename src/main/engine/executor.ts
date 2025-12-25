@@ -9,8 +9,11 @@ function validateSQL(sql: string): boolean {
   // A simple check for read-only commands.
   const upperSql = sql.trim().toUpperCase()
 
-  // [Smart Metrics] Allow View Creation
-  if (upperSql.startsWith('CREATE OR REPLACE VIEW')) {
+  // [Smart Metrics] Allow View Creation and Deletion
+  if (
+    upperSql.startsWith('CREATE OR REPLACE VIEW') ||
+    upperSql.startsWith('DROP VIEW')
+  ) {
     return true
   }
 
