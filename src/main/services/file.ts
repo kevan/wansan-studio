@@ -83,8 +83,10 @@ export class FileService {
       const tableName = await getUniqueTableName(this.databaseService, fileName)
 
       // Use DuckDB's read_csv_auto to handle the CSV directly from the file path
+      // [FIX] Escape backslashes for Windows paths
+      const safePath = filePath.replace(/\\/g, '/')
       await this.databaseService.exec(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${filePath}', SAMPLE_SIZE=-1, auto_detect=true)`
+        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${safePath}', SAMPLE_SIZE=-1, auto_detect=true)`
       )
 
       // Fetch schema using PRAGMA table_info for consistency
@@ -145,8 +147,10 @@ export class FileService {
       const tableName = await getUniqueTableName(this.databaseService, fileName)
 
       // Use DuckDB's read_json_auto to handle the JSON directly from the file path
+      // [FIX] Escape backslashes for Windows paths
+      const safePath = filePath.replace(/\\/g, '/')
       await this.databaseService.exec(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${filePath}', format='auto', auto_detect=true)`
+        `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${safePath}', format='auto', auto_detect=true)`
       )
 
       // Fetch schema using PRAGMA table_info for consistency
@@ -258,8 +262,10 @@ export class FileService {
       await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
 
       // Use DuckDB's read_csv_auto to handle the CSV directly from the file path
+      // [FIX] Escape backslashes for Windows paths
+      const safePath = filePath.replace(/\\/g, '/')
       await this.databaseService.exec(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${filePath}', SAMPLE_SIZE=-1, auto_detect=true)`
+        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${safePath}', SAMPLE_SIZE=-1, auto_detect=true)`
       )
 
       // Fetch schema for the reloaded CSV
@@ -289,8 +295,10 @@ export class FileService {
       await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
 
       // Use DuckDB's read_json_auto to re-ingest JSON file directly from path
+      // [FIX] Escape backslashes for Windows paths
+      const safePath = filePath.replace(/\\/g, '/')
       await this.databaseService.exec(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${filePath}', format='auto', auto_detect=true)`
+        `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${safePath}', format='auto', auto_detect=true)`
       )
 
       // Fetch schema for the reloaded JSON

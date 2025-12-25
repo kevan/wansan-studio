@@ -197,10 +197,12 @@ export async function ingestExcelFile(
 
             // Ingest directly from filesystem path (DuckDB optimization)
             // No need to load content into memory or registerFileText
+            // [FIX] Escape backslashes for Windows paths in SQL string
+            const safeCsvPath = csvFilePath.replace(/\\/g, '/')
             await databaseService.exec(
               `CREATE TABLE "${tableName}" AS
                     SELECT *
-                    FROM read_csv_auto('${csvFilePath}', HEADER = TRUE, SAMPLE_SIZE = -1, auto_detect = true)`
+                    FROM read_csv_auto('${safeCsvPath}', HEADER = TRUE, SAMPLE_SIZE = -1, auto_detect = true)`
             )
 
             // [OPTIMIZATION] Free disk space: remove the temp csv file
