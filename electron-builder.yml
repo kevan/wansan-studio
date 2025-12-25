@@ -8,17 +8,12 @@ files:
   - "dist/**/*"
   - "package.json"
   - "node_modules/**/*"
-  - "!**/node_modules/@duckdb/duckdb-wasm/dist/*coi*"
-  - "!**/node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser*"
   - "!**/*.map"
 
 
-# [CRITICAL] Unpack WASM and Native modules to avoid ASAR issues
+# [CRITICAL] Unpack Native modules to avoid ASAR issues
 asarUnpack:
-  - "node_modules/@duckdb/duckdb-wasm"
-  - "node_modules/apache-arrow"
   - "node_modules/@duckdb/node-api"
-  - "**/*.wasm"
 
 mac:
   target: dmg

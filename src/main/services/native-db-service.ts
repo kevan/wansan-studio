@@ -3,10 +3,11 @@ import { dbClient } from './db-service/client';
 export class NativeDatabaseService {
   constructor() {}
 
-  async initialize(): Promise<void> {
+  async initialize(dbPath?: string): Promise<void> {
     console.log('[NativeDB] Initializing service adapter...');
     await dbClient.init();
-    console.log('[NativeDB] Service adapter initialized.');
+    await dbClient.connect(dbPath);
+    console.log(`[NativeDB] Service adapter initialized. Path: ${dbPath || ':memory:'}`);
   }
 
   async query(sql: string): Promise<any[]> {

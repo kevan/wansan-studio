@@ -2,13 +2,12 @@ import { app } from 'electron'
 import * as path from 'path'
 import fs from 'fs-extra'
 import { Worker } from 'worker_threads'
-import { DatabaseService } from '../database/duckdb'
 import { NativeDatabaseService } from '../services/native-db-service'
 import { ColumnSchema, ColumnType, TableSchema } from '../../shared/types'
 import { processSampleValue } from '../../shared/serialization'
 import { normalizeDuckDBType } from '../../shared/type-utils'
 
-type DBService = DatabaseService | NativeDatabaseService;
+type DBService = NativeDatabaseService;
 
 /**
  * Common logic to fetch column schema and sample values after a table is created
@@ -61,7 +60,6 @@ export async function ingestJsonData(
   }
 
   const tempFileName = `${tableName}.json`
-  const isNative = databaseService instanceof NativeDatabaseService
 
   try {
     // [FIX] Pre-process rows to convert Date objects to wall-time strings
@@ -95,22 +93,12 @@ export async function ingestJsonData(
     })
 
     const jsonContent = JSON.stringify(processedRows)
-    let loadPath: string
-
-    if (isNative) {
-      // For Native, we must write to a physical file in temp dir
-      const tempPath = path.join(app.getPath('temp'), tempFileName)
-      await fs.writeFile(tempPath, jsonContent)
-      // DuckDB expects forward slashes
-      loadPath = tempPath.replace(/\\/g, '/')
-    } else {
-      // For WASM, we use the virtual filesystem
-      await (databaseService as DatabaseService).registerFileText(
-        tempFileName,
-        jsonContent
-      )
-      loadPath = tempFileName
-    }
+    
+    // For Native, we must write to a physical file in temp dir
+    const tempPath = path.join(app.getPath('temp'), tempFileName)
+    await fs.writeFile(tempPath, jsonContent)
+    // DuckDB expects forward slashes
+    const loadPath = tempPath.replace(/\\/g, '/')
 
     await databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
 
@@ -121,12 +109,8 @@ export async function ingestJsonData(
     )
 
     // [OPTIMIZATION] Free resources
-    if (isNative) {
-      const tempPath = path.join(app.getPath('temp'), tempFileName)
-      await fs.unlink(tempPath).catch(() => {})
-    } else {
-      await (databaseService as DatabaseService).dropFile(tempFileName)
-    }
+    const cleanupPath = path.join(app.getPath('temp'), tempFileName)
+    await fs.unlink(cleanupPath).catch(() => {})
 
     return fetchTableSchema(databaseService, tableName, 'Imported JSON Data')
   } finally {

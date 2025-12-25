@@ -44,13 +44,6 @@ class WansanApp {
     // 等待 Electron 准备就绪
     await app.whenReady()
 
-    // 初始化 DuckDB Native POC
-    try {
-      await dbClient.init()
-    } catch (err) {
-      console.error('[Main] Failed to init dbClient:', err)
-    }
-
     // 创建 AI Service 实例
     this.aiService = new AIService()
 
@@ -58,10 +51,14 @@ class WansanApp {
     this.createMainWindow()
 
     // 初始化数据库服务
-    // const databaseService = new DatabaseService()
-    // await databaseService.initialize()
     this.databaseService = new NativeDatabaseService()
-    this.databaseService.initialize().catch(err => {
+    
+    // Determine Persistent DB Path
+    const userDataPath = app.getPath('userData')
+    const dbPath = join(userDataPath, 'wansan-v1.duckdb')
+    console.log(`[Main] Using persistent database at: ${dbPath}`)
+
+    this.databaseService.initialize(dbPath).catch(err => {
       console.error('Failed to initialize database in background:', err)
     })
 

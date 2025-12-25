@@ -135,9 +135,19 @@ export class NativeDBClient {
 
   async stop() {
     if (this.child) {
+      if (this.isReady) {
+          try {
+              // Try graceful close first
+              await this.sendFull('CLOSE', {});
+          } catch (e) {
+              console.warn('[NativeDB] Graceful close failed, forcing kill.', e);
+          }
+      }
       this.child.kill();
       this.child = null;
       this.isReady = false;
+      this.isInitializing = false;
+      this.pendingRequests.clear();
     }
   }
 }

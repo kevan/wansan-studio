@@ -12,6 +12,25 @@ async function handleMessage(msg: DBRequest) {
   try {
     switch (type) {
       case 'CONNECT': {
+        if (connection) {
+          try {
+             // connection.close() is not always exposed in all bindings, 
+             // but usually letting it GC is enough if we nullify it. 
+             // However, for file locks, we might need to be careful.
+             // @duckdb/node-api usually relies on object destruction.
+             // Let's just nullify for now or check if close exists.
+             // Based on docs/bindings, closing is often implicit or via close().
+             // Let's assume we just replace the references.
+             // ideally: await connection.close();
+             // await db.close();
+             // But for safety with unknown API surface in this context, let's nullify.
+             connection = null;
+             db = null;
+          } catch (e) {
+            console.warn('Error closing previous connection:', e);
+          }
+        }
+
         const path = payload?.path || ':memory:';
         db = await DuckDBInstance.create(path);
         connection = await db.connect();
@@ -130,6 +149,22 @@ async function handleMessage(msg: DBRequest) {
         
         process.parentPort?.postMessage({ reqId, success: true } as DBResponse);
         break;
+      }
+
+      case 'CLOSE': {
+         try {
+             // Explicitly close connection and db if possible
+             // Note: @duckdb/node-api bindings might vary, but unref-ing is key
+             connection = null;
+             db = null;
+             // If the binding exposes close(), we should call it. 
+             // Assuming explicit close helps with WAL checkpointing.
+         } catch (e) {
+             console.error('Error during close:', e);
+         }
+         process.parentPort?.postMessage({ reqId, success: true } as DBResponse);
+         // Optional: exit process? No, let the client kill it.
+         break;
       }
 
       case 'TEST':

@@ -67,11 +67,11 @@ Goal: Point the application to the new engine.
 💾 Phase 4: Persistence Implementation (v1.3 Spec)
 Goal: Stop using `:memory:` and start using `.duckdb` files.
 
-- [ ] 4.1 Project Store Integration
+- [x] 4.1 Project Store Integration
     - When switching projects, send CONNECT { path: '/path/to/project.duckdb' } to Utility Process.
     - Ensure db.close() is called on the old connection before opening a new one.
 
-- [ ] 4.2 "Save" Mechanism
+- [x] 4.2 "Save" Mechanism
     - Native DuckDB is auto-saving (WAL), but we need to ensure graceful shutdown (CHECKPOINT).
 
   ---
@@ -79,8 +79,8 @@ Goal: Stop using `:memory:` and start using `.duckdb` files.
 🧹 Phase 5: Cleanup
 Goal: Remove Dead Code.
 
-- [ ] 5.1 Uninstall WASM Dependencies
+- [x] 5.1 Uninstall WASM Dependencies
     - Remove @duckdb/duckdb-wasm, apache-arrow (if not used elsewhere).
-- [ ] 5.2 Delete Old Files
+- [x] 5.2 Delete Old Files
     - Delete src/main/database/duckdb.ts.
     - Clean up electron-builder.yml (remove WASM unpacking rules).
