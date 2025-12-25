@@ -15,7 +15,6 @@ export function useDataRehydrate() {
   const setRestoring = useFileStore(state => state.setRestoring)
   const markFileMissing = useFileStore(state => state.markFileMissing)
   const addToast = useToastStore(state => state.addToast)
-  const dismissToast = useToastStore(state => state.dismissToast)
   const { mutateAsync: reIngestFile } = useReIngestFile()
 
   const [hydrated, setHydrated] = useState(false)
@@ -41,21 +40,12 @@ export function useDataRehydrate() {
   }, [])
 
   useEffect(() => {
-    console.log('[Rehydrate] Check run condition:', {
-      hydrated,
-      hasRun: hasRunRef.current,
-      fileCount: initialFilesRef.current.length,
-    })
     if (!hydrated || hasRunRef.current) return
 
     // Use current state to get latest files
     const filesToRestore = useFileStore
       .getState()
       .files.filter(f => f.status === 'ready' && f.tableName)
-
-    console.log(
-      `[Rehydrate] Ready to restore. Files to restore: ${filesToRestore.length}`
-    )
 
     if (filesToRestore.length === 0) {
       setRestoring(false)
@@ -66,31 +56,53 @@ export function useDataRehydrate() {
     setRestoring(true)
     let cancelled = false
 
-    const restore = async () => {
-      let successCount = 0
+    const syncDatabase = async () => {
+      let restoredCount = 0
+      let verifiedCount = 0
       let failCount = 0
 
       console.log(
-        `[Rehydrate] Starting restoration for ${filesToRestore.length} files`
+        `[Rehydrate] Verifying persistence for ${filesToRestore.length} files`
       )
 
-      // 1. Restore Physical Tables
+      // 1. Verify Physical Tables (Persistence Check)
       await Promise.all(
         filesToRestore.map(async file => {
+          if (cancelled) return
+
           try {
-            console.log(
-              `[Rehydrate] Restoring physical table: ${file.tableName} from ${file.path}`
+            // Check if table exists in Native DuckDB
+            const checkRes = await window.electronAPI.runSQL(
+              `SELECT table_name FROM information_schema.tables WHERE table_name = '${file.tableName}' AND table_schema = 'main'`
             )
-            const result = await reIngestFile({
-              fileId: file.id,
-              filePath: file.path,
-              tableName: file.tableName,
-              sheetName: file.sheetName,
-            })
-            if (cancelled) return
-            reloadFile(file.id, result)
-            successCount++
-            console.log(`[Rehydrate] Successfully restored: ${file.tableName}`)
+
+            const tableExists =
+              checkRes.success && checkRes.data && checkRes.data.data.length > 0
+
+            if (tableExists) {
+              console.log(
+                `[Rehydrate] Table verified (Persistence Hit): ${file.tableName}`
+              )
+              verifiedCount++
+            } else {
+              // Persistence Miss: Table missing in DB but exists in Store.
+              // This happens if DB file was deleted or corrupted, or first run after migration.
+              console.warn(
+                `[Rehydrate] Persistence Miss: Table ${file.tableName} not found. Attempting restoration from source...`
+              )
+
+              const result = await reIngestFile({
+                fileId: file.id,
+                filePath: file.path,
+                tableName: file.tableName,
+                sheetName: file.sheetName,
+              })
+              
+              if (cancelled) return
+              reloadFile(file.id, result)
+              restoredCount++
+              console.log(`[Rehydrate] Restored from source: ${file.tableName}`)
+            }
           } catch (error) {
             if (cancelled) return
             failCount++
@@ -103,7 +115,7 @@ export function useDataRehydrate() {
               errorMessage.includes('ENOENT')
             ) {
               markFileMissing(file.id)
-              console.warn(`[Rehydrate] File missing: ${file.path}`)
+              console.warn(`[Rehydrate] Source file missing: ${file.path}`)
             } else {
               markAsStale([file.id])
               updateFile(file.id, {
@@ -111,101 +123,51 @@ export function useDataRehydrate() {
                 error: errorMessage,
               })
               console.error(
-                `[Rehydrate] Physical table restoration failed for ${file.tableName}:`,
+                `[Rehydrate] Restoration failed for ${file.tableName}:`,
                 error
               )
             }
-
-            addToast({
-              title: t('rehydrate.restore_failed'),
-              description: `${file.name}: ${errorMessage}`,
-              type: 'error',
-              duration: 5000,
-            })
           }
         })
       )
 
-      if (cancelled) {
-        console.log('[Rehydrate] Restoration cancelled')
-        return
-      }
+      if (cancelled) return
 
-      // 2. Rebuild Views (Smart Metrics) - Must happen AFTER all physical tables are ready
+      // 2. Rebuild Views (Smart Metrics) - Always ensure View definitions are consistent with Store
       const currentFiles = useFileStore.getState().files
       const currentRelations = useFileStore.getState().relations
       const filesWithMetrics = currentFiles.filter(
-        f => f.status === 'ready' && f.smartMetrics && f.smartMetrics.length > 0
-      )
-
-      console.log(
-        `[Rehydrate] Physical restoration complete. Found ${filesWithMetrics.length} files with Smart Metrics to rebuild.`
+        f => f.status === 'ready'
       )
 
       for (const file of filesWithMetrics) {
-        try {
-          console.log(
-            `[Rehydrate] Rebuilding view for ${file.tableName} (Metrics: ${file.smartMetrics?.length})`
-          )
-          // 1. Rebuild View and get latest type map
-          const typeMap = await DuckDBViewManager.rebuildView(
-            file,
-            currentFiles,
-            currentRelations
-          )
+        // Only rebuild if we have metrics OR relations involving this file
+        const hasRelations = currentRelations.some(r => r.fileAId === file.id || r.fileBId === file.id);
+        const hasMetrics = file.smartMetrics && file.smartMetrics.length > 0;
 
-          // 2. Update metrics with inferred types if they changed
-          if (file.smartMetrics && typeMap.size > 0) {
-            let hasTypeChanges = false
-            const updatedMetrics = file.smartMetrics.map(m => {
-              const inferredType = typeMap.get(m.name)
-              if (inferredType && inferredType !== m.type) {
-                hasTypeChanges = true
-                return { ...m, type: inferredType as any }
-              }
-              return m
-            })
-
-            if (hasTypeChanges) {
-              console.log(
-                `[Rehydrate] Syncing metric types for ${file.tableName}`
-              )
-              updateFile(file.id, { smartMetrics: updatedMetrics })
-            }
-          }
-
-          console.log(
-            `[Rehydrate] View successfully rebuilt: v_${file.tableName}`
-          )
-        } catch (error) {
-          console.error(
-            `[Rehydrate] Failed to rebuild view for ${file.tableName}:`,
-            error
-          )
-          const errorMessage =
-            error instanceof Error ? error.message : 'Unknown error'
-
-          updateFile(file.id, {
-            status: 'error',
-            error: `Semantic layer error: ${errorMessage}`,
-          })
-
-          addToast({
-            title: t('rehydrate.view_rebuild_failed'),
-            description: `${file.name}: ${errorMessage}`,
-            type: 'error',
-            duration: 5000,
-          })
+        if (hasMetrics || hasRelations) {
+             try {
+                // Rebuild View (CREATE OR REPLACE VIEW)
+                // This is fast and ensures logical schema is synced
+                await DuckDBViewManager.rebuildView(
+                    file,
+                    currentFiles,
+                    currentRelations
+                )
+             } catch (error) {
+                 console.error(`[Rehydrate] View sync failed for ${file.tableName}`, error);
+             }
         }
       }
 
-      console.log('[Rehydrate] Restoration process finished')
+      console.log('[Rehydrate] Sync process finished', { verified: verifiedCount, restored: restoredCount, failed: failCount })
       setRestoring(false)
+      
       if (failCount > 0) {
         addToast({
           title: t('rehydrate.restore_with_issues'),
           description: t('rehydrate.restore_summary', {
-            success: successCount,
+            success: verifiedCount + restoredCount,
             fail: failCount,
           }),
           type: 'warning',
@@ -214,19 +176,17 @@ export function useDataRehydrate() {
       }
     }
 
-    restore().catch(e => {
-      console.error('[Rehydrate] Fatal error in restore sequence:', e)
+    syncDatabase().catch(e => {
+      console.error('[Rehydrate] Fatal error in sync sequence:', e)
       setRestoring(false)
     })
 
     return () => {
       cancelled = true
-      // Don't log "cancelled" here unless we are sure it's an abnormal termination
       setRestoring(false)
     }
   }, [
     addToast,
-    dismissToast,
     hydrated,
     markAsStale,
     markFileMissing,
@@ -234,5 +194,6 @@ export function useDataRehydrate() {
     reloadFile,
     setRestoring,
     updateFile,
+    t
   ])
 }
