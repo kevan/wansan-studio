@@ -1,6 +1,6 @@
 {
   "name": "wansan-studio",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "本地优先的智能商业报表桌面端软件 - Local-First Business Intelligence Desktop App",
   "main": "dist/main/index.js",
   "homepage": "./",
