@@ -1,4 +1,4 @@
-import { DatabaseService } from '../database/duckdb'
+import { NativeDatabaseService } from '../services/native-db-service'
 
 /**
  * Validates SQL to prevent potentially destructive operations.
@@ -58,7 +58,7 @@ function validateSQL(sql: string): boolean {
  */
 export async function executeSQL(
   sql: string,
-  databaseService: DatabaseService
+  databaseService: NativeDatabaseService
 ): Promise<{ data: any[]; columnFields: Array<{ name: string; type: string }> }> {
   validateSQL(sql)
 

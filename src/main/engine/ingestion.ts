@@ -3,15 +3,18 @@ import * as path from 'path'
 import fs from 'fs-extra'
 import { Worker } from 'worker_threads'
 import { DatabaseService } from '../database/duckdb'
+import { NativeDatabaseService } from '../services/native-db-service'
 import { ColumnSchema, ColumnType, TableSchema } from '../../shared/types'
 import { processSampleValue } from '../../shared/serialization'
 import { normalizeDuckDBType } from '../../shared/type-utils'
+
+type DBService = DatabaseService | NativeDatabaseService;
 
 /**
  * Common logic to fetch column schema and sample values after a table is created
  */
 async function fetchTableSchema(
-  databaseService: DatabaseService,
+  databaseService: DBService,
   tableName: string,
   description: string
 ): Promise<TableSchema> {
@@ -49,7 +52,7 @@ async function fetchTableSchema(
  * 摄取 JSON 数据到 DuckDB（用于 Demo 数据）
  */
 export async function ingestJsonData(
-  databaseService: DatabaseService,
+  databaseService: DBService,
   tableName: string,
   rows: any[]
 ): Promise<TableSchema> {
@@ -58,6 +61,7 @@ export async function ingestJsonData(
   }
 
   const tempFileName = `${tableName}.json`
+  const isNative = databaseService instanceof NativeDatabaseService
 
   try {
     // [FIX] Pre-process rows to convert Date objects to wall-time strings
@@ -91,19 +95,38 @@ export async function ingestJsonData(
     })
 
     const jsonContent = JSON.stringify(processedRows)
+    let loadPath: string
 
-    await databaseService.registerFileText(tempFileName, jsonContent)
+    if (isNative) {
+      // For Native, we must write to a physical file in temp dir
+      const tempPath = path.join(app.getPath('temp'), tempFileName)
+      await fs.writeFile(tempPath, jsonContent)
+      // DuckDB expects forward slashes
+      loadPath = tempPath.replace(/\\/g, '/')
+    } else {
+      // For WASM, we use the virtual filesystem
+      await (databaseService as DatabaseService).registerFileText(
+        tempFileName,
+        jsonContent
+      )
+      loadPath = tempFileName
+    }
 
     await databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
 
     await databaseService.exec(
       `CREATE TABLE "${tableName}" AS
       SELECT *
-      FROM read_json_auto('${tempFileName}', format = 'auto', auto_detect = true)`
+      FROM read_json_auto('${loadPath}', format = 'auto', auto_detect = true)`
     )
 
-    // [OPTIMIZATION] Free memory: remove the virtual file as data is now in the table
-    await databaseService.dropFile(tempFileName)
+    // [OPTIMIZATION] Free resources
+    if (isNative) {
+      const tempPath = path.join(app.getPath('temp'), tempFileName)
+      await fs.unlink(tempPath).catch(() => {})
+    } else {
+      await (databaseService as DatabaseService).dropFile(tempFileName)
+    }
 
     return fetchTableSchema(databaseService, tableName, 'Imported JSON Data')
   } finally {
@@ -111,7 +134,7 @@ export async function ingestJsonData(
 }
 
 export async function getSampleValues(
-  databaseService: DatabaseService,
+  databaseService: DBService,
   tableName: string,
   columnName: string,
   columnType: ColumnType
@@ -130,7 +153,7 @@ export async function getSampleValues(
 
 export async function ingestExcelFile(
   filePath: string,
-  databaseService: DatabaseService,
+  databaseService: DBService,
   fileName: string,
   targetTableName?: string,
   targetSheetName?: string,
@@ -235,7 +258,7 @@ export async function ingestExcelFile(
 }
 
 export async function getUniqueTableName(
-  databaseService: DatabaseService,
+  databaseService: DBService,
   originalName: string,
   sheetName?: string
 ): Promise<string> {

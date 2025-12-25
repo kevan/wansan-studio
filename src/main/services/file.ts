@@ -1,6 +1,6 @@
 import fs from 'fs-extra'
 import { extname, basename } from 'path'
-import { DatabaseService } from '../database/duckdb'
+import { NativeDatabaseService } from './native-db-service'
 import {
   ingestExcelFile,
   getUniqueTableName,
@@ -13,7 +13,7 @@ import { normalizeDuckDBType } from '../../shared/type-utils'
 
 // Helper to infer TIMESTAMP type from column name if DuckDB detects it as number
 export class FileService {
-  constructor(private databaseService: DatabaseService) {}
+  constructor(private databaseService: NativeDatabaseService) {}
 
   async parseFile(filePath: string) {
     console.log('parseFile', filePath)

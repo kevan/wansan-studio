@@ -5,13 +5,14 @@ import Store from 'electron-store'
 import debounce from 'lodash.debounce'
 
 import { setupIPC } from './services/ipc'
-import { DatabaseService } from './database/duckdb'
+// import { DatabaseService } from './database/duckdb'
+import { NativeDatabaseService } from './services/native-db-service'
 import { AIService } from './services/ai-service' // Import AIService
 import { dbClient } from './services/db-service/client'
 
 class WansanApp {
   private mainWindow: BrowserWindow | null = null
-  private databaseService: DatabaseService | null = null
+  private databaseService: NativeDatabaseService | null = null
   private aiService: AIService | null = null // Add AIService property
   // private duckdbNativeService: any = null // Removed: now in dbClient
   // private pendingQueries = new Map<string, { resolve: Function; reject: Function }>() // Removed
@@ -59,14 +60,13 @@ class WansanApp {
     // 初始化数据库服务
     // const databaseService = new DatabaseService()
     // await databaseService.initialize()
-    this.databaseService = new DatabaseService()
+    this.databaseService = new NativeDatabaseService()
     this.databaseService.initialize().catch(err => {
       console.error('Failed to initialize database in background:', err)
     })
 
     // 设置 IPC 通信
     this.setupIPC()
-    this.setupNativeDB_IPC()
 
     // 在开发模式下启动时清理 AI 配置
     // if (isDev()) {
@@ -229,21 +229,11 @@ class WansanApp {
     })
   }
 
-  private setupNativeDB_IPC() {
-    ipcMain.handle('db:test-native', async () => {
-      return dbClient.executeQuery("SELECT 'Native DuckDB is Alive' as status").then(rows => rows[0])
-    })
-
-    ipcMain.handle('db:native-query', async (_event, sql) => {
-      return dbClient.executeQuery(sql)
-    })
-  }
-
   public getMainWindow(): BrowserWindow | null {
     return this.mainWindow
   }
 
-  public getDatabaseService(): DatabaseService | null {
+  public getDatabaseService(): NativeDatabaseService | null {
     return this.databaseService
   }
 

@@ -1,5 +1,5 @@
 import { ipcMain, dialog, BrowserWindow, shell } from 'electron'
-import { DatabaseService } from '../database/duckdb'
+import { NativeDatabaseService } from './native-db-service'
 import { FileService } from './file'
 import { AIService } from './ai-service'
 import { getDeviceId } from './device'
@@ -19,7 +19,7 @@ import type {
 } from '../../shared/types'
 
 export function setupIPC(
-  databaseService: DatabaseService,
+  databaseService: NativeDatabaseService,
   aiService: AIService
 ) {
   const fileService = new FileService(databaseService)
