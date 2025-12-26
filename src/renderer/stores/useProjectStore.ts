@@ -38,12 +38,14 @@ export interface ProjectState extends ProjectData {
   isRefreshing: boolean
   abortControllers: Record<string, AbortController>
   smartFilterRequest: SmartFilterRequest | null
+  currentProjectPath: string | null
 
   // Actions
   setSidebarMode: (mode: 'sessions' | 'data') => void
   setView: (view: ViewMode) => void
   setActiveFile: (id: string | null) => void
   setActiveSession: (id: string | null) => void
+  setProjectPath: (path: string | null) => void
   setPendingReplace: (
     payload: { fileId: string; newPath: string; missing: string[] } | null
   ) => void
@@ -132,7 +134,7 @@ const createNewSession = (): Session => ({
   },
 })
 
-const initialProjectState: ProjectData = {
+const initialProjectState: ProjectData & { currentProjectPath: string | null } = {
   meta: {
     id: crypto.randomUUID(),
     name: 'Untitled Project',
@@ -146,6 +148,7 @@ const initialProjectState: ProjectData = {
   activeView: 'chat',
   activeFileId: null,
   widgetRegistry: {},
+  currentProjectPath: null,
 }
 
 export const useProjectStore = create<ProjectState>()(
@@ -163,6 +166,7 @@ export const useProjectStore = create<ProjectState>()(
       isRestoring: true,
       isRefreshing: false,
       smartFilterRequest: null,
+      currentProjectPath: null,
 
       setSidebarMode: mode =>
         set(state => {
@@ -189,6 +193,7 @@ export const useProjectStore = create<ProjectState>()(
           selectedNode: id ? { id, type: 'file' } : null,
         }),
       setActiveSession: id => set({ activeSessionId: id }),
+      setProjectPath: path => set({ currentProjectPath: path }),
       setPendingReplace: payload => set({ pendingReplace: payload }),
       setShowRefreshConfirm: open => set({ showRefreshConfirm: open }),
       setRefreshing: val => set({ isRefreshing: val }),

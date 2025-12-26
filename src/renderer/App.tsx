@@ -42,6 +42,11 @@ import { SettingsDialog } from './components/settings/SettingsDialog'
 import { GlobalSqlLab } from './components/report/GlobalSqlLab'
 import { DataPreviewPanel } from './components/report/data-preview-panel'
 import { useAutoCleanup } from './hooks/use-auto-cleanup'
+import { MigrationWizard } from './components/migration/MigrationWizard'
+import { useMigrationStore } from './stores/useMigrationStore'
+import { useAutoSave, AutoSaveStatus } from './hooks/useAutoSave'
+import { CloudCheck, CloudOff, Info } from 'lucide-react'
+import { ProjectLauncher } from './components/launcher/ProjectLauncher'
 
 function App() {
   useBootSequence()
@@ -50,6 +55,14 @@ function App() {
   useProjectInit()
   useAutoCleanup()
   // useStoreMigration()
+
+  const { isMigrationNeeded, checkStatus } = useMigrationStore()
+  const { status: saveStatus, lastError: saveError, forceSave } = useAutoSave()
+  const currentProjectPath = useProjectStore(s => s.currentProjectPath)
+
+  useEffect(() => {
+    checkStatus()
+  }, [checkStatus])
 
   const [isChatCollapsed, setIsChatCollapsed] = useState(false)
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
@@ -297,194 +310,242 @@ function App() {
   return (
     <ErrorBoundary>
       <GlobalErrorHandler />
-      <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
-        <Toaster />
-        <UpdateModal />
-        <SchemaWarningModal />
-        <RefreshConfirmModal />
-        <SettingsDialog />
-        <GlobalSqlLab />
-        {/* Global Window Header */}
-        <header
-          className="h-12 border-b border-zinc-200 flex items-center justify-between px-4 shrink-0 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur draggable z-50"
-          onDoubleClick={handleHeaderDoubleClick}
-        >
-          {/* LEFT ZONE */}
-          <div
-            className={cn(
-              'flex items-center gap-4 non-draggable shrink-0',
-              platform === 'darwin' && !isPresentationMode ? 'pl-16' : 'pl-4'
-            )}
-          >
-            {!isPresentationMode && (
-              <>
-                <button
-                  className={`h-8 w-8 rounded-md border border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200 transition-colors ${isLeftCollapsed ? 'text-zinc-400' : ''}`}
-                  onClick={toggleLeft}
-                  title={t('toggle_data_tree')}
-                >
-                  <PanelLeft className="h-4 w-4 mx-auto" />
-                </button>
-                <div className="h-4 w-px bg-zinc-300 dark:bg-zinc-700" />
-              </>
-            )}
-            {/* Logo Image */}
-            <div className="flex items-center gap-2">
-              <img
-                src={logo}
-                className="h-6 w-6 rounded-md "
-                alt="Wansan Studio"
-              />
-              <span className="text-sm font-semibold text-zinc-900">
-                Wansan Studio
-              </span>
-            </div>
-          </div>
-          {/* MIDDLE DRAG SPACER */}
-          <div
-            className="flex-1 h-full draggable"
+      {isMigrationNeeded ? (
+        <MigrationWizard />
+      ) : !currentProjectPath ? (
+        <ProjectLauncher />
+      ) : (
+        <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
+          <Toaster />
+          <UpdateModal />
+          <SchemaWarningModal />
+          <RefreshConfirmModal />
+          <SettingsDialog />
+          <GlobalSqlLab />
+          {/* Global Window Header */}
+          <header
+            className="h-12 border-b border-zinc-200 flex items-center justify-between px-4 shrink-0 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur draggable z-50"
             onDoubleClick={handleHeaderDoubleClick}
-          />
-          {/* RIGHT ZONE */}
-          <div className="flex items-center gap-2 non-draggable shrink-0">
-            {!isRightCollapsed && (
-              <button
-                className={`h-8 gap-2 px-3 rounded-md border border-transparent text-xs font-medium flex items-center transition-colors ${
-                  isPresentationMode
-                    ? 'bg-zinc-800 text-white'
-                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-                }`}
-                onClick={togglePresentation}
-                title={isPresentationMode ? t('exit') : t('present')}
-              >
-                {isPresentationMode ? (
-                  <RotateCcw className="h-3.5 w-3.5" />
-                ) : (
-                  <MonitorPlay className="h-3.5 w-3.5" />
-                )}
-                <span className="hidden sm:inline">
-                  {isPresentationMode ? t('exit') : t('present')}
+          >
+            {/* LEFT ZONE */}
+            <div
+              className={cn(
+                'flex items-center gap-4 non-draggable shrink-0',
+                platform === 'darwin' && !isPresentationMode ? 'pl-16' : 'pl-4'
+              )}
+            >
+              {!isPresentationMode && (
+                <>
+                  <button
+                    className={`h-8 w-8 rounded-md border border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200 transition-colors ${isLeftCollapsed ? 'text-zinc-400' : ''}`}
+                    onClick={toggleLeft}
+                    title={t('toggle_data_tree')}
+                  >
+                    <PanelLeft className="h-4 w-4 mx-auto" />
+                  </button>
+                  <div className="h-4 w-px bg-zinc-300 dark:bg-zinc-700" />
+                </>
+              )}
+              {/* Logo Image */}
+              <div className="flex items-center gap-2">
+                <img
+                  src={logo}
+                  className="h-6 w-6 rounded-md "
+                  alt="Wansan Studio"
+                />
+                <span className="text-sm font-semibold text-zinc-900">
+                  Wansan Studio
                 </span>
-              </button>
-            )}
+              </div>
+            </div>
+            {/* MIDDLE DRAG SPACER */}
+            <div
+              className="flex-1 h-full draggable"
+              onDoubleClick={handleHeaderDoubleClick}
+            />
+            {/* RIGHT ZONE */}
+            <div className="flex items-center gap-2 non-draggable shrink-0">
+              {/* Auto-Save Indicator */}
+              {currentProjectPath && (
+                <AutoSaveIndicator
+                  status={saveStatus}
+                  error={saveError}
+                  onForceSave={forceSave}
+                />
+              )}
 
-            {!isPresentationMode && (
-              <>
-                {!isRightCollapsed && (
-                  <div className="h-4 w-[1px] bg-zinc-200" />
-                )}
-
+              {!isRightCollapsed && (
                 <button
-                  className={cn(
-                    'h-8 gap-2 px-3 rounded-md border text-xs font-medium flex items-center transition-colors',
-                    isRightCollapsed
-                      ? 'bg-black text-white border-black hover:bg-zinc-800'
-                      : 'border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200'
-                  )}
-                  onClick={toggleRight}
-                  title={
-                    isRightCollapsed ? t('show_dashboard') : t('hide_dashboard')
-                  }
+                  className={`h-8 gap-2 px-3 rounded-md border border-transparent text-xs font-medium flex items-center transition-colors ${
+                    isPresentationMode
+                      ? 'bg-zinc-800 text-white'
+                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
+                  }`}
+                  onClick={togglePresentation}
+                  title={isPresentationMode ? t('exit') : t('present')}
                 >
-                  {isRightCollapsed ? (
-                    <PanelRightOpen className="h-3.5 w-3.5" />
+                  {isPresentationMode ? (
+                    <RotateCcw className="h-3.5 w-3.5" />
                   ) : (
-                    <PanelRightClose className="h-3.5 w-3.5" />
+                    <MonitorPlay className="h-3.5 w-3.5" />
                   )}
                   <span className="hidden sm:inline">
-                    {isRightCollapsed
-                      ? t('show_dashboard')
-                      : t('hide_dashboard')}
+                    {isPresentationMode ? t('exit') : t('present')}
                   </span>
                 </button>
-              </>
-            )}
-          </div>
-        </header>
+              )}
 
-        <PanelGroup
-          direction="horizontal"
-          className="flex-1"
-          onLayout={setMainPanelLayout}
-        >
-          {/* 左侧 Sidebar */}
-          <Panel
-            ref={leftPanelRef}
-            defaultSize={mainPanelLayout[0]}
-            minSize={15}
-            maxSize={20}
-            collapsible
-            collapsedSize={0}
-            onCollapse={() => setIsLeftCollapsed(true)}
-            onExpand={() => setIsLeftCollapsed(false)}
-            className={`border-r border-zinc-200 bg-zinc-50 dark:bg-zinc-900/50 transition-all duration-300 ${isLeftCollapsed ? 'min-w-0 border-none' : ''}`}
-          >
-            <div className="h-full flex flex-col bg-zinc-50 dark:bg-zinc-900/50">
-              <div className="flex-1 overflow-y-auto">
-                <Sidebar onImportData={handleImportData} />
-              </div>
+              {!isPresentationMode && (
+                <>
+                  {!isRightCollapsed && (
+                    <div className="h-4 w-[1px] bg-zinc-200" />
+                  )}
+
+                  <button
+                    className={cn(
+                      'h-8 gap-2 px-3 rounded-md border text-xs font-medium flex items-center transition-colors',
+                      isRightCollapsed
+                        ? 'bg-black text-white border-black hover:bg-zinc-800'
+                        : 'border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200'
+                    )}
+                    onClick={toggleRight}
+                    title={
+                      isRightCollapsed
+                        ? t('show_dashboard')
+                        : t('hide_dashboard')
+                    }
+                  >
+                    {isRightCollapsed ? (
+                      <PanelRightOpen className="h-3.5 w-3.5" />
+                    ) : (
+                      <PanelRightClose className="h-3.5 w-3.5" />
+                    )}
+                    <span className="hidden sm:inline">
+                      {isRightCollapsed
+                        ? t('show_dashboard')
+                        : t('hide_dashboard')}
+                    </span>
+                  </button>
+                </>
+              )}
             </div>
-          </Panel>
+          </header>
 
-          <PanelResizeHandle className="w-1 bg-zinc-100 hover:bg-zinc-300 transition-colors" />
-
-          {/* 主画布区域 - Chat/Workspace */}
-          <Panel
-            ref={middlePanelRef}
-            defaultSize={mainPanelLayout[1]}
-            minSize={0}
-            collapsible
-            collapsedSize={0}
-            onCollapse={() => setIsChatCollapsed(true)}
-            onResize={size => setIsChatCollapsed(size < 5)}
-            className={`bg-white dark:bg-zinc-950 transition-all duration-500 ${isPresentationMode ? 'min-w-0 border-none' : ''}`}
+          <PanelGroup
+            direction="horizontal"
+            className="flex-1"
+            onLayout={setMainPanelLayout}
           >
-            <main className="wansan-canvas h-full flex flex-col relative bg-white dark:bg-zinc-950 transition-colors">
-              <MainContent />
-            </main>
-          </Panel>
-
-          <PanelResizeHandle className="w-1 bg-zinc-100 hover:bg-zinc-300 transition-colors" />
-
-          {/* 右侧 Report Canvas */}
-          <Panel
-            defaultSize={mainPanelLayout[2]}
-            minSize={0}
-            ref={rightPanelRef}
-            collapsible
-            collapsedSize={0}
-            onCollapse={() => setIsRightCollapsed(true)}
-            onExpand={() => setIsRightCollapsed(false)}
-            className={`bg-zinc-100/60 dark:bg-zinc-900 transition-all duration-300 ${isRightCollapsed ? 'min-w-0' : ''}`}
-          >
-            {activeView === 'chat' ? (
-              <DashboardCanvasV3 isPresentationMode={isPresentationMode} />
-            ) : activeView === 'schema' ? (
-              <div className="h-full w-full">
-                <div className="h-full w-full bg-white dark:bg-black border border-zinc-200 shadow-sm overflow-hidden">
-                  <DataPreviewPanel />
+            {/* 左侧 Sidebar */}
+            <Panel
+              ref={leftPanelRef}
+              defaultSize={mainPanelLayout[0]}
+              minSize={15}
+              maxSize={20}
+              collapsible
+              collapsedSize={0}
+              onCollapse={() => setIsLeftCollapsed(true)}
+              onExpand={() => setIsLeftCollapsed(false)}
+              className={`border-r border-zinc-200 bg-zinc-50 dark:bg-zinc-900/50 transition-all duration-300 ${isLeftCollapsed ? 'min-w-0 border-none' : ''}`}
+            >
+              <div className="h-full flex flex-col bg-zinc-50 dark:bg-zinc-900/50">
+                <div className="flex-1 overflow-y-auto">
+                  <Sidebar onImportData={handleImportData} />
                 </div>
               </div>
-            ) : null}
-          </Panel>
-        </PanelGroup>
+            </Panel>
 
-        {/* 开发模式调试控制台 */}
-        {isDev && <DevConsole defaultOpen={false} />}
+            <PanelResizeHandle className="w-1 bg-zinc-100 hover:bg-zinc-300 transition-colors" />
 
-        {/* Global Loading Overlay */}
-        {isLoading && (
-          <div className="absolute inset-0 z-[9999] bg-white/50 dark:bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
-            <div className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-2xl flex flex-col items-center border border-zinc-100 dark:border-zinc-800 scale-110">
-              <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-4" />
-              <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 tracking-wide">
-                {loadingText}
-              </p>
+            {/* 主画布区域 - Chat/Workspace */}
+            <Panel
+              ref={middlePanelRef}
+              defaultSize={mainPanelLayout[1]}
+              minSize={0}
+              collapsible
+              collapsedSize={0}
+              onCollapse={() => setIsChatCollapsed(true)}
+              onResize={size => setIsChatCollapsed(size < 5)}
+              className={`bg-white dark:bg-zinc-950 transition-all duration-500 ${isPresentationMode ? 'min-w-0 border-none' : ''}`}
+            >
+              <main className="wansan-canvas h-full flex flex-col relative bg-white dark:bg-zinc-950 transition-colors">
+                <MainContent />
+              </main>
+            </Panel>
+
+            <PanelResizeHandle className="w-1 bg-zinc-100 hover:bg-zinc-300 transition-colors" />
+
+            {/* 右侧 Report Canvas */}
+            <Panel
+              defaultSize={mainPanelLayout[2]}
+              minSize={0}
+              ref={rightPanelRef}
+              collapsible
+              collapsedSize={0}
+              onCollapse={() => setIsRightCollapsed(true)}
+              onExpand={() => setIsRightCollapsed(false)}
+              className={`bg-zinc-100/60 dark:bg-zinc-900 transition-all duration-300 ${isRightCollapsed ? 'min-w-0' : ''}`}
+            >
+              {activeView === 'chat' ? (
+                <DashboardCanvasV3 isPresentationMode={isPresentationMode} />
+              ) : activeView === 'schema' ? (
+                <div className="h-full w-full">
+                  <div className="h-full w-full bg-white dark:bg-black border border-zinc-200 shadow-sm overflow-hidden">
+                    <DataPreviewPanel />
+                  </div>
+                </div>
+              ) : null}
+            </Panel>
+          </PanelGroup>
+
+          {/* 开发模式调试控制台 */}
+          {isDev && <DevConsole defaultOpen={false} />}
+
+          {/* Global Loading Overlay */}
+          {isLoading && (
+            <div className="absolute inset-0 z-[9999] bg-white/50 dark:bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
+              <div className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-2xl flex flex-col items-center border border-zinc-100 dark:border-zinc-800 scale-110">
+                <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-4" />
+                <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 tracking-wide">
+                  {loadingText}
+                </p>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </ErrorBoundary>
+  )
+}
+
+function AutoSaveIndicator({ status, error, onForceSave }: { status: AutoSaveStatus, error: string | null, onForceSave: () => void }) {
+  const { t } = useTranslation('project');
+  const getTitle = () => {
+    if (status === 'saved') return t('autosave_all_saved')
+    if (status === 'saving') return t('autosave_saving')
+    if (status === 'unsaved') return t('autosave_unsaved')
+    if (status === 'error') return error || t('autosave_error')
+    return ""
+  }
+
+  return (
+    <button
+      onClick={onForceSave}
+      title={`${getTitle()}\n${t('autosave_force_save_hint')}`}
+      className={cn(
+        "h-8 px-2 rounded-md flex items-center gap-1.5 transition-all outline-none",
+        status === 'error' ? "text-red-500 hover:bg-red-50" : "text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100"
+      )}
+    >
+      {status === 'saving' && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+      {status === 'saved' && <CloudCheck className="h-3.5 w-3.5 opacity-50" />}
+      {status === 'unsaved' && <CloudOff className="h-3.5 w-3.5" />}
+      {status === 'error' && <Info className="h-3.5 w-3.5" />}
+
+      <span className="text-[10px] font-bold uppercase tracking-widest tabular-nums">
+        {status === 'saving' ? t('status_saving') : status === 'error' ? t('status_error') : ''}
+      </span>
+    </button>
   )
 }
 

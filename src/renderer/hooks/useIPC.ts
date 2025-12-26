@@ -14,6 +14,7 @@ const mockIPC: ElectronAPI = {
   invoke: async () => ({ success: true }),
   selectFile: async () => ({ success: true, data: '' }),
   selectFiles: async () => ({ success: true, data: [] }),
+  selectDirectory: async () => ({ success: true, data: '/mock/dir' }),
   parseFile: async () => ({ success: true, data: [] }),
   runSQL: async (): Promise<RunSQLResponse> => {
     await new Promise(r => setTimeout(r, 500))
@@ -102,6 +103,9 @@ const mockIPC: ElectronAPI = {
   },
   getUserInfo: async (): Promise<IPCResponse<{ username: string }>> => {
     return { success: true, data: { username: 'Guest' } }
+  },
+  getPath: async (_name: string): Promise<IPCResponse<string>> => {
+    return { success: true, data: '/mock/path' }
   },
   getPathForFile: (file: File) => file.name, // Mock
   windowControl: (

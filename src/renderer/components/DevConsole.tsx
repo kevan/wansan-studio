@@ -115,12 +115,17 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
       console.error('Failed to reset backend:', e)
     }
 
-    // 1. Clear LocalStorage first
-    localStorage.removeItem('wansan-files')
-    localStorage.removeItem('wansan-chat')
-    localStorage.removeItem('wansan-workbench')
-    localStorage.removeItem('wansan-project-v2')
-    localStorage.removeItem(SETTINGS_STORAGE_KEY)
+    // 1. Clear LocalStorage completely for Wansan
+    const keysToRemove = [
+      'wansan-files',
+      'wansan-chat',
+      'wansan-workbench',
+      'wansan-project-v2',
+      'wansan-ui-state',
+      'wansan-migration-v1.3',
+      SETTINGS_STORAGE_KEY
+    ]
+    keysToRemove.forEach(key => localStorage.removeItem(key))
 
     // 2. Reset Zustand Stores (Memory)
     useFileStore.getState().reset()

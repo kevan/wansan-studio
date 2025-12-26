@@ -1,4 +1,4 @@
-export type DBRequestType = 'CONNECT' | 'QUERY' | 'EXEC' | 'TEST' | 'TEST_CONNECTION' | 'GET_SCHEMA' | 'DELETE_TABLE' | 'INGEST_FILE' | 'CLOSE';
+export type DBRequestType = 'CONNECT' | 'QUERY' | 'EXEC' | 'TEST' | 'TEST_CONNECTION' | 'GET_SCHEMA' | 'DELETE_TABLE' | 'INGEST_FILE' | 'CLOSE' | 'CHECKPOINT';
 
 export interface DBRequest {
   reqId: string;

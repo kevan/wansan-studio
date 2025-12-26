@@ -9,6 +9,8 @@ import enAnalysis from './locales/en/analysis.json'
 import zhAnalysis from './locales/zh/analysis.json'
 import enSettings from './locales/en/settings.json'
 import zhSettings from './locales/zh/settings.json'
+import enProject from './locales/en/project.json'
+import zhProject from './locales/zh/project.json'
 
 void i18n
   .use(LanguageDetector)
@@ -20,18 +22,20 @@ void i18n
         chat: enChat,
         analysis: enAnalysis,
         settings: enSettings,
+        project: enProject,
       },
       zh: {
         common: zhCommon,
         chat: zhChat,
         analysis: zhAnalysis,
         settings: zhSettings,
+        project: zhProject,
       },
     },
     fallbackLng: 'en',
     lng: undefined,
     interpolation: { escapeValue: false },
-    ns: ['common', 'chat', 'analysis', 'settings'],
+    ns: ['common', 'chat', 'analysis', 'settings', 'project'],
     defaultNS: 'common',
   })
 

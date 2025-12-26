@@ -30,6 +30,10 @@ export class NativeDatabaseService {
     return dbClient.getSchema(tableName);
   }
 
+  async checkpoint(): Promise<void> {
+    await dbClient.checkpoint();
+  }
+
   async dropAllTables(): Promise<void> {
     // Get all tables first
     const schema = await this.getSchema();

@@ -13,6 +13,7 @@ export interface ElectronAPI {
   // File Operations
   selectFile: () => Promise<IPCResponse<string>>
   selectFiles: () => Promise<IPCResponse<{ path: string; size: number }[]>>
+  selectDirectory: () => Promise<IPCResponse<string>>
   parseFile: (filePath: string) => Promise<ParseFileResponse>
   checkFilesConsistency: (files: any[]) => Promise<IPCResponse>
   reIngestFile: (
@@ -75,6 +76,7 @@ export interface ElectronAPI {
   // System / Misc
   getDeviceId: () => Promise<IPCResponse<string>>
   getUserInfo: () => Promise<IPCResponse<{ username: string }>>
+  getPath: (name: string) => Promise<IPCResponse<string>>
   secureSet: (key: string, value: string) => Promise<IPCResponse<boolean>>
   secureGet: (key: string) => Promise<IPCResponse<string | null>>
   openExternal: (url: string) => Promise<IPCResponse>

@@ -10,6 +10,7 @@ const electronAPI: ElectronAPI = {
   // 文件操作
   selectFile: () => ipcRenderer.invoke('select-file'),
   selectFiles: () => ipcRenderer.invoke('select-files'), // 多文件选择
+  selectDirectory: () => ipcRenderer.invoke('select-directory'),
   parseFile: (filePath: string) => ipcRenderer.invoke('parse-file', filePath),
 
   // 数据库操作
@@ -81,6 +82,7 @@ const electronAPI: ElectronAPI = {
   // 系统信息
   getDeviceId: () => ipcRenderer.invoke('get-device-id'),
   getUserInfo: () => ipcRenderer.invoke('get-user-info'),
+  getPath: (name: string) => ipcRenderer.invoke('get-path', name),
   secureSet: (key: string, value: string) =>
     ipcRenderer.invoke('secure-set', key, value),
   secureGet: (key: string) => ipcRenderer.invoke('secure-get', key),

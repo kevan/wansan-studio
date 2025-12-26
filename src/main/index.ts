@@ -9,11 +9,14 @@ import { setupIPC } from './services/ipc'
 import { NativeDatabaseService } from './services/native-db-service'
 import { AIService } from './services/ai-service' // Import AIService
 import { dbClient } from './services/db-service/client'
+import { ProjectManager } from './services/project-manager'
+import { registerProjectHandlers } from './ipc/project-ipc'
 
 class WansanApp {
   private mainWindow: BrowserWindow | null = null
   private databaseService: NativeDatabaseService | null = null
   private aiService: AIService | null = null // Add AIService property
+  private projectManager: ProjectManager | null = null
   // private duckdbNativeService: any = null // Removed: now in dbClient
   // private pendingQueries = new Map<string, { resolve: Function; reject: Function }>() // Removed
 
@@ -53,17 +56,14 @@ class WansanApp {
     // 初始化数据库服务
     this.databaseService = new NativeDatabaseService()
     
-    // Determine Persistent DB Path
-    const userDataPath = app.getPath('userData')
-    const dbPath = join(userDataPath, 'wansan-v1.duckdb')
-    console.log(`[Main] Using persistent database at: ${dbPath}`)
-
-    this.databaseService.initialize(dbPath).catch(err => {
-      console.error('Failed to initialize database in background:', err)
-    })
+    // Initialize Project Manager
+    this.projectManager = new ProjectManager(this.databaseService)
 
     // 设置 IPC 通信
     this.setupIPC()
+    
+    // Register Project IPC Handlers
+    registerProjectHandlers(this.projectManager)
 
     // 在开发模式下启动时清理 AI 配置
     // if (isDev()) {

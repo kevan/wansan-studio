@@ -1,4 +1,4 @@
-import { ipcMain, dialog, BrowserWindow, shell } from 'electron'
+import { ipcMain, dialog, BrowserWindow, shell, app } from 'electron'
 import { NativeDatabaseService } from './native-db-service'
 import { FileService } from './file'
 import { AIService } from './ai-service'
@@ -102,6 +102,24 @@ export function setupIPC(
       return { success: true, data: filesWithStats }
     } catch (error) {
       return { success: false, error: 'Multi-file selection error' }
+    }
+  })
+
+  // 选择目录对话框
+  ipcMain.handle('select-directory', async () => {
+    try {
+      const result = await dialog.showOpenDialog({
+        properties: ['openDirectory', 'createDirectory'],
+        title: 'Select Destination Folder',
+      })
+
+      if (result.canceled) {
+        return { success: false, error: 'User cancelled' }
+      }
+
+      return { success: true, data: result.filePaths[0] }
+    } catch (error) {
+      return { success: false, error: 'Directory selection error' }
     }
   })
 
@@ -304,6 +322,15 @@ export function setupIPC(
     } catch (error) {
       console.error('Get user info error:', error)
       return { success: false, error: 'Failed to get user info' }
+    }
+  })
+
+  // 获取系统路径
+  ipcMain.handle('get-path', async (_event, name: any) => {
+    try {
+      return { success: true, data: app.getPath(name) }
+    } catch (error) {
+      return { success: false, error: 'Failed to get path' }
     }
   })
 
