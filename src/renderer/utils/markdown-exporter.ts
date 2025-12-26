@@ -19,12 +19,16 @@ export function generateMarkdown(messages: ChatMessage[]): string {
       lines.push(`## Assistant (${timestamp})`)
       lines.push('')
 
-      if (msg.content) {
+      // 1. Content (Skip if it duplicates summary)
+      const isDuplicateSummary = msg.reportData && msg.content === msg.reportData.summary
+      if (msg.content && !isDuplicateSummary) {
         lines.push(msg.content)
         lines.push('')
       }
 
-      if (msg.planSql) {
+      // 2. SQL Plan (Skip if we have the final Executed SQL in reportData)
+      const hasExecutedSql = !!(msg.reportData && msg.reportData.sql)
+      if (msg.planSql && !hasExecutedSql) {
         lines.push('### SQL Plan')
         lines.push('```sql')
         try {
@@ -66,6 +70,30 @@ export function generateMarkdown(messages: ChatMessage[]): string {
             lines.push(msg.reportData.sql)
           }
           lines.push('```')
+          lines.push('')
+        }
+
+        // [NEW] Export Data Table
+        if (msg.reportData.tableData && msg.reportData.tableData.length > 0) {
+          lines.push('#### Data Result')
+          const data = msg.reportData.tableData
+          const columns = msg.reportData.columnFields?.map(c => c.name) || Object.keys(data[0])
+          
+          // Header
+          lines.push(`| ${columns.join(' | ')} |`)
+          lines.push(`| ${columns.map(() => '---').join(' | ')} |`)
+          
+          // Rows
+          for (const row of data) {
+            const rowStr = columns.map(col => {
+              const val = row[col]
+              // Simple escaping for pipe characters
+              return String(val ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ')
+            }).join(' | ')
+            lines.push(`| ${rowStr} |`)
+          }
+          lines.push('')
+          lines.push(`*Total Rows: ${data.length}*`)
           lines.push('')
         }
       }
