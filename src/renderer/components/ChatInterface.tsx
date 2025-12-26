@@ -23,6 +23,7 @@ import { format } from 'sql-formatter'
 
 import { AnalysisTemplateCard } from './chat/analysis-template-card'
 import { FilterParam } from '@shared/schemas/analysis'
+import { ReportData } from '../../shared/types/dashboard'
 
 export interface ChatMessage {
   id: string
@@ -45,34 +46,7 @@ export interface ChatMessage {
     latency?: number
   }
   widgetId?: string
-  reportData?: {
-    title: string
-    subtitle?: string
-    summary?: string
-    insights?: string[]
-    sql?: string
-    reasoning?: string
-    suggestions?: string[]
-    chartType?:
-      | 'bar'
-      | 'line'
-      | 'pie'
-      | 'area'
-      | 'scatter'
-      | 'kpi'
-      | 'table'
-      | 'text'
-    chartTitle?: string
-    tableData?: Array<Record<string, any>>
-    columns?: string[]
-    vizConfig?: {
-      x_axis?: string | null
-      y_axis?: string | string[] | null
-      series_name?: string
-    }
-    is_template?: boolean
-    missing_params?: FilterParam[]
-  }
+  reportData?: ReportData
 }
 
 interface ChatInterfaceProps {
@@ -83,7 +57,8 @@ interface ChatInterfaceProps {
   onConfigureTemplate?: (
     messageId: string,
     templateSql: string,
-    params: FilterParam[]
+    params: FilterParam[],
+    initialValues?: Record<string, string[]>
   ) => void
   loading?: LoadingType | null
   className?: string
@@ -268,7 +243,8 @@ export function ChatInterface({
                                       onConfigureTemplate(
                                         message.id,
                                         report.sql!,
-                                        report.missing_params || []
+                                        report.missing_params || [],
+                                        report.selected_params
                                       )
                                     }
                                     isExecuted={false}
@@ -292,7 +268,8 @@ export function ChatInterface({
                                             onConfigureTemplate(
                                               message.id,
                                               report.sql!,
-                                              report.missing_params || []
+                                              report.missing_params || [],
+                                              report.selected_params
                                             )
                                         : undefined
                                     }

@@ -23,6 +23,7 @@ export interface ReportData {
   timestamp?: number
   is_template?: boolean
   missing_params?: any[]
+  selected_params?: Record<string, string[]>
 }
 
 export interface ReportWidget {

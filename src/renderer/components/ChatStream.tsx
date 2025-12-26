@@ -23,6 +23,7 @@ export function ChatStream() {
     messageId: string
     templateSql: string
     params: FilterParam[]
+    initialValues?: Record<string, string[]>
   } | null>(null)
   
   const readyFiles = files.filter(f => f.status === 'ready')
@@ -67,8 +68,8 @@ export function ChatStream() {
           columns={currentColumns}
           messages={messages}
           onQuerySubmit={onQuerySubmit}
-          onConfigureTemplate={(messageId, templateSql, params) => {
-            setActiveTemplate({ messageId, templateSql, params })
+          onConfigureTemplate={(messageId, templateSql, params, initialValues) => {
+            setActiveTemplate({ messageId, templateSql, params, initialValues })
           }}
           loading={
             messages.some(m => m.status === 'thinking')
@@ -96,7 +97,7 @@ export function ChatStream() {
             }}
             params={smartFilterRequest.params}
             templateSql={smartFilterRequest.templateSql}
-            onConfirm={(sql) => smartFilterRequest.resolve(sql)}
+            onConfirm={(sql, params) => smartFilterRequest.resolve({ sql, params })}
           />
         )}
 
@@ -106,8 +107,9 @@ export function ChatStream() {
             onCancel={() => setActiveTemplate(null)}
             params={activeTemplate.params}
             templateSql={activeTemplate.templateSql}
-            onConfirm={(sql) => {
-              runTemplateSQL(activeTemplate.messageId, sql)
+            initialValues={activeTemplate.initialValues}
+            onConfirm={(sql, params) => {
+              runTemplateSQL(activeTemplate.messageId, sql, params)
               setActiveTemplate(null)
             }}
           />

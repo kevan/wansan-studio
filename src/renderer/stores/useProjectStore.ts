@@ -22,7 +22,7 @@ export interface SmartFilterRequest {
   isOpen: boolean
   params: FilterParam[]
   templateSql: string
-  resolve: (finalSql: string) => void
+  resolve: (result: { sql: string; params: Record<string, string[]> }) => void
   reject: (reason?: any) => void
 }
 
@@ -1324,15 +1324,9 @@ export const useProjectStore = create<ProjectState>()(
           ...rest
         } = state
 
-        // Exclude large, non-serializable, or transient data from persistence
-        const sanitizedRegistry: Record<string, Partial<ReportData>> = {}
-        for (const key in rest.widgetRegistry) {
-          const { tableData, columnFields, ...dataToKeep } =
-            rest.widgetRegistry[key]
-          sanitizedRegistry[key] = dataToKeep
-        }
-
-        return { ...rest, widgetRegistry: sanitizedRegistry }
+        // [PERSISTENCE FIX] We now persist the full widgetRegistry (including tableData)
+        // so that charts are not empty on reload. The user must explicitly refresh if they want new data.
+        return rest
       },
       onRehydrateStorage: () => state => {
         if (state) {

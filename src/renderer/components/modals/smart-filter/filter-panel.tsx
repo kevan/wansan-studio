@@ -17,8 +17,10 @@ interface FilterPanelProps {
 export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
   const { t } = useTranslation(['chat', 'common'])
   // Local search state
-  const [searchTerm, setSearchTerm] = useState(param.hint || '')
-  const [debouncedTerm, setDebouncedTerm] = useState(param.hint || '')
+  // If we have initial values selected, clear the search hint so we can see them.
+  const initialSearch = value.length > 0 ? '' : (param.hint || '')
+  const [searchTerm, setSearchTerm] = useState(initialSearch)
+  const [debouncedTerm, setDebouncedTerm] = useState(initialSearch)
   const inputRef = useRef<HTMLInputElement>(null)
   const hasAutoSelected = useRef(false)
 
@@ -57,6 +59,25 @@ export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
     setSearchTerm('')
     inputRef.current?.focus()
   }
+
+  // Merge selected values that might be missing from the current search results (e.g. pagination or filtered out)
+  const displayOptions = [...options]
+  const optionValueSet = new Set(options.map(o => String(o.value)))
+  
+  value.forEach(v => {
+    if (!optionValueSet.has(v)) {
+      displayOptions.push({ value: v })
+    }
+  })
+
+  // Sort: Selected items first
+  displayOptions.sort((a, b) => {
+    const aSelected = value.includes(String(a.value))
+    const bSelected = value.includes(String(b.value))
+    if (aSelected && !bSelected) return -1
+    if (!aSelected && bSelected) return 1
+    return 0
+  })
 
   return (
     <div className="flex flex-col h-full w-full">
@@ -97,7 +118,7 @@ export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
         <ScrollArea className="h-full">
           <div className="p-2 space-y-0.5 min-h-[200px]">
             {/* Empty State */}
-            {!isLoading && options.length === 0 && (
+            {!isLoading && displayOptions.length === 0 && (
               <div className="flex flex-col items-center justify-center h-[200px] text-zinc-400 space-y-3 animate-in fade-in zoom-in-95 duration-300">
                 <div className="w-12 h-12 rounded-full bg-zinc-50 flex items-center justify-center">
                   <Search className="w-5 h-5 opacity-40" />
@@ -109,7 +130,7 @@ export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
             )}
 
             {/* List Items */}
-            {options.map((opt) => {
+            {displayOptions.map((opt) => {
               const val = String(opt.value)
               const isChecked = value.includes(val)
 

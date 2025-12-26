@@ -16,9 +16,10 @@ import { FilterPanel } from './smart-filter/filter-panel'
 interface SmartFilterModalProps {
   isOpen: boolean
   onCancel: () => void
-  onConfirm: (finalSql: string) => void
+  onConfirm: (finalSql: string, params: Record<string, string[]>) => void
   params: FilterParam[]
   templateSql: string
+  initialValues?: Record<string, string[]>
 }
 
 export function SmartFilterModal({
@@ -27,10 +28,11 @@ export function SmartFilterModal({
   onConfirm,
   params,
   templateSql,
+  initialValues = {},
 }: SmartFilterModalProps) {
   const { t } = useTranslation(['chat', 'common'])
   const [activeIdx, setActiveIdx] = useState(0)
-  const [paramValues, setParamValues] = useState<Record<string, string[]>>({})
+  const [paramValues, setParamValues] = useState<Record<string, string[]>>(initialValues)
   const confirmedRef = useRef(false)
 
   const activeParam = params[activeIdx]
@@ -53,7 +55,7 @@ export function SmartFilterModal({
     })
 
     confirmedRef.current = true
-    onConfirm(finalSql)
+    onConfirm(finalSql, paramValues)
   }
 
   const allFilled = params.every(

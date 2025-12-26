@@ -49,7 +49,11 @@ interface ChatStore {
     originalQuery?: string,
     originalSql?: string
   ) => Promise<void>
-  runTemplateSQL: (messageId: string, sql: string) => Promise<void>
+  runTemplateSQL: (
+    messageId: string,
+    sql: string,
+    selectedParams?: Record<string, string[]>
+  ) => Promise<void>
   resetLoading: () => void
   stopGeneration: () => void
   removeMessage: (id: string) => void
@@ -369,7 +373,10 @@ const sendMessage = async (
 
     if (plan.is_template && plan.missing_params) {
       try {
-        const finalSql = await new Promise<string>((resolve, reject) => {
+        const { sql: finalSql, params: selectedParams } = await new Promise<{
+          sql: string
+          params: Record<string, string[]>
+        }>((resolve, reject) => {
           useProjectStore.getState().setSmartFilterRequest({
             isOpen: true,
             params: plan.missing_params as FilterParam[],
@@ -379,6 +386,14 @@ const sendMessage = async (
           })
         })
         plan.sql = finalSql
+        // Store selected params in reportData for persistence
+        updateMessage(botMsgId, msg => ({
+          ...msg,
+          reportData: {
+            ...msg.reportData!,
+            selected_params: selectedParams,
+          },
+        }))
         useProjectStore.getState().setSmartFilterRequest(null)
       } catch (e) {
         useProjectStore.getState().setSmartFilterRequest(null)
@@ -590,7 +605,10 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
 
     if (plan.is_template && plan.missing_params) {
       try {
-        const finalSql = await new Promise<string>((resolve, reject) => {
+        const { sql: finalSql, params: selectedParams } = await new Promise<{
+          sql: string
+          params: Record<string, string[]>
+        }>((resolve, reject) => {
           useProjectStore.getState().setSmartFilterRequest({
             isOpen: true,
             params: plan.missing_params as FilterParam[],
@@ -600,6 +618,14 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
           })
         })
         plan.sql = finalSql
+        // Store selected params in reportData for persistence
+        updateMessage(messageId, msg => ({
+          ...msg,
+          reportData: {
+            ...msg.reportData!,
+            selected_params: selectedParams,
+          },
+        }))
         useProjectStore.getState().setSmartFilterRequest(null)
       } catch (e) {
         useProjectStore.getState().setSmartFilterRequest(null)
@@ -785,7 +811,11 @@ const autoFixMessage = async (
   }
 }
 
-const runTemplateSQL = async (messageId: string, sql: string) => {
+const runTemplateSQL = async (
+  messageId: string,
+  sql: string,
+  selectedParams?: Record<string, string[]>
+) => {
   const startTime = Date.now()
   const abortController = new AbortController()
   useProjectStore.getState().setAbortController(abortController)
@@ -814,6 +844,7 @@ const runTemplateSQL = async (messageId: string, sql: string) => {
         sql,
         tableData: data,
         columnFields,
+        selected_params: selectedParams || msg.reportData?.selected_params,
       },
     }))
     useProjectStore.getState().setAbortController(null)
