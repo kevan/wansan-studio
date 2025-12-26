@@ -1,86 +1,100 @@
-🚀 Wansan Studio: Native Engine Migration Plan
+# 🚀 SPEC: Wansan Studio Native DuckDB Engine (v1.3)
 
-Goal: Completely replace src/main/database/duckdb.ts (WASM) with src/main/services/db-service (Native), enabling file-based
-persistence and handling large datasets.
+**Status:** Completed
+**Date:** 2025-12-26
+**Engine:** `@duckdb/node-api` (Native) via Electron Utility Process
 
-📦 Phase 1: API Parity (Service Layer)
-Goal: Ensure the Native Service supports all method signatures used by the current application, running in `:memory:` mode
-initially.
+## 1. Overview
+The migration from `duckdb-wasm` to a native DuckDB engine running in a separate process has been fully implemented. This upgrade resolves memory limitations of WASM, enables persistent storage, and significantly improves data ingestion performance for large files.
 
-- [x] 1.1 Expand IPC Protocol (`ipc-db.ts`)
-    - Add GET_SCHEMA, GET_TABLE_INFO, DROP_TABLE types to DBRequestType.
-    - Update entry.ts (Server) to handle these new request types.
-    - Update client.ts (Client) to expose corresponding methods (getSchema, dropTable).
+## 2. Architecture: The "Sidecar" Model
 
-- [x] 1.2 Implement Schema Extraction
-    - Port the getSchema logic from the old engine to the new entry.ts.
-    - Challenge: Native DuckDB returns types differently (e.g., BIGINT vs Int64).
-    - Action: Ensure the returned schema format matches exactly what the Frontend (SchemaEditor, Chat) expects.
+To prevent blocking the Electron Main Process and to ensure stability, the Native DuckDB engine runs in a dedicated **Electron Utility Process**.
 
-- [x] 1.3 Implement `NativeDatabaseService` Adapter
-    - Create src/main/services/native-db-service.ts.
-    - This class should implement the same interface as the old DatabaseService.
-    - It acts as a wrapper around dbClient, allowing us to swap the service in src/main/index.ts with one line of code.
+```mermaid
+graph TD
+    subgraph "Renderer Process"
+        UI[React UI] -->|IPC| Main
+    end
 
-  ---
+    subgraph "Main Process"
+        Main[Electron Main]
+        Adapter[NativeDatabaseService]
+        Client[NativeDBClient]
+        
+        Main --> Adapter
+        Adapter --> Client
+    end
 
-📂 Phase 2: Ingestion Refactor (The Hardest Part)
-Goal: Rewrite how files are loaded. WASM used Buffers/FileObjects; Native uses File Paths.
+    subgraph "Utility Process (Sidecar)"
+        Entry[entry.ts]
+        DB[DuckDB Native]
+        
+        Client <-->|Node IPC (MessagePort)| Entry
+        Entry --> DB
+    end
 
-- [x] 2.1 CSV & JSON Ingestion
-    - Old: Read file to string/buffer -> Load into virtual WASM FS -> read_csv.
-    - New: Pass absolute file path directly to Utility Process.
-    - Action: Implement INGEST_FILE command in entry.ts.
-    - Use CREATE TABLE x AS SELECT * FROM read_csv_auto('path', all_varchar=true) (safer for type inference).
+    subgraph "File System"
+        UserData[userData/wansan-v1.duckdb]
+        Temp[Temp CSV/JSON]
+        
+        DB <--> UserData
+        DB <-->|read_csv_auto| Temp
+    end
+```
 
-- [x] 2.2 Excel Ingestion
-    - Current: excelWorker parses Excel -> Returns JSON/Arrays -> Inserted row-by-row (Slow).
-    - New Strategy:
-        1. Main Process uses exceljs (stream) to convert .xlsx -> temporary .csv (in temp/).
-        2. Send .csv path to Utility Process for bulk loading (Fast).
-    - Task: Create a ExcelToCSV converter in Main Process.
+### Key Components
+1.  **Utility Process (`src/main/services/db-service/entry.ts`)**:
+    -   Acts as the database server.
+    -   Handles `CONNECT`, `QUERY`, `INGEST_FILE`, `GET_SCHEMA`, `CLOSE` messages.
+    -   Directly accesses the file system for zero-copy ingestion where possible.
 
-- [x] 2.3 Type Inference & Sampling
-    - Ensure getSampleValues (used for AI context) works in the Native Service.
-    - Implement DESCRIBE query handling to map Native DuckDB types to Wansan types (Integer, String, Date, etc.).
+2.  **Client Bridge (`src/main/services/db-service/client.ts`)**:
+    -   Manages the lifecycle of the utility process (`fork`, `kill`).
+    -   Implements a Request-Response pattern using `reqId` to map async IPC messages.
+    -   Handles graceful shutdown.
 
-  ---
+3.  **Service Adapter (`src/main/services/native-db-service.ts`)**:
+    -   Implements the interface expected by the application, replacing the old `DatabaseService`.
+    -   Proxies calls to the `NativeDBClient`.
 
-🔌 Phase 3: The Switchover (Main Process)
-Goal: Point the application to the new engine.
+## 3. Implementation Details
 
-- [x] 3.1 Update IPC Handlers (`services/ipc.ts`)
-    - Modify setupIPC to accept NativeDatabaseService instead of DatabaseService.
-    - Redirect run-sql, get-schema, delete-table channels to the new engine.
+### 3.1 Persistence & Connection
+-   **Old (WASM)**: In-memory only (`:memory:`), data lost on reload.
+-   **New (Native)**:
+    -   Default path: `app.getPath('userData')/wansan-v1.duckdb`.
+    -   Supports switching databases via `CONNECT` payload.
+    -   **Graceful Shutdown**: Implemented `CLOSE` IPC message. The Main process sends this signal on `before-quit` to ensure WAL checkpointing before killing the utility process.
 
-- [x] 3.2 Wiring in `index.ts`
-    - Replace this.databaseService = new DatabaseService() with new NativeDatabaseService().
-    - Remove WASM initialization logic.
+### 3.2 Data Ingestion Pipeline
+The ingestion logic in `ingestion.ts` was refactored to leverage Native DuckDB's ability to read directly from the filesystem, bypassing V8 memory limits.
 
-- [x] 3.3 Verification
-    - Test: Chat-to-SQL functionality.
-    - Test: Dashboard rendering.
-    - Test: Data Manager (Schema view).
+| Format | Strategy |
+| :--- | :--- |
+| **CSV** | Direct SQL: `CREATE TABLE x AS SELECT * FROM read_csv_auto('/path/to/file.csv')` |
+| **JSON** | Buffer -> FS Write -> `read_json_auto('/temp/file.json')` -> Clean Temp |
+| **Excel** | ExcelJS Stream -> FS Write (`.csv`) -> `read_csv_auto` -> Clean Temp |
 
-  ---
+-   **Path Safety**: All file paths are sanitized (backslashes replaced with forward slashes) to support Windows environments in DuckDB SQL.
 
-💾 Phase 4: Persistence Implementation (v1.3 Spec)
-Goal: Stop using `:memory:` and start using `.duckdb` files.
+### 3.3 Type System & Serialization
+-   **BigInt**: Native DuckDB returns `BigInt` for large integers.
+    -   *Solution*: `sanitizeValue` utility checks `Number.isSafeInteger`. If safe, converts to `Number`; otherwise, converts to `string` for JSON serialization to Frontend.
+-   **Dates**: `ingestion.ts` pre-processes JS Date objects to "Wall Time" strings (ISO format) to prevent UTC timezone shifting during storage.
+-   **Schema**: `GET_SCHEMA` normalizes DuckDB types (e.g., `VARCHAR`, `BIGINT`) to Wansan internal types.
 
-- [x] 4.1 Project Store Integration
-    - When switching projects, send CONNECT { path: '/path/to/project.duckdb' } to Utility Process.
-    - Ensure db.close() is called on the old connection before opening a new one.
+## 4. Packaging & Cleanup
+-   **Dependencies**:
+    -   Removed: `@duckdb/duckdb-wasm`, `apache-arrow`.
+    -   Added: `@duckdb/node-api`.
+-   **Build Config (`electron-builder.yml`)**:
+    -   Added `asarUnpack: ["node_modules/@duckdb/node-api"]` to ensure the native binary (`duckdb.node`) is accessible at runtime.
+    -   Removed WASM-specific exclusion rules.
 
-- [x] 4.2 "Save" Mechanism
-    - Native DuckDB is auto-saving (WAL), but we need to ensure graceful shutdown (CHECKPOINT).
-
-  ---
-
-🧹 Phase 5: Cleanup
-Goal: Remove Dead Code.
-
-- [x] 5.1 Uninstall WASM Dependencies
-    - Remove @duckdb/duckdb-wasm, apache-arrow (if not used elsewhere).
-- [x] 5.2 Delete Old Files
-    - Delete src/main/database/duckdb.ts.
-    - Clean up electron-builder.yml (remove WASM unpacking rules).
+## 5. Migration Summary
+-   [x] **Phase 1**: Infrastructure & API Parity (Client/Server IPC).
+-   [x] **Phase 2**: Ingestion Refactor (Stream & Path-based).
+-   [x] **Phase 3**: Main Process Switchover.
+-   [x] **Phase 4**: Persistence (File-based DB).
+-   [x] **Phase 5**: Cleanup (Delete WASM code).
