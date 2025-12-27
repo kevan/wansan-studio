@@ -38,7 +38,7 @@ export const useMigrationStore = create<MigrationState>((set, get) => ({
   targetPath: '',
 
   checkStatus: () => {
-    const STORAGE_KEYS = ['wansan-project-v2', 'wansan-storage'];
+    const STORAGE_KEYS = ['wansan-project-v2'];
     const MIGRATION_FLAG = 'wansan-migration-v1.3';
     const isMigrated = localStorage.getItem(MIGRATION_FLAG);
 
@@ -67,10 +67,10 @@ export const useMigrationStore = create<MigrationState>((set, get) => ({
 
     if (legacyData) {
       console.log(`[Migration] Legacy data found in ${foundKey}`, legacyData);
-      
+
       // Phase 1: Set migration needed immediately
-      set({ 
-        isMigrationNeeded: true, 
+      set({
+        isMigrationNeeded: true,
         total: legacyData.files.length,
         isChecking: false // Stop loader immediately
       });
@@ -90,7 +90,7 @@ export const useMigrationStore = create<MigrationState>((set, get) => ({
   setStep: (step) => set({ step, error: null }),
   setProjectName: (projectName) => set({ projectName }),
   setTargetPath: (targetPath) => set({ targetPath }),
-  
+
   selectDirectory: async () => {
     try {
       const path = await projectService.selectDirectory();
@@ -102,7 +102,7 @@ export const useMigrationStore = create<MigrationState>((set, get) => ({
 
   updateProgress: (progress, message) => set({ progress, message }),
   setError: (error) => set({ error, step: 'error' }),
-  
+
   skipMigration: () => {
     const MIGRATION_FLAG = 'wansan-migration-v1.3';
     localStorage.setItem(MIGRATION_FLAG, 'true');

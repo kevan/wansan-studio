@@ -8,6 +8,7 @@ import { useUIStore } from '../stores/useUIStore'
 import { useSettingsStore, SETTINGS_STORAGE_KEY } from '../stores/useSettingsStore'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useTranslation } from 'react-i18next'
+import legacyData from '@shared/legacy-data.ts'
 
 interface LogEntry {
   id: number
@@ -155,90 +156,13 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     console.log('💉 Injecting Legacy Data...')
 
     // 1. Mock Legacy Formats
-    const legacyProject = {
-      state: {
-        meta: {
-          id: 'legacy-id',
-          name: 'Legacy Project',
-          version: '1.2.0',
-          created: Date.now()
-        },
-        files: [
-          {
-            id: 'file-1',
-            name: 'sales_2023.csv',
-            path: 'DEMO_MEMORY',
-            tableName: 't_sales_2023',
-            status: 'ready',
-            progress: 100,
-            columns: [
-              { name: 'date', type: 'VARCHAR', safeName: 'date' },
-              { name: 'amount', type: 'DOUBLE', safeName: 'amount' }
-            ],
-            smartMetrics: [
-              { id: 'm1', name: 'Total Sales', sqlExpression: 'SUM(amount)' }
-            ]
-          }
-        ],
-        relations: [],
-        sessions: [
-          {
-            id: 'session-legacy-1',
-            title: 'Legacy Sales Analysis',
-            createdAt: Date.now() - 86400000,
-            lastModified: Date.now() - 3600000,
-            messages: [
-              {
-                id: 'm-user-1',
-                type: 'user',
-                content: 'Show sales trend',
-                timestamp: Date.now() - 3500000
-              },
-              {
-                id: 'm-bot-1',
-                type: 'assistant',
-                content: 'Here is the sales trend for 2023.',
-                timestamp: Date.now() - 3400000,
-                widgetId: 'widget-1'
-              }
-            ],
-            dashboard: {
-              widgets: [
-                {
-                  id: 'report-1',
-                  sourceMessageId: 'm-bot-1',
-                  widgetId: 'widget-1',
-                  layout: { i: 'report-1', x: 0, y: 0, w: 12, h: 4 },
-                  pageIndex: 0
-                }
-              ],
-              layoutMode: 'a4',
-              pageCount: 1,
-              zoom: 80
-            }
-          }
-        ],
-        widgetRegistry: {
-          'widget-1': {
-            title: 'Monthly Sales Trend',
-            chartType: 'line',
-            sql: 'SELECT date, amount FROM t_sales_2023',
-            summary: 'Overall growth observed.',
-            timestamp: Date.now() - 3400000
-          }
-        },
-        // Ensure v1.3 field is null to force migration/launcher
-        currentProjectPath: null
-      },
-      version: 0
-    }
+    const legacyProject = legacyData
 
     localStorage.setItem('wansan-project-v2', JSON.stringify(legacyProject))
-    localStorage.setItem('wansan-storage', JSON.stringify(legacyProject))
-    
+
     // 2. Clear Migration Flag
     localStorage.removeItem('wansan-migration-v1.3')
-    
+
     // 3. Mock Settings
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
       state: {
