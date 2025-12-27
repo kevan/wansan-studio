@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { projectService } from '@/services/project-service';
 import { useProjectIO } from '@/hooks/useProjectIO';
+import { useToastStore } from '@/stores/useToastStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from 'react-i18next';
@@ -65,8 +66,17 @@ export function ProjectLauncher() {
     setIsCreating(true);
     try {
       await createProject(name, targetPath);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to create project', e);
+      
+      const errorMessage = e.message || 'Unknown error occurred.';
+      const isExistsError = errorMessage.includes('already exists');
+      
+      useToastStore.getState().addToast({
+        title: t('create_error', 'Creation Failed'),
+        description: isExistsError ? t('project_exists_error') : errorMessage,
+        type: 'error',
+      });
     } finally {
       setIsCreating(false);
     }

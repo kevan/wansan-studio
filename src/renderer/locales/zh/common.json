@@ -45,6 +45,9 @@
   "remove_page": "删除最后一页",
   "add_page": "新增一页",
   "new_session": "开启新会话",
+  "new_analysis": "开启新分析",
+  "history": "最近会话",
+  "no_sessions": "暂无分析历史",
   "insert_text": "插入文本",
   "text_block": "文本块",
   "new_section": "新章节",
@@ -88,6 +91,7 @@
   "y_axis": "Y轴",
   "select_x_first": "请先选择 X 轴",
   "close": "关闭",
+  "close_project": "关闭项目",
   "save": "保存",
   "no_data": "暂无数据",
   "page_of": "第 {{page}} / {{total}} 页",
@@ -260,4 +264,3 @@
       "restore_summary": "成功恢复 {{success}} 个文件。{{fail}} 个文件失败。"
     }
   }
-  

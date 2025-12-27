@@ -1,6 +1,5 @@
 {
-  "launcher_title": "万三分析",
-  "launcher_subtitle": "智能商业数据引擎",
+  "launcher_subtitle": "本地优先的桌面 Chat BI。",
   "new_project": "新建项目",
   "new_project_desc": "从本地文件开始全新的分析。",
   "open_existing": "打开已有项目",
@@ -37,5 +36,7 @@
   "autosave_error": "保存项目失败",
   "autosave_force_save_hint": "点击强制保存",
   "status_saving": "正在保存",
-  "status_error": "错误"
+  "status_error": "错误",
+  "create_error": "创建失败",
+  "project_exists_error": "所选目录下已存在同名项目。"
 }

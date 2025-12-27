@@ -198,6 +198,7 @@ function App() {
   useEffect(() => {
     if (isStoreReady && language && i18n.language !== language) {
       void i18n.changeLanguage(language)
+      window.electronAPI?.setLanguage?.(language as 'en' | 'zh')
     }
   }, [language, isStoreReady])
 
@@ -294,6 +295,16 @@ function App() {
     }
   }, [isPresentationMode, mainPanelLayout])
 
+  useEffect(() => {
+    if (!window.electronAPI) return
+    const unsubClose = window.electronAPI.onCommandCloseProject?.(() => {
+      useProjectStore.getState().closeProject()
+    })
+    return () => {
+      unsubClose?.()
+    }
+  }, [])
+
   const handleHeaderDoubleClick = useCallback(() => {
     window.electronAPI?.windowControl?.('toggle-maximize')
   }, [])
@@ -318,6 +329,7 @@ function App() {
   return (
     <ErrorBoundary>
       <GlobalErrorHandler />
+      <Toaster />
 
       {/* DevConsole - Always available in dev mode */}
       {isDev && <DevConsole defaultOpen={false} />}
@@ -328,7 +340,6 @@ function App() {
         <ProjectLauncher />
       ) : (
         <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
-          <Toaster />
           <UpdateModal />
           <SchemaWarningModal />
           <RefreshConfirmModal />

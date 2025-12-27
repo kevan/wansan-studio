@@ -117,6 +117,7 @@ export interface ProjectState extends ProjectData {
   cleanupZombieFiles: () => void
   serialize: () => string
   reset: () => void
+  closeProject: () => Promise<void>
 }
 
 const createNewSession = (): Session => ({
@@ -1309,6 +1310,19 @@ export const useProjectStore = create<ProjectState>()(
       },
 
       reset: () => set(initialProjectState),
+
+      closeProject: async () => {
+        try {
+          await window.electronAPI.invoke('project:close')
+        } catch (e) {
+          console.error('Failed to close project on backend', e)
+        }
+        set({
+          ...initialProjectState,
+          currentProjectPath: null,
+          isRestoring: false,
+        })
+      },
     }),
     {
       name: 'wansan-project-v2',

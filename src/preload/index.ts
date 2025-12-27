@@ -96,6 +96,7 @@ const electronAPI: ElectronAPI = {
   // Open external URLs in user's default browser
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
   getPathForFile: (file: File) => webUtils.getPathForFile(file),
+  setLanguage: (lang: 'en' | 'zh') => ipcRenderer.invoke('app:set-language', lang),
 
   // 事件监听
   onWindowStateChanged: (callback: (state: { isFullScreen: boolean }) => void) => {
@@ -107,6 +108,11 @@ const electronAPI: ElectronAPI = {
     const listener = (_event: any, data: { fileId: string; progress: number }) => callback(data)
     ipcRenderer.on('file:progress', listener)
     return () => ipcRenderer.removeListener('file:progress', listener)
+  },
+  onCommandCloseProject: (callback: () => void) => {
+    const listener = () => callback()
+    ipcRenderer.on('command:close-project', listener)
+    return () => ipcRenderer.removeListener('command:close-project', listener)
   },
 }
 

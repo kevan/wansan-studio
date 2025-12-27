@@ -81,6 +81,7 @@ export interface ElectronAPI {
   secureSet: (key: string, value: string) => Promise<IPCResponse<boolean>>
   secureGet: (key: string) => Promise<IPCResponse<string | null>>
   openExternal: (url: string) => Promise<IPCResponse>
+  setLanguage: (lang: 'en' | 'zh') => Promise<IPCResponse>
   
   // Environment
   platform: string
@@ -96,5 +97,6 @@ export interface ElectronAPI {
     onFileProgress: (
       callback: (data: { fileId: string; progress: number }) => void
     ) => () => void
+    onCommandCloseProject: (callback: () => void) => () => void
   }
   

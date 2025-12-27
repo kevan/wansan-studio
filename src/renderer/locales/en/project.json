@@ -1,6 +1,5 @@
 {
-  "launcher_title": "Wansan Studio",
-  "launcher_subtitle": "Business Intelligence Engine",
+  "launcher_subtitle": "The Local-First Chat BI.",
   "new_project": "New Project",
   "new_project_desc": "Start a fresh analysis from files.",
   "open_existing": "Open Existing",
@@ -37,5 +36,7 @@
   "autosave_error": "Failed to save project",
   "autosave_force_save_hint": "Click to force save",
   "status_saving": "Saving",
-  "status_error": "Error"
+  "status_error": "Error",
+  "create_error": "Creation Failed",
+  "project_exists_error": "A project with this name already exists in the selected directory."
 }

@@ -101,6 +101,9 @@ const mockIPC: ElectronAPI = {
   openExternal: async (_url: string): Promise<IPCResponse> => {
     return { success: true }
   },
+  setLanguage: async (_lang: 'en' | 'zh'): Promise<IPCResponse> => {
+    return { success: true }
+  },
   getUserInfo: async (): Promise<IPCResponse<{ username: string }>> => {
     return { success: true, data: { username: 'Guest' } }
   },
@@ -120,6 +123,7 @@ const mockIPC: ElectronAPI = {
   version: { node: 'mock', chrome: 'mock', electron: 'mock' } as any,
   onWindowStateChanged: () => () => {},
   onFileProgress: () => () => {},
+  onCommandCloseProject: () => () => {},
 }
 
 function getIpc() {

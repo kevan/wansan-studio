@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeImage, utilityProcess } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeImage } from 'electron'
 import { join } from 'path'
 import { isDev } from './utils/env'
 import Store from 'electron-store'
@@ -11,6 +11,7 @@ import { AIService } from './services/ai-service' // Import AIService
 import { dbClient } from './services/db-service/client'
 import { ProjectManager } from './services/project-manager'
 import { registerProjectHandlers } from './ipc/project-ipc'
+import { createApplicationMenu } from './config/menu'
 
 class WansanApp {
   private mainWindow: BrowserWindow | null = null
@@ -55,15 +56,23 @@ class WansanApp {
 
     // 初始化数据库服务
     this.databaseService = new NativeDatabaseService()
-    
+
     // Initialize Project Manager
     this.projectManager = new ProjectManager(this.databaseService)
 
     // 设置 IPC 通信
     this.setupIPC()
-    
+
     // Register Project IPC Handlers
     registerProjectHandlers(this.projectManager)
+
+    // Handle Language Change
+    ipcMain.handle('app:set-language', (_event, lang: 'en' | 'zh') => {
+      if (this.mainWindow) {
+        createApplicationMenu(this.mainWindow, lang)
+      }
+      return { success: true }
+    })
 
     // 在开发模式下启动时清理 AI 配置
     // if (isDev()) {
@@ -137,6 +146,9 @@ class WansanApp {
 
     this.mainWindow.on('resize', saveState)
     this.mainWindow.on('move', saveState)
+
+    // Set Menu
+    createApplicationMenu(this.mainWindow)
 
     // 加载应用
     if (isDev()) {

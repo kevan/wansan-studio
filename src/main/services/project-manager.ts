@@ -17,12 +17,9 @@ export class ProjectManager {
     let projectDirName = `${name}.wansan`;
     let projectPath = path.join(location, projectDirName);
 
-    // Handle name collisions
-    let counter = 1;
-    while (await fs.pathExists(projectPath)) {
-      projectDirName = `${name} (${counter}).wansan`;
-      projectPath = path.join(location, projectDirName);
-      counter++;
+    // Prevent name collisions
+    if (await fs.pathExists(projectPath)) {
+      throw new Error(`Project "${name}" already exists in this location.`);
     }
 
     await fs.ensureDir(projectPath);
