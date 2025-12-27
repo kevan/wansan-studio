@@ -9,7 +9,7 @@
   "existing_links": "Existing Links",
   "no_relationships": "No relationships yet. Create one below.",
   "delete": "Delete",
-  "add_new_link": "Add New Link",
+  "add_new_link": "Link",
   "source_table": "Source Table",
   "target_table": "Target Table",
   "join_column": "Join Column",

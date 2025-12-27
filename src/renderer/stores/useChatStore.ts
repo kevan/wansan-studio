@@ -1,5 +1,4 @@
-import { useProjectStore } from './useProjectStore'
-import { useFileStore } from './useFileStore'
+import { useProjectStore, selectAllRelations } from './useProjectStore'
 import { useSettingsStore } from './useSettingsStore'
 import { useToastStore } from './useToastStore'
 import { Analytics } from '../services/analytics'
@@ -63,7 +62,7 @@ interface ChatStore {
 const generateId = () => crypto.randomUUID()
 
 const resolveMentions = (text: string) => {
-  const files = useFileStore.getState().files
+  const files = useProjectStore.getState().files
   if (!files.length) return text
 
   return text.replace(
@@ -201,7 +200,7 @@ const sendMessage = async (
   languageOverride?: 'en' | 'zh'
 ) => {
   const { messages, replyToId } = getSessionState()
-  const fileState = useFileStore.getState()
+  const fileState = useProjectStore.getState()
   const language =
     languageOverride || useSettingsStore.getState().language || 'en'
   const readyFiles = fileState.files.filter(f => f.status === 'ready')
@@ -249,7 +248,7 @@ const sendMessage = async (
 
   const resolvedRelations =
     relations ??
-    fileState.relations
+    selectAllRelations(useProjectStore.getState())
       .map(rel => {
         const fileA = fileState.files.find(f => f.id === rel.fileAId)
         const fileB = fileState.files.find(f => f.id === rel.fileBId)
@@ -496,7 +495,7 @@ const sendMessage = async (
 
 const retryMessage = async (messageId: string, originalQuery: string) => {
   const { messages } = getSessionState()
-  const fileState = useFileStore.getState()
+  const fileState = useProjectStore.getState()
   const language = useSettingsStore.getState().language || 'en'
   const readyFiles = fileState.files.filter(f => f.status === 'ready')
   const startTime = Date.now()
@@ -518,7 +517,7 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
 
   const schemas = readyFiles.map(mapFileToSchema)
 
-  const relations = fileState.relations
+  const relations = selectAllRelations(useProjectStore.getState())
     .map(rel => {
       const fileA = fileState.files.find(f => f.id === rel.fileAId)
       const fileB = fileState.files.find(f => f.id === rel.fileBId)
@@ -529,10 +528,14 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
         fileB.status !== 'ready'
       )
         return null
+      
+      const schemaA = mapFileToSchema(fileA)
+      const schemaB = mapFileToSchema(fileB)
+
       return {
-        sourceTable: fileA.tableName,
+        sourceTable: schemaA.tableName,
         sourceColumn: rel.columnA,
-        targetTable: fileB.tableName,
+        targetTable: schemaB.tableName,
         targetColumn: rel.columnB,
         confidence: 1,
         reason: 'User confirmed or auto-detected in session',
@@ -735,7 +738,7 @@ const autoFixMessage = async (
   }))
 
   try {
-    const fileState = useFileStore.getState()
+    const fileState = useProjectStore.getState()
     const readyFiles = fileState.files.filter(f => f.status === 'ready')
     const schemas = readyFiles.map(mapFileToSchema)
 

@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { useFileStore } from '../stores/useFileStore'
 import { ChatInterface } from './ChatInterface'
 import { TableSchema, RelationSuggestion } from '../../shared/types'
 import { useChatStore } from '../stores/useChatStore'
@@ -12,7 +11,15 @@ import { mapFileToSchema } from '../utils/schema-mapper'
 
 export function ChatStream() {
   const { t } = useTranslation('chat')
-  const { files, relations } = useFileStore()
+  const files = useProjectStore(s => s.files)
+  const relations = files.flatMap(f => (f.relations || []).map(r => ({
+    id: r.id,
+    fileAId: f.id,
+    columnA: r.sourceColumn,
+    fileBId: r.targetFileId,
+    columnB: r.targetColumn,
+    autoDetected: r.autoDetected
+  })))
   const activeFileId = useProjectStore(s => s.activeFileId)
   const messages = useChatStore(state => state.messages)
   const sendMessage = useChatStore(state => state.sendMessage)

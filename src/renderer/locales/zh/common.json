@@ -9,7 +9,7 @@
   "existing_links": "已有关联",
   "no_relationships": "还没有关联，请在下方创建。",
   "delete": "删除",
-  "add_new_link": "新增关联",
+  "add_new_link": "关联",
   "source_table": "来源表",
   "target_table": "目标表",
   "join_column": "关联字段",

@@ -1,6 +1,6 @@
-import { FileNode } from '@shared/types.ts'
-import { useFileStore } from '../stores/useFileStore'
 import { useProjectStore } from '../stores/useProjectStore'
+import { FileNode } from '@shared/types'
+
 import { generateId } from '@shared/utils.ts'
 import { DEMO_DATA } from '@shared/demo-data.ts'
 
@@ -37,7 +37,7 @@ export async function loadDemoData(
     }
 
     // 3. 更新 FileStore
-    useFileStore.getState().addFile(fileNode)
+    useProjectStore.getState().addFile(fileNode)
     useProjectStore.getState().setActiveFile(fileId)
     
     // Switch view
@@ -45,7 +45,7 @@ export async function loadDemoData(
 
     // 4. 预填充建议提示词（如果提供）
     if (suggestedPrompts && suggestedPrompts.length > 0) {
-      useFileStore.getState().setSuggestedPrompts(suggestedPrompts)
+      useProjectStore.getState().setSuggestedPrompts(suggestedPrompts)
     }
 
     return { success: true, fileId }

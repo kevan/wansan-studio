@@ -1,3 +1,5 @@
+import { SmartMetric, TableRelation } from '../types';
+
 export interface ProjectManifest {
   meta: {
     id: string;
@@ -20,8 +22,8 @@ export interface ProjectManifest {
 }
 
 export interface SemanticLayer {
-  relations: any[]; // Use Relation[] from shared/types if available
-  smartMetrics: Record<string, any>;
+  relations: Record<string, TableRelation[]>; // Keyed by Source File ID
+  smartMetrics: Record<string, SmartMetric[]>;
 }
 
 export interface ProjectLoadResult {

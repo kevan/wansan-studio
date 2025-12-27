@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { isDev } from '../utils/env'
 import i18n from '../i18n'
-import { useFileStore } from '../stores/useFileStore'
+import { useProjectStore } from '../stores/useProjectStore'
 import { useChatStore } from '../stores/useChatStore'
 import { useWorkbenchStore } from '../stores/useWorkbenchStore'
 import { useUIStore } from '../stores/useUIStore'
 import { useSettingsStore, SETTINGS_STORAGE_KEY } from '../stores/useSettingsStore'
-import { useProjectStore } from '../stores/useProjectStore'
 import { useTranslation } from 'react-i18next'
 import legacyData from '@shared/legacy-data.ts'
 
@@ -129,7 +128,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     keysToRemove.forEach(key => localStorage.removeItem(key))
 
     // 2. Reset Zustand Stores (Memory)
-    useFileStore.getState().reset()
+    useProjectStore.getState().reset()
     useChatStore.getState().reset()
     useWorkbenchStore.getState().reset()
     useUIStore.getState().resetLayout()
@@ -158,6 +157,9 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     // 1. Mock Legacy Formats
     const legacyProject = legacyData
 
+    // Use a dedicated key to prevent the current store from wiping 'relations' on hydration
+    localStorage.setItem('wansan-project-v2-legacy-mock', JSON.stringify(legacyProject))
+    // Also set the main key for files discovery, but we will rely on the mock key for actual migration
     localStorage.setItem('wansan-project-v2', JSON.stringify(legacyProject))
 
     // 2. Clear Migration Flag

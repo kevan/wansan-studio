@@ -5,7 +5,6 @@
 
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import { Tree, TreeApi } from 'react-arborist'
-import { useFileStore } from '../../stores/useFileStore'
 import { useProjectStore } from '../../stores/useProjectStore'
 import { buildTreeData, TreeNodeData, parseNodeId } from './tree-utils'
 import { TreeNode } from './TreeNode'
@@ -53,21 +52,31 @@ export function DataTreeManager({
   // 从 Store 获取数据
   const {
     files,
-    relations,
     selectedNode,
     setSelectedNode,
-  } = useFileStore()
-  
-  const activeFileId = useProjectStore(s => s.activeFileId)
-  const setActiveFile = useProjectStore(s => s.setActiveFile)
-  const setView = useProjectStore(s => s.setView)
-  const isRestoring = useProjectStore(s => s.isRestoring)
+    activeFileId,
+    setActiveFile,
+    setView,
+    isRestoring,
+  } = useProjectStore()
 
   const { t } = useTranslation('common')
 
+  // Derive all relations from files for tree building
+  const relations = useMemo(() => {
+    return files.flatMap(f => (f.relations || []).map(r => ({
+      id: r.id,
+      fileAId: f.id,
+      columnA: r.sourceColumn,
+      fileBId: r.targetFileId,
+      columnB: r.targetColumn,
+      autoDetected: r.autoDetected
+    })))
+  }, [files])
+
   // 将 Store 数据转换为树数据
   const treeData = useMemo(() => {
-    return buildTreeData(files, relations)
+    return buildTreeData(files, relations as any)
   }, [files, relations])
 
   // 计算选中的节点 ID (双向绑定)
@@ -97,9 +106,6 @@ export function DataTreeManager({
       if (isRestoring) return // Prevent interaction during restore
 
       if (nodes.length === 0) {
-        // 不要轻易清除 activeFileId，除非用户明确取消选择（Tree 行为通常是点击空白不取消，除非多选）
-        // 但这里如果 arborist 传回空数组，说明取消了选择
-        // setSelectedNode(null)
         return
       }
 
@@ -121,24 +127,20 @@ export function DataTreeManager({
           columnName: parsed.id,
         })
       } else if (parsed.type === 'relation') {
-        // 选中关联关系
-        setSelectedNode({
-          id: parsed.id,
-          type: 'relation',
-          relationId: parsed.id,
-        })
-        // 关联关系可能不需要激活特定文件，或者可以激活 sourceFile
-        // setActiveFile(null) // 或者保持当前不变
-        setView('relationships')
-      } else if (parsed.type === 'folder') {
-        // 文件夹选择通常只做展开/折叠，不做业务逻辑
-        // 但为了视觉一致性，可以记录
-        if (nodeData.id === 'root_relations') {
-          setView('relationships')
+        // 选中关联关系 -> 跳转到 Source File 的 Schema 视图
+        const relation = relations.find(r => r.id === parsed.id)
+        if (relation) {
+          setActiveFile(relation.fileAId)
+          setView('schema')
+          setSelectedNode({
+            id: parsed.id,
+            type: 'relation',
+            relationId: parsed.id,
+          })
         }
       }
     },
-    [setActiveFile, setSelectedNode, setView]
+    [setActiveFile, setSelectedNode, setView, relations]
   )
 
   // 禁用拖拽移动（暂不实现）

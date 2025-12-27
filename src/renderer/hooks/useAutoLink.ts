@@ -1,25 +1,19 @@
 import { useCallback } from 'react'
-import { FileAsset, useFileStore } from '../stores/useFileStore'
+import { useProjectStore } from '../stores/useProjectStore'
 import { useContextAnalysis } from './useIPC'
 import { useToastStore } from '../stores/useToastStore'
-import type { RelationSuggestion } from '../../shared/types'
+import type { RelationSuggestion, FileNode } from '../../shared/types'
 import { useWorkbenchStore } from '../stores/useWorkbenchStore'
-import { useTranslation } from 'react-i18next' // Import useTranslation
+import { useTranslation } from 'react-i18next'
 
 export function useAutoLink() {
-  // Use hooks for mutations and toasts
   const analysisMutation = useContextAnalysis()
   const { addToast } = useToastStore()
   const { language: currentLanguage } = useWorkbenchStore.getState()
-  const { t } = useTranslation('chat') // Initialize useTranslation
-
-  // We do NOT destructure state from useFileStore here for the callback dependencies.
-  // Instead, we access the store directly inside the callback to ensure we always have the freshest state
-  // when the async operation triggers, avoiding stale closures.
+  const { t } = useTranslation('chat')
 
   const checkAutoLink = useCallback(
-    async (currentFiles?: FileAsset[]) => {
-      // 0. Check for API Key before proceeding with AI calls
+    async (currentFiles?: FileNode[]) => {
       let apiKey: string | undefined
       try {
         const configRes = await window.electronAPI.getAIConfig()
@@ -40,13 +34,19 @@ export function useAutoLink() {
         return
       }
 
-      // 1. Get the latest state directly from the store
-      const store = useFileStore.getState()
+      const store = useProjectStore.getState()
       const filesToUse = currentFiles || store.files
-      const relationsToUse = store.relations
       const addRelation = store.addRelation
       const setSuggestedPrompts = store.setSuggestedPrompts
       const language = currentLanguage || 'en' // Use currentLanguage or default to 'en'
+
+      // Aggregate all current relations for duplicate check
+      const relationsToUse = filesToUse.flatMap(f => (f.relations || []).map(r => ({
+        sourceFileId: f.id,
+        sourceColumn: r.sourceColumn,
+        targetFileId: r.targetFileId,
+        targetColumn: r.targetColumn
+      })))
 
       console.log('checkAutoLink called. Files count:', filesToUse.length)
 
@@ -108,26 +108,26 @@ export function useAutoLink() {
               )
 
               if (fileA && fileB) {
-                // Check for duplicates using the FRESH relations list
+                // Check for duplicates
                 const exists = relationsToUse.some(
                   r =>
-                    (r.fileAId === fileA.id &&
-                      r.columnA === suggestion.sourceColumn &&
-                      r.fileBId === fileB.id &&
-                      r.columnB === suggestion.targetColumn) ||
-                    (r.fileAId === fileB.id &&
-                      r.columnA === suggestion.targetColumn &&
-                      r.fileBId === fileA.id &&
-                      r.columnB === suggestion.sourceColumn)
+                    (r.sourceFileId === fileA.id &&
+                      r.sourceColumn === suggestion.sourceColumn &&
+                      r.targetFileId === fileB.id &&
+                      r.targetColumn === suggestion.targetColumn) ||
+                    (r.sourceFileId === fileB.id &&
+                      r.sourceColumn === suggestion.targetColumn &&
+                      r.targetFileId === fileA.id &&
+                      r.targetColumn === suggestion.sourceColumn)
                 )
 
                 if (!exists) {
                   console.log('Adding relation:', suggestion)
                   addRelation({
-                    fileAId: fileA.id,
-                    columnA: suggestion.sourceColumn,
-                    fileBId: fileB.id,
-                    columnB: suggestion.targetColumn,
+                    sourceFileId: fileA.id,
+                    sourceColumn: suggestion.sourceColumn,
+                    targetFileId: fileB.id,
+                    targetColumn: suggestion.targetColumn,
                     autoDetected: true,
                   })
                   addedCount++

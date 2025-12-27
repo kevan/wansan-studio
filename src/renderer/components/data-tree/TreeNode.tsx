@@ -19,7 +19,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { MouseEvent } from 'react'
-import { useFileStore } from '../../stores/useFileStore'
+import { useProjectStore } from '../../stores/useProjectStore'
 import { useTranslation } from 'react-i18next'
 
 interface TreeNodeProps {
@@ -31,7 +31,7 @@ interface TreeNodeProps {
 export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
   const data = node.data
   const isSelected = node.isSelected
-  const { files } = useFileStore()
+  const { files } = useProjectStore()
   const { t } = useTranslation('common')
 
   const file =

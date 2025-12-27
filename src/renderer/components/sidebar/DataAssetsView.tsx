@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
-import { useFileStore } from '../../stores/useFileStore'
 import { useProjectStore } from '../../stores/useProjectStore'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { useParseFile } from '../../hooks/useIPC'
@@ -14,7 +13,7 @@ import { useProGate } from '@/hooks/use-pro-gate'
 import { ColumnSchema } from '@shared/types'
 
 export function DataAssetsView() {
-  const { addFile, updateFile } = useFileStore()
+  const { addFile, updateFile } = useProjectStore()
   const { isActivated, checkGate, gateNode } = useProGate()
   const [isImporting, setIsImporting] = useState(false)
   const parseFileMutation = useParseFile()
@@ -113,7 +112,7 @@ export function DataAssetsView() {
 
             for (const res of results) {
               // Check for duplicates (excluding the placeholder itself)
-              const isDuplicate = useFileStore
+              const isDuplicate = useProjectStore
                 .getState()
                 .files.some(
                   f =>
@@ -172,7 +171,7 @@ export function DataAssetsView() {
                 updateFile(fileId, { status: 'error', error: 'No data found' })
               } else {
                 // All duplicates
-                useFileStore.getState().removeFile(fileId)
+                useProjectStore.getState().removeFile(fileId)
                 addToast({
                   title: t('sidebar.duplicate_file_skipped_title'),
                   description: t('sidebar.duplicate_file_skipped_desc', {
@@ -226,7 +225,7 @@ export function DataAssetsView() {
         }
 
         // Trigger auto-link analysis after all files are processed
-        const currentFiles = useFileStore.getState().files
+        const currentFiles = useProjectStore.getState().files
         console.log(
           'Processed files. Triggering auto-link with:',
           currentFiles.length,

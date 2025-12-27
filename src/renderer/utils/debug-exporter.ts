@@ -1,11 +1,12 @@
 import { useSettingsStore } from '../stores/useSettingsStore'
-import { useFileStore } from '../stores/useFileStore'
+import { useProjectStore } from '../stores/useProjectStore'
 import { useChatStore } from '../stores/useChatStore'
 import { useLogStore } from '../stores/useLogStore'
 
 export async function exportDebugLog() {
   const settings = useSettingsStore.getState()
-  const files = useFileStore.getState().files
+      const files = useProjectStore.getState().files
+  
   const chats = useChatStore.getState().messages
   const logs = await useLogStore.getState().getAllLogs()
 

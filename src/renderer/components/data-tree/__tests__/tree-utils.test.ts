@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { buildTreeData, parseNodeId } from '../tree-utils'
-import { FileAsset, Relation } from '../../../stores/useFileStore'
+import { FileNode } from '../../../../shared/types'
+import { Relation } from '../../../../shared/types/project'
 
 describe('tree-utils', () => {
   describe('buildTreeData', () => {
@@ -12,7 +13,7 @@ describe('tree-utils', () => {
     })
 
     it('should transform files and columns correctly', () => {
-      const mockFile: FileAsset = {
+      const mockFile: FileNode = {
         id: 'file_1',
         name: 'test.csv',
         path: '/tmp/test.csv',
@@ -41,7 +42,7 @@ describe('tree-utils', () => {
     })
 
     it('should mark foreign keys', () => {
-      const mockFile1: FileAsset = {
+      const mockFile1: FileNode = {
         id: 'f1',
         name: 'orders',
         path: '',
@@ -58,7 +59,7 @@ describe('tree-utils', () => {
           },
         ],
       }
-      const mockFile2: FileAsset = {
+      const mockFile2: FileNode = {
         id: 'f2',
         name: 'users',
         path: '',

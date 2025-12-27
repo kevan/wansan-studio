@@ -9,7 +9,7 @@ import {
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
-import { FileNode, SmartMetric } from '@shared/types'
+import { FileNode, SmartMetric, ColumnType } from '@shared/types'
 import { useProjectStore } from '../../stores/useProjectStore'
 import {
   AlertCircle,
@@ -19,6 +19,7 @@ import {
   Link2,
   Play,
   Wand2,
+  HelpCircle,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { getJoinedColumnName } from '@shared/naming-utils'
@@ -46,19 +47,30 @@ export function MetricEditorModal({
   initialMetric,
   onSave,
 }: MetricEditorModalProps) {
-  const { t } = useTranslation('analysis')
+  const { t } = useTranslation('common')
+  const { t: tAnalysis } = useTranslation('analysis')
+  const files = useProjectStore(s => s.files)
+  
+  // States
   const [name, setName] = useState('')
   const [safeName, setSafeName] = useState('')
   const [expression, setExpression] = useState('')
-  const [type, setType] = useState('DOUBLE')
-
-  // Test Run State
-  const [isTesting, setIsTesting] = useState(false)
+  const [type, setType] = useState<ColumnType>('DOUBLE')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isTesting, setIsTesting] = useState(false)
   const [testResult, setTestResult] = useState<string | null>(null)
   const [testError, setTestError] = useState<string | null>(null)
 
-  const { files, relations } = useProjectStore()
+  const relations = useMemo(() => {
+    return files.flatMap(f => (f.relations || []).map(r => ({
+      id: r.id,
+      fileAId: f.id,
+      columnA: r.sourceColumn,
+      fileBId: r.targetFileId,
+      columnB: r.targetColumn,
+      autoDetected: r.autoDetected
+    })))
+  }, [files])
 
   // Reset state when modal opens or initialMetric changes
   useEffect(() => {
@@ -108,7 +120,7 @@ export function MetricEditorModal({
 
     // 1. Native Columns
     groups.push({
-      title: t('smart_metric.current_table'),
+      title: tAnalysis('smart_metric.current_table'),
       icon: Database,
       columns: file.columns.map(col => ({
         name: col.name,
@@ -124,7 +136,7 @@ export function MetricEditorModal({
       if (targetFile) {
         const prefix = rel.columnA
         groups.push({
-          title: `${t('smart_metric.linked_via')} ${prefix}`,
+          title: `${tAnalysis('smart_metric.linked_via')} ${prefix}`,
           icon: Link2,
           columns: targetFile.columns.map(col => ({
             name: getJoinedColumnName(prefix, col.name),
@@ -136,7 +148,7 @@ export function MetricEditorModal({
     })
 
     return groups
-  }, [file, files, relations, t])
+  }, [file, files, relations, tAnalysis])
 
   const validateAndSave = async () => {
     if (!name || !expression) return
@@ -153,20 +165,18 @@ export function MetricEditorModal({
         relations
       )
 
-      // If valid, apply data type and save
-      // const finalType = result.dataType || 'DOUBLE'
       const newMetric: SmartMetric = {
         id: initialMetric?.id || crypto.randomUUID(),
         name: name.trim(),
         safeName: safeName.trim(),
         sqlExpression: expression,
-        type: result.dataType,
+        type: result.dataType as ColumnType,
       }
 
       await onSave(newMetric)
       onClose()
     } catch (e: any) {
-      setTestError(e.message || t('smart_metric.validation_failed'))
+      setTestError(e.message || tAnalysis('smart_metric.validation_failed'))
     } finally {
       setIsTesting(false)
     }
@@ -188,12 +198,12 @@ export function MetricEditorModal({
 
       if (result.value !== undefined) {
         setTestResult(String(result.value ?? '(null)'))
-        setType(result.dataType)
+        setType(result.dataType as ColumnType)
       } else {
-        setTestResult(t('smart_metric.no_rows'))
+        setTestResult(tAnalysis('smart_metric.no_rows'))
       }
     } catch (e: any) {
-      setTestError(e.message || t('smart_metric.syntax_error'))
+      setTestError(e.message || tAnalysis('smart_metric.syntax_error'))
     } finally {
       setIsTesting(false)
     }
@@ -207,12 +217,10 @@ export function MetricEditorModal({
 
     setIsGenerating(true)
     try {
-      // 1. Gather all available columns with their types
       const contextColumns = columnGroups.flatMap(g =>
         g.columns.map(c => ({ name: c.name, type: c.type }))
       )
 
-      // 2. Call AI API with mode detection
       const result = await window.electronAPI.generateMetricExpression({
         input,
         columns: contextColumns,
@@ -250,7 +258,6 @@ export function MetricEditorModal({
 
     setExpression(newVal)
 
-    // Set focus and cursor position after state update
     setTimeout(() => {
       textarea.focus()
       const newCursorPos = start + textToInsert.length
@@ -265,18 +272,17 @@ export function MetricEditorModal({
           <DialogTitle className="flex items-center gap-2">
             <Calculator className="w-5 h-5 text-purple-600" />
             {initialMetric
-              ? t('smart_metric.edit_title')
-              : t('smart_metric.add_title')}
+              ? tAnalysis('smart_metric.edit_title')
+              : tAnalysis('smart_metric.add_title')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 flex min-h-0 bg-zinc-50/30">
-          {/* Left: Form & Editor */}
           <div className="flex-1 flex flex-col min-w-0 bg-white shadow-sm">
             <div className="p-6 pb-0 flex flex-col gap-4">
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-zinc-500 uppercase">
-                  {t('smart_metric.display_label')}
+                  {tAnalysis('smart_metric.display_label')}
                 </Label>
                 <Input
                   placeholder="e.g. Profit Margin %"
@@ -289,9 +295,9 @@ export function MetricEditorModal({
 
             <div className="flex-1 p-6 flex flex-col min-h-0 gap-2">
               <Label className="flex justify-between items-center text-xs font-bold text-zinc-500 uppercase">
-                <span>{t('smart_metric.sql_expression')}</span>
+                <span>{tAnalysis('smart_metric.sql_expression')}</span>
                 <span className="text-[10px] text-zinc-400 font-normal normal-case">
-                  {t('smart_metric.duckdb_syntax')}
+                  {tAnalysis('smart_metric.duckdb_syntax')}
                 </span>
               </Label>
 
@@ -310,8 +316,8 @@ export function MetricEditorModal({
                       className={cn('w-3 h-3', isGenerating && 'animate-spin')}
                     />
                     {isGenerating
-                      ? t('smart_metric.generating')
-                      : t('smart_metric.ai_magic')}
+                      ? tAnalysis('smart_metric.generating')
+                      : tAnalysis('smart_metric.ai_magic')}
                   </Button>
                 </div>
                 <div className="flex-1 overflow-auto relative">
@@ -331,7 +337,6 @@ export function MetricEditorModal({
                 </div>
               </div>
 
-              {/* Test Runner Bar */}
               <div className="flex items-center justify-between bg-zinc-50/80 p-3 rounded-lg border border-zinc-200 mt-2 shrink-0">
                 <div className="flex items-center gap-3 overflow-hidden">
                   <Button
@@ -346,7 +351,7 @@ export function MetricEditorModal({
                     ) : (
                       <Play className="w-3 h-3 fill-current text-zinc-400" />
                     )}
-                    {t('smart_metric.quick_test')}
+                    {tAnalysis('smart_metric.quick_test')}
                   </Button>
 
                   {testResult !== null && (
@@ -375,11 +380,10 @@ export function MetricEditorModal({
             </div>
           </div>
 
-          {/* Right: Available Columns Sidebar */}
           <div className="w-72 border-l border-zinc-200 bg-zinc-50/50 flex flex-col min-h-0">
             <div className="px-4 py-3 border-b border-zinc-200 bg-zinc-100/50 flex justify-between items-center">
               <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">
-                {t('smart_metric.available_fields')}
+                {tAnalysis('smart_metric.available_fields')}
               </span>
             </div>
 
@@ -422,7 +426,7 @@ export function MetricEditorModal({
             disabled={isTesting}
             className="text-zinc-500"
           >
-            {t('smart_metric.cancel')}
+            {tAnalysis('smart_metric.cancel')}
           </Button>
 
           <Button
@@ -433,12 +437,12 @@ export function MetricEditorModal({
             {isTesting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                {t('smart_metric.validating')}
+                {tAnalysis('smart_metric.validating')}
               </>
             ) : (
               <>
                 <Calculator className="w-4 h-4" />
-                {t('smart_metric.save')}
+                {tAnalysis('smart_metric.save')}
               </>
             )}
           </Button>

@@ -63,7 +63,9 @@ function resolveExpression(expression: string, colMap: Map<string, string>) {
 
   sortedUserCols.forEach(userCol => {
     const physicalPath = colMap.get(userCol)!
-    const regex = new RegExp(`"?\\b${escapeRegExp(userCol)}\\b"?`, 'g')
+    // Match the column name either quoted or unquoted as a whole word
+    const escaped = escapeRegExp(userCol)
+    const regex = new RegExp(`("${escaped}")|(\\b${escaped}\\b)`, 'g')
     resolvedExpr = resolvedExpr.replace(regex, physicalPath)
   })
 

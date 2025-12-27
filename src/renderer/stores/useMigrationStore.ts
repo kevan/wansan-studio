@@ -38,7 +38,7 @@ export const useMigrationStore = create<MigrationState>((set, get) => ({
   targetPath: '',
 
   checkStatus: () => {
-    const STORAGE_KEYS = ['wansan-project-v2'];
+    const STORAGE_KEYS = ['wansan-project-v2-legacy-mock', 'wansan-project-v2'];
     const MIGRATION_FLAG = 'wansan-migration-v1.3';
     const isMigrated = localStorage.getItem(MIGRATION_FLAG);
 

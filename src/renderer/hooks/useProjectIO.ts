@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useProjectStore } from '../stores/useProjectStore';
 import { projectService } from '../services/project-service';
 import { ProjectManifest, SemanticLayer, ProjectLoadResult } from '@shared/types/project-manifest';
-import { FileNode, SmartMetric, SyncStatus } from '@shared/types';
+import { FileNode, SmartMetric, SyncStatus, TableRelation } from '@shared/types';
 import { Relation, Session, ProjectData } from '@shared/types/project';
 import { ReportData } from '@shared/types/dashboard';
 
@@ -41,14 +41,19 @@ export function useProjectIO() {
 
     // 2. Build Semantic Layer
     const smartMetrics: Record<string, SmartMetric[]> = {};
+    const relations: Record<string, TableRelation[]> = {};
+    
     state.files.forEach((f) => {
       if (f.smartMetrics && f.smartMetrics.length > 0) {
         smartMetrics[f.id] = f.smartMetrics;
       }
+      if (f.relations && f.relations.length > 0) {
+        relations[f.id] = f.relations;
+      }
     });
 
     const semantic: SemanticLayer = {
-      relations: state.relations,
+      relations,
       smartMetrics,
     };
 
@@ -78,48 +83,34 @@ export function useProjectIO() {
     // Map Assets -> FileNode[]
     const files: FileNode[] = data.manifest.assets.map((asset) => {
       const metrics = data.semantic.smartMetrics[asset.id] || [];
+      const relations = data.semantic.relations[asset.id] || [];
       const now = Date.now();
-      
-      // Reconstruct ColumnSchema from minimal info
-      // We assume standard defaults for fields we didn't save (nullable, sampleValues etc)
-      // Ideally sampleValues should be re-fetched or persisted. 
-      // For v1.2->v1.3 compat, we might lose sampleValues if not persisted.
-      // But we can re-fetch them if needed or just leave empty array.
-      // In the manifest we only saved { name, type, safeName }.
-      // UseProjectStore.loadProject will replace the state.
-      // If we want sampleValues, we might need to query DB or they are lost until reload.
-      // Let's check what we persist.
-      // The manifest definition in step 1 was minimal.
       
       return {
         id: asset.id,
         name: asset.name,
         path: asset.originalPath,
         tableName: asset.tableName,
-        sheetName: undefined, // Lost if not in manifest? Manifest assets def in Step 1 didn't have sheetName.
-                              // If sheetName is critical, we should add it to manifest types.
-                              // For now, assume undefined or empty.
+        sheetName: undefined,
         status: 'ready' as SyncStatus,
         progress: 100,
-        size: 0, // Unknown
+        size: 0,
         columns: asset.columns.map(c => ({
             name: c.name,
             safeName: c.safeName,
-            type: c.type as any, // Cast to ColumnType
-            sampleValues: [], // Lost
+            type: c.type as any,
+            sampleValues: [],
             nullable: true,
             isKey: false
         })),
-        rowCount: 0, // Unknown, will be updated on refresh
+        rowCount: 0,
         error: undefined,
         lastModified: now,
         createdAt: now,
         smartMetrics: metrics,
+        relations: relations,
       };
     });
-
-    // Relations
-    const relations: Relation[] = data.semantic.relations || [];
 
     // Sessions & Widgets
     const sessionState = data.session || {};
@@ -138,7 +129,6 @@ export function useProjectIO() {
         created: data.manifest.meta.createdAt,
       },
       files,
-      relations,
       sessions,
       activeSessionId,
       activeView,

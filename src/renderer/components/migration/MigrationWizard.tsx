@@ -51,27 +51,34 @@ export function MigrationWizard() {
   return (
     <div className="fixed inset-0 z-[100] bg-white flex items-center justify-center p-6 sm:p-12 font-sans selection:bg-black selection:text-white">
       {/* Swiss Style Grid Background (Subtle) */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-           style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+      <div
+        className="absolute inset-0 opacity-[0.03] pointer-events-none"
+        style={{
+          backgroundImage:
+            'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+        }}
+      />
 
       <div className="w-full max-w-2xl relative">
         {/* Content Wrapper */}
         <div className="border-[3px] border-black bg-white p-8 sm:p-12 shadow-[16px_16px_0_0_#000]">
-
           {/* STEP 1: INTRO */}
           {step === 'intro' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="space-y-4">
                 <div className="inline-block bg-black text-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em]">
-                  {version ? `v${version} Update` : t('upgrade_subtitle')}
+                  {version ? `v${version} Update` : 'Update'}
                 </div>
                 <h1 className="text-5xl sm:text-6xl font-black tracking-tighter leading-[0.9] text-black">
-                  {t('upgrade_title').split(' ').map((word, i, arr) => (
-                    <React.Fragment key={i}>
-                      {word}
-                      {i < arr.length - 1 && <br />}
-                    </React.Fragment>
-                  ))}
+                  {t('upgrade_title')
+                    .split(' ')
+                    .map((word, i, arr) => (
+                      <React.Fragment key={i}>
+                        {word}
+                        {i < arr.length - 1 && <br />}
+                      </React.Fragment>
+                    ))}
                 </h1>
               </div>
 
@@ -111,9 +118,9 @@ export function MigrationWizard() {
                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
                     {t('project_name')}
                   </label>
-                  <Input 
+                  <Input
                     value={projectName}
-                    onChange={(e) => setProjectName(e.target.value)}
+                    onChange={e => setProjectName(e.target.value)}
                     className="border-b-2 border-t-0 border-x-0 border-black rounded-none px-0 text-2xl font-bold focus-visible:ring-0 placeholder:text-zinc-200"
                     placeholder="My Workspace"
                   />
@@ -215,7 +222,7 @@ export function MigrationWizard() {
                 onClick={() => window.location.reload()}
                 className="bg-black hover:bg-zinc-800 text-white rounded-none h-14 px-12 text-lg font-bold shadow-[8px_8px_0_0_#e2e8f0]"
               >
-                {t('launch_v13')}
+                {t('launch_wansan')}
               </Button>
             </div>
           )}
@@ -253,7 +260,6 @@ export function MigrationWizard() {
               </div>
             </div>
           )}
-
         </div>
 
         {/* Swiss Footer Attribution */}
@@ -268,5 +274,5 @@ export function MigrationWizard() {
         </div>
       </div>
     </div>
-  );
+  )
 }

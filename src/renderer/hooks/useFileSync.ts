@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react'
-import { useFileStore } from '../stores/useFileStore'
+import { useProjectStore } from '../stores/useProjectStore'
 import { useCheckFilesConsistency } from './useIPC'
 
 export function useFileSync() {
-  const files = useFileStore(state => state.files)
-  const markAsStale = useFileStore(state => state.markAsStale)
+  const files = useProjectStore(state => state.files)
+  const markAsStale = useProjectStore(state => state.markAsStale)
   const checkConsistency = useCheckFilesConsistency()
+
 
   // Throttle check
   const lastCheckTime = useRef(0)

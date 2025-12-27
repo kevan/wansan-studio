@@ -41,3 +41,16 @@
 - Implemented Smart Metrics type inference using DuckDB DESCRIBE in rebuildView, enabling automatic data type detection for calculated columns.
 - Updated validateSQL in main/engine/executor.ts to explicitly allow 'CREATE OR REPLACE VIEW' and 'DESCRIBE' statements, enabling Smart Metrics features while maintaining general read-only safety for other operations.
 - Implemented a central mapFileToSchema utility in renderer/utils/schema-mapper.ts that handles the conversion of FileNode to TableSchema, including the "Schema Masking" logic (v_ prefix for tables with Smart Metrics). simplified ai-bridge.ts to use this pre-masked tableName.
+- Implemented Business Domain Memory feature allowing users to define global custom instructions for the AI, integrated into Settings and localized in EN/ZH.
+- Implemented streaming Excel ingestion for Wansan Studio to handle large files (40MB+, 1M rows) efficiently using ExcelJS stream and DuckDB read_csv_auto.
+- Implemented UI progress display for Excel ingestion. Backend emits `file:progress` IPC events with row counts. Frontend displays row count (or percentage if applicable) in the file tree node during processing. Updated IPC signatures to include `fileId` for targeted updates.
+- Implemented persistence for Smart Filter parameters by adding `selected_params` to `ReportData` and flowing it through `SmartFilterModal` and `useChatStore`. Also enabled persistence for chart `tableData` in `useProjectStore`.
+- Verified that Smart Filter parameters are correctly persisted and restored in the UI, enabling users to modify their analysis with previous selections intact.
+- Refined Smart Filter UI: when opening with pre-selected values, the search hint is cleared and selected items are pinned to the top of the list for better visibility.
+- Enhanced Markdown Export feature to include full data results in tabular format and de-duplicate summary content.
+- Optimized Markdown Export to remove redundant SQL plans when executed SQL is available, ensuring a cleaner report output.
+- Collected v1.2 data models: FileNode, TableSchema, Session, Message, ReportWidget, ProjectData, and ProjectState for v1.3 architecture planning.
+- Implemented Project Bundle Architecture (v1.3) infrastructure: ProjectManifest types, ProjectManager service for creating/opening/saving projects, and IPC handlers (project:create, project:open, etc.). Integrated into main process.
+- Implemented Renderer layer for v1.3 Project Bundles: projectService (IPC), useProjectIO hook (serialization/hydration), and store updates for currentProjectPath. Added Sidebar Save button for testing.
+- Fixed race condition in NativeDBClient where SQL queries could be sent before the database connection was established. Implemented a promise-based initialization lock (initPromise).
+- 当使用 shadcn/ui 或 Radix UI 的 Select 组件时，如果 SelectValue 错误地显示原始 ID 而非名称，可靠的解决方案是在 SelectTrigger 中手动渲染选中项的名称（例如：{selectedItem ? selectedItem.name : 'Placeholder'}），以绕过组件内部因匹配失败导致的回退显示问题。

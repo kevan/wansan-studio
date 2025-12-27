@@ -1,4 +1,5 @@
-import { FileNode, Relation, SyncStatus } from '../../stores/useFileStore'
+import { FileNode, SyncStatus } from '@shared/types'
+import { Relation } from '@shared/types/project'
 import i18n from '../../i18n'
 
 export interface TreeNodeData {
@@ -61,40 +62,10 @@ export function buildTreeData(
     }
   })
 
-  // 2. Build Relation Nodes
-  const relationNodes: TreeNodeData[] = relations.map(rel => {
-    const fileA = files.find(f => f.id === rel.fileAId)
-    const fileB = files.find(f => f.id === rel.fileBId)
+  // 2. Build Relation Nodes (Removed as per requirement)
 
-    // Fallback names if file not found (shouldn't happen)
-    const tableA = fileA?.name || fileA?.tableName || rel.fileAId
-    const tableB = fileB?.name || fileB?.tableName || rel.fileBId
-
-    return {
-      id: `rel:${rel.id}`,
-      name: `${tableA} ↔ ${tableB}`,
-      type: 'relation',
-      relationId: rel.id,
-    }
-  })
-
-  // 3. Construct Root Nodes
-  const rootNodes: TreeNodeData[] = [
-    {
-      id: 'root_files',
-      name: i18n.t('common:data_sources_root'),
-      type: 'folder',
-      children: fileNodes,
-    },
-    {
-      id: 'root_relations',
-      name: i18n.t('common:relationships_root'),
-      type: 'folder',
-      children: relationNodes,
-    },
-  ]
-
-  return rootNodes
+  // 3. Return only File Nodes (Flattened for a cleaner look in sidebar)
+  return fileNodes
 }
 
 /**

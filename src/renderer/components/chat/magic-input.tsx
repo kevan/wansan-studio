@@ -17,11 +17,12 @@ import {
   RefreshCw,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
-import { useFileStore } from '../../stores/useFileStore'
+import { useProjectStore } from '../../stores/useProjectStore'
 import { useChatStore } from '../../stores/useChatStore'
+import { useUIStore } from '../../stores/useUIStore'
 import { useToastStore } from '../../stores/useToastStore'
 import { useSettingsStore } from '../../stores/useSettingsStore'
-import { useProjectStore } from '../../stores/useProjectStore'
+
 import type { ChatMessage } from '../ChatInterface'
 import { useTranslation } from 'react-i18next'
 import { exportDebugLog } from '../../utils/debug-exporter'
@@ -69,9 +70,9 @@ export function MagicInput({
   const removeMessage = useChatStore(state => state.removeMessage)
   const stopGeneration = useChatStore(state => state.stopGeneration)
   const addToast = useToastStore(state => state.addToast)
-  const files = useFileStore(state => state.files)
-  const isRestoring = useFileStore(state => state.isRestoring)
-  const suggestedPrompts = useFileStore(state => state.suggestedPrompts)
+  const files = useProjectStore(state => state.files)
+  const isRestoring = useProjectStore(state => state.isRestoring)
+  const suggestedPrompts = useProjectStore(state => state.suggestedPrompts)
   const { isActivated } = useSettingsStore()
   const { t } = useTranslation('chat')
   const { t: tCommon } = useTranslation('common')

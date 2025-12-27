@@ -51,7 +51,6 @@ export function useAutoSave() {
       // We check for structural data changes.
       if (
         state.files !== prevState.files ||
-        state.relations !== prevState.relations ||
         state.sessions !== prevState.sessions ||
         state.widgetRegistry !== prevState.widgetRegistry ||
         state.activeSessionId !== prevState.activeSessionId ||

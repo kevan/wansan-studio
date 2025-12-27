@@ -11,7 +11,7 @@ export interface Relation {
   autoDetected?: boolean;
 }
 
-export type ViewMode = 'chat' | 'schema' | 'relationships';
+export type ViewMode = 'chat' | 'schema';
 
 export interface Session {
   id: string;
@@ -35,8 +35,7 @@ export interface ProjectData {
     version: '1.1.0';
     created: number;
   };
-  files: FileNode[];       // Shared Data Assets
-  relations: Relation[];   // Shared Data Logic
+  files: FileNode[];       // Shared Data Assets (Now includes relations)
   sessions: Session[];     // Multi-Session Content
   activeSessionId: string;
   activeView: ViewMode;

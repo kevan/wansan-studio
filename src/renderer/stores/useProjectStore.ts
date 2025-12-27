@@ -1,9 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { ProjectData, Relation, Session, ViewMode } from '@shared/types/project'
+import { ProjectData, Session, ViewMode } from '@shared/types/project'
 import { Message } from '@shared/types/chat'
 import { ReportData, ReportWidget } from '@shared/types/dashboard'
-import { ColumnSchema, FileNode, SelectedNode, SmartMetric } from '@shared/types'
+import { ColumnSchema, FileNode, SelectedNode, SmartMetric, TableRelation } from '@shared/types'
 import { Layout } from 'react-grid-layout'
 import { createBigIntStorage } from '@shared/serialization'
 import { Analytics } from '../services/analytics'
@@ -93,7 +93,7 @@ export interface ProjectState extends ProjectData {
     updates: Partial<ColumnSchema>
   ) => void
   toggleKeyColumn: (fileId: string, columnName: string) => void
-  addRelation: (relation: Omit<Relation, 'id'>) => void
+  addRelation: (relation: Omit<TableRelation, 'id'> & { sourceFileId: string }) => void
   removeRelation: (id: string) => void
   addSmartMetric: (fileId: string, metric: SmartMetric) => Promise<void>
   updateSmartMetric: (
@@ -143,7 +143,6 @@ const initialProjectState: ProjectData & { currentProjectPath: string | null } =
     created: Date.now(),
   },
   files: [],
-  relations: [],
   sessions: [],
   activeSessionId: '',
   activeView: 'chat',
@@ -180,7 +179,7 @@ export const useProjectStore = create<ProjectState>()(
       setView: view =>
         set(state => {
           let newSidebarMode = state.sidebarMode
-          if (view === 'schema' || view === 'relationships') {
+          if (view === 'schema') {
             newSidebarMode = 'data'
           } else if (view === 'chat') {
             newSidebarMode = 'sessions'
@@ -770,10 +769,12 @@ export const useProjectStore = create<ProjectState>()(
         }
 
         set(state => ({
-          files: state.files.filter(f => f.id !== id),
-          relations: state.relations.filter(
-            r => r.fileAId !== id && r.fileBId !== id
-          ),
+          files: state.files
+            .filter(f => f.id !== id)
+            .map(f => ({
+              ...f,
+              relations: (f.relations || []).filter(r => r.targetFileId !== id),
+            })),
         }))
       },
 
@@ -815,194 +816,179 @@ export const useProjectStore = create<ProjectState>()(
       },
 
       addRelation: async relation => {
-        const exists = get().relations.some(
+        const { sourceFileId, ...data } = relation
+        const state = get()
+        const sourceFile = state.files.find(f => f.id === sourceFileId)
+        if (!sourceFile) return
+
+        const exists = (sourceFile.relations || []).some(
           r =>
-            (r.fileAId === relation.fileAId &&
-              r.columnA === relation.columnA &&
-              r.fileBId === relation.fileBId &&
-              r.columnB === relation.columnB) ||
-            (r.fileAId === relation.fileBId &&
-              r.columnA === relation.columnB &&
-              r.fileBId === relation.fileAId &&
-              r.columnB === relation.columnA)
+            r.targetFileId === data.targetFileId &&
+            r.sourceColumn === data.sourceColumn &&
+            r.targetColumn === data.targetColumn
         )
         if (exists) {
           console.warn('Relationship already exists.')
           return
         }
         const id = generateId()
+        const newRelation = { ...data, id, joinType: 'LEFT' as const } // Default join type
+
         set(state => ({
-          relations: [...state.relations, { ...relation, id }],
+          files: state.files.map(f =>
+            f.id === sourceFileId
+              ? { ...f, relations: [...(f.relations || []), newRelation] }
+              : f
+          ),
         }))
 
-        // Rebuild View for Source
-        const state = get()
-        const fileA = state.files.find(f => f.id === relation.fileAId)
-        if (fileA) {
+        // Rebuild View
+        const updatedState = get()
+        const updatedSource = updatedState.files.find(f => f.id === sourceFileId)
+        if (updatedSource) {
+          const allRelations = updatedState.files.flatMap(f =>
+            (f.relations || []).map(r => ({
+              id: r.id,
+              fileAId: f.id,
+              columnA: r.sourceColumn,
+              fileBId: r.targetFileId,
+              columnB: r.targetColumn,
+            }))
+          )
           await DuckDBViewManager.rebuildView(
-            fileA,
-            state.files,
-            state.relations
+            updatedSource,
+            updatedState.files,
+            allRelations as any
           )
         }
       },
 
       removeRelation: async id => {
-        const relation = get().relations.find(r => r.id === id)
-        set(state => ({
-          relations: state.relations.filter(r => r.id !== id),
-        }))
+        let sourceFileId = ''
+        set(state => {
+          const file = state.files.find(f =>
+            (f.relations || []).some(r => r.id === id)
+          )
+          if (file) sourceFileId = file.id
+          return {
+            files: state.files.map(f => ({
+              ...f,
+              relations: (f.relations || []).filter(r => r.id !== id),
+            })),
+          }
+        })
 
-        if (relation) {
+        if (sourceFileId) {
           const state = get()
-          const fileA = state.files.find(f => f.id === relation.fileAId)
-          if (fileA) {
+          const file = state.files.find(f => f.id === sourceFileId)
+          if (file) {
+            const allRelations = state.files.flatMap(f =>
+              (f.relations || []).map(r => ({
+                id: r.id,
+                fileAId: f.id,
+                columnA: r.sourceColumn,
+                fileBId: r.targetFileId,
+                columnB: r.targetColumn,
+              }))
+            )
             await DuckDBViewManager.rebuildView(
-              fileA,
+              file,
               state.files,
-              state.relations
+              allRelations as any
             )
           }
         }
       },
 
             addSmartMetric: async (fileId, metric) => {
+        set(state => ({
+          files: state.files.map(f =>
+            f.id === fileId
+              ? { ...f, smartMetrics: [...(f.smartMetrics || []), metric] }
+              : f
+          ),
+        }))
 
-              set(state => ({
+        const state = get()
+        const updatedFile = state.files.find(f => f.id === fileId)
 
-                files: state.files.map(f =>
-
-                  f.id === fileId
-
-                    ? { ...f, smartMetrics: [...(f.smartMetrics || []), metric] }
-
-                    : f
-
-                ),
-
+        if (updatedFile) {
+          try {
+            const allRelations = state.files.flatMap(f =>
+              (f.relations || []).map(r => ({
+                id: r.id,
+                fileAId: f.id,
+                columnA: r.sourceColumn,
+                fileBId: r.targetFileId,
+                columnB: r.targetColumn,
               }))
+            )
 
-      
+            const typeMap = await DuckDBViewManager.rebuildView(
+              updatedFile,
+              state.files,
+              allRelations as any
+            )
+            const inferredType = typeMap.get(metric.safeName)
 
-              const state = get()
-
-              const updatedFile = state.files.find(f => f.id === fileId)
-
-              if (updatedFile) {
-
-                try {
-
-                  const typeMap = await DuckDBViewManager.rebuildView(
-
-                    updatedFile,
-
-                    state.files,
-
-                    state.relations
-
-                  )
-
-                                    const inferredType = typeMap.get(metric.safeName)
-
-                  
-
-                                    if (inferredType) {
-
-                                      set(prev => ({
-
-                                        files: prev.files.map(f =>
-
-                                          f.id === fileId
-
-                                            ? {
-
-                                                ...f,
-
-                                                smartMetrics: (f.smartMetrics || []).map(m =>
-
-                                                  m.id === metric.id
-
-                                                    ? { ...m, type: inferredType as any }
-
-                                                    : m
-
-                                                ),
-
-                                              }
-
-                                            : f
-
-                                        ),
-
-                                      }))
-
-                                    }
-
-                  
-
-                } catch (e) {
-
-                  console.error('Failed to sync metric type', e)
-
-                }
-
-              }
-
-            },
-
-      
-
-            updateSmartMetric: async (fileId, metricId, updates) => {
-
-              set(state => ({
-
-                files: state.files.map(f =>
-
+            if (inferredType) {
+              set(prev => ({
+                files: prev.files.map(f =>
                   f.id === fileId
-
                     ? {
-
                         ...f,
-
                         smartMetrics: (f.smartMetrics || []).map(m =>
-
-                          m.id === metricId ? { ...m, ...updates } : m
-
+                          m.id === metric.id
+                            ? { ...m, type: inferredType as any }
+                            : m
                         ),
-
                       }
-
                     : f
-
                 ),
-
               }))
+            }
+          } catch (e) {
+            console.error('Failed to sync metric type', e)
+          }
+        }
+      },
 
-      
+      updateSmartMetric: async (fileId, metricId, updates) => {
+        set(state => ({
+          files: state.files.map(f =>
+            f.id === fileId
+              ? {
+                  ...f,
+                  smartMetrics: (f.smartMetrics || []).map(m =>
+                    m.id === metricId ? { ...m, ...updates } : m
+                  ),
+                }
+              : f
+          ),
+        }))
 
-              const state = get()
+        const state = get()
+        const updatedFile = state.files.find(f => f.id === fileId)
 
-              const updatedFile = state.files.find(f => f.id === fileId)
+        if (updatedFile) {
+          const allRelations = state.files.flatMap(f =>
+            (f.relations || []).map(r => ({
+              id: r.id,
+              fileAId: f.id,
+              columnA: r.sourceColumn,
+              fileBId: r.targetFileId,
+              columnB: r.targetColumn,
+            }))
+          )
+          await DuckDBViewManager.rebuildView(
+            updatedFile,
+            state.files,
+            allRelations as any
+          )
+        }
+      },
 
-              if (updatedFile) {
-
-                await DuckDBViewManager.rebuildView(
-
-                  updatedFile,
-
-                  state.files,
-
-                  state.relations
-
-                )
-
-              }
-
-            },
-
-      
-
-            removeSmartMetric: async (fileId, metricId) => {
+      removeSmartMetric: async (fileId, metricId) => {
         set(state => ({
           files: state.files.map(f =>
             f.id === fileId
@@ -1018,10 +1004,19 @@ export const useProjectStore = create<ProjectState>()(
         const state = get()
         const updatedFile = state.files.find(f => f.id === fileId)
         if (updatedFile) {
+          const allRelations = state.files.flatMap(f =>
+            (f.relations || []).map(r => ({
+              id: r.id,
+              fileAId: f.id,
+              columnA: r.sourceColumn,
+              fileBId: r.targetFileId,
+              columnB: r.targetColumn,
+            }))
+          )
           await DuckDBViewManager.rebuildView(
             updatedFile,
             state.files,
-            state.relations
+            allRelations as any
           )
         }
       },
@@ -1062,30 +1057,38 @@ export const useProjectStore = create<ProjectState>()(
             }
           })
 
-          const activeRelations = state.relations.filter(r => {
-            let valid = true
-            if (r.fileAId === fileId) {
-              if (!mergedColumns.some(c => c.name === r.columnA)) valid = false
-            }
-            if (r.fileBId === fileId) {
-              if (!mergedColumns.some(c => c.name === r.columnB)) valid = false
-            }
-            return valid
-          })
-          droppedRelationsCount =
-            state.relations.length - activeRelations.length
           return {
-            files: state.files.map(f =>
-              f.id === fileId
-                ? {
-                    ...f,
-                    columns: mergedColumns,
-                    status: 'ready',
-                    lastModified,
+            files: state.files.map(f => {
+              if (f.id === fileId) {
+                // 1. Update this file: Check source columns for its relations
+                const validRelations = (f.relations || []).filter(r =>
+                  mergedColumns.some(c => c.name === r.sourceColumn)
+                )
+                droppedRelationsCount +=
+                  (f.relations?.length || 0) - validRelations.length
+
+                return {
+                  ...f,
+                  columns: mergedColumns,
+                  relations: validRelations,
+                  status: 'ready',
+                  lastModified,
+                }
+              } else {
+                // 2. Update other files: Check target columns if they point to this file
+                const validRelations = (f.relations || []).filter(r => {
+                  if (r.targetFileId === fileId) {
+                    const isValid = mergedColumns.some(
+                      c => c.name === r.targetColumn
+                    )
+                    if (!isValid) droppedRelationsCount++
+                    return isValid
                   }
-                : f
-            ),
-            relations: activeRelations,
+                  return true
+                })
+                return { ...f, relations: validRelations }
+              }
+            }),
           }
         })
         return droppedRelationsCount
@@ -1326,6 +1329,7 @@ export const useProjectStore = create<ProjectState>()(
     }),
     {
       name: 'wansan-project-v2',
+// ... rest ...
       storage: createBigIntStorage(),
       partialize: state => {
         const {
@@ -1385,3 +1389,14 @@ export const useProjectStore = create<ProjectState>()(
     }
   )
 )
+
+export const selectAllRelations = (state: ProjectState) => {
+  return state.files.flatMap(f => (f.relations || []).map(r => ({
+    id: r.id,
+    fileAId: f.id,
+    columnA: r.sourceColumn,
+    fileBId: r.targetFileId,
+    columnB: r.targetColumn,
+    autoDetected: r.autoDetected
+  })))
+}

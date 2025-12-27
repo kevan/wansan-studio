@@ -7,7 +7,7 @@ import {
   Lightbulb,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
-import { useFileStore } from '../../stores/useFileStore'
+import { useProjectStore } from '../../stores/useProjectStore'
 import { useTranslation } from 'react-i18next'
 
 interface EmptyStateProps {
@@ -63,7 +63,7 @@ export function EmptyState({
   isChatLoading,
   isRestoring,
 }: EmptyStateProps) {
-  const suggestedPrompts = useFileStore(state => state.suggestedPrompts)
+  const suggestedPrompts = useProjectStore(state => state.suggestedPrompts)
   const { t } = useTranslation('chat')
 
   const promptsToShow =

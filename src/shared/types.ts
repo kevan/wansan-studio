@@ -95,6 +95,15 @@ export interface SmartMetric {
   type?: ColumnType // Cached type (e.g., "DOUBLE")
 }
 
+export interface TableRelation {
+  id: string
+  targetFileId: string // Target Table ID
+  sourceColumn: string // Local Column Name
+  targetColumn: string // Remote Column Name
+  joinType?: 'LEFT' | 'INNER' | 'FULL' // Default to LEFT
+  autoDetected?: boolean
+}
+
 export interface FileNode {
   id: string
   name: string
@@ -110,6 +119,7 @@ export interface FileNode {
   lastModified: number // Timestamp (ms) of file modification
   createdAt: number
   smartMetrics?: SmartMetric[] // Persisted metrics
+  relations?: TableRelation[] // NEW: Stored per-file
 }
 
 export interface ReloadResult {

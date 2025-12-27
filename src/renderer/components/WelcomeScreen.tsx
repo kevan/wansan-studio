@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useParseFile, useSelectFiles } from '../hooks/useIPC'
-import { useFileStore } from '../stores/useFileStore'
 import { useProjectStore } from '../stores/useProjectStore'
+import { useSettingsStore } from '../stores/useSettingsStore'
 import { useAutoLink } from '../hooks/useAutoLink'
 import { loadDemoData } from '../lib/demo-data'
 import { useToastStore } from '../stores/useToastStore'
@@ -18,7 +18,7 @@ interface WelcomeScreenProps {
 export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
   const parseFileMutation = useParseFile()
   const selectFilesMutation = useSelectFiles()
-  const { addFile, updateFile } = useFileStore()
+  const { addFile, updateFile } = useProjectStore()
   const { checkAutoLink } = useAutoLink()
   const { addToast } = useToastStore()
   const { t } = useTranslation('chat')
@@ -119,8 +119,8 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
     setTotalCount(0)
     setProcessingCount(0)
 
-    // Trigger auto-link analysis after batch processing
-    const currentFiles = useFileStore.getState().files
+        // Trigger auto-link analysis
+        const currentFiles = useProjectStore.getState().files
     console.log(
       'WelcomeScreen: Batch processed. Triggering auto-link with:',
       currentFiles.length,

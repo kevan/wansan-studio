@@ -40,7 +40,7 @@ export class ProjectManager {
     };
 
     const defaultSemantic: SemanticLayer = {
-      relations: [],
+      relations: {},
       smartMetrics: {},
     };
 
@@ -101,7 +101,7 @@ export class ProjectManager {
         semantic = await fs.readJSON(path.join(projectPath, 'semantic.json'));
     } catch (e) {
         console.warn('Failed to read semantic.json, using default', e);
-        semantic = { relations: [], smartMetrics: {} };
+        semantic = { relations: {}, smartMetrics: {} };
     }
 
     let session: any;
