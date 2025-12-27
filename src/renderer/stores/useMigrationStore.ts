@@ -67,13 +67,12 @@ export const useMigrationStore = create<MigrationState>((set, get) => ({
 
     if (legacyData) {
       console.log(`[Migration] Legacy data found in ${foundKey}`, legacyData);
-      console.log(`[Migration] Legacy files:`, legacyData.files);
       
       // Phase 1: Set migration needed immediately
       set({ 
         isMigrationNeeded: true, 
         total: legacyData.files.length,
-        isChecking: false 
+        isChecking: false // Stop loader immediately
       });
 
       // Phase 2: Async path initialization

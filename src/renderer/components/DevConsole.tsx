@@ -177,9 +177,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
             ],
             smartMetrics: [
               { id: 'm1', name: 'Total Sales', sqlExpression: 'SUM(amount)' }
-            ],
-            lastModified: Date.now(),
-            createdAt: Date.now()
+            ]
           }
         ],
         relations: [],
@@ -238,13 +236,9 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     localStorage.setItem('wansan-project-v2', JSON.stringify(legacyProject))
     localStorage.setItem('wansan-storage', JSON.stringify(legacyProject))
     
-    // Verify write
-    const written = localStorage.getItem('wansan-project-v2')
-    console.log('Written data length:', written?.length)
-    
     // 2. Clear Migration Flag
     localStorage.removeItem('wansan-migration-v1.3')
-
+    
     // 3. Mock Settings
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
       state: {

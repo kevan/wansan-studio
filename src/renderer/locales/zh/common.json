@@ -89,7 +89,6 @@
   "select_x_first": "请先选择 X 轴",
   "close": "关闭",
   "save": "保存",
-  "back": "返回",
   "no_data": "暂无数据",
   "page_of": "第 {{page}} / {{total}} 页",
   "prev": "上一页",
