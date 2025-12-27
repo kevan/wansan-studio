@@ -149,6 +149,109 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     window.location.reload()
   }, [t])
 
+  const injectLegacyData = useCallback(() => {
+    if (!confirm('This will OVERWRITE your current LocalStorage with v1.2 legacy mock data. Continue?')) return
+
+    console.log('💉 Injecting Legacy Data...')
+
+    // 1. Mock Legacy Formats
+    const legacyProject = {
+      state: {
+        meta: {
+          id: 'legacy-id',
+          name: 'Legacy Project',
+          version: '1.2.0',
+          created: Date.now()
+        },
+        files: [
+          {
+            id: 'file-1',
+            name: 'sales_2023.csv',
+            path: 'DEMO_MEMORY',
+            tableName: 't_sales_2023',
+            status: 'ready',
+            progress: 100,
+            columns: [
+              { name: 'date', type: 'VARCHAR', safeName: 'date' },
+              { name: 'amount', type: 'DOUBLE', safeName: 'amount' }
+            ],
+            smartMetrics: [
+              { id: 'm1', name: 'Total Sales', sqlExpression: 'SUM(amount)' }
+            ]
+          }
+        ],
+        relations: [],
+        sessions: [
+          {
+            id: 'session-legacy-1',
+            title: 'Legacy Sales Analysis',
+            createdAt: Date.now() - 86400000,
+            lastModified: Date.now() - 3600000,
+            messages: [
+              {
+                id: 'm-user-1',
+                type: 'user',
+                content: 'Show sales trend',
+                timestamp: Date.now() - 3500000
+              },
+              {
+                id: 'm-bot-1',
+                type: 'assistant',
+                content: 'Here is the sales trend for 2023.',
+                timestamp: Date.now() - 3400000,
+                widgetId: 'widget-1'
+              }
+            ],
+            dashboard: {
+              widgets: [
+                {
+                  id: 'report-1',
+                  sourceMessageId: 'm-bot-1',
+                  widgetId: 'widget-1',
+                  layout: { i: 'report-1', x: 0, y: 0, w: 12, h: 4 },
+                  pageIndex: 0
+                }
+              ],
+              layoutMode: 'a4',
+              pageCount: 1,
+              zoom: 80
+            }
+          }
+        ],
+        widgetRegistry: {
+          'widget-1': {
+            title: 'Monthly Sales Trend',
+            chartType: 'line',
+            sql: 'SELECT date, amount FROM t_sales_2023',
+            summary: 'Overall growth observed.',
+            timestamp: Date.now() - 3400000
+          }
+        },
+        // Ensure v1.3 field is null to force migration/launcher
+        currentProjectPath: null
+      },
+      version: 0
+    }
+
+    localStorage.setItem('wansan-project-v2', JSON.stringify(legacyProject))
+    localStorage.setItem('wansan-storage', JSON.stringify(legacyProject))
+    
+    // 2. Clear Migration Flag
+    localStorage.removeItem('wansan-migration-v1.3')
+    
+    // 3. Mock Settings
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
+      state: {
+        language: 'en',
+        hasCompletedOnboarding: true
+      },
+      version: 3
+    }))
+
+    console.log('✅ Legacy Data Injected. Reloading...')
+    window.location.reload()
+  }, [])
+
   const printAllTables = useCallback(async () => {
     try {
       const result = await window.electronAPI.invoke('get-schema')
@@ -210,7 +313,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     return (
       <button
         onClick={() => setIsMinimized(false)}
-        className="fixed bottom-4 right-4 z-50 px-3 py-2 bg-gray-800 text-white rounded-lg shadow-lg hover:bg-gray-700 text-sm font-mono"
+        className="fixed bottom-4 right-4 z-[200] px-3 py-2 bg-gray-800 text-white rounded-lg shadow-lg hover:bg-gray-700 text-sm font-mono"
       >
         🛠️ Dev Console
       </button>
@@ -221,7 +324,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 z-50 px-3 py-2 bg-gray-800 text-white rounded-lg shadow-lg hover:bg-gray-700 text-sm font-mono"
+        className="fixed bottom-4 right-4 z-[200] px-3 py-2 bg-gray-800 text-white rounded-lg shadow-lg hover:bg-gray-700 text-sm font-mono"
       >
         🛠️ Dev Console
       </button>
@@ -229,7 +332,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-gray-900 text-white shadow-2xl border-t border-gray-700">
+    <div className="fixed bottom-0 left-0 right-0 z-[200] bg-gray-900 text-white shadow-2xl border-t border-gray-700">
       {/* 标题栏 */}
       <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center gap-4">
@@ -342,6 +445,12 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
                 className="px-3 py-2 bg-red-700 hover:bg-red-600 rounded text-sm"
               >
                 ♻️ Reset App State
+              </button>
+              <button
+                onClick={injectLegacyData}
+                className="px-3 py-2 bg-orange-700 hover:bg-orange-600 rounded text-sm"
+              >
+                💉 Inject Legacy Data
               </button>
               <div className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm">
                 <span className="text-gray-400">Language</span>

@@ -56,7 +56,7 @@ function App() {
   useAutoCleanup()
   // useStoreMigration()
 
-  const { isMigrationNeeded, checkStatus } = useMigrationStore()
+  const { isMigrationNeeded, isChecking, checkStatus } = useMigrationStore()
   const { status: saveStatus, lastError: saveError, forceSave } = useAutoSave()
   const currentProjectPath = useProjectStore(s => s.currentProjectPath)
 
@@ -307,9 +307,21 @@ function App() {
   //   )
   // }
 
+  if (isChecking) {
+    return (
+      <div className="h-screen w-screen bg-zinc-50 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-zinc-300 animate-spin" />
+      </div>
+    )
+  }
+
   return (
     <ErrorBoundary>
       <GlobalErrorHandler />
+
+      {/* DevConsole - Always available in dev mode */}
+      {isDev && <DevConsole defaultOpen={false} />}
+
       {isMigrationNeeded ? (
         <MigrationWizard />
       ) : !currentProjectPath ? (
@@ -497,9 +509,6 @@ function App() {
               ) : null}
             </Panel>
           </PanelGroup>
-
-          {/* 开发模式调试控制台 */}
-          {isDev && <DevConsole defaultOpen={false} />}
 
           {/* Global Loading Overlay */}
           {isLoading && (

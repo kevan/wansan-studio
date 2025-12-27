@@ -12,11 +12,18 @@ export const projectService = {
   create: (name: string, location: string) => 
     invoke<string>('project:create', name, location),
     
-  open: (path: string) => 
+  open: (path?: string) => 
     invoke<ProjectLoadResult>('project:open', path),
     
   save: (path: string, data: ProjectSavePayload) => 
     invoke<void>('project:save', path, data),
     
-  close: () => invoke<void>('project:close')
+  close: () => invoke<void>('project:close'),
+
+  getDefaultLocation: async () => {
+    const path = await invoke<string>('get-path', 'documents');
+    return path + '/Wansan';
+  },
+
+  selectDirectory: () => invoke<string>('select-directory')
 };

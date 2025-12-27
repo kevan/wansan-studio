@@ -3,11 +3,11 @@ import { useMigrationStore } from '@/stores/useMigrationStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { 
-  FolderOpen, 
-  ArrowRight, 
-  AlertCircle, 
-  CheckCircle2, 
+import {
+  FolderOpen,
+  ArrowRight,
+  AlertCircle,
+  CheckCircle2,
   Loader2,
   Database
 } from 'lucide-react';
@@ -17,36 +17,31 @@ import { useTranslation } from 'react-i18next';
 
 export function MigrationWizard() {
   const { t } = useTranslation('project');
-  const { 
-    step, 
-    setStep, 
-    progress, 
-    total, 
-    message, 
-    error, 
-    projectName, 
-    setProjectName, 
-    targetPath, 
-    setTargetPath,
+  const {
+    step,
+    setStep,
+    progress,
+    total,
+    message,
+    error,
+    projectName,
+    setProjectName,
+    targetPath,
+    selectDirectory,
     skipMigration,
     isMigrationNeeded
   } = useMigrationStore();
 
-  // Initialize localized project name on mount
+  const [version, setVersion] = useState('');
+
+  // Fetch app version on mount
   React.useEffect(() => {
-    if (!projectName || projectName === 'My Workspace') {
-      setProjectName(t('default_project_name'));
-    }
-  }, [t]);
+    window.electronAPI.getAppVersion().then(res => {
+      if (res.success) setVersion(res.data);
+    });
+  }, []);
 
   if (!isMigrationNeeded) return null;
-
-  const handleBrowse = async () => {
-    const res = await window.electronAPI.selectDirectory();
-    if (res.success && res.data) {
-      setTargetPath(res.data);
-    }
-  };
 
   const handleStart = async () => {
     setStep('running');
@@ -56,39 +51,44 @@ export function MigrationWizard() {
   return (
     <div className="fixed inset-0 z-[100] bg-white flex items-center justify-center p-6 sm:p-12 font-sans selection:bg-black selection:text-white">
       {/* Swiss Style Grid Background (Subtle) */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
            style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
       <div className="w-full max-w-2xl relative">
         {/* Content Wrapper */}
         <div className="border-[3px] border-black bg-white p-8 sm:p-12 shadow-[16px_16px_0_0_#000]">
-          
+
           {/* STEP 1: INTRO */}
           {step === 'intro' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="space-y-4">
                 <div className="inline-block bg-black text-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em]">
-                  {t('upgrade_subtitle')}
+                  {version ? `v${version} Update` : t('upgrade_subtitle')}
                 </div>
                 <h1 className="text-5xl sm:text-6xl font-black tracking-tighter leading-[0.9] text-black">
-                  {t('upgrade_title').split(' ').join('<br />')}
+                  {t('upgrade_title').split(' ').map((word, i, arr) => (
+                    <React.Fragment key={i}>
+                      {word}
+                      {i < arr.length - 1 && <br />}
+                    </React.Fragment>
+                  ))}
                 </h1>
               </div>
-              
+
               <p className="text-xl font-medium leading-tight text-zinc-600 max-w-md">
                 {t('upgrade_desc')}
               </p>
 
               <div className="pt-4 flex flex-col sm:flex-row gap-4">
-                <Button 
+                <Button
                   onClick={() => setStep('config')}
                   className="bg-black hover:bg-zinc-800 text-white rounded-none h-14 px-8 text-lg font-bold group"
                 >
                   {t('start_migration')}
                   <ArrowRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Button>
-                
-                <button 
+
+                <button
                   onClick={skipMigration}
                   className="text-zinc-400 hover:text-red-600 text-xs font-bold uppercase tracking-widest transition-colors text-left sm:text-center self-center"
                 >
@@ -115,7 +115,7 @@ export function MigrationWizard() {
                     value={projectName}
                     onChange={(e) => setProjectName(e.target.value)}
                     className="border-b-2 border-t-0 border-x-0 border-black rounded-none px-0 text-2xl font-bold focus-visible:ring-0 placeholder:text-zinc-200"
-                    placeholder={t('default_project_name')}
+                    placeholder="My Workspace"
                   />
                 </div>
 
@@ -128,9 +128,9 @@ export function MigrationWizard() {
                     <div className="flex-1 border-b-2 border-black pb-2 text-sm font-bold truncate text-zinc-500">
                       {targetPath || t('select_destination')}
                     </div>
-                    <Button 
-                      variant="outline" 
-                      onClick={handleBrowse}
+                    <Button
+                      variant="outline"
+                      onClick={selectDirectory}
                       className="border-2 border-black rounded-none font-bold hover:bg-black hover:text-white transition-all"
                     >
                       <FolderOpen className="h-4 w-4 mr-2" />
@@ -141,14 +141,14 @@ export function MigrationWizard() {
               </div>
 
               <div className="pt-6 flex gap-4">
-                <Button 
+                <Button
                   onClick={handleStart}
                   disabled={!projectName || !targetPath}
-                  className="bg-black hover:bg-zinc-800 text-white rounded-none h-14 px-10 text-lg font-bold flex-1 sm:flex-none"
+                  className="bg-black hover:bg-zinc-800 text-white rounded-none h-14 px-10 text-lg font-bold flex-1 sm:flex-none shadow-[8px_8px_0_0_#e2e8f0]"
                 >
                   {t('create_project_button')}
                 </Button>
-                <Button 
+                <Button
                   variant="ghost"
                   onClick={() => setStep('intro')}
                   className="h-14 px-6 rounded-none font-bold text-zinc-400 hover:text-black"
@@ -179,9 +179,9 @@ export function MigrationWizard() {
                   <span>{t('progress')}</span>
                   <span>{Math.round((progress / total) * 100)}%</span>
                 </div>
-                <Progress 
-                  value={(progress / total) * 100} 
-                  className="h-4 rounded-none border-2 border-black bg-zinc-100" 
+                <Progress
+                  value={(progress / total) * 100}
+                  className="h-4 rounded-none border-2 border-black bg-zinc-100"
                 />
               </div>
 
@@ -201,7 +201,7 @@ export function MigrationWizard() {
                   <CheckCircle2 className="h-12 w-12 text-white" />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <h2 className="text-4xl font-black tracking-tighter text-black uppercase">
                   {t('upgrade_success')}
@@ -211,7 +211,7 @@ export function MigrationWizard() {
                 </p>
               </div>
 
-              <Button 
+              <Button
                 onClick={() => window.location.reload()}
                 className="bg-black hover:bg-zinc-800 text-white rounded-none h-14 px-12 text-lg font-bold shadow-[8px_8px_0_0_#e2e8f0]"
               >
@@ -237,13 +237,13 @@ export function MigrationWizard() {
               </div>
 
               <div className="flex gap-4">
-                <Button 
+                <Button
                   onClick={() => setStep('config')}
                   className="bg-red-600 hover:bg-red-700 text-white rounded-none h-14 px-10 text-lg font-bold flex-1"
                 >
                   {t('try_again')}
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
                   onClick={skipMigration}
                   className="border-2 border-black rounded-none h-14 px-6 font-bold"
@@ -260,7 +260,7 @@ export function MigrationWizard() {
         <div className="absolute -bottom-12 left-0 right-0 flex justify-between items-center px-2">
           <div className="text-[10px] font-black uppercase tracking-widest text-zinc-300 flex items-center gap-2">
             <Database className="h-3 w-3" />
-            Native Engine 1.3
+            Native Engine {version}
           </div>
           <div className="text-[10px] font-black uppercase tracking-widest text-zinc-300">
             © 2025 Wansan Studio

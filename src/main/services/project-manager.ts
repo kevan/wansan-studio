@@ -128,6 +128,12 @@ export class ProjectManager {
         throw new Error('No project path specified for save');
     }
 
+    // Self-healing: Ensure directory exists (user might have deleted it)
+    if (!(await fs.pathExists(targetPath))) {
+        console.warn(`[ProjectManager] Project directory missing at ${targetPath}. Re-creating...`);
+        await fs.ensureDir(targetPath);
+    }
+
     // Trigger non-blocking checkpoint to flush WAL
     this.nativeDB.checkpoint().catch(err => {
         console.warn('[ProjectManager] Checkpoint failed during save:', err);

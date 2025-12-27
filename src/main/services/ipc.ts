@@ -334,6 +334,11 @@ export function setupIPC(
     }
   })
 
+  // 获取应用版本
+  ipcMain.handle('get-app-version', async () => {
+    return { success: true, data: app.getVersion() }
+  })
+
   // 检查文件一致性
   ipcMain.handle(
     'check-files-consistency',

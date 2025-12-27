@@ -77,6 +77,7 @@ export interface ElectronAPI {
   getDeviceId: () => Promise<IPCResponse<string>>
   getUserInfo: () => Promise<IPCResponse<{ username: string }>>
   getPath: (name: string) => Promise<IPCResponse<string>>
+  getAppVersion: () => Promise<IPCResponse<string>>
   secureSet: (key: string, value: string) => Promise<IPCResponse<boolean>>
   secureGet: (key: string) => Promise<IPCResponse<string | null>>
   openExternal: (url: string) => Promise<IPCResponse>
