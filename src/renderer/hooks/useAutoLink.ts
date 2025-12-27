@@ -41,12 +41,14 @@ export function useAutoLink() {
       const language = currentLanguage || 'en' // Use currentLanguage or default to 'en'
 
       // Aggregate all current relations for duplicate check
-      const relationsToUse = filesToUse.flatMap(f => (f.relations || []).map(r => ({
-        sourceFileId: f.id,
-        sourceColumn: r.sourceColumn,
-        targetFileId: r.targetFileId,
-        targetColumn: r.targetColumn
-      })))
+      const relationsToUse = filesToUse.flatMap(f =>
+        (f.relations || []).map(r => ({
+          sourceFileId: f.id,
+          sourceColumn: r.sourceColumn,
+          targetFileId: r.targetFileId,
+          targetColumn: r.targetColumn,
+        }))
+      )
 
       console.log('checkAutoLink called. Files count:', filesToUse.length)
 

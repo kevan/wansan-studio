@@ -274,7 +274,9 @@ const HTML_TEMPLATE = `
 </html>
 `
 
-export async function exportDashboardToHtml(reports: DenormalizedReportWidget[]) {
+export async function exportDashboardToHtml(
+  reports: DenormalizedReportWidget[]
+) {
   // 1. Serialize Data
   const sortedReports = [...reports].sort((a, b) => {
     const ay = a.layout?.y ?? 0

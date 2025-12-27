@@ -1,5 +1,16 @@
 import { useState } from 'react'
-import { Plus, ArrowLeft, Database, Settings, Crown, Sparkles, Settings2, Bot, ChevronRight, LogOut } from 'lucide-react'
+import {
+  Plus,
+  ArrowLeft,
+  Database,
+  Settings,
+  Crown,
+  Sparkles,
+  Settings2,
+  Bot,
+  ChevronRight,
+  LogOut,
+} from 'lucide-react'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { Button } from './ui/button'
 import { useTranslation } from 'react-i18next'
@@ -21,7 +32,7 @@ export function Sidebar(_props: SidebarProps) {
   const closeProject = useProjectStore(state => state.closeProject)
   const files = useProjectStore(state => state.files)
   const hasFiles = files.length > 0
-  
+
   const { t } = useTranslation('common')
   const settings = useSettingsStore()
   const createSession = useProjectStore(state => state.createSession)
@@ -36,12 +47,16 @@ export function Sidebar(_props: SidebarProps) {
           <Button
             onClick={() => createSession()}
             disabled={!hasFiles}
-            title={!hasFiles ? t('import_first_hint', 'Please import data first') : undefined}
+            title={
+              !hasFiles
+                ? t('import_first_hint', 'Please import data first')
+                : undefined
+            }
             className={cn(
-              "w-full h-9 text-sm font-medium transition-all shadow-sm justify-center gap-2 rounded-md active:scale-95",
-              hasFiles 
-                ? "bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200" 
-                : "bg-zinc-100 text-zinc-400 opacity-50 cursor-not-allowed"
+              'w-full h-9 text-sm font-medium transition-all shadow-sm justify-center gap-2 rounded-md active:scale-95',
+              hasFiles
+                ? 'bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200'
+                : 'bg-zinc-100 text-zinc-400 opacity-50 cursor-not-allowed'
             )}
           >
             <Plus className="h-4 w-4" />
@@ -83,18 +98,19 @@ export function Sidebar(_props: SidebarProps) {
       {/* --- FOOTER (FLAT DESIGN) --- */}
       {sidebarMode === 'sessions' && (
         <div className="p-2 border-t border-zinc-200 dark:border-zinc-800 space-y-1 shrink-0">
-          
           {/* Data Assets (Flat List Item) */}
-          <button 
+          <button
             onClick={() => setSidebarMode('data')}
             className="w-full px-3 py-2 text-sm text-left rounded-md flex items-center gap-3 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors group"
           >
             <Database className="w-4 h-4 shrink-0 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
-            <span className="font-medium flex-1">{t('data_assets', 'Data Assets')}</span>
+            <span className="font-medium flex-1">
+              {t('data_assets', 'Data Assets')}
+            </span>
           </button>
 
           {/* User & System (Compact Row) */}
-          <div 
+          <div
             onClick={() =>
               document.dispatchEvent(
                 new CustomEvent('open-settings', { detail: 'general' })
@@ -114,8 +130,8 @@ export function Sidebar(_props: SidebarProps) {
             </div>
 
             {/* Close Project Action */}
-            <button 
-              onClick={(e) => {
+            <button
+              onClick={e => {
                 e.stopPropagation()
                 closeProject()
               }}

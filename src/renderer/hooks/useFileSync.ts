@@ -7,7 +7,6 @@ export function useFileSync() {
   const markAsStale = useProjectStore(state => state.markAsStale)
   const checkConsistency = useCheckFilesConsistency()
 
-
   // Throttle check
   const lastCheckTime = useRef(0)
   const isChecking = useRef(false)

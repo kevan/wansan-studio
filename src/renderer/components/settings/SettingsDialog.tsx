@@ -60,11 +60,15 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
   const [activeTab, setActiveTab] = useState('ai')
   const [licenseCode, setLicenseCode] = useState('')
 
-  const disclaimerText = i18n.language.startsWith('zh') ? DISCLAIMER_TEXT_ZH : DISCLAIMER_TEXT_EN
+  const disclaimerText = i18n.language.startsWith('zh')
+    ? DISCLAIMER_TEXT_ZH
+    : DISCLAIMER_TEXT_EN
 
   const activeProviders = useMemo(() => {
     const remoteProviders = settings.remoteConfig?.providers
-    return remoteProviders ? { ...AI_PROVIDERS, ...remoteProviders } : AI_PROVIDERS
+    return remoteProviders
+      ? { ...AI_PROVIDERS, ...remoteProviders }
+      : AI_PROVIDERS
   }, [settings.remoteConfig])
 
   useEffect(() => {
@@ -90,7 +94,8 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
     }
   }, [])
 
-  const providerConfig = activeProviders[settings.provider] || activeProviders['openai']
+  const providerConfig =
+    activeProviders[settings.provider] || activeProviders['openai']
   const modelOptions = useMemo(
     () => providerConfig?.models || [],
     [providerConfig]
@@ -175,7 +180,10 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
-      <DialogContent aria-describedby={undefined} className="max-w-[700px] h-[80vh] flex flex-col p-0 gap-0">
+      <DialogContent
+        aria-describedby={undefined}
+        className="max-w-[700px] h-[80vh] flex flex-col p-0 gap-0"
+      >
         <DialogHeader className="px-6 py-4 border-b shrink-0">
           <DialogTitle>{t('settings.title')}</DialogTitle>
         </DialogHeader>
@@ -225,11 +233,13 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                         </span>
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(activeProviders).map(([key, config]) => (
-                          <SelectItem key={key} value={key}>
-                            {config.name}
-                          </SelectItem>
-                        ))}
+                        {Object.entries(activeProviders).map(
+                          ([key, config]) => (
+                            <SelectItem key={key} value={key}>
+                              {config.name}
+                            </SelectItem>
+                          )
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -500,13 +510,14 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                 </div>
 
                 <div className="mt-2 text-[10px] text-zinc-400">
-                   {t('about.disclaimer_prefix')} 
-                   <span 
-                     className="underline cursor-pointer hover:text-zinc-600" 
-                     onClick={() => setIsDisclaimerOpen(true)}
-                   >
-                     {t('about.disclaimer_link')}
-                   </span>.
+                  {t('about.disclaimer_prefix')}
+                  <span
+                    className="underline cursor-pointer hover:text-zinc-600"
+                    onClick={() => setIsDisclaimerOpen(true)}
+                  >
+                    {t('about.disclaimer_link')}
+                  </span>
+                  .
                 </div>
 
                 <div className="mt-4 text-xs text-zinc-500">
@@ -514,12 +525,14 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                   <a
                     href={`mailto:${t('about.support_email')}`}
                     className="text-indigo-600 hover:underline"
-                    onClick={(e) => {
-                      e.preventDefault();
+                    onClick={e => {
+                      e.preventDefault()
                       if (window.electronAPI?.openExternal) {
-                        void window.electronAPI.openExternal(`mailto:${t('about.support_email')}`);
+                        void window.electronAPI.openExternal(
+                          `mailto:${t('about.support_email')}`
+                        )
                       } else {
-                        window.open(`mailto:${t('about.support_email')}`);
+                        window.open(`mailto:${t('about.support_email')}`)
                       }
                     }}
                   >
@@ -548,7 +561,9 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
         <DialogContent className="max-w-[600px] max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{t('about.disclaimer_link')}</DialogTitle>
-            <DialogDescription>{t('about.disclaimer_dialog_description')}</DialogDescription>
+            <DialogDescription>
+              {t('about.disclaimer_dialog_description')}
+            </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6 border rounded-md bg-white">
             <SimpleMarkdown content={disclaimerText} />

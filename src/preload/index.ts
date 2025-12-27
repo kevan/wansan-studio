@@ -47,7 +47,8 @@ const electronAPI: ElectronAPI = {
     error: string,
     schemas: any[],
     domainRules?: any[]
-  ) => ipcRenderer.invoke('ask-ai-fix', originalSql, error, schemas, domainRules),
+  ) =>
+    ipcRenderer.invoke('ask-ai-fix', originalSql, error, schemas, domainRules),
   analyzeContext: (schemas: any[], language?: 'en' | 'zh') =>
     ipcRenderer.invoke('analyze-context', schemas, language),
   generateMetricExpression: (options: {
@@ -62,8 +63,19 @@ const electronAPI: ElectronAPI = {
   // 文件同步
   checkFilesConsistency: (files: any[]) =>
     ipcRenderer.invoke('check-files-consistency', files),
-  reIngestFile: (fileId: string, filePath: string, tableName: string, sheetName?: string) =>
-    ipcRenderer.invoke('re-ingest-file', fileId, filePath, tableName, sheetName),
+  reIngestFile: (
+    fileId: string,
+    filePath: string,
+    tableName: string,
+    sheetName?: string
+  ) =>
+    ipcRenderer.invoke(
+      're-ingest-file',
+      fileId,
+      filePath,
+      tableName,
+      sheetName
+    ),
 
   // 导出功能
   exportPDF: (data: any) => ipcRenderer.invoke('export-pdf', data),
@@ -96,16 +108,25 @@ const electronAPI: ElectronAPI = {
   // Open external URLs in user's default browser
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
   getPathForFile: (file: File) => webUtils.getPathForFile(file),
-  setLanguage: (lang: 'en' | 'zh') => ipcRenderer.invoke('app:set-language', lang),
+  setLanguage: (lang: 'en' | 'zh') =>
+    ipcRenderer.invoke('app:set-language', lang),
 
   // 事件监听
-  onWindowStateChanged: (callback: (state: { isFullScreen: boolean }) => void) => {
-    const listener = (_event: any, state: { isFullScreen: boolean }) => callback(state)
+  onWindowStateChanged: (
+    callback: (state: { isFullScreen: boolean }) => void
+  ) => {
+    const listener = (_event: any, state: { isFullScreen: boolean }) =>
+      callback(state)
     ipcRenderer.on('window-state-changed', listener)
     return () => ipcRenderer.removeListener('window-state-changed', listener)
   },
-  onFileProgress: (callback: (data: { fileId: string; progress: number }) => void) => {
-    const listener = (_event: any, data: { fileId: string; progress: number }) => callback(data)
+  onFileProgress: (
+    callback: (data: { fileId: string; progress: number }) => void
+  ) => {
+    const listener = (
+      _event: any,
+      data: { fileId: string; progress: number }
+    ) => callback(data)
     ipcRenderer.on('file:progress', listener)
     return () => ipcRenderer.removeListener('file:progress', listener)
   },

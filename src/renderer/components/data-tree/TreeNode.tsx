@@ -161,11 +161,13 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
         ) : (
           getIcon()
         )}
-        {!isMissing && data.type === 'file' && data.status === 'out-of-sync' && (
-          <div className="absolute -top-1 -right-1 bg-white rounded-full">
-            <AlertCircle className="w-2.5 h-2.5 text-amber-500 fill-white" />
-          </div>
-        )}
+        {!isMissing &&
+          data.type === 'file' &&
+          data.status === 'out-of-sync' && (
+            <div className="absolute -top-1 -right-1 bg-white rounded-full">
+              <AlertCircle className="w-2.5 h-2.5 text-amber-500 fill-white" />
+            </div>
+          )}
       </div>
 
       {/* Label */}

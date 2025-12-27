@@ -20,7 +20,10 @@ export function SchemaWarningModal() {
   if (!pendingReplace) return null
 
   return (
-    <Dialog open={!!pendingReplace} onOpenChange={(open) => !open && setPendingReplace(null)}>
+    <Dialog
+      open={!!pendingReplace}
+      onOpenChange={open => !open && setPendingReplace(null)}
+    >
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-red-600 flex items-center gap-2">
@@ -38,10 +41,7 @@ export function SchemaWarningModal() {
           <Button variant="outline" onClick={() => setPendingReplace(null)}>
             {t('cancel')}
           </Button>
-          <Button 
-            variant="destructive" 
-            onClick={() => confirmReplace()}
-          >
+          <Button variant="destructive" onClick={() => confirmReplace()}>
             {t('proceed_anyway')}
           </Button>
         </DialogFooter>

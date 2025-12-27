@@ -35,7 +35,9 @@ export function ReportCard({
   const pinReport = useWorkbenchStore(state => state.pinReport)
   const removeReport = useWorkbenchStore(state => state.removeReport)
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
-  const setEditingReportId = useWorkbenchStore(state => state.setEditingReportId)
+  const setEditingReportId = useWorkbenchStore(
+    state => state.setEditingReportId
+  )
   const setReplyTo = useChatStore(state => state.setReplyTo)
   const updateReportConfig = useChatStore(state => state.updateReportConfig)
   const updateMessageData = useChatStore(state => state.updateMessageData)

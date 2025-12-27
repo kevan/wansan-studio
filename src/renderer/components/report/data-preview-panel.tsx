@@ -31,7 +31,9 @@ export function DataPreviewPanel() {
     return (
       <div className="h-full w-full flex flex-col items-center justify-center text-zinc-400 gap-2">
         <Loader2 className="w-5 h-5 animate-spin" />
-        <span className="text-sm">{t('restoring_session', { ns: 'chat' })}...</span>
+        <span className="text-sm">
+          {t('restoring_session', { ns: 'chat' })}...
+        </span>
       </div>
     )
   }
@@ -55,9 +57,7 @@ export function DataPreviewPanel() {
           <span className="text-sm font-semibold text-zinc-900">
             {t('sidebar.uploading')}
           </span>
-          <span className="text-xs text-zinc-400 font-mono">
-            {file.name}
-          </span>
+          <span className="text-xs text-zinc-400 font-mono">{file.name}</span>
         </div>
       </div>
     )

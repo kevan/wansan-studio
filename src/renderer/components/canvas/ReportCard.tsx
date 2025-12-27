@@ -136,43 +136,43 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
             </button>
           )}
           {!isTextWidget && (
-          <div className="relative">
-            <button
-              onClick={e => {
-                e.stopPropagation()
-                setShowMenu(!showMenu)
-              }}
-              onMouseDown={e => e.stopPropagation()}
-              className="p-1.5 bg-white text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 rounded-md border border-zinc-200 shadow-sm transition-colors cursor-pointer"
-              title="Options"
-            >
-              <MoreVertical className="w-4 h-4" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={e => {
+                  e.stopPropagation()
+                  setShowMenu(!showMenu)
+                }}
+                onMouseDown={e => e.stopPropagation()}
+                className="p-1.5 bg-white text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 rounded-md border border-zinc-200 shadow-sm transition-colors cursor-pointer"
+                title="Options"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
 
-            {showMenu && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={e => {
-                    e.stopPropagation()
-                    setShowMenu(false)
-                  }}
-                />
-                <div className="absolute right-0 mt-2 w-36 bg-white rounded-md shadow-lg border border-zinc-200 py-1 z-50">
-                  <button
+              {showMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
                     onClick={e => {
                       e.stopPropagation()
-                      handleExportImage()
+                      setShowMenu(false)
                     }}
-                    className="w-full text-left px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2"
-                  >
-                    <FileImage className="w-4 h-4" />
-                    Export PNG
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+                  />
+                  <div className="absolute right-0 mt-2 w-36 bg-white rounded-md shadow-lg border border-zinc-200 py-1 z-50">
+                    <button
+                      onClick={e => {
+                        e.stopPropagation()
+                        handleExportImage()
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2"
+                    >
+                      <FileImage className="w-4 h-4" />
+                      Export PNG
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           )}
 
           <button
@@ -189,9 +189,17 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
           </button>
         </div>
 
-        <div className={cn("flex-1 min-h-0 w-full flex flex-col", !isTextWidget && "pt-4")}>
+        <div
+          className={cn(
+            'flex-1 min-h-0 w-full flex flex-col',
+            !isTextWidget && 'pt-4'
+          )}
+        >
           {isTextWidget ? (
-            <TitleWidget id={report.id} content={report.reportData.content || ''} />
+            <TitleWidget
+              id={report.id}
+              content={report.reportData.content || ''}
+            />
           ) : (
             <DashboardWidget
               {...report.reportData}

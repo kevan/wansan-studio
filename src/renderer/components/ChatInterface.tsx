@@ -210,11 +210,12 @@ export function ChatInterface({
                     )}
 
                     {/* Show content if it exists and is different from the summary */}
-                    {message.content && message.content !== message.reportData?.summary && (
-                      <div className="mb-3 text-zinc-500 text-[14px] leading-relaxed">
-                        {message.content}
-                      </div>
-                    )}
+                    {message.content &&
+                      message.content !== message.reportData?.summary && (
+                        <div className="mb-3 text-zinc-500 text-[14px] leading-relaxed">
+                          {message.content}
+                        </div>
+                      )}
 
                     {message.status === 'error' && (
                       <div className="mb-4">

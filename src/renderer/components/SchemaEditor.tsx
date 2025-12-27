@@ -1,6 +1,12 @@
 import { useProjectStore } from '../stores/useProjectStore'
 import { useSqlLabStore } from '../stores/useSqlLabStore'
-import { ColumnSchema, ColumnType, SmartMetric, TableRelation } from '@shared/types'
+import { useWizardStore } from '../stores/useWizardStore'
+import {
+  ColumnSchema,
+  ColumnType,
+  SmartMetric,
+  TableRelation,
+} from '@shared/types'
 import { getUIFormatType, UIFormatType as FormatType } from '@shared/type-utils'
 import {
   AlignJustify,
@@ -17,6 +23,7 @@ import {
   HelpCircle,
   Key,
   Link2,
+  Plus,
   RefreshCw,
   Sparkles,
   ToggleLeft,
@@ -86,7 +93,8 @@ export function SchemaEditor() {
   const removeSmartMetric = useProjectStore(s => s.removeSmartMetric)
   const addRelation = useProjectStore(s => s.addRelation)
   const removeRelation = useProjectStore(s => s.removeRelation)
-  
+  const openWizard = useWizardStore(s => s.open)
+
   const { t } = useTranslation('common')
   const { t: tAnalysis } = useTranslation('analysis')
   const toast = useToastStore()
@@ -101,14 +109,18 @@ export function SchemaEditor() {
   const currentFile = files.find(f => f.id === currentFileId)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  
+
   // Metric State
   const [isMetricModalOpen, setIsMetricModalOpen] = useState(false)
-  const [editingMetric, setEditingMetric] = useState<SmartMetric | undefined>(undefined)
+  const [editingMetric, setEditingMetric] = useState<SmartMetric | undefined>(
+    undefined
+  )
 
   // Relation State
   const [isRelationModalOpen, setIsRelationModalOpen] = useState(false)
-  const [editingRelation, setEditingRelation] = useState<TableRelation | undefined>(undefined)
+  const [editingRelation, setEditingRelation] = useState<
+    TableRelation | undefined
+  >(undefined)
 
   if (!currentFile) return null
 
@@ -204,12 +216,14 @@ export function SchemaEditor() {
     }
     await addRelation({
       ...relation,
-      sourceFileId: currentFile.id
+      sourceFileId: currentFile.id,
     })
     toast.addToast({
-      title: editingRelation ? t('relationship_updated', 'Relation Updated') : t('relationship_added', 'Relation Added'),
+      title: editingRelation
+        ? t('relationship_updated', 'Relation Updated')
+        : t('relationship_added', 'Relation Added'),
       type: 'success',
-      duration: 2000
+      duration: 2000,
     })
   }
 
@@ -223,7 +237,7 @@ export function SchemaEditor() {
     toast.addToast({
       title: t('relationship_removed'),
       type: 'success',
-      duration: 2000
+      duration: 2000,
     })
   }
 
@@ -244,18 +258,19 @@ export function SchemaEditor() {
               </div>
 
               <div className="flex items-center flex-wrap gap-4 text-sm text-zinc-500 pl-1">
-                <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap" title="SQL Table Name">
+                <div
+                  className="flex items-center gap-1.5 shrink-0 whitespace-nowrap"
+                  title="SQL Table Name"
+                >
                   <Database className="w-3.5 h-3.5 text-zinc-400" />
                   <span className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded text-zinc-700 select-all">
                     {currentFile.tableName}
                   </span>
                 </div>
 
-                                  <div className="w-px h-3 bg-zinc-200 shrink-0" />
+                <div className="w-px h-3 bg-zinc-200 shrink-0" />
 
-                
-
-                                  {/* Stats */}
+                {/* Stats */}
 
                 <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
                   <AlignJustify className="w-3.5 h-3.5 text-zinc-400" />
@@ -273,7 +288,8 @@ export function SchemaEditor() {
                 <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
                   <Clock className="w-3.5 h-3.5 text-zinc-400" />
                   <span className="text-xs">
-                    {t('last_updated')}: {new Date(currentFile.lastModified).toLocaleDateString()}
+                    {t('last_updated')}:{' '}
+                    {new Date(currentFile.lastModified).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -300,6 +316,13 @@ export function SchemaEditor() {
                       setIsRelationModalOpen(true)
                     }}
                     className="hover:bg-indigo-50 hover:border-indigo-200"
+                  />
+
+                  <ExpandableAction
+                    icon={<Plus className="w-4 h-4 text-emerald-600" />}
+                    label={t('append_data', 'Append Data')}
+                    onClick={() => openWizard('append', currentFile.id)}
+                    className="hover:bg-emerald-50 hover:border-emerald-200"
                   />
 
                   <ExpandableAction
@@ -330,31 +353,40 @@ export function SchemaEditor() {
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-30 bg-white shadow-sm">
                 <tr className="text-xs font-semibold text-zinc-500 uppercase tracking-wider bg-white">
-                  <th className="px-6 py-3 w-1/3 border-b">{t('field_name')}</th>
+                  <th className="px-6 py-3 w-1/3 border-b">
+                    {t('field_name')}
+                  </th>
                   <th className="px-6 py-3 w-1/4 border-b">{t('format')}</th>
                   <th className="px-6 py-3 border-b">{t('preview')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {/* Smart Metrics */}
-                {currentFile.smartMetrics && currentFile.smartMetrics.length > 0 && (
-                  <>
-                    <SectionHeader icon={<Sparkles className="w-3 h-3 text-purple-400" />} title={tAnalysis('smart_metric.section_title')} />
-                    {currentFile.smartMetrics.map(metric => (
-                      <SmartMetricRow
-                        key={metric.id}
-                        metric={metric}
-                        onEdit={() => handleEditMetric(metric)}
-                        onDelete={() => handleDeleteMetric(metric.id)}
+                {currentFile.smartMetrics &&
+                  currentFile.smartMetrics.length > 0 && (
+                    <>
+                      <SectionHeader
+                        icon={<Sparkles className="w-3 h-3 text-purple-400" />}
+                        title={tAnalysis('smart_metric.section_title')}
                       />
-                    ))}
-                  </>
-                )}
+                      {currentFile.smartMetrics.map(metric => (
+                        <SmartMetricRow
+                          key={metric.id}
+                          metric={metric}
+                          onEdit={() => handleEditMetric(metric)}
+                          onDelete={() => handleDeleteMetric(metric.id)}
+                        />
+                      ))}
+                    </>
+                  )}
 
                 {/* Relationships */}
                 {currentFile.relations && currentFile.relations.length > 0 && (
                   <>
-                    <SectionHeader icon={<Link2 className="w-3 h-3 text-indigo-400" />} title={t('relationships_root')} />
+                    <SectionHeader
+                      icon={<Link2 className="w-3 h-3 text-indigo-400" />}
+                      title={t('relationships_root')}
+                    />
                     {currentFile.relations.map(rel => {
                       const target = files.find(f => f.id === rel.targetFileId)
                       return (
@@ -371,16 +403,29 @@ export function SchemaEditor() {
                 )}
 
                 {/* Physical Columns */}
-                <SectionHeader icon={<Database className="w-3 h-3" />} title={tAnalysis('smart_metric.physical_columns')} />
+                <SectionHeader
+                  icon={<Database className="w-3 h-3" />}
+                  title={tAnalysis('smart_metric.physical_columns')}
+                />
                 {currentFile.columns.map(col => (
                   <ColumnRow
                     key={col.name}
                     fileId={currentFile.id}
                     column={col}
-                    onToggleKey={() => toggleKeyColumn(currentFile.id, col.name)}
+                    onToggleKey={() =>
+                      toggleKeyColumn(currentFile.id, col.name)
+                    }
                     isLinked={
-                      (currentFile.relations || []).some(r => r.sourceColumn === col.name) ||
-                      files.some(f => (f.relations || []).some(r => r.targetFileId === currentFile.id && r.targetColumn === col.name))
+                      (currentFile.relations || []).some(
+                        r => r.sourceColumn === col.name
+                      ) ||
+                      files.some(f =>
+                        (f.relations || []).some(
+                          r =>
+                            r.targetFileId === currentFile.id &&
+                            r.targetColumn === col.name
+                        )
+                      )
                     }
                   />
                 ))}
@@ -424,10 +469,19 @@ export function SchemaEditor() {
   )
 }
 
-function SectionHeader({ icon, title }: { icon: React.ReactNode, title: string }) {
+function SectionHeader({
+  icon,
+  title,
+}: {
+  icon: React.ReactNode
+  title: string
+}) {
   return (
     <tr className="bg-zinc-50/80 border-y border-zinc-100">
-      <td colSpan={3} className="px-4 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+      <td
+        colSpan={3}
+        className="px-4 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider"
+      >
         <div className="flex items-center gap-2">
           {icon} {title}
         </div>
@@ -436,19 +490,53 @@ function SectionHeader({ icon, title }: { icon: React.ReactNode, title: string }
   )
 }
 
-function SmartMetricRow({ metric, onEdit, onDelete }: { metric: SmartMetric, onEdit: () => void, onDelete: () => void }) {
+function SmartMetricRow({
+  metric,
+  onEdit,
+  onDelete,
+}: {
+  metric: SmartMetric
+  onEdit: () => void
+  onDelete: () => void
+}) {
   const standardizedType = metric.type || 'DOUBLE'
-  let badgeConfig = { color: 'bg-zinc-50 text-zinc-500 border-zinc-200', icon: HelpCircle, label: '?' }
+  let badgeConfig = {
+    color: 'bg-zinc-50 text-zinc-500 border-zinc-200',
+    icon: HelpCircle,
+    label: '?',
+  }
 
   switch (standardizedType) {
-    case 'INTEGER': case 'DOUBLE':
-      badgeConfig = { color: 'bg-blue-50 text-blue-700 border-blue-200', icon: Hash, label: 'NUM' }; break
+    case 'INTEGER':
+    case 'DOUBLE':
+      badgeConfig = {
+        color: 'bg-blue-50 text-blue-700 border-blue-200',
+        icon: Hash,
+        label: 'NUM',
+      }
+      break
     case 'VARCHAR':
-      badgeConfig = { color: 'bg-zinc-100 text-zinc-700 border-zinc-200', icon: Type, label: 'TEXT' }; break
-    case 'DATE': case 'TIMESTAMP':
-      badgeConfig = { color: 'bg-green-50 text-green-700 border-green-200', icon: Calendar, label: 'DATE' }; break
+      badgeConfig = {
+        color: 'bg-zinc-100 text-zinc-700 border-zinc-200',
+        icon: Type,
+        label: 'TEXT',
+      }
+      break
+    case 'DATE':
+    case 'TIMESTAMP':
+      badgeConfig = {
+        color: 'bg-green-50 text-green-700 border-green-200',
+        icon: Calendar,
+        label: 'DATE',
+      }
+      break
     case 'BOOLEAN':
-      badgeConfig = { color: 'bg-orange-50 text-orange-700 border-orange-200', icon: ToggleLeft, label: 'BOOL' }; break
+      badgeConfig = {
+        color: 'bg-orange-50 text-orange-700 border-orange-200',
+        icon: ToggleLeft,
+        label: 'BOOL',
+      }
+      break
   }
 
   return (
@@ -458,11 +546,18 @@ function SmartMetricRow({ metric, onEdit, onDelete }: { metric: SmartMetric, onE
           <div className="p-1 bg-purple-100 rounded text-purple-600">
             <Calculator className="w-3 h-3" />
           </div>
-          <span className="text-sm font-medium text-zinc-900">{metric.name}</span>
+          <span className="text-sm font-medium text-zinc-900">
+            {metric.name}
+          </span>
         </div>
       </td>
       <td className="px-4 py-3">
-        <div className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border', badgeConfig.color)}>
+        <div
+          className={cn(
+            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border',
+            badgeConfig.color
+          )}
+        >
           <badgeConfig.icon className="w-3 h-3" /> {badgeConfig.label}
         </div>
       </td>
@@ -472,8 +567,22 @@ function SmartMetricRow({ metric, onEdit, onDelete }: { metric: SmartMetric, onE
             {metric.sqlExpression}
           </code>
           <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onEdit}><Edit2 className="w-3 h-3 text-zinc-400" /></Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6 hover:text-red-600 hover:bg-red-50" onClick={onDelete}><Trash2 className="w-3 h-3" /></Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={onEdit}
+            >
+              <Edit2 className="w-3 h-3 text-zinc-400" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 hover:text-red-600 hover:bg-red-50"
+              onClick={onDelete}
+            >
+              <Trash2 className="w-3 h-3" />
+            </Button>
           </div>
         </div>
       </td>
@@ -481,13 +590,27 @@ function SmartMetricRow({ metric, onEdit, onDelete }: { metric: SmartMetric, onE
   )
 }
 
-function RelationRow({ relation, targetName, onEdit, onDelete }: { relation: TableRelation, targetName: string, onEdit: () => void, onDelete: () => void }) {
+function RelationRow({
+  relation,
+  targetName,
+  onEdit,
+  onDelete,
+}: {
+  relation: TableRelation
+  targetName: string
+  onEdit: () => void
+  onDelete: () => void
+}) {
   return (
     <tr className="hover:bg-indigo-50/30 transition-colors group">
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="p-1 bg-indigo-100 rounded text-indigo-600"><Link2 className="w-3 h-3" /></div>
-          <span className="text-sm font-medium text-zinc-900 truncate">{targetName}</span>
+          <div className="p-1 bg-indigo-100 rounded text-indigo-600">
+            <Link2 className="w-3 h-3" />
+          </div>
+          <span className="text-sm font-medium text-zinc-900 truncate">
+            {targetName}
+          </span>
         </div>
       </td>
       <td className="px-4 py-3">
@@ -498,13 +621,31 @@ function RelationRow({ relation, targetName, onEdit, onDelete }: { relation: Tab
       <td className="px-4 py-3">
         <div className="flex items-center justify-between group/row">
           <div className="flex items-center gap-1.5">
-            <code className="text-[11px] font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600">{relation.sourceColumn}</code>
+            <code className="text-[11px] font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600">
+              {relation.sourceColumn}
+            </code>
             <span className="text-zinc-400 text-[10px] font-bold">=</span>
-            <code className="text-[11px] font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600">{relation.targetColumn}</code>
+            <code className="text-[11px] font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600">
+              {relation.targetColumn}
+            </code>
           </div>
           <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onEdit}><Edit2 className="w-3 h-3 text-zinc-400" /></Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6 hover:text-red-600 hover:bg-red-50" onClick={onDelete}><Trash2 className="w-3 h-3" /></Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={onEdit}
+            >
+              <Edit2 className="w-3 h-3 text-zinc-400" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 hover:text-red-600 hover:bg-red-50"
+              onClick={onDelete}
+            >
+              <Trash2 className="w-3 h-3" />
+            </Button>
           </div>
         </div>
       </td>
@@ -512,7 +653,17 @@ function RelationRow({ relation, targetName, onEdit, onDelete }: { relation: Tab
   )
 }
 
-function ColumnRow({ fileId, column, onToggleKey, isLinked }: { fileId: string, column: ColumnSchema, onToggleKey: () => void, isLinked: boolean }) {
+function ColumnRow({
+  fileId,
+  column,
+  onToggleKey,
+  isLinked,
+}: {
+  fileId: string
+  column: ColumnSchema
+  onToggleKey: () => void
+  isLinked: boolean
+}) {
   const formatType = getUIFormatType(column.type)
   const config = FORMAT_CONFIG[formatType]
   const IconComponent = config.icon
@@ -536,48 +687,124 @@ function ColumnRow({ fileId, column, onToggleKey, isLinked }: { fileId: string, 
     <tr className="hover:bg-zinc-50 transition-colors group">
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          <button onClick={onToggleKey} className={`mr-1 cursor-pointer transition-colors p-1 rounded hover:bg-zinc-100 flex items-center justify-center ${column.isKey ? 'text-indigo-500' : 'text-zinc-300'}`} title={column.isKey ? t('unset_key') : t('set_key')}>
+          <button
+            onClick={onToggleKey}
+            className={`mr-1 cursor-pointer transition-colors p-1 rounded hover:bg-zinc-100 flex items-center justify-center ${column.isKey ? 'text-indigo-500' : 'text-zinc-300'}`}
+            title={column.isKey ? t('unset_key') : t('set_key')}
+          >
             <Key className="w-3 h-3" />
           </button>
           <div className="flex items-center gap-2 flex-1 min-w-0 group/name">
             {isRenaming ? (
               <div className="flex items-center gap-1 flex-1">
-                <Input autoFocus value={alias} onChange={e => setAlias(e.target.value)} onBlur={submitRename} onKeyDown={e => { if (e.key === 'Enter') submitRename(); if (e.key === 'Escape') { setAlias(column.alias || column.name); setIsRenaming(false); } }} className="h-7 text-sm py-0 px-2" />
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600 shrink-0" onClick={submitRename}><Check className="w-4 h-4" /></Button>
+                <Input
+                  autoFocus
+                  value={alias}
+                  onChange={e => setAlias(e.target.value)}
+                  onBlur={submitRename}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') submitRename()
+                    if (e.key === 'Escape') {
+                      setAlias(column.alias || column.name)
+                      setIsRenaming(false)
+                    }
+                  }}
+                  className="h-7 text-sm py-0 px-2"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-green-600 shrink-0"
+                  onClick={submitRename}
+                >
+                  <Check className="w-4 h-4" />
+                </Button>
               </div>
             ) : (
               <>
-                <span className={cn('text-sm truncate', column.alias ? 'text-zinc-900 font-medium' : 'text-zinc-600')}>{column.alias || column.name}</span>
-                {column.alias && <span className="text-[10px] text-zinc-400 font-mono">({column.name})</span>}
-                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0" onClick={() => setIsRenaming(true)}><Edit2 className="w-3 h-3 text-zinc-400" /></Button>
+                <span
+                  className={cn(
+                    'text-sm truncate',
+                    column.alias ? 'text-zinc-900 font-medium' : 'text-zinc-600'
+                  )}
+                >
+                  {column.alias || column.name}
+                </span>
+                {column.alias && (
+                  <span className="text-[10px] text-zinc-400 font-mono">
+                    ({column.name})
+                  </span>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0"
+                  onClick={() => setIsRenaming(true)}
+                >
+                  <Edit2 className="w-3 h-3 text-zinc-400" />
+                </Button>
               </>
             )}
           </div>
-          {isLinked && <span className="inline-flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded"><Link2 className="w-3 h-3" /></span>}
+          {isLinked && (
+            <span className="inline-flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+              <Link2 className="w-3 h-3" />
+            </span>
+          )}
         </div>
       </td>
       <td className="px-4 py-3">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className={cn('inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded whitespace-nowrap cursor-pointer hover:opacity-80 transition-opacity', config.bgColor, config.textColor)}>
-              <IconComponent className="w-3.5 h-3.5" /> {t(config.label)} <ChevronDown className="w-3 h-3 opacity-50" />
+            <button
+              className={cn(
+                'inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded whitespace-nowrap cursor-pointer hover:opacity-80 transition-opacity',
+                config.bgColor,
+                config.textColor
+              )}
+            >
+              <IconComponent className="w-3.5 h-3.5" /> {t(config.label)}{' '}
+              <ChevronDown className="w-3 h-3 opacity-50" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-32">
-            <DropdownMenuItem onClick={() => handleTypeChange('VARCHAR')}><Type className="w-4 h-4 mr-2" /> {t('format_text')}</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleTypeChange('DOUBLE')}><Hash className="w-4 h-4 mr-2" /> {t('format_number')}</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleTypeChange('DATE')}><Calendar className="w-4 h-4 mr-2" /> {t('format_date')}</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleTypeChange('TIMESTAMP')}><Clock className="w-4 h-4 mr-2" /> {t('format_datetime')}</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleTypeChange('BOOLEAN')}><ToggleLeft className="w-4 h-4 mr-2" /> {t('type_boolean')}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleTypeChange('VARCHAR')}>
+              <Type className="w-4 h-4 mr-2" /> {t('format_text')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleTypeChange('DOUBLE')}>
+              <Hash className="w-4 h-4 mr-2" /> {t('format_number')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleTypeChange('DATE')}>
+              <Calendar className="w-4 h-4 mr-2" /> {t('format_date')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleTypeChange('TIMESTAMP')}>
+              <Clock className="w-4 h-4 mr-2" /> {t('format_datetime')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleTypeChange('BOOLEAN')}>
+              <ToggleLeft className="w-4 h-4 mr-2" /> {t('type_boolean')}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </td>
       <td className="px-4 py-3">
-        {Array.isArray(column.sampleValues) && column.sampleValues.length > 0 ? (
+        {Array.isArray(column.sampleValues) &&
+        column.sampleValues.length > 0 ? (
           <div className="flex gap-1 flex-wrap text-xs text-muted-foreground">
-            {column.sampleValues.map((val, i) => <span key={i} className="bg-zinc-100 px-1.5 py-0.5 rounded text-[10px] border text-zinc-600 max-w-[120px] truncate inline-block align-middle" title={String(val)}>{String(val)}</span>)}
+            {column.sampleValues.map((val, i) => (
+              <span
+                key={i}
+                className="bg-zinc-100 px-1.5 py-0.5 rounded text-[10px] border text-zinc-600 max-w-[120px] truncate inline-block align-middle"
+                title={String(val)}
+              >
+                {String(val)}
+              </span>
+            ))}
           </div>
-        ) : <span className="text-xs text-muted-foreground text-zinc-400 opacity-30 italic">{t('no_preview')}</span>}
+        ) : (
+          <span className="text-xs text-muted-foreground text-zinc-400 opacity-30 italic">
+            {t('no_preview')}
+          </span>
+        )}
       </td>
     </tr>
   )

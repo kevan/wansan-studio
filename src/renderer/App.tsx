@@ -47,6 +47,7 @@ import { useMigrationStore } from './stores/useMigrationStore'
 import { useAutoSave, AutoSaveStatus } from './hooks/useAutoSave'
 import { CloudCheck, CloudOff, Info } from 'lucide-react'
 import { ProjectLauncher } from './components/launcher/ProjectLauncher'
+import { DataIngestionWizard } from './components/wizard/DataIngestionWizard'
 
 function App() {
   useBootSequence()
@@ -284,9 +285,11 @@ function App() {
     // Listen for file progress
     let unsubProgress: (() => void) | undefined
     if (window.electronAPI.onFileProgress) {
-      unsubProgress = window.electronAPI.onFileProgress(({ fileId, progress }) => {
-        useProjectStore.getState().updateFileProgress(fileId, progress)
-      })
+      unsubProgress = window.electronAPI.onFileProgress(
+        ({ fileId, progress }) => {
+          useProjectStore.getState().updateFileProgress(fileId, progress)
+        }
+      )
     }
 
     return () => {
@@ -344,6 +347,7 @@ function App() {
           <SchemaWarningModal />
           <RefreshConfirmModal />
           <SettingsDialog />
+          <DataIngestionWizard />
           <GlobalSqlLab />
           {/* Global Window Header */}
           <header
@@ -538,14 +542,22 @@ function App() {
   )
 }
 
-function AutoSaveIndicator({ status, error, onForceSave }: { status: AutoSaveStatus, error: string | null, onForceSave: () => void }) {
-  const { t } = useTranslation('project');
+function AutoSaveIndicator({
+  status,
+  error,
+  onForceSave,
+}: {
+  status: AutoSaveStatus
+  error: string | null
+  onForceSave: () => void
+}) {
+  const { t } = useTranslation('project')
   const getTitle = () => {
     if (status === 'saved') return t('autosave_all_saved')
     if (status === 'saving') return t('autosave_saving')
     if (status === 'unsaved') return t('autosave_unsaved')
     if (status === 'error') return error || t('autosave_error')
-    return ""
+    return ''
   }
 
   return (
@@ -553,8 +565,10 @@ function AutoSaveIndicator({ status, error, onForceSave }: { status: AutoSaveSta
       onClick={onForceSave}
       title={`${getTitle()}\n${t('autosave_force_save_hint')}`}
       className={cn(
-        "h-8 px-2 rounded-md flex items-center gap-1.5 transition-all outline-none",
-        status === 'error' ? "text-red-500 hover:bg-red-50" : "text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100"
+        'h-8 px-2 rounded-md flex items-center gap-1.5 transition-all outline-none',
+        status === 'error'
+          ? 'text-red-500 hover:bg-red-50'
+          : 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100'
       )}
     >
       {status === 'saving' && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
@@ -563,7 +577,11 @@ function AutoSaveIndicator({ status, error, onForceSave }: { status: AutoSaveSta
       {status === 'error' && <Info className="h-3.5 w-3.5" />}
 
       <span className="text-[10px] font-bold uppercase tracking-widest tabular-nums">
-        {status === 'saving' ? t('status_saving') : status === 'error' ? t('status_error') : ''}
+        {status === 'saving'
+          ? t('status_saving')
+          : status === 'error'
+            ? t('status_error')
+            : ''}
       </span>
     </button>
   )

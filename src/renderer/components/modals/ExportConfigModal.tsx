@@ -78,7 +78,9 @@ export function ExportConfigModal({
                   className="sr-only"
                 />
                 <span className="text-2xl mb-1">📄</span>
-                <span className="text-xs font-bold text-zinc-600">{t('theme_minimal')}</span>
+                <span className="text-xs font-bold text-zinc-600">
+                  {t('theme_minimal')}
+                </span>
               </Label>
 
               <Label
@@ -91,7 +93,9 @@ export function ExportConfigModal({
                   className="sr-only"
                 />
                 <span className="text-2xl mb-1">💼</span>
-                <span className="text-xs font-bold text-blue-700">{t('theme_corporate')}</span>
+                <span className="text-xs font-bold text-blue-700">
+                  {t('theme_corporate')}
+                </span>
               </Label>
 
               <Label
@@ -104,7 +108,9 @@ export function ExportConfigModal({
                   className="sr-only"
                 />
                 <span className="text-2xl mb-1">👾</span>
-                <span className="text-xs font-bold text-zinc-300">{t('theme_cyberpunk')}</span>
+                <span className="text-xs font-bold text-zinc-300">
+                  {t('theme_cyberpunk')}
+                </span>
               </Label>
             </RadioGroup>
           </div>
@@ -114,7 +120,7 @@ export function ExportConfigModal({
           <Button variant="ghost" onClick={onClose}>
             {t('cancel')}
           </Button>
-          <Button 
+          <Button
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-8"
             onClick={() => {
               Analytics.track('web_export_generated', { theme })

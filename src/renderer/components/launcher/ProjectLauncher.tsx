@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { useProjectStore } from '@/stores/useProjectStore';
-import { projectService } from '@/services/project-service';
-import { useProjectIO } from '@/hooks/useProjectIO';
-import { useToastStore } from '@/stores/useToastStore';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useTranslation } from 'react-i18next';
+import React, { useState } from 'react'
+import { useProjectStore } from '@/stores/useProjectStore'
+import { projectService } from '@/services/project-service'
+import { useProjectIO } from '@/hooks/useProjectIO'
+import { useToastStore } from '@/stores/useToastStore'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useTranslation } from 'react-i18next'
 import {
   Plus,
   FolderOpen,
@@ -13,74 +13,74 @@ import {
   Database,
   Monitor,
   ChevronRight,
-  Sparkles
-} from 'lucide-react';
-import { cn } from '@/utils/cn';
-import logo from '@/src/assets/logo.png';
+  Sparkles,
+} from 'lucide-react'
+import { cn } from '@/utils/cn'
+import logo from '@/src/assets/logo.png'
 
-type LauncherMode = 'menu' | 'create';
+type LauncherMode = 'menu' | 'create'
 
 export function ProjectLauncher() {
-  const { t } = useTranslation('project');
-  const [mode, setMode] = useState<LauncherMode>('menu');
-  const [name, setName] = useState('My Workspace');
-    const [targetPath, setTargetPath] = useState('');
-    const [isCreating, setIsCreating] = useState(false);
-    const [version, setVersion] = useState('');
+  const { t } = useTranslation('project')
+  const [mode, setMode] = useState<LauncherMode>('menu')
+  const [name, setName] = useState('My Workspace')
+  const [targetPath, setTargetPath] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
+  const [version, setVersion] = useState('')
 
-    const { createProject, openProject } = useProjectIO();
+  const { createProject, openProject } = useProjectIO()
 
-    // Initialize app version
-    React.useEffect(() => {
-      window.electronAPI.getAppVersion().then(res => {
-        if (res.success) setVersion(res.data);
-      });
-    }, []);
+  // Initialize app version
+  React.useEffect(() => {
+    window.electronAPI.getAppVersion().then(res => {
+      if (res.success) setVersion(res.data)
+    })
+  }, [])
 
-    // Initialize default path via Service
-    React.useEffect(() => {
-      projectService.getDefaultLocation().then(path => {
-        setTargetPath(path);
-      });
-    }, []);
+  // Initialize default path via Service
+  React.useEffect(() => {
+    projectService.getDefaultLocation().then(path => {
+      setTargetPath(path)
+    })
+  }, [])
 
   const handleOpenExisting = async () => {
     try {
-      await openProject(); // Triggers system dialog via useProjectIO -> projectService
+      await openProject() // Triggers system dialog via useProjectIO -> projectService
     } catch (e) {
-      console.error('Failed to open project', e);
+      console.error('Failed to open project', e)
     }
-  };
+  }
 
   const handleBrowseLocation = async () => {
     try {
-      const path = await projectService.selectDirectory();
-      if (path) setTargetPath(path);
+      const path = await projectService.selectDirectory()
+      if (path) setTargetPath(path)
     } catch (e) {
       // User cancelled
     }
-  };
+  }
 
   const handleCreate = async () => {
-    if (!name || !targetPath || isCreating) return;
-    setIsCreating(true);
+    if (!name || !targetPath || isCreating) return
+    setIsCreating(true)
     try {
-      await createProject(name, targetPath);
+      await createProject(name, targetPath)
     } catch (e: any) {
-      console.error('Failed to create project', e);
-      
-      const errorMessage = e.message || 'Unknown error occurred.';
-      const isExistsError = errorMessage.includes('already exists');
-      
+      console.error('Failed to create project', e)
+
+      const errorMessage = e.message || 'Unknown error occurred.'
+      const isExistsError = errorMessage.includes('already exists')
+
       useToastStore.getState().addToast({
         title: t('create_error', 'Creation Failed'),
         description: isExistsError ? t('project_exists_error') : errorMessage,
         type: 'error',
-      });
+      })
     } finally {
-      setIsCreating(false);
+      setIsCreating(false)
     }
-  };
+  }
 
   return (
     <div className="fixed inset-0 z-[100] bg-white flex items-center justify-center p-6 sm:p-12 font-sans selection:bg-black selection:text-white">
@@ -103,13 +103,12 @@ export function ProjectLauncher() {
               <img src={logo} className="h-16 w-16 grayscale" alt="Logo" />
               <div className="space-y-2 text-center sm:text-left">
                 <h1 className="text-6xl sm:text-7xl font-black tracking-tighter leading-[0.8] text-black uppercase">
-                  {'Wansan Studio'.split(' ')
-                    .map((word, i, arr) => (
-                      <React.Fragment key={i}>
-                        {word}
-                        {i < arr.length - 1 && <br />}
-                      </React.Fragment>
-                    ))}
+                  {'Wansan Studio'.split(' ').map((word, i, arr) => (
+                    <React.Fragment key={i}>
+                      {word}
+                      {i < arr.length - 1 && <br />}
+                    </React.Fragment>
+                  ))}
                 </h1>
                 <p className="text-lg font-bold text-zinc-400 uppercase tracking-[0.2em] ml-1">
                   {t('launcher_subtitle')}

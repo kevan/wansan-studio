@@ -50,7 +50,7 @@ export function MetricEditorModal({
   const { t } = useTranslation('common')
   const { t: tAnalysis } = useTranslation('analysis')
   const files = useProjectStore(s => s.files)
-  
+
   // States
   const [name, setName] = useState('')
   const [safeName, setSafeName] = useState('')
@@ -62,14 +62,16 @@ export function MetricEditorModal({
   const [testError, setTestError] = useState<string | null>(null)
 
   const relations = useMemo(() => {
-    return files.flatMap(f => (f.relations || []).map(r => ({
-      id: r.id,
-      fileAId: f.id,
-      columnA: r.sourceColumn,
-      fileBId: r.targetFileId,
-      columnB: r.targetColumn,
-      autoDetected: r.autoDetected
-    })))
+    return files.flatMap(f =>
+      (f.relations || []).map(r => ({
+        id: r.id,
+        fileAId: f.id,
+        columnA: r.sourceColumn,
+        fileBId: r.targetFileId,
+        columnB: r.targetColumn,
+        autoDetected: r.autoDetected,
+      }))
+    )
   }, [files])
 
   // Reset state when modal opens or initialMetric changes

@@ -276,18 +276,21 @@ export function setupIPC(
   })
 
   // AI Web Export
-  ipcMain.handle('export-web-report', async (_event, widgets: any[], config: any) => {
-    try {
-      const result = await exportWebReport(aiService, widgets, config)
-      return result
-    } catch (error) {
-      console.error('Export web report error:', error)
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+  ipcMain.handle(
+    'export-web-report',
+    async (_event, widgets: any[], config: any) => {
+      try {
+        const result = await exportWebReport(aiService, widgets, config)
+        return result
+      } catch (error) {
+        console.error('Export web report error:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
       }
     }
-  })
+  )
 
   // 获取设备 ID
   ipcMain.handle('get-device-id', async () => {
@@ -359,12 +362,18 @@ export function setupIPC(
   // 重新摄取文件
   ipcMain.handle(
     're-ingest-file',
-    async (event, fileId: string, filePath: string, tableName: string, sheetName?: string) => {
+    async (
+      event,
+      fileId: string,
+      filePath: string,
+      tableName: string,
+      sheetName?: string
+    ) => {
       try {
         const onProgress = (rowCount: number) => {
           event.sender.send('file:progress', { fileId, progress: rowCount })
         }
-        
+
         const result = await fileService.reIngestFile(
           filePath,
           tableName,

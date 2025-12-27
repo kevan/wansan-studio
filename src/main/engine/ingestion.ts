@@ -7,7 +7,7 @@ import { ColumnSchema, ColumnType, TableSchema } from '../../shared/types'
 import { processSampleValue } from '../../shared/serialization'
 import { normalizeDuckDBType } from '../../shared/type-utils'
 
-type DBService = NativeDatabaseService;
+type DBService = NativeDatabaseService
 
 /**
  * Common logic to fetch column schema and sample values after a table is created
@@ -93,7 +93,7 @@ export async function ingestJsonData(
     })
 
     const jsonContent = JSON.stringify(processedRows)
-    
+
     // For Native, we must write to a physical file in temp dir
     const tempPath = path.join(app.getPath('temp'), tempFileName)
     await fs.writeFile(tempPath, jsonContent)
@@ -185,8 +185,10 @@ export async function ingestExcelFile(
             }
 
             if (!csvFilePath || !(await fs.pathExists(csvFilePath))) {
-                 console.error(`Worker returned invalid CSV path for sheet ${sheetName}`)
-                 continue
+              console.error(
+                `Worker returned invalid CSV path for sheet ${sheetName}`
+              )
+              continue
             }
 
             let tableName: string
@@ -213,7 +215,9 @@ export async function ingestExcelFile(
             )
 
             // [OPTIMIZATION] Free disk space: remove the temp csv file
-            await fs.unlink(csvFilePath).catch(e => console.error('Failed to cleanup temp CSV:', e))
+            await fs
+              .unlink(csvFilePath)
+              .catch(e => console.error('Failed to cleanup temp CSV:', e))
 
             const description =
               allSheetsCount > 1 ? `${fileName} - ${sheetName}` : fileName

@@ -11,7 +11,15 @@ interface DashboardWidgetProps {
   subtitle?: string
   summary?: string
   insights?: string[]
-  chartType?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi' | 'text'
+  chartType?:
+    | 'bar'
+    | 'line'
+    | 'pie'
+    | 'area'
+    | 'table'
+    | 'scatter'
+    | 'kpi'
+    | 'text'
   chartTitle?: string
   tableData?: Array<Record<string, any>>
   columnFields?: Array<{ name: string; type: string }>

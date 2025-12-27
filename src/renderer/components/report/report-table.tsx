@@ -55,8 +55,8 @@ export function ReportTable({
   const isCard = variant === 'chat' || variant === 'dashboard'
   const isModal = variant === 'preview' || variant === 'fullscreen'
 
-  const columnDefs: ColumnDef<Record<string, any>>[] = effectiveColumnFields.map(
-    field => ({
+  const columnDefs: ColumnDef<Record<string, any>>[] =
+    effectiveColumnFields.map(field => ({
       accessorKey: field.name,
       header: field.name,
       cell: info => {
@@ -68,8 +68,7 @@ export function ReportTable({
           </span>
         )
       },
-    })
-  )
+    }))
 
   const table = useReactTable({
     data: safeData,

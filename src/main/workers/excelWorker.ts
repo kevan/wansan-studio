@@ -18,10 +18,10 @@ async function run() {
       outputDir,
       targetSheetName,
       targetTableName,
-      (rowCount) => {
+      rowCount => {
         parentPort?.postMessage({
           type: 'progress',
-          rowCount
+          rowCount,
         })
       }
     )

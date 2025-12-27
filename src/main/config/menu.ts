@@ -1,4 +1,10 @@
-import { app, Menu, MenuItemConstructorOptions, BrowserWindow, shell } from 'electron';
+import {
+  app,
+  Menu,
+  MenuItemConstructorOptions,
+  BrowserWindow,
+  shell,
+} from 'electron'
 
 const i18nResources = {
   en: {
@@ -36,7 +42,7 @@ const i18nResources = {
     resetZoom: 'Reset Zoom',
     zoomIn: 'Zoom In',
     zoomOut: 'Zoom Out',
-    toggleFullscreen: 'Toggle Full Screen'
+    toggleFullscreen: 'Toggle Full Screen',
   },
   zh: {
     file: '文件',
@@ -73,30 +79,35 @@ const i18nResources = {
     resetZoom: '重置缩放',
     zoomIn: '放大',
     zoomOut: '缩小',
-    toggleFullscreen: '切换全屏'
-  }
-};
+    toggleFullscreen: '切换全屏',
+  },
+}
 
-export function createApplicationMenu(mainWindow: BrowserWindow, language: 'en' | 'zh' = 'en') {
-  const isMac = process.platform === 'darwin';
-  const t = i18nResources[language] || i18nResources.en;
+export function createApplicationMenu(
+  mainWindow: BrowserWindow,
+  language: 'en' | 'zh' = 'en'
+) {
+  const isMac = process.platform === 'darwin'
+  const t = i18nResources[language] || i18nResources.en
 
   const template: MenuItemConstructorOptions[] = [
     ...(isMac
-      ? [{
-          label: app.name,
-          submenu: [
-            { label: `${t.about} ${app.name}`, role: 'about' },
-            { type: 'separator' },
-            { label: t.services, role: 'services' },
-            { type: 'separator' },
-            { label: `${t.hide} ${app.name}`, role: 'hide' },
-            { label: t.hideOthers, role: 'hideOthers' },
-            { label: t.unhide, role: 'unhide' },
-            { type: 'separator' },
-            { label: `${t.quit} ${app.name}`, role: 'quit' }
-          ]
-        } as MenuItemConstructorOptions]
+      ? [
+          {
+            label: app.name,
+            submenu: [
+              { label: `${t.about} ${app.name}`, role: 'about' },
+              { type: 'separator' },
+              { label: t.services, role: 'services' },
+              { type: 'separator' },
+              { label: `${t.hide} ${app.name}`, role: 'hide' },
+              { label: t.hideOthers, role: 'hideOthers' },
+              { label: t.unhide, role: 'unhide' },
+              { type: 'separator' },
+              { label: `${t.quit} ${app.name}`, role: 'quit' },
+            ],
+          } as MenuItemConstructorOptions,
+        ]
       : []),
     {
       label: t.file,
@@ -105,12 +116,14 @@ export function createApplicationMenu(mainWindow: BrowserWindow, language: 'en' 
           label: t.closeProject,
           accelerator: 'CmdOrCtrl+Shift+W',
           click: () => {
-            mainWindow.webContents.send('command:close-project');
-          }
+            mainWindow.webContents.send('command:close-project')
+          },
         },
         { type: 'separator' },
-        (isMac ? { label: t.close, role: 'close' } : { label: t.quit, role: 'quit' }) as MenuItemConstructorOptions
-      ] as MenuItemConstructorOptions[]
+        (isMac
+          ? { label: t.close, role: 'close' }
+          : { label: t.quit, role: 'quit' }) as MenuItemConstructorOptions,
+      ] as MenuItemConstructorOptions[],
     },
     {
       label: t.edit,
@@ -131,16 +144,16 @@ export function createApplicationMenu(mainWindow: BrowserWindow, language: 'en' 
                 label: t.speech,
                 submenu: [
                   { label: t.startSpeaking, role: 'startSpeaking' },
-                  { label: t.stopSpeaking, role: 'stopSpeaking' }
-                ]
-              }
+                  { label: t.stopSpeaking, role: 'stopSpeaking' },
+                ],
+              },
             ]
           : [
               { label: t.delete, role: 'delete' },
               { type: 'separator' },
-              { label: t.selectAll, role: 'selectAll' }
-            ])
-      ] as MenuItemConstructorOptions[]
+              { label: t.selectAll, role: 'selectAll' },
+            ]),
+      ] as MenuItemConstructorOptions[],
     },
     {
       label: t.view,
@@ -153,8 +166,8 @@ export function createApplicationMenu(mainWindow: BrowserWindow, language: 'en' 
         { label: t.zoomIn, role: 'zoomIn' },
         { label: t.zoomOut, role: 'zoomOut' },
         { type: 'separator' },
-        { label: t.toggleFullscreen, role: 'togglefullscreen' }
-      ] as MenuItemConstructorOptions[]
+        { label: t.toggleFullscreen, role: 'togglefullscreen' },
+      ] as MenuItemConstructorOptions[],
     },
     {
       label: t.window,
@@ -166,12 +179,10 @@ export function createApplicationMenu(mainWindow: BrowserWindow, language: 'en' 
               { type: 'separator' },
               { label: t.front, role: 'front' },
               { type: 'separator' },
-              { role: 'window' }
+              { role: 'window' },
             ]
-          : [
-              { label: t.close, role: 'close' }
-            ])
-      ] as MenuItemConstructorOptions[]
+          : [{ label: t.close, role: 'close' }]),
+      ] as MenuItemConstructorOptions[],
     },
     {
       label: t.help,
@@ -181,12 +192,12 @@ export function createApplicationMenu(mainWindow: BrowserWindow, language: 'en' 
           label: t.learnMore,
           click: async () => {
             await shell.openExternal('https://studio.wansan.app')
-          }
-        }
-      ] as MenuItemConstructorOptions[]
-    }
-  ];
+          },
+        },
+      ] as MenuItemConstructorOptions[],
+    },
+  ]
 
-  const menu = Menu.buildFromTemplate(template);
-  Menu.setApplicationMenu(menu);
+  const menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
 }

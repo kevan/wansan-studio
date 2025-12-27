@@ -9,7 +9,7 @@ export function generateMarkdown(messages: ChatMessage[]): string {
 
   for (const msg of messages) {
     const timestamp = new Date(msg.timestamp).toLocaleString()
-    
+
     if (msg.type === 'user') {
       lines.push(`## User (${timestamp})`)
       lines.push('')
@@ -20,7 +20,8 @@ export function generateMarkdown(messages: ChatMessage[]): string {
       lines.push('')
 
       // 1. Content (Skip if it duplicates summary)
-      const isDuplicateSummary = msg.reportData && msg.content === msg.reportData.summary
+      const isDuplicateSummary =
+        msg.reportData && msg.content === msg.reportData.summary
       if (msg.content && !isDuplicateSummary) {
         lines.push(msg.content)
         lines.push('')
@@ -77,19 +78,25 @@ export function generateMarkdown(messages: ChatMessage[]): string {
         if (msg.reportData.tableData && msg.reportData.tableData.length > 0) {
           lines.push('#### Data Result')
           const data = msg.reportData.tableData
-          const columns = msg.reportData.columnFields?.map(c => c.name) || Object.keys(data[0])
-          
+          const columns =
+            msg.reportData.columnFields?.map(c => c.name) ||
+            Object.keys(data[0])
+
           // Header
           lines.push(`| ${columns.join(' | ')} |`)
           lines.push(`| ${columns.map(() => '---').join(' | ')} |`)
-          
+
           // Rows
           for (const row of data) {
-            const rowStr = columns.map(col => {
-              const val = row[col]
-              // Simple escaping for pipe characters
-              return String(val ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ')
-            }).join(' | ')
+            const rowStr = columns
+              .map(col => {
+                const val = row[col]
+                // Simple escaping for pipe characters
+                return String(val ?? '')
+                  .replace(/\|/g, '\\|')
+                  .replace(/\n/g, ' ')
+              })
+              .join(' | ')
             lines.push(`| ${rowStr} |`)
           }
           lines.push('')
@@ -104,7 +111,7 @@ export function generateMarkdown(messages: ChatMessage[]): string {
         lines.push('')
       }
     }
-    
+
     lines.push('---')
     lines.push('')
   }

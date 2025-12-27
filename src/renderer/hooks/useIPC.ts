@@ -252,7 +252,13 @@ export function usePlatform() {
 
 export function useExportWebReport() {
   return useMutation({
-    mutationFn: async ({ widgets, config }: { widgets: any[]; config: any }) => {
+    mutationFn: async ({
+      widgets,
+      config,
+    }: {
+      widgets: any[]
+      config: any
+    }) => {
       const response = await getIpc().exportWebReport(widgets, config)
       if (!response.success) {
         throw new Error(response.error || 'Failed to export web report')
@@ -275,7 +281,12 @@ export function useReIngestFile() {
       tableName: string
       sheetName?: string
     }) => {
-      const response = await getIpc().reIngestFile(fileId, filePath, tableName, sheetName)
+      const response = await getIpc().reIngestFile(
+        fileId,
+        filePath,
+        tableName,
+        sheetName
+      )
       if (!response.success) {
         throw new Error(response.error || 'Failed to re-ingest file')
       }

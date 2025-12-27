@@ -85,11 +85,16 @@ export const DuckDBViewManager = {
     if (!file.smartMetrics || file.smartMetrics.length === 0) {
       // If no smart metrics, drop the view if it exists and return empty map
       try {
-        await window.electronAPI.runSQL(`DROP VIEW IF EXISTS "v_${file.tableName}"`)
+        await window.electronAPI.runSQL(
+          `DROP VIEW IF EXISTS "v_${file.tableName}"`
+        )
       } catch (e) {
-        console.warn(`[DuckDBViewManager] Failed to drop view v_${file.tableName}:`, e)
+        console.warn(
+          `[DuckDBViewManager] Failed to drop view v_${file.tableName}:`,
+          e
+        )
       }
-      return new Map<string, string>();
+      return new Map<string, string>()
     }
 
     const { colMap, selectDimensionClauses, joinClauses } = prepareViewContext(
@@ -143,7 +148,11 @@ export const DuckDBViewManager = {
     allFiles: FileNode[],
     relations: Relation[]
   ): Promise<{ value: any; dataType: ColumnType }> => {
-    const { colMap, joinClauses } = prepareViewContext(file, allFiles, relations)
+    const { colMap, joinClauses } = prepareViewContext(
+      file,
+      allFiles,
+      relations
+    )
     const resolvedExpr = resolveExpression(expression, colMap)
 
     const testSql = `

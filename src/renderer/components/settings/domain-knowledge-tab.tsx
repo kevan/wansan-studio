@@ -44,9 +44,7 @@ export function DomainKnowledgeTab() {
           <BrainCircuit className="w-5 h-5 text-indigo-500" />
           {t('domain.title')}
         </h3>
-        <p className="text-sm text-zinc-500 mt-1">
-          {t('domain.description')}
-        </p>
+        <p className="text-sm text-zinc-500 mt-1">{t('domain.description')}</p>
       </div>
 
       {/* Input Area */}
@@ -69,9 +67,7 @@ export function DomainKnowledgeTab() {
         {domainRules.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-zinc-400 space-y-2">
             <Lightbulb className="w-8 h-8 opacity-50" />
-            <p className="text-sm">
-              {t('domain.empty')}
-            </p>
+            <p className="text-sm">{t('domain.empty')}</p>
           </div>
         ) : (
           domainRules.map(rule => (

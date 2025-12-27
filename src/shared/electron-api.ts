@@ -82,21 +82,20 @@ export interface ElectronAPI {
   secureGet: (key: string) => Promise<IPCResponse<string | null>>
   openExternal: (url: string) => Promise<IPCResponse>
   setLanguage: (lang: 'en' | 'zh') => Promise<IPCResponse>
-  
+
   // Environment
   platform: string
   version: NodeJS.ProcessVersions
-  
+
   // Window Control
-    windowControl: (
-      action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
-    ) => void
-    onWindowStateChanged: (
-      callback: (state: { isFullScreen: boolean }) => void
-    ) => () => void
-    onFileProgress: (
-      callback: (data: { fileId: string; progress: number }) => void
-    ) => () => void
-    onCommandCloseProject: (callback: () => void) => () => void
-  }
-  
+  windowControl: (
+    action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
+  ) => void
+  onWindowStateChanged: (
+    callback: (state: { isFullScreen: boolean }) => void
+  ) => () => void
+  onFileProgress: (
+    callback: (data: { fileId: string; progress: number }) => void
+  ) => () => void
+  onCommandCloseProject: (callback: () => void) => () => void
+}

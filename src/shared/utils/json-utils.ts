@@ -6,7 +6,9 @@
  */
 export function extractJSON(rawContent: string): string {
   if (typeof rawContent !== 'string') {
-    return typeof rawContent === 'object' ? JSON.stringify(rawContent) : String(rawContent)
+    return typeof rawContent === 'object'
+      ? JSON.stringify(rawContent)
+      : String(rawContent)
   }
 
   let cleaned = rawContent.trim()
@@ -65,7 +67,10 @@ export function parseAIResponse<T>(rawContent: any): T {
     return JSON.parse(cleaned) as T
   } catch (e) {
     console.error('[JSON Utils] Parse failed after extraction:', cleaned)
-    const preview = typeof rawContent === 'string' ? rawContent.slice(0, 100) : 'Non-string content'
+    const preview =
+      typeof rawContent === 'string'
+        ? rawContent.slice(0, 100)
+        : 'Non-string content'
     throw new Error(`Failed to parse AI JSON response: ${preview}...`)
   }
 }

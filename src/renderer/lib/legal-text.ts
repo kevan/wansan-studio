@@ -30,7 +30,7 @@ export const DISCLAIMER_TEXT_ZH = `
 ---
 
 **使用本软件即代表您已阅读并同意上述条款。**
-`;
+`
 
 export const DISCLAIMER_TEXT_EN = `
 # Legal Disclaimer
@@ -64,4 +64,4 @@ This Software is **Proprietary Software**.
 ---
 
 **By using this Software, you acknowledge that you have read and agreed to the above terms.**
-`;
+`

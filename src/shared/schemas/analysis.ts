@@ -2,11 +2,17 @@ import { z } from 'zod'
 
 export const ParamSchema = z.object({
   placeholder: z.string().describe('The placeholder in SQL, e.g., {{CITY}}'),
-  label: z.string().optional().describe('Human readable label for the parameter'),
+  label: z
+    .string()
+    .optional()
+    .describe('Human readable label for the parameter'),
   column: z.string().describe('Target column name for distinct query'),
   table: z.string().describe('Target table name for distinct query'),
-  display_columns: z.array(z.string()).optional().describe('Columns to display for better context'),
-  hint: z.string().optional().describe('Fuzzy search term provided by user')
+  display_columns: z
+    .array(z.string())
+    .optional()
+    .describe('Columns to display for better context'),
+  hint: z.string().optional().describe('Fuzzy search term provided by user'),
 })
 
 export type FilterParam = z.infer<typeof ParamSchema>
@@ -31,10 +37,10 @@ export const AnalysisResultSchema = z.object({
   reasoning: z.string().optional(),
   suggestions: z.array(z.string()).optional(),
   error: z.string().optional(),
-  
+
   // v1.2 Smart Filter Fields
   is_template: z.boolean().optional().default(false),
-  missing_params: z.array(ParamSchema).optional()
+  missing_params: z.array(ParamSchema).optional(),
 })
 
 export type AnalysisResult = z.infer<typeof AnalysisResultSchema>

@@ -33,12 +33,13 @@ export async function exportWebReport(
     const isText = reportData.chartType === 'text'
     return {
       id: w.id,
-      title: isText ? '' : (reportData.title || 'Untitled Chart'),
+      title: isText ? '' : reportData.title || 'Untitled Chart',
       type: reportData.chartType,
       desc: reportData.summary || '',
       content: reportData.content || '', // For text widgets
       vizConfig: reportData.vizConfig,
-      layout_hint: width >= 10 ? 'full-width' : (width >= 6 ? 'half-width' : 'compact')
+      layout_hint:
+        width >= 10 ? 'full-width' : width >= 6 ? 'half-width' : 'compact',
     }
   })
 
@@ -49,16 +50,20 @@ export async function exportWebReport(
 
   // 3. Define Theme System
   const THEMES: Record<string, string> = {
-    minimal: 'Minimalist: Clean, lots of white space, thin borders, monochrome palette with subtle gray accents. Primary font: Inter.',
-    cyberpunk: 'Cyberpunk: Dark background (#09090b), neon neon borders (purple/cyan), glowing text effects, grid-paper background patterns. Primary font: JetBrains Mono or similar.',
-    corporate: 'Corporate: Professional blue/navy accents (#1e40af), heavy-duty cards, clean shadows, consistent spacing. Primary font: Segoe UI or system-ui.'
+    minimal:
+      'Minimalist: Clean, lots of white space, thin borders, monochrome palette with subtle gray accents. Primary font: Inter.',
+    cyberpunk:
+      'Cyberpunk: Dark background (#09090b), neon neon borders (purple/cyan), glowing text effects, grid-paper background patterns. Primary font: JetBrains Mono or similar.',
+    corporate:
+      'Corporate: Professional blue/navy accents (#1e40af), heavy-duty cards, clean shadows, consistent spacing. Primary font: Segoe UI or system-ui.',
   }
 
-  const styleInstruction = THEMES[theme] || THEMES.minimal;
+  const styleInstruction = THEMES[theme] || THEMES.minimal
 
-  const languageInstruction = language === 'zh'
-    ? 'Output Language: Chinese (Simplified). Ensure all UI labels, chart legends, and tooltips are in Chinese where appropriate.'
-    : 'Output Language: English.'
+  const languageInstruction =
+    language === 'zh'
+      ? 'Output Language: Chinese (Simplified). Ensure all UI labels, chart legends, and tooltips are in Chinese where appropriate.'
+      : 'Output Language: English.'
 
   // 4. Prompt AI
   const prompt = `
@@ -110,7 +115,7 @@ ${JSON.stringify(meta, null, 2)}
 - Do not wrap in markdown code blocks.
 `
 
-  const systemPrompt = "You are a specialized code generator for BI reports."
+  const systemPrompt = 'You are a specialized code generator for BI reports.'
 
   // 5. Call AI
   console.log('[Web Export] Calling AI with prompt:', prompt)
@@ -137,15 +142,15 @@ ${JSON.stringify(meta, null, 2)}
 
   // Insert before </head> or <body>
   if (html.includes('</head>')) {
-      html = html.replace('</head>', `${injection}</head>`)
+    html = html.replace('</head>', `${injection}</head>`)
   } else {
-      html = html.replace('<body>', `<body>${injection}`)
+    html = html.replace('<body>', `<body>${injection}`)
   }
 
   // 6. Save Dialog
   const { filePath } = await dialog.showSaveDialog({
     filters: [{ name: 'Web Page', extensions: ['html'] }],
-    defaultPath: `${reportTitle.replace(/\s+/g, '_')}.html`
+    defaultPath: `${reportTitle.replace(/\s+/g, '_')}.html`,
   })
 
   if (filePath) {

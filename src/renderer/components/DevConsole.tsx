@@ -5,7 +5,10 @@ import { useProjectStore } from '../stores/useProjectStore'
 import { useChatStore } from '../stores/useChatStore'
 import { useWorkbenchStore } from '../stores/useWorkbenchStore'
 import { useUIStore } from '../stores/useUIStore'
-import { useSettingsStore, SETTINGS_STORAGE_KEY } from '../stores/useSettingsStore'
+import {
+  useSettingsStore,
+  SETTINGS_STORAGE_KEY,
+} from '../stores/useSettingsStore'
 import { useTranslation } from 'react-i18next'
 import legacyData from '@shared/legacy-data.ts'
 
@@ -123,7 +126,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
       'wansan-project-v2',
       'wansan-ui-state',
       'wansan-migration-v1.3',
-      SETTINGS_STORAGE_KEY
+      SETTINGS_STORAGE_KEY,
     ]
     keysToRemove.forEach(key => localStorage.removeItem(key))
 
@@ -150,7 +153,12 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
   }, [t])
 
   const injectLegacyData = useCallback(() => {
-    if (!confirm('This will OVERWRITE your current LocalStorage with v1.2 legacy mock data. Continue?')) return
+    if (
+      !confirm(
+        'This will OVERWRITE your current LocalStorage with v1.2 legacy mock data. Continue?'
+      )
+    )
+      return
 
     console.log('💉 Injecting Legacy Data...')
 
@@ -158,7 +166,10 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     const legacyProject = legacyData
 
     // Use a dedicated key to prevent the current store from wiping 'relations' on hydration
-    localStorage.setItem('wansan-project-v2-legacy-mock', JSON.stringify(legacyProject))
+    localStorage.setItem(
+      'wansan-project-v2-legacy-mock',
+      JSON.stringify(legacyProject)
+    )
     // Also set the main key for files discovery, but we will rely on the mock key for actual migration
     localStorage.setItem('wansan-project-v2', JSON.stringify(legacyProject))
 
@@ -166,13 +177,16 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     localStorage.removeItem('wansan-migration-v1.3')
 
     // 3. Mock Settings
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
-      state: {
-        language: 'en',
-        hasCompletedOnboarding: true
-      },
-      version: 3
-    }))
+    localStorage.setItem(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        state: {
+          language: 'en',
+          hasCompletedOnboarding: true,
+        },
+        version: 3,
+      })
+    )
 
     console.log('✅ Legacy Data Injected. Reloading...')
     window.location.reload()

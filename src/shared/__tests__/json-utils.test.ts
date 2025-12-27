@@ -64,8 +64,9 @@ describe('json-utils', () => {
 
   describe('parseAIResponse', () => {
     it('should parse complex AI responses successfully', () => {
-      const response = 'I have analyzed the data.\n```json\n{"success": true, "count": 42}\n```\nLet me know if you need more help.'
-      const result = parseAIResponse({"success": true, "count": 42})
+      const response =
+        'I have analyzed the data.\n```json\n{"success": true, "count": 42}\n```\nLet me know if you need more help.'
+      const result = parseAIResponse({ success: true, count: 42 })
       // @ts-ignore
       expect(result.success).toBe(true)
       // @ts-ignore

@@ -21,7 +21,12 @@ import {
 
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 
 const ResponsiveGridLayout = WidthProvider(Responsive)

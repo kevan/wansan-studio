@@ -14,7 +14,7 @@ export function useSmartOptions(
 ) {
   const [options, setOptions] = useState<SmartOption[]>([])
   const [loading, setLoading] = useState(false)
-  const files = useProjectStore((s) => s.files)
+  const files = useProjectStore(s => s.files)
 
   useEffect(() => {
     let active = true
@@ -28,16 +28,18 @@ export function useSmartOptions(
       // Handle v_ prefix (Smart Metrics View)
       const isView = table.startsWith('v_')
       const rawTableName = isView ? table.slice(2) : table
-      
-      const file = files.find((f) => f.tableName === rawTableName || f.tableName === table)
-      
+
+      const file = files.find(
+        f => f.tableName === rawTableName || f.tableName === table
+      )
+
       if (!file) {
         // Table not found in metadata
         if (active) setOptions([])
         return
       }
 
-      const availableCols = new Set(file.columns.map((c) => c.name))
+      const availableCols = new Set(file.columns.map(c => c.name))
 
       // If it's a view, we skip strict column validation because columns might be joined/calculated
       // If it's a raw table, we strictly check columns to prevent SQL errors
@@ -50,14 +52,14 @@ export function useSmartOptions(
 
       // For views, we can't easily validate displayColumns against the file.columns (they might be virtual)
       // So we only filter if it's NOT a view.
-      const validDisplayCols = isView 
-        ? displayColumns 
-        : displayColumns.filter((c) => availableCols.has(c))
+      const validDisplayCols = isView
+        ? displayColumns
+        : displayColumns.filter(c => availableCols.has(c))
 
       setLoading(true)
       try {
         const colsToSelect = [`"${column}" as value`]
-        validDisplayCols.forEach((c) => {
+        validDisplayCols.forEach(c => {
           if (c !== column) colsToSelect.push(`"${c}"`)
         })
 
@@ -67,7 +69,7 @@ export function useSmartOptions(
         if (searchTerm) {
           const safeTerm = searchTerm.replace(/'/g, "''")
           const conditions = [`"${column}" ILIKE '%${safeTerm}%'`]
-          validDisplayCols.forEach((c) => {
+          validDisplayCols.forEach(c => {
             if (c !== column) conditions.push(`"${c}" ILIKE '%${safeTerm}%'`)
           })
           query += ` AND (${conditions.join(' OR ')})`

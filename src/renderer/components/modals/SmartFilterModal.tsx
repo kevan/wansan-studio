@@ -32,24 +32,31 @@ export function SmartFilterModal({
 }: SmartFilterModalProps) {
   const { t } = useTranslation(['chat', 'common'])
   const [activeIdx, setActiveIdx] = useState(0)
-  const [paramValues, setParamValues] = useState<Record<string, string[]>>(initialValues)
+  const [paramValues, setParamValues] =
+    useState<Record<string, string[]>>(initialValues)
   const confirmedRef = useRef(false)
 
   const activeParam = params[activeIdx]
 
   const handleConfirm = () => {
     let finalSql = templateSql
-    params.forEach((p) => {
+    params.forEach(p => {
       if (p.placeholder) {
         const vals = paramValues[p.placeholder] || []
         const sqlList = vals
-          .map((v) => `'${String(v).replace(/'/g, "''")}'`)
+          .map(v => `'${String(v).replace(/'/g, "''")}'`)
           .join(', ')
-        
+
         // [FIX] Use regex to match the placeholder AND optional surrounding single quotes.
         // This prevents ''Value'' when template is already '{{PLACEHOLDER}}'.
-        const escapedPlaceholder = p.placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        const regex = new RegExp(`'${escapedPlaceholder}'|${escapedPlaceholder}`, 'g')
+        const escapedPlaceholder = p.placeholder.replace(
+          /[.*+?^${}()|[\]\\]/g,
+          '\\$&'
+        )
+        const regex = new RegExp(
+          `'${escapedPlaceholder}'|${escapedPlaceholder}`,
+          'g'
+        )
         finalSql = finalSql.replace(regex, sqlList)
       }
     })
@@ -59,7 +66,7 @@ export function SmartFilterModal({
   }
 
   const allFilled = params.every(
-    (p) => (paramValues[p.placeholder]?.length || 0) > 0
+    p => (paramValues[p.placeholder]?.length || 0) > 0
   )
   const totalSelected = Object.values(paramValues).reduce(
     (acc, curr) => acc + curr.length,
@@ -69,9 +76,7 @@ export function SmartFilterModal({
   return (
     <Dialog
       open={isOpen}
-      onOpenChange={(open) =>
-        !open && !confirmedRef.current && onCancel()
-      }
+      onOpenChange={open => !open && !confirmedRef.current && onCancel()}
     >
       <DialogContent className="sm:max-w-200 p-0 gap-0 overflow-hidden border-zinc-200 shadow-2xl bg-white transition-all">
         {/* 1. Header (Span Full Width) */}
@@ -131,8 +136,8 @@ export function SmartFilterModal({
                 key={activeParam.placeholder}
                 param={activeParam}
                 value={paramValues[activeParam.placeholder] || []}
-                onChange={(v) =>
-                  setParamValues((prev) => ({
+                onChange={v =>
+                  setParamValues(prev => ({
                     ...prev,
                     [activeParam.placeholder]: v,
                   }))

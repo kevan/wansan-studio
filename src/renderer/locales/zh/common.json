@@ -99,6 +99,7 @@
   "next": "下一页",
   "file_removed": "文件已移除",
   "file_replaced": "文件已替换",
+  "append_data": "追加数据",
   "replace_source": "替换",
   "replace_data_source": "替换数据源",
   "replacing_file": "正在替换文件...",
@@ -252,15 +253,15 @@
   "manage_in_schema_editor": "在表结构编辑器中管理",
   "delete_session_title": "删除会话",
   "delete_session_desc": "确定要删除此会话吗？此操作无法撤销。",
-    "folder_actions_na": "文件夹操作 (不可用)",
-    "file_missing_tooltip": "磁盘上找不到文件",
-    "part_of_relationship": "属于关联的一部分",
-    "rehydrate": {
-      "restoring": "正在恢复数据连接与分析状态...",
-      "restore_failed": "恢复失败",
-      "view_rebuild_failed": "视图重建失败",
-      "restore_with_issues": "会话已恢复（存在问题）",
-      "restore_success": "会话已恢复",
-      "restore_summary": "成功恢复 {{success}} 个文件。{{fail}} 个文件失败。"
-    }
+  "folder_actions_na": "文件夹操作 (不可用)",
+  "file_missing_tooltip": "磁盘上找不到文件",
+  "part_of_relationship": "属于关联的一部分",
+  "rehydrate": {
+    "restoring": "正在恢复数据连接与分析状态...",
+    "restore_failed": "恢复失败",
+    "view_rebuild_failed": "视图重建失败",
+    "restore_with_issues": "会话已恢复（存在问题）",
+    "restore_success": "会话已恢复",
+    "restore_summary": "成功恢复 {{success}} 个文件。{{fail}} 个文件失败。"
   }
+}

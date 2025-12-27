@@ -25,10 +25,10 @@ export function AnalysisTemplateCard({
   return (
     <div
       className={cn(
-        "w-full max-w-md rounded-xl border transition-all duration-300 overflow-hidden",
+        'w-full max-w-md rounded-xl border transition-all duration-300 overflow-hidden',
         isExecuted
-          ? "bg-zinc-50/50 border-zinc-100 mb-2 opacity-80 hover:opacity-100" // Subtle when done
-          : "bg-white border-indigo-100 shadow-sm ring-4 ring-indigo-50/50" // Prominent when pending
+          ? 'bg-zinc-50/50 border-zinc-100 mb-2 opacity-80 hover:opacity-100' // Subtle when done
+          : 'bg-white border-indigo-100 shadow-sm ring-4 ring-indigo-50/50' // Prominent when pending
       )}
     >
       <div className="p-4 flex flex-col gap-3">
@@ -36,10 +36,10 @@ export function AnalysisTemplateCard({
         <div className="flex items-start gap-3">
           <div
             className={cn(
-              "p-2 rounded-lg shrink-0 border transition-colors",
+              'p-2 rounded-lg shrink-0 border transition-colors',
               isExecuted
-                ? "bg-zinc-100 text-zinc-500 border-zinc-200"
-                : "bg-indigo-50 text-indigo-600 border-indigo-100"
+                ? 'bg-zinc-100 text-zinc-500 border-zinc-200'
+                : 'bg-indigo-50 text-indigo-600 border-indigo-100'
             )}
           >
             {isExecuted ? (
@@ -52,8 +52,8 @@ export function AnalysisTemplateCard({
           <div className="space-y-1 text-left">
             <h4
               className={cn(
-                "text-sm font-semibold",
-                isExecuted ? "text-zinc-700" : "text-indigo-900"
+                'text-sm font-semibold',
+                isExecuted ? 'text-zinc-700' : 'text-indigo-900'
               )}
             >
               {isExecuted
@@ -70,13 +70,13 @@ export function AnalysisTemplateCard({
         <div className="pl-[44px]">
           <Button
             size="sm"
-            variant={isExecuted ? "outline" : "default"}
+            variant={isExecuted ? 'outline' : 'default'}
             onClick={onOpenModal}
             className={cn(
-              "w-full sm:w-auto h-8 text-[11px] font-medium",
+              'w-full sm:w-auto h-8 text-[11px] font-medium',
               isExecuted
-                ? "border-zinc-200 text-zinc-600 bg-white hover:bg-zinc-50 hover:text-zinc-900"
-                : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm border-none"
+                ? 'border-zinc-200 text-zinc-600 bg-white hover:bg-zinc-50 hover:text-zinc-900'
+                : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm border-none'
             )}
           >
             {isExecuted ? (

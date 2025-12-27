@@ -28,7 +28,7 @@ describe('exceljsUtils', () => {
       const { results } = await processExcelBufferExcelJS(buffer)
       expect(results).toHaveLength(1)
       expect(results[0].sheetName).toBe('Sheet1')
-      
+
       const csv = results[0].csvData
       expect(csv).toContain('"ID","Name"')
       expect(csv).toContain('"1","Alice"')
@@ -40,7 +40,7 @@ describe('exceljsUtils', () => {
       // Excel "2023-01-01" -> Parsed as UTC 2023-01-01 00:00:00
       const pureDate = new Date('2023-01-01T00:00:00.000Z')
       const timestamp = new Date('2023-01-01T12:30:45.000Z')
-      
+
       const buffer = await createExcelBuffer({
         Dates: [
           ['Type', 'Value'],
@@ -51,7 +51,7 @@ describe('exceljsUtils', () => {
 
       const { results } = await processExcelBufferExcelJS(buffer)
       const csv = results[0].csvData
-      
+
       // Should preserve "Wall Time" regardless of timezone
       expect(csv).toContain('"Date","2023-01-01"')
       expect(csv).toContain('"Time","2023-01-01T12:30:45.000"')
@@ -80,8 +80,11 @@ describe('exceljsUtils', () => {
         Sheet3: [['C'], [3]],
       })
 
-      const { results, allSheetsCount } = await processExcelBufferExcelJS(buffer, 'Sheet2')
-      
+      const { results, allSheetsCount } = await processExcelBufferExcelJS(
+        buffer,
+        'Sheet2'
+      )
+
       expect(results).toHaveLength(1)
       expect(results[0].sheetName).toBe('Sheet2')
       expect(results[0].csvData).toContain('"B"')
@@ -94,7 +97,7 @@ describe('exceljsUtils', () => {
           ['Header'],
           ['Row 1'],
           [null], // Empty
-          [''],   // Empty string
+          [''], // Empty string
           [undefined as any], // Undefined
           ['Row 2'],
         ],
@@ -102,7 +105,7 @@ describe('exceljsUtils', () => {
 
       const { results } = await processExcelBufferExcelJS(buffer)
       const csv = results[0].csvData
-      
+
       // Should contain header and 2 data rows
       const lines = csv.split('\n')
       expect(lines.length).toBe(3)

@@ -39,7 +39,7 @@ export async function loadDemoData(
     // 3. 更新 FileStore
     useProjectStore.getState().addFile(fileNode)
     useProjectStore.getState().setActiveFile(fileId)
-    
+
     // Switch view
     useProjectStore.getState().setView('schema')
 

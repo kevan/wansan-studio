@@ -177,7 +177,8 @@ export function formatDateValue(
     if (/^\d+$/.test(val)) {
       const numVal = Number(val)
       // Apply same microsecond heuristic for numeric strings
-      const finalVal = numVal > 100000000000000 ? Math.floor(numVal / 1000) : numVal
+      const finalVal =
+        numVal > 100000000000000 ? Math.floor(numVal / 1000) : numVal
       dateObj = new Date(finalVal)
     } else {
       // If it's already a clean date string (YYYY-MM-DD) and typeHint is date, return it
@@ -255,7 +256,7 @@ export function formatForDisplay(value: any, typeHint?: string): string {
  */
 export function processSampleValue(val: any, columnType?: ColumnType): any {
   // 1. Handle Date/Time Types if columnType is provided
-  // We prioritize this over generic numeric checks because DuckDB often returns 
+  // We prioritize this over generic numeric checks because DuckDB often returns
   // timestamps as bigints (microseconds).
   if (columnType === 'DATE' || columnType === 'TIMESTAMP') {
     const formattedDate = formatDateValue(
@@ -358,4 +359,3 @@ export function sanitizeValue(value: any): any {
   }
   return value
 }
-    

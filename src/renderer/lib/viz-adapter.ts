@@ -7,7 +7,15 @@ type VizConfig = {
   series_name?: string
 }
 
-type VizType = 'bar' | 'line' | 'pie' | 'scatter' | 'table' | 'area' | 'kpi' | 'text'
+type VizType =
+  | 'bar'
+  | 'line'
+  | 'pie'
+  | 'scatter'
+  | 'table'
+  | 'area'
+  | 'kpi'
+  | 'text'
 
 /**
  * Categorizes chart types into groups for conversion logic
@@ -242,7 +250,8 @@ export function buildEChartsOption(
 
   const hasData = Array.isArray(data) && data.length > 0
   const hasAxes = !!x_axis && yAxes.length > 0
-  const isRenderable = hasData && hasAxes && type !== 'table' && type !== 'kpi' && type !== 'text'
+  const isRenderable =
+    hasData && hasAxes && type !== 'table' && type !== 'kpi' && type !== 'text'
 
   if (!isRenderable || !x_axis || yAxes.length === 0) {
     return {}

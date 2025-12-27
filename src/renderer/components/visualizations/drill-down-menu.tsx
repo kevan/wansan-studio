@@ -33,7 +33,7 @@ export function DrillDownMenu({
   }, [onClose])
 
   // Prevent menu from going off-screen (basic boundary check)
-  // Simple clamping logic could be added here if needed, 
+  // Simple clamping logic could be added here if needed,
   // but for now relying on chart padding is usually okay.
   const style: React.CSSProperties = {
     top: y + 10,

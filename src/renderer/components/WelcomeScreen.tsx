@@ -97,7 +97,8 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
       // 更新状态为 error
       updateFile(fileId, {
         status: 'error',
-        error: error instanceof Error ? error.message : t('sidebar.parse_failed'),
+        error:
+          error instanceof Error ? error.message : t('sidebar.parse_failed'),
       })
       console.error('File processing error:', error)
       return false
@@ -119,15 +120,15 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
     setTotalCount(0)
     setProcessingCount(0)
 
-        // Trigger auto-link analysis
-        const currentFiles = useProjectStore.getState().files
+    // Trigger auto-link analysis
+    const currentFiles = useProjectStore.getState().files
     console.log(
       'WelcomeScreen: Batch processed. Triggering auto-link with:',
       currentFiles.length,
       'files'
     )
     checkAutoLink(currentFiles)
-    
+
     // Switch to Schema View
     useProjectStore.getState().setView('schema')
   }

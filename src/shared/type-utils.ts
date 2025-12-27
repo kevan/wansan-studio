@@ -20,7 +20,13 @@ export function normalizeDuckDBType(duckType: string): ColumnType {
   // Handle Arrow primitive types without brackets or specific DuckDB variants
   if (type.startsWith('INT') || type.startsWith('UINT')) return 'INTEGER'
   if (type.startsWith('FLOAT') || type.startsWith('DOUBLE')) return 'DOUBLE'
-  if (type === 'UTF8' || type === 'LARGEUTF8' || type === 'BINARY' || type === 'LARGEBINARY') return 'VARCHAR'
+  if (
+    type === 'UTF8' ||
+    type === 'LARGEUTF8' ||
+    type === 'BINARY' ||
+    type === 'LARGEBINARY'
+  )
+    return 'VARCHAR'
   if (type === 'BOOL') return 'BOOLEAN'
 
   // --- Standard DuckDB / SQL Type Adaptations ---
@@ -66,7 +72,11 @@ export function normalizeDuckDBType(duckType: string): ColumnType {
   }
 
   // 5. Dates
-  if (type === 'DATE' || type.startsWith('DATE32') || type.startsWith('DATE64')) {
+  if (
+    type === 'DATE' ||
+    type.startsWith('DATE32') ||
+    type.startsWith('DATE64')
+  ) {
     return 'DATE'
   }
 

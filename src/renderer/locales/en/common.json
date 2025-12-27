@@ -99,6 +99,7 @@
   "next": "Next",
   "file_removed": "File Removed",
   "file_replaced": "File replaced",
+  "append_data": "Append Data",
   "replace_source": "Replace",
   "replace_data_source": "Replace Data Source",
   "replacing_file": "Replacing file...",
@@ -252,16 +253,15 @@
   "manage_in_schema_editor": "Manage in Schema Editor",
   "delete_session_title": "Delete Session",
   "delete_session_desc": "Are you sure you want to delete this session? This action cannot be undone.",
-    "folder_actions_na": "Folder Actions (N/A)",
-    "file_missing_tooltip": "File not found on disk",
-    "part_of_relationship": "Part of a relationship",
-    "rehydrate": {
-      "restoring": "Restoring data connections & analysis state...",
-      "restore_failed": "Restore failed",
-      "view_rebuild_failed": "View reconstruction failed",
-      "restore_with_issues": "Session restored with issues",
-      "restore_success": "Session restored",
-      "restore_summary": "Successfully restored {{success}} file(s). {{fail}} failed."
-    }
+  "folder_actions_na": "Folder Actions (N/A)",
+  "file_missing_tooltip": "File not found on disk",
+  "part_of_relationship": "Part of a relationship",
+  "rehydrate": {
+    "restoring": "Restoring data connections & analysis state...",
+    "restore_failed": "Restore failed",
+    "view_rebuild_failed": "View reconstruction failed",
+    "restore_with_issues": "Session restored with issues",
+    "restore_success": "Session restored",
+    "restore_summary": "Successfully restored {{success}} file(s). {{fail}} failed."
   }
-  
+}

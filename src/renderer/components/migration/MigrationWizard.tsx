@@ -1,22 +1,22 @@
-import React, { useState } from 'react';
-import { useMigrationStore } from '@/stores/useMigrationStore';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
+import React, { useState } from 'react'
+import { useMigrationStore } from '@/stores/useMigrationStore'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Progress } from '@/components/ui/progress'
 import {
   FolderOpen,
   ArrowRight,
   AlertCircle,
   CheckCircle2,
   Loader2,
-  Database
-} from 'lucide-react';
-import { cn } from '@/utils/cn';
-import { performMigration } from '@/services/migration-service';
-import { useTranslation } from 'react-i18next';
+  Database,
+} from 'lucide-react'
+import { cn } from '@/utils/cn'
+import { performMigration } from '@/services/migration-service'
+import { useTranslation } from 'react-i18next'
 
 export function MigrationWizard() {
-  const { t } = useTranslation('project');
+  const { t } = useTranslation('project')
   const {
     step,
     setStep,
@@ -29,24 +29,24 @@ export function MigrationWizard() {
     targetPath,
     selectDirectory,
     skipMigration,
-    isMigrationNeeded
-  } = useMigrationStore();
+    isMigrationNeeded,
+  } = useMigrationStore()
 
-  const [version, setVersion] = useState('');
+  const [version, setVersion] = useState('')
 
   // Fetch app version on mount
   React.useEffect(() => {
     window.electronAPI.getAppVersion().then(res => {
-      if (res.success) setVersion(res.data);
-    });
-  }, []);
+      if (res.success) setVersion(res.data)
+    })
+  }, [])
 
-  if (!isMigrationNeeded) return null;
+  if (!isMigrationNeeded) return null
 
   const handleStart = async () => {
-    setStep('running');
-    await performMigration(projectName, targetPath);
-  };
+    setStep('running')
+    await performMigration(projectName, targetPath)
+  }
 
   return (
     <div className="fixed inset-0 z-[100] bg-white flex items-center justify-center p-6 sm:p-12 font-sans selection:bg-black selection:text-white">

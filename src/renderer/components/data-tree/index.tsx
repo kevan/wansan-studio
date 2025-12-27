@@ -64,14 +64,16 @@ export function DataTreeManager({
 
   // Derive all relations from files for tree building
   const relations = useMemo(() => {
-    return files.flatMap(f => (f.relations || []).map(r => ({
-      id: r.id,
-      fileAId: f.id,
-      columnA: r.sourceColumn,
-      fileBId: r.targetFileId,
-      columnB: r.targetColumn,
-      autoDetected: r.autoDetected
-    })))
+    return files.flatMap(f =>
+      (f.relations || []).map(r => ({
+        id: r.id,
+        fileAId: f.id,
+        columnA: r.sourceColumn,
+        fileBId: r.targetFileId,
+        columnB: r.targetColumn,
+        autoDetected: r.autoDetected,
+      }))
+    )
   }, [files])
 
   // 将 Store 数据转换为树数据

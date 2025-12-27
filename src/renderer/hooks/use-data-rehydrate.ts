@@ -52,7 +52,9 @@ export function useDataRehydrate() {
       let verifiedCount = 0
       let failCount = 0
 
-      console.log(`[Rehydrate] Verifying persistence for ${filesToRestore.length} files`)
+      console.log(
+        `[Rehydrate] Verifying persistence for ${filesToRestore.length} files`
+      )
 
       // A. Verify Physical Tables (Persistence Check)
       await Promise.all(
@@ -64,13 +66,16 @@ export function useDataRehydrate() {
               `SELECT table_name FROM information_schema.tables WHERE table_name = '${file.tableName}' AND table_schema = 'main'`
             )
 
-            const tableExists = checkRes.success && checkRes.data && checkRes.data.data.length > 0
+            const tableExists =
+              checkRes.success && checkRes.data && checkRes.data.data.length > 0
 
             if (tableExists) {
               verifiedCount++
             } else {
               // Persistence Miss: Table missing in DB but exists in Store.
-              console.warn(`[Rehydrate] Persistence Miss: Table ${file.tableName} not found. Restoring...`)
+              console.warn(
+                `[Rehydrate] Persistence Miss: Table ${file.tableName} not found. Restoring...`
+              )
 
               const result = await reIngestFile({
                 fileId: file.id,
@@ -78,7 +83,7 @@ export function useDataRehydrate() {
                 tableName: file.tableName,
                 sheetName: file.sheetName,
               })
-              
+
               if (cancelled) return
               reloadFile(file.id, result)
               restoredCount++
@@ -86,9 +91,13 @@ export function useDataRehydrate() {
           } catch (error) {
             if (cancelled) return
             failCount++
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+            const errorMessage =
+              error instanceof Error ? error.message : 'Unknown error'
 
-            if (errorMessage.includes('FILE_NOT_FOUND') || errorMessage.includes('ENOENT')) {
+            if (
+              errorMessage.includes('FILE_NOT_FOUND') ||
+              errorMessage.includes('ENOENT')
+            ) {
               markFileMissing(file.id)
             } else {
               markAsStale([file.id])
@@ -105,26 +114,37 @@ export function useDataRehydrate() {
       const latestState = useProjectStore.getState()
       const currentFiles = latestState.files
       const currentRelations = selectAllRelations(latestState)
-      
+
       const readyFiles = currentFiles.filter(f => f.status === 'ready')
 
       for (const file of readyFiles) {
         // Only rebuild if we have metrics OR relations involving this file as source
-        const hasRelations = (file.relations || []).length > 0;
-        const hasMetrics = file.smartMetrics && file.smartMetrics.length > 0;
+        const hasRelations = (file.relations || []).length > 0
+        const hasMetrics = file.smartMetrics && file.smartMetrics.length > 0
 
         if (hasMetrics || hasRelations) {
-             try {
-                await DuckDBViewManager.rebuildView(file, currentFiles, currentRelations)
-             } catch (error) {
-                 console.error(`[Rehydrate] View sync failed for ${file.tableName}`, error);
-             }
+          try {
+            await DuckDBViewManager.rebuildView(
+              file,
+              currentFiles,
+              currentRelations
+            )
+          } catch (error) {
+            console.error(
+              `[Rehydrate] View sync failed for ${file.tableName}`,
+              error
+            )
+          }
         }
       }
 
-      console.log('[Rehydrate] Sync finished', { verified: verifiedCount, restored: restoredCount, failed: failCount })
+      console.log('[Rehydrate] Sync finished', {
+        verified: verifiedCount,
+        restored: restoredCount,
+        failed: failCount,
+      })
       setRestoring(false)
-      
+
       if (failCount > 0) {
         addToast({
           title: t('rehydrate.restore_with_issues'),
@@ -147,5 +167,15 @@ export function useDataRehydrate() {
       cancelled = true
       setRestoring(false)
     }
-  }, [hydrated, markAsStale, markFileMissing, reIngestFile, reloadFile, setRestoring, updateFile, addToast, t])
+  }, [
+    hydrated,
+    markAsStale,
+    markFileMissing,
+    reIngestFile,
+    reloadFile,
+    setRestoring,
+    updateFile,
+    addToast,
+    t,
+  ])
 }

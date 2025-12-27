@@ -3,7 +3,13 @@ import { persist } from 'zustand/middleware'
 import { ProjectData, Session, ViewMode } from '@shared/types/project'
 import { Message } from '@shared/types/chat'
 import { ReportData, ReportWidget } from '@shared/types/dashboard'
-import { ColumnSchema, FileNode, SelectedNode, SmartMetric, TableRelation } from '@shared/types'
+import {
+  ColumnSchema,
+  FileNode,
+  SelectedNode,
+  SmartMetric,
+  TableRelation,
+} from '@shared/types'
 import { Layout } from 'react-grid-layout'
 import { createBigIntStorage } from '@shared/serialization'
 import { Analytics } from '../services/analytics'
@@ -93,7 +99,9 @@ export interface ProjectState extends ProjectData {
     updates: Partial<ColumnSchema>
   ) => void
   toggleKeyColumn: (fileId: string, columnName: string) => void
-  addRelation: (relation: Omit<TableRelation, 'id'> & { sourceFileId: string }) => void
+  addRelation: (
+    relation: Omit<TableRelation, 'id'> & { sourceFileId: string }
+  ) => void
   removeRelation: (id: string) => void
   addSmartMetric: (fileId: string, metric: SmartMetric) => Promise<void>
   updateSmartMetric: (
@@ -135,21 +143,22 @@ const createNewSession = (): Session => ({
   },
 })
 
-const initialProjectState: ProjectData & { currentProjectPath: string | null } = {
-  meta: {
-    id: crypto.randomUUID(),
-    name: 'Untitled Project',
-    version: '1.1.0',
-    created: Date.now(),
-  },
-  files: [],
-  sessions: [],
-  activeSessionId: '',
-  activeView: 'chat',
-  activeFileId: null,
-  widgetRegistry: {},
-  currentProjectPath: null,
-}
+const initialProjectState: ProjectData & { currentProjectPath: string | null } =
+  {
+    meta: {
+      id: crypto.randomUUID(),
+      name: 'Untitled Project',
+      version: '1.1.0',
+      created: Date.now(),
+    },
+    files: [],
+    sessions: [],
+    activeSessionId: '',
+    activeView: 'chat',
+    activeFileId: null,
+    widgetRegistry: {},
+    currentProjectPath: null,
+  }
 
 export const useProjectStore = create<ProjectState>()(
   persist(
@@ -785,9 +794,7 @@ export const useProjectStore = create<ProjectState>()(
 
       updateFileProgress: (id, progress) =>
         set(state => ({
-          files: state.files.map(f =>
-            f.id === id ? { ...f, progress } : f
-          ),
+          files: state.files.map(f => (f.id === id ? { ...f, progress } : f)),
         })),
 
       updateColumn: (fileId, columnName, updates) => {
@@ -844,7 +851,9 @@ export const useProjectStore = create<ProjectState>()(
 
         // Rebuild View
         const updatedState = get()
-        const updatedSource = updatedState.files.find(f => f.id === sourceFileId)
+        const updatedSource = updatedState.files.find(
+          f => f.id === sourceFileId
+        )
         if (updatedSource) {
           const allRelations = updatedState.files.flatMap(f =>
             (f.relations || []).map(r => ({
@@ -900,7 +909,7 @@ export const useProjectStore = create<ProjectState>()(
         }
       },
 
-            addSmartMetric: async (fileId, metric) => {
+      addSmartMetric: async (fileId, metric) => {
         set(state => ({
           files: state.files.map(f =>
             f.id === fileId
@@ -1329,7 +1338,7 @@ export const useProjectStore = create<ProjectState>()(
     }),
     {
       name: 'wansan-project-v2',
-// ... rest ...
+      // ... rest ...
       storage: createBigIntStorage(),
       partialize: state => {
         const {
@@ -1368,7 +1377,10 @@ export const useProjectStore = create<ProjectState>()(
           const cleanedRegistry: Record<string, ReportData> = {}
           for (const id of allWidgetIds) {
             // Also ensure the entry itself is not malformed
-            if (state.widgetRegistry[id] && typeof state.widgetRegistry[id] === 'object') {
+            if (
+              state.widgetRegistry[id] &&
+              typeof state.widgetRegistry[id] === 'object'
+            ) {
               cleanedRegistry[id] = state.widgetRegistry[id]
             }
           }
@@ -1376,8 +1388,10 @@ export const useProjectStore = create<ProjectState>()(
 
           // 2. Clean the dashboard: remove any widgets that point to non-existent registry entries.
           state.sessions.forEach(s => {
-            s.dashboard.widgets = s.dashboard.widgets.filter(w => w.widgetId && cleanedRegistry[w.widgetId])
-          });
+            s.dashboard.widgets = s.dashboard.widgets.filter(
+              w => w.widgetId && cleanedRegistry[w.widgetId]
+            )
+          })
 
           // 3. Set restoring state
           const hasFilesToRestore = state.files.some(
@@ -1391,12 +1405,14 @@ export const useProjectStore = create<ProjectState>()(
 )
 
 export const selectAllRelations = (state: ProjectState) => {
-  return state.files.flatMap(f => (f.relations || []).map(r => ({
-    id: r.id,
-    fileAId: f.id,
-    columnA: r.sourceColumn,
-    fileBId: r.targetFileId,
-    columnB: r.targetColumn,
-    autoDetected: r.autoDetected
-  })))
+  return state.files.flatMap(f =>
+    (f.relations || []).map(r => ({
+      id: r.id,
+      fileAId: f.id,
+      columnA: r.sourceColumn,
+      fileBId: r.targetFileId,
+      columnB: r.targetColumn,
+      autoDetected: r.autoDetected,
+    }))
+  )
 }

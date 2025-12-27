@@ -16,7 +16,7 @@ export function normalizeHeaders(headers: string[]): string[] {
       counts[baseName] = 0
       return baseName
     } else {
-      counts[baseName]++;
+      counts[baseName]++
       return `${baseName}_${counts[baseName]}`
     }
   })
@@ -31,7 +31,7 @@ export function findHeaderRow(data: any[][]): {
 
   for (let i = 0; i < Math.min(data.length, 20); i++) {
     const row = data[i]
-    if (!row) continue;
+    if (!row) continue
     const nonEmptyCount = row.filter(
       cell => cell !== null && cell !== undefined && cell !== ''
     ).length
@@ -85,9 +85,12 @@ export async function processExcelFileStreaming(
     hyperlinks: 'ignore',
     worksheets: 'emit',
   }
-  
+
   // @ts-ignore
-  const workbookReader = new ExcelJS.stream.xlsx.WorkbookReader(filePath, options)
+  const workbookReader = new ExcelJS.stream.xlsx.WorkbookReader(
+    filePath,
+    options
+  )
   const results: StreamingProcessResult[] = []
   let sheetCount = 0
 
@@ -106,14 +109,18 @@ export async function processExcelFileStreaming(
     }
 
     if (!shouldProcess) {
-      for await (const _row of worksheetReader) { /* consume */ }
+      for await (const _row of worksheetReader) {
+        /* consume */
+      }
       continue
     }
 
     try {
       const tempCsvName = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.csv`
       const csvFilePath = path.join(outputDir, tempCsvName)
-      const writeStream = fs.createWriteStream(csvFilePath, { encoding: 'utf8' })
+      const writeStream = fs.createWriteStream(csvFilePath, {
+        encoding: 'utf8',
+      })
 
       // Buffer for header detection
       const ROW_BUFFER_SIZE = 50
@@ -165,24 +172,28 @@ export async function processExcelFileStreaming(
       // Iterate rows in the sheet
       for await (const row of worksheetReader) {
         rawRowIndex++
-        
+
         // In streaming mode, row.values is fast but row.getCell is needed for styles
         // We iterate manually to handle Date serial conversion if styles are available
         const values: any[] = []
         const rowValues = row.values as any[]
         const maxCol = Array.isArray(rowValues) ? rowValues.length - 1 : 0
-        
+
         for (let i = 1; i <= maxCol; i++) {
           const cell = row.getCell(i)
           let val = cell.value
 
           // [FIX] Handle Excel Serial Dates that are inferred as numbers
-          if (typeof val === 'number' && cell.numFmt && isDateFmt(cell.numFmt)) {
-             // Excel epoch is 1899-12-30 (25569 days before Unix epoch)
-             const date = new Date(Math.round((val - 25569) * 86400 * 1000))
-             if (!isNaN(date.getTime())) {
-               val = date
-             }
+          if (
+            typeof val === 'number' &&
+            cell.numFmt &&
+            isDateFmt(cell.numFmt)
+          ) {
+            // Excel epoch is 1899-12-30 (25569 days before Unix epoch)
+            const date = new Date(Math.round((val - 25569) * 86400 * 1000))
+            if (!isNaN(date.getTime())) {
+              val = date
+            }
           }
 
           // Handle Rich Text / Hyperlinks
@@ -200,80 +211,97 @@ export async function processExcelFileStreaming(
 
         if (!headersFound) {
           rowBuffer.push(values)
-          
+
           if (rowBuffer.length >= ROW_BUFFER_SIZE) {
             // Try detect
-            const { headerRowIndex: foundIndex, headers } = findHeaderRow(rowBuffer)
+            const { headerRowIndex: foundIndex, headers } =
+              findHeaderRow(rowBuffer)
             headerRowIndex = foundIndex
             normalizedHeaders = normalizeHeaders(headers)
             colCount = normalizedHeaders.length
-            
+
             // Write Header
             const headerLine = normalizedHeaders
-                .map(h => `"${String(h).replace(/"/g, '""')}"`)
-                .join(',')
+              .map(h => `"${String(h).replace(/"/g, '""')}"`)
+              .join(',')
             writeStream.write(headerLine + '\n')
 
             // Flush Buffer (from headerRowIndex + 1)
             for (let i = headerRowIndex + 1; i < rowBuffer.length; i++) {
-                const buffRow = rowBuffer[i]
-                // Filter empty rows
-                 if (buffRow.some(c => c !== null && c !== undefined && String(c).trim() !== '')) {
-                     writeStream.write(processRowToCSV(buffRow) + '\n')
-                     rowCount++
-                     if (onProgress && rowCount % 5000 === 0) onProgress(rowCount)
-                 }
+              const buffRow = rowBuffer[i]
+              // Filter empty rows
+              if (
+                buffRow.some(
+                  c => c !== null && c !== undefined && String(c).trim() !== ''
+                )
+              ) {
+                writeStream.write(processRowToCSV(buffRow) + '\n')
+                rowCount++
+                if (onProgress && rowCount % 5000 === 0) onProgress(rowCount)
+              }
             }
             headersFound = true
             rowBuffer.length = 0 // Clear memory
           }
         } else {
-            // Stream mode: process directly
-             if (values.some(c => c !== null && c !== undefined && String(c).trim() !== '')) {
-                 writeStream.write(processRowToCSV(values) + '\n')
-                 rowCount++
-                 if (onProgress && rowCount % 5000 === 0) onProgress(rowCount)
-             }
+          // Stream mode: process directly
+          if (
+            values.some(
+              c => c !== null && c !== undefined && String(c).trim() !== ''
+            )
+          ) {
+            writeStream.write(processRowToCSV(values) + '\n')
+            rowCount++
+            if (onProgress && rowCount % 5000 === 0) onProgress(rowCount)
+          }
         }
       }
 
       // End of rows. If headers still not found (file < 50 rows)
       if (!headersFound && rowBuffer.length > 0) {
-         const { headerRowIndex: foundIndex, headers } = findHeaderRow(rowBuffer)
-         headerRowIndex = foundIndex
-         normalizedHeaders = normalizeHeaders(headers)
-         colCount = normalizedHeaders.length
-         
-         const headerLine = normalizedHeaders
-             .map(h => `"${String(h).replace(/"/g, '""')}"`)
-             .join(',')
-         writeStream.write(headerLine + '\n')
+        const { headerRowIndex: foundIndex, headers } = findHeaderRow(rowBuffer)
+        headerRowIndex = foundIndex
+        normalizedHeaders = normalizeHeaders(headers)
+        colCount = normalizedHeaders.length
 
-         for (let i = headerRowIndex + 1; i < rowBuffer.length; i++) {
-             const buffRow = rowBuffer[i]
-             if (buffRow.some(c => c !== null && c !== undefined && String(c).trim() !== '')) {
-                  writeStream.write(processRowToCSV(buffRow) + '\n')
-                  rowCount++
-                  if (onProgress && rowCount % 5000 === 0) onProgress(rowCount)
-             }
-         }
+        const headerLine = normalizedHeaders
+          .map(h => `"${String(h).replace(/"/g, '""')}"`)
+          .join(',')
+        writeStream.write(headerLine + '\n')
+
+        for (let i = headerRowIndex + 1; i < rowBuffer.length; i++) {
+          const buffRow = rowBuffer[i]
+          if (
+            buffRow.some(
+              c => c !== null && c !== undefined && String(c).trim() !== ''
+            )
+          ) {
+            writeStream.write(processRowToCSV(buffRow) + '\n')
+            rowCount++
+            if (onProgress && rowCount % 5000 === 0) onProgress(rowCount)
+          }
+        }
       }
 
       if (onProgress) onProgress(rowCount)
 
       writeStream.end()
-      
+
       // Wait for finish
       await new Promise((resolve, reject) => {
-          writeStream.on('finish', () => resolve(null))
-          writeStream.on('error', reject)
+        writeStream.on('finish', () => resolve(null))
+        writeStream.on('error', reject)
       })
 
       results.push({ sheetName, csvFilePath, rowCount })
-
     } catch (e: any) {
-        console.error(`Error processing sheet ${sheetName}:`, e)
-        results.push({ sheetName, csvFilePath: '', rowCount: 0, error: e.message })
+      console.error(`Error processing sheet ${sheetName}:`, e)
+      results.push({
+        sheetName,
+        csvFilePath: '',
+        rowCount: 0,
+        error: e.message,
+      })
     }
   }
 
@@ -326,25 +354,25 @@ export async function processExcelBufferExcelJS(
 
         // Note: row.values exists but has the 1-based quirk.
         if (Array.isArray(row.values)) {
-             // row.values[0] is undefined/empty.
-             // We need to handle sparse arrays carefully.
-             // Mapping row.values to a clean array
-             const values = row.values as any[]
-             // ExcelJS values array length = max column index + 1
-             for(let i = 1; i < values.length; i++) {
-                 rowData[i-1] = values[i]
-             }
+          // row.values[0] is undefined/empty.
+          // We need to handle sparse arrays carefully.
+          // Mapping row.values to a clean array
+          const values = row.values as any[]
+          // ExcelJS values array length = max column index + 1
+          for (let i = 1; i < values.length; i++) {
+            rowData[i - 1] = values[i]
+          }
         } else if (typeof row.values === 'object') {
-            // Should not happen for basic load, but handle just in case
-            // row.values might be {1: 'a', 2: 'b'}
-            // ...
-            // Let's stick to iterating cells if unsure, but row.values is faster
-             const values = row.values as any
-             // Find max key?
-             // Simplest: iterate columns
-             worksheet.columns?.forEach((col, idx) => {
-                 // ... this is complex without knowing headers.
-             })
+          // Should not happen for basic load, but handle just in case
+          // row.values might be {1: 'a', 2: 'b'}
+          // ...
+          // Let's stick to iterating cells if unsure, but row.values is faster
+          const values = row.values as any
+          // Find max key?
+          // Simplest: iterate columns
+          worksheet.columns?.forEach((col, idx) => {
+            // ... this is complex without knowing headers.
+          })
         }
 
         // Handling Merged Cells:
@@ -371,36 +399,38 @@ export async function processExcelBufferExcelJS(
         // ExcelJS: "Master cell has the value. Other cells share the value IF accessed via API?"
         // Checking: cell.value might be the value or null. cell.master is the master cell.
 
-        for (let colNumber = 1; colNumber <= row.cellCount; colNumber++) { // This might skip trailing empty cells
-             // We want consistent columns.
-             // We'll normalize length later (padding).
+        for (let colNumber = 1; colNumber <= row.cellCount; colNumber++) {
+          // This might skip trailing empty cells
+          // We want consistent columns.
+          // We'll normalize length later (padding).
 
-             const cell = row.getCell(colNumber)
+          const cell = row.getCell(colNumber)
 
-             // Handle Merge: if cell is merged but not master, use master's value
-             let val = cell.value
-             if (cell.isMerged && cell.master && cell !== cell.master) {
-                 val = cell.master.value
-             }
+          // Handle Merge: if cell is merged but not master, use master's value
+          let val = cell.value
+          if (cell.isMerged && cell.master && cell !== cell.master) {
+            val = cell.master.value
+          }
 
-             // ExcelJS Rich Text / Hyperlinks / Formula
-             if (val && typeof val === 'object') {
-                 if ('richText' in val) {
-                     val = (val as any).richText.map((t: any) => t.text).join('')
-                 } else if ('text' in val && 'hyperlink' in val) {
-                     val = (val as any).text
-                 } else if ('result' in val) { // Formula
-                     val = (val as any).result
-                 } else if (val instanceof Date) {
-                     // Keep Date object
-                 } else {
-                     // Unknown object, maybe error
-                     val = String(val)
-                 }
-             }
+          // ExcelJS Rich Text / Hyperlinks / Formula
+          if (val && typeof val === 'object') {
+            if ('richText' in val) {
+              val = (val as any).richText.map((t: any) => t.text).join('')
+            } else if ('text' in val && 'hyperlink' in val) {
+              val = (val as any).text
+            } else if ('result' in val) {
+              // Formula
+              val = (val as any).result
+            } else if (val instanceof Date) {
+              // Keep Date object
+            } else {
+              // Unknown object, maybe error
+              val = String(val)
+            }
+          }
 
-             // 0-based index
-             filledRowData[colNumber - 1] = val
+          // 0-based index
+          filledRowData[colNumber - 1] = val
         }
 
         data.push(filledRowData)
@@ -415,7 +445,13 @@ export async function processExcelBufferExcelJS(
 
       // Filter empty rows
       const dataRows = data.slice(headerRowIndex + 1).filter(row => {
-        return row && row.some(cell => cell !== null && cell !== undefined && String(cell).trim() !== '')
+        return (
+          row &&
+          row.some(
+            cell =>
+              cell !== null && cell !== undefined && String(cell).trim() !== ''
+          )
+        )
       })
 
       const csvLines = dataRows.map(row => {
@@ -473,7 +509,6 @@ export async function processExcelBufferExcelJS(
       const csvData = [headerLine, ...csvLines].join('\n')
 
       results.push({ sheetName: worksheet.name, csvData })
-
     } catch (e: any) {
       results.push({ sheetName: worksheet.name, csvData: '', error: e.message })
     }

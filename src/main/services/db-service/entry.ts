@@ -1,14 +1,14 @@
-import { DuckDBInstance } from '@duckdb/node-api';
-import { DBRequest, DBResponse } from '../../../shared/types/ipc-db';
-import { sanitizeValue } from '../../../shared/serialization';
-import { normalizeDuckDBType } from '../../../shared/type-utils';
+import { DuckDBInstance } from '@duckdb/node-api'
+import { DBRequest, DBResponse } from '../../../shared/types/ipc-db'
+import { sanitizeValue } from '../../../shared/serialization'
+import { normalizeDuckDBType } from '../../../shared/type-utils'
 
-let db: DuckDBInstance | null = null;
-let connection: any = null;
-let messageQueue: Promise<void> = Promise.resolve();
+let db: DuckDBInstance | null = null
+let connection: any = null
+let messageQueue: Promise<void> = Promise.resolve()
 
 async function handleMessage(msg: DBRequest) {
-  const { reqId, type, payload } = msg;
+  const { reqId, type, payload } = msg
 
   // Chain to the queue to ensure sequential processing
   messageQueue = messageQueue.then(async () => {
@@ -17,194 +17,218 @@ async function handleMessage(msg: DBRequest) {
         case 'CONNECT': {
           if (connection) {
             try {
-               // In @duckdb/node-api, explicit termination is better
-               // Attempt to close if the API supports it, otherwise nullify
-               connection = null;
-               db = null;
+              // In @duckdb/node-api, explicit termination is better
+              // Attempt to close if the API supports it, otherwise nullify
+              connection = null
+              db = null
             } catch (e) {
-              console.warn('Error closing previous connection:', e);
+              console.warn('Error closing previous connection:', e)
             }
           }
 
-          const path = payload?.path || ':memory:';
-          console.log(`[DB-Worker] Connecting to ${path}...`);
-          db = await DuckDBInstance.create(path);
-          connection = await db.connect();
+          const path = payload?.path || ':memory:'
+          console.log(`[DB-Worker] Connecting to ${path}...`)
+          db = await DuckDBInstance.create(path)
+          connection = await db.connect()
           process.parentPort?.postMessage({
             reqId,
             success: true,
-            data: { status: 'Connected', path }
-          } as DBResponse);
-          break;
+            data: { status: 'Connected', path },
+          } as DBResponse)
+          break
         }
 
         case 'QUERY': {
           if (!db || !connection) {
-            throw new Error('Database not connected. Please call CONNECT first.');
+            throw new Error(
+              'Database not connected. Please call CONNECT first.'
+            )
           }
 
-          const result = await connection.run(payload.sql);
-          const rows = await result.getRowObjectsJS();
-          
+          const result = await connection.run(payload.sql)
+          const rows = await result.getRowObjectsJS()
+
           // Extract column metadata
-          const columnNames = result.columnNames();
+          const columnNames = result.columnNames()
           const columnFields = columnNames.map((name: string, i: number) => ({
-              name,
-              type: normalizeDuckDBType(result.columnType(i).toString())
-          }));
+            name,
+            type: normalizeDuckDBType(result.columnType(i).toString()),
+          }))
 
           // CRITICAL: Convert BigInts for JSON serialization
-          const serializedRows = sanitizeValue(rows);
+          const serializedRows = sanitizeValue(rows)
 
           process.parentPort?.postMessage({
             reqId,
             success: true,
             data: serializedRows,
-            meta: { columnFields }
-          } as DBResponse);
-          break;
+            meta: { columnFields },
+          } as DBResponse)
+          break
         }
 
         case 'CHECKPOINT': {
-          if (!db || !connection) throw new Error('Not connected');
-          await connection.run('CHECKPOINT');
-          process.parentPort?.postMessage({ reqId, success: true } as DBResponse);
-          break;
+          if (!db || !connection) throw new Error('Not connected')
+          await connection.run('CHECKPOINT')
+          process.parentPort?.postMessage({
+            reqId,
+            success: true,
+          } as DBResponse)
+          break
         }
 
         case 'GET_SCHEMA': {
-          if (!db || !connection) throw new Error('Not connected');
-          const tableName = payload?.tableName;
-          
+          if (!db || !connection) throw new Error('Not connected')
+          const tableName = payload?.tableName
+
           if (tableName) {
-              const result = await connection.run(`
+            const result = await connection.run(`
                   SELECT column_name as name, data_type as type, is_nullable as nullable
                   FROM information_schema.columns
                   WHERE table_name = '${tableName}'
                   ORDER BY ordinal_position
-              `);
-              const rawColumns = await result.getRowObjectsJS();
-              // Apply normalization to schema columns
-              const columns = rawColumns.map((col: any) => ({
-                  ...col,
-                  type: normalizeDuckDBType(col.type)
-              }));
-              
-              process.parentPort?.postMessage({
-                  reqId, success: true, data: { tableName, columns }
-              } as DBResponse);
+              `)
+            const rawColumns = await result.getRowObjectsJS()
+            // Apply normalization to schema columns
+            const columns = rawColumns.map((col: any) => ({
+              ...col,
+              type: normalizeDuckDBType(col.type),
+            }))
+
+            process.parentPort?.postMessage({
+              reqId,
+              success: true,
+              data: { tableName, columns },
+            } as DBResponse)
           } else {
-              const tablesResult = await connection.run(
-                  "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
-              );
-              const tables = await tablesResult.getRowObjectsJS();
-              
-              const tablesWithDetails = await Promise.all(tables.map(async (row: any) => {
-                  const tName = row.table_name;
-                  const colsResult = await connection.run(`
+            const tablesResult = await connection.run(
+              "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'"
+            )
+            const tables = await tablesResult.getRowObjectsJS()
+
+            const tablesWithDetails = await Promise.all(
+              tables.map(async (row: any) => {
+                const tName = row.table_name
+                const colsResult = await connection.run(`
                       SELECT column_name as name, data_type as type, is_nullable as nullable
                       FROM information_schema.columns
                       WHERE table_name = '${tName}'
                       ORDER BY ordinal_position
-                  `);
-                  const rawCols = await colsResult.getRowObjectsJS();
-                  const columns = rawCols.map((col: any) => ({
-                      ...col,
-                      type: normalizeDuckDBType(col.type)
-                  }));
-                  return { tableName: tName, columns, description: '' };
-              }));
-              
-              process.parentPort?.postMessage({
-                  reqId, success: true, data: { tables: tablesWithDetails }
-              } as DBResponse);
+                  `)
+                const rawCols = await colsResult.getRowObjectsJS()
+                const columns = rawCols.map((col: any) => ({
+                  ...col,
+                  type: normalizeDuckDBType(col.type),
+                }))
+                return { tableName: tName, columns, description: '' }
+              })
+            )
+
+            process.parentPort?.postMessage({
+              reqId,
+              success: true,
+              data: { tables: tablesWithDetails },
+            } as DBResponse)
           }
-          break;
+          break
         }
 
         case 'DELETE_TABLE': {
-          if (!db || !connection) throw new Error('Not connected');
-          const tableName = payload.tableName;
+          if (!db || !connection) throw new Error('Not connected')
+          const tableName = payload.tableName
           // Apply project rule: v_ prefix indicates a VIEW (e.g. for Smart Metrics)
-          const isView = tableName.startsWith('v_');
-          const dropCmd = isView ? 'DROP VIEW' : 'DROP TABLE';
-          
-          await connection.run(`${dropCmd} IF EXISTS "${tableName}"`);
-          process.parentPort?.postMessage({ reqId, success: true } as DBResponse);
-          break;
+          const isView = tableName.startsWith('v_')
+          const dropCmd = isView ? 'DROP VIEW' : 'DROP TABLE'
+
+          await connection.run(`${dropCmd} IF EXISTS "${tableName}"`)
+          process.parentPort?.postMessage({
+            reqId,
+            success: true,
+          } as DBResponse)
+          break
         }
 
         case 'INGEST_FILE': {
-          if (!db || !connection) throw new Error('Not connected');
-          const { tableName, filePath, format } = payload;
-          
+          if (!db || !connection) throw new Error('Not connected')
+          const { tableName, filePath, format } = payload
+
           // Ensure path uses forward slashes for DuckDB
-          const safePath = filePath.replace(/\\/g, '/');
-          console.log(`[DB-Worker] Ingesting ${format} from ${safePath} into ${tableName}...`);
-          
+          const safePath = filePath.replace(/\\/g, '/')
+          console.log(
+            `[DB-Worker] Ingesting ${format} from ${safePath} into ${tableName}...`
+          )
+
           if (format === 'csv') {
-              await connection.run(`
+            await connection.run(`
                   CREATE TABLE "${tableName}" AS 
                   SELECT * FROM read_csv_auto('${safePath}', HEADER=TRUE, auto_detect=true)
-              `);
+              `)
           } else if (format === 'json') {
-              await connection.run(`
+            await connection.run(`
                   CREATE TABLE "${tableName}" AS 
                   SELECT * FROM read_json_auto('${safePath}', format='auto', auto_detect=true)
-              `);
+              `)
           } else {
-              throw new Error(`Unsupported ingestion format: ${format}`);
+            throw new Error(`Unsupported ingestion format: ${format}`)
           }
-          
-          process.parentPort?.postMessage({ reqId, success: true } as DBResponse);
-          break;
+
+          process.parentPort?.postMessage({
+            reqId,
+            success: true,
+          } as DBResponse)
+          break
         }
 
         case 'CLOSE': {
-           try {
-               connection = null;
-               db = null;
-           } catch (e) {
-               console.error('Error during close:', e);
-           }
-           process.parentPort?.postMessage({ reqId, success: true } as DBResponse);
-           break;
+          try {
+            connection = null
+            db = null
+          } catch (e) {
+            console.error('Error during close:', e)
+          }
+          process.parentPort?.postMessage({
+            reqId,
+            success: true,
+          } as DBResponse)
+          break
         }
 
         case 'TEST':
         case 'TEST_CONNECTION': {
           if (!db || !connection) {
-            db = await DuckDBInstance.create(':memory:');
-            connection = await db.connect();
+            db = await DuckDBInstance.create(':memory:')
+            connection = await db.connect()
           }
-          const result = await connection.run("SELECT 'Native DuckDB is Alive' as status");
-          const rows = await result.getRowObjectsJS();
+          const result = await connection.run(
+            "SELECT 'Native DuckDB is Alive' as status"
+          )
+          const rows = await result.getRowObjectsJS()
           process.parentPort?.postMessage({
             reqId,
             success: true,
-            data: rows[0]
-          } as DBResponse);
-          break;
+            data: rows[0],
+          } as DBResponse)
+          break
         }
 
         default:
-          throw new Error(`Unsupported request type: ${type}`);
+          throw new Error(`Unsupported request type: ${type}`)
       }
     } catch (err: any) {
-      console.error(`[DB-Worker] Error handling ${type}:`, err);
+      console.error(`[DB-Worker] Error handling ${type}:`, err)
       process.parentPort?.postMessage({
         reqId,
         success: false,
-        error: err.message
-      } as DBResponse);
+        error: err.message,
+      } as DBResponse)
     }
-  });
+  })
 }
 
 if (process.parentPort) {
-  process.parentPort.on('message', (e) => {
-    handleMessage(e.data);
-  });
+  process.parentPort.on('message', e => {
+    handleMessage(e.data)
+  })
 }
 
-console.log('[DB-Service] Utility Process Entry Ready');
+console.log('[DB-Service] Utility Process Entry Ready')

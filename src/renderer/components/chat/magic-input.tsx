@@ -76,7 +76,9 @@ export function MagicInput({
   const { isActivated } = useSettingsStore()
   const { t } = useTranslation('chat')
   const { t: tCommon } = useTranslation('common')
-  const refreshSessionWidgets = useProjectStore(state => state.refreshSessionWidgets)
+  const refreshSessionWidgets = useProjectStore(
+    state => state.refreshSessionWidgets
+  )
   const setRefreshing = useProjectStore(state => state.setRefreshing)
   const addMessage = useProjectStore(state => state.addMessage)
   const updateMessage = useProjectStore(state => state.updateMessage)
@@ -84,19 +86,21 @@ export function MagicInput({
 
   const handleStop = () => {
     stopGeneration()
-    
+
     // Find last user message to restore
-    const lastUserMsgIndex = [...messages].reverse().findIndex(m => m.type === 'user')
-    
+    const lastUserMsgIndex = [...messages]
+      .reverse()
+      .findIndex(m => m.type === 'user')
+
     if (lastUserMsgIndex !== -1) {
       const actualIndex = messages.length - 1 - lastUserMsgIndex
       const userMsg = messages[actualIndex]
-      
+
       setValue(userMsg.content)
-      
+
       // Remove user message
       removeMessage(userMsg.id)
-      
+
       // Remove potential assistant message (usually the one being generated or failed)
       // It should be immediately after the user message
       if (actualIndex + 1 < messages.length) {
@@ -105,7 +109,7 @@ export function MagicInput({
           removeMessage(nextMsg.id)
         }
       }
-      
+
       textareaRef.current?.focus()
     }
   }
@@ -119,13 +123,17 @@ export function MagicInput({
           type: 'info',
           duration: 2000,
         })
-        
+
         const content = generateMarkdown(messages)
         const fileName = `Chat_Export_${new Date().toISOString().slice(0, 10)}.md`
-        
+
         // @ts-ignore
-        const result = await window.electronAPI.saveFile(content, 'md', fileName)
-        
+        const result = await window.electronAPI.saveFile(
+          content,
+          'md',
+          fileName
+        )
+
         if (result.success) {
           addToast({
             title: t('export_success_title'),
@@ -210,7 +218,7 @@ export function MagicInput({
         action: async () => {
           setPopoverOpen(false)
           setValue('')
-          
+
           try {
             setRefreshing(true)
             await refreshSessionWidgets()
@@ -228,7 +236,7 @@ export function MagicInput({
           } finally {
             setRefreshing(false)
           }
-        }
+        },
       },
       {
         id: 'export',
@@ -239,7 +247,7 @@ export function MagicInput({
           setPopoverOpen(false)
           setValue('')
         },
-        className: !isActivated ? 'text-zinc-400' : ''
+        className: !isActivated ? 'text-zinc-400' : '',
       },
       {
         id: 'debug',
@@ -258,7 +266,16 @@ export function MagicInput({
         c.id.includes(commandQuery) ||
         c.label.toLowerCase().includes(commandQuery)
     )
-  }, [value, commandQuery, t, resetChat, addToast, messages, handleExportMarkdown, isActivated])
+  }, [
+    value,
+    commandQuery,
+    t,
+    resetChat,
+    addToast,
+    messages,
+    handleExportMarkdown,
+    isActivated,
+  ])
 
   // 6. Filtered Prompts for Command Mode
   const filteredCommandPrompts = useMemo(() => {

@@ -12,14 +12,16 @@ import { mapFileToSchema } from '../utils/schema-mapper'
 export function ChatStream() {
   const { t } = useTranslation('chat')
   const files = useProjectStore(s => s.files)
-  const relations = files.flatMap(f => (f.relations || []).map(r => ({
-    id: r.id,
-    fileAId: f.id,
-    columnA: r.sourceColumn,
-    fileBId: r.targetFileId,
-    columnB: r.targetColumn,
-    autoDetected: r.autoDetected
-  })))
+  const relations = files.flatMap(f =>
+    (f.relations || []).map(r => ({
+      id: r.id,
+      fileAId: f.id,
+      columnA: r.sourceColumn,
+      fileBId: r.targetFileId,
+      columnB: r.targetColumn,
+      autoDetected: r.autoDetected,
+    }))
+  )
   const activeFileId = useProjectStore(s => s.activeFileId)
   const messages = useChatStore(state => state.messages)
   const sendMessage = useChatStore(state => state.sendMessage)
@@ -32,7 +34,7 @@ export function ChatStream() {
     params: FilterParam[]
     initialValues?: Record<string, string[]>
   } | null>(null)
-  
+
   const readyFiles = files.filter(f => f.status === 'ready')
   const currentFile =
     readyFiles.find(f => f.id === activeFileId) || readyFiles[0]
@@ -46,7 +48,13 @@ export function ChatStream() {
       const fileA = files.find(f => f.id === r.fileAId)
       const fileB = files.find(f => f.id === r.fileBId)
 
-      if (!fileA || !fileB || fileA.status !== 'ready' || fileB.status !== 'ready') return null
+      if (
+        !fileA ||
+        !fileB ||
+        fileA.status !== 'ready' ||
+        fileB.status !== 'ready'
+      )
+        return null
 
       return {
         sourceTable: fileA.tableName,
@@ -75,7 +83,12 @@ export function ChatStream() {
           columns={currentColumns}
           messages={messages}
           onQuerySubmit={onQuerySubmit}
-          onConfigureTemplate={(messageId, templateSql, params, initialValues) => {
+          onConfigureTemplate={(
+            messageId,
+            templateSql,
+            params,
+            initialValues
+          ) => {
             setActiveTemplate({ messageId, templateSql, params, initialValues })
           }}
           loading={
@@ -89,22 +102,24 @@ export function ChatStream() {
           }
           className="h-full"
         />
-        
+
         {smartFilterRequest && (
           <SmartFilterModal
             isOpen={smartFilterRequest.isOpen}
             onCancel={() => {
-               smartFilterRequest.reject(new Error('Cancelled'))
-               addToast({
-                   type: 'info',
-                   title: t('analysis_cancelled_title'),
-                   description: t('analysis_cancelled_desc'),
-                   duration: 3000
-               })
+              smartFilterRequest.reject(new Error('Cancelled'))
+              addToast({
+                type: 'info',
+                title: t('analysis_cancelled_title'),
+                description: t('analysis_cancelled_desc'),
+                duration: 3000,
+              })
             }}
             params={smartFilterRequest.params}
             templateSql={smartFilterRequest.templateSql}
-            onConfirm={(sql, params) => smartFilterRequest.resolve({ sql, params })}
+            onConfirm={(sql, params) =>
+              smartFilterRequest.resolve({ sql, params })
+            }
           />
         )}
 

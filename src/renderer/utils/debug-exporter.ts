@@ -5,8 +5,8 @@ import { useLogStore } from '../stores/useLogStore'
 
 export async function exportDebugLog() {
   const settings = useSettingsStore.getState()
-      const files = useProjectStore.getState().files
-  
+  const files = useProjectStore.getState().files
+
   const chats = useChatStore.getState().messages
   const logs = await useLogStore.getState().getAllLogs()
 

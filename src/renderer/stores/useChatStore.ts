@@ -331,7 +331,7 @@ const sendMessage = async (
 
     const resolvedPrompt = resolveMentions(hiddenPrompt || text)
     const { domainRules } = useSettingsStore.getState()
-    
+
     const aiStartTime = Date.now()
     const planResponse = await window.electronAPI.askAI(
       resolvedPrompt,
@@ -484,11 +484,11 @@ const sendMessage = async (
       error_type: 'execution_failed',
     })
 
-        updateMessage(botMsgId, msg => ({
-          ...msg,
-          status: 'error',
-          error: error?.message || 'Unknown error',
-        }))
+    updateMessage(botMsgId, msg => ({
+      ...msg,
+      status: 'error',
+      error: error?.message || 'Unknown error',
+    }))
     useProjectStore.getState().setAbortController(null)
   }
 }
@@ -528,7 +528,7 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
         fileB.status !== 'ready'
       )
         return null
-      
+
       const schemaA = mapFileToSchema(fileA)
       const schemaB = mapFileToSchema(fileB)
 
@@ -567,7 +567,7 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
 
     const resolvedPrompt = resolveMentions(originalQuery)
     const { domainRules } = useSettingsStore.getState()
-    
+
     const aiStartTime = Date.now()
     const planResponse = await window.electronAPI.askAI(
       resolvedPrompt,
@@ -689,7 +689,10 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
       updateMessage(messageId, msg => ({
         ...msg,
         status: undefined,
-        content: i18n.t('analysis_cancelled', { ns: 'chat', defaultValue: 'Analysis cancelled.' }),
+        content: i18n.t('analysis_cancelled', {
+          ns: 'chat',
+          defaultValue: 'Analysis cancelled.',
+        }),
         error: undefined,
       }))
       useProjectStore.getState().setAbortController(null)

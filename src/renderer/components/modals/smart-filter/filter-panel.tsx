@@ -18,7 +18,7 @@ export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
   const { t } = useTranslation(['chat', 'common'])
   // Local search state
   // If we have initial values selected, clear the search hint so we can see them.
-  const initialSearch = value.length > 0 ? '' : (param.hint || '')
+  const initialSearch = value.length > 0 ? '' : param.hint || ''
   const [searchTerm, setSearchTerm] = useState(initialSearch)
   const [debouncedTerm, setDebouncedTerm] = useState(initialSearch)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -40,7 +40,12 @@ export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
 
   // Auto-select if only one option exists (and we haven't auto-selected yet)
   useEffect(() => {
-    if (!isLoading && options.length === 1 && value.length === 0 && !hasAutoSelected.current) {
+    if (
+      !isLoading &&
+      options.length === 1 &&
+      value.length === 0 &&
+      !hasAutoSelected.current
+    ) {
       hasAutoSelected.current = true
       const singleVal = String(options[0].value)
       onChange([singleVal])
@@ -49,7 +54,7 @@ export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
 
   const toggleValue = (val: string) => {
     if (value.includes(val)) {
-      onChange(value.filter((v) => v !== val))
+      onChange(value.filter(v => v !== val))
     } else {
       onChange([...value, val])
     }
@@ -63,7 +68,7 @@ export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
   // Merge selected values that might be missing from the current search results (e.g. pagination or filtered out)
   const displayOptions = [...options]
   const optionValueSet = new Set(options.map(o => String(o.value)))
-  
+
   value.forEach(v => {
     if (!optionValueSet.has(v)) {
       displayOptions.push({ value: v })
@@ -92,7 +97,7 @@ export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
             placeholder={t('search_value_placeholder')}
             className="pl-9 pr-8 h-9 bg-zinc-50 border-zinc-200 text-sm focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-indigo-500/20 focus-visible:border-indigo-500 transition-all shadow-sm"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={e => setSearchTerm(e.target.value)}
             autoFocus
           />
 
@@ -130,7 +135,7 @@ export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
             )}
 
             {/* List Items */}
-            {displayOptions.map((opt) => {
+            {displayOptions.map(opt => {
               const val = String(opt.value)
               const isChecked = value.includes(val)
 
@@ -143,7 +148,7 @@ export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
 
                 const otherCols = param.display_columns.slice(1)
                 subLabels = otherCols
-                  .map((c) => opt[c])
+                  .map(c => opt[c])
                   .filter(Boolean)
                   .join(' • ')
               }
