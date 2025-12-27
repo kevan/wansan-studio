@@ -148,7 +148,7 @@ export function useProjectIO() {
 
     // 4. Load into Store
     loadProjectToStore(projectData);
-    setProjectPath(path);
+    setProjectPath(data.path);
     
     // 5. Trigger a refresh to get row counts and samples if possible?
     // The store has `refreshSessionWidgets`, but for files we might need `reloadFile`.

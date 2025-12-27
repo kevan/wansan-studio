@@ -57,6 +57,12 @@ export class ProjectManager {
   }
 
   async openProject(projectPath: string): Promise<ProjectLoadResult> {
+    // 1. Safety Check: Is a project already open?
+    if (this.currentProjectPath) {
+      console.log(`[ProjectManager] Closing active project '${this.currentProjectPath}' before switching...`);
+      await this.closeProject();
+    }
+
     const manifestPath = path.join(projectPath, 'wansan.json');
     if (!(await fs.pathExists(manifestPath))) {
       throw new Error(`Invalid project bundle: wansan.json not found in ${projectPath}`);

@@ -22,12 +22,22 @@ mac:
   identity: null
   gatekeeperAssess: false
   category: public.app-category.business
+  fileAssociations:
+    - ext: "wansan"
+      name: "Wansan Project"
+      description: "Wansan Studio Project Bundle"
+      role: "Editor"
+      isPackage: true
 
 win:
   target:
     - nsis
     - portable  # [ADD THIS] Generates a standalone .exe
   icon: resources/icon.ico
+  fileAssociations:
+    - ext: "wansan"
+      name: "Wansan Project"
+      description: "Wansan Studio Project Bundle"
 
 nsis:
   oneClick: false

@@ -26,16 +26,16 @@ export function ProjectLauncher() {
     const [targetPath, setTargetPath] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [version, setVersion] = useState('');
-    
+
     const { createProject, openProject } = useProjectIO();
-  
+
     // Initialize app version
     React.useEffect(() => {
       window.electronAPI.getAppVersion().then(res => {
         if (res.success) setVersion(res.data);
       });
     }, []);
-  
+
     // Initialize default path via Service
     React.useEffect(() => {
       projectService.getDefaultLocation().then(path => {
@@ -75,11 +75,16 @@ export function ProjectLauncher() {
   return (
     <div className="fixed inset-0 z-[100] bg-white flex items-center justify-center p-6 sm:p-12 font-sans selection:bg-black selection:text-white">
       {/* Swiss Style Grid Background */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-           style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+      <div
+        className="absolute inset-0 opacity-[0.03] pointer-events-none"
+        style={{
+          backgroundImage:
+            'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+        }}
+      />
 
       <div className="w-full max-w-3xl relative">
-
         {/* MODE: MENU */}
         {mode === 'menu' && (
           <div className="space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -88,12 +93,13 @@ export function ProjectLauncher() {
               <img src={logo} className="h-16 w-16 grayscale" alt="Logo" />
               <div className="space-y-2 text-center sm:text-left">
                 <h1 className="text-6xl sm:text-7xl font-black tracking-tighter leading-[0.8] text-black uppercase">
-                  {t('launcher_title').split(' ').map((word, i, arr) => (
-                    <React.Fragment key={i}>
-                      {word}
-                      {i < arr.length - 1 && <br />}
-                    </React.Fragment>
-                  ))}
+                  {'Wansan Studio'.split(' ')
+                    .map((word, i, arr) => (
+                      <React.Fragment key={i}>
+                        {word}
+                        {i < arr.length - 1 && <br />}
+                      </React.Fragment>
+                    ))}
                 </h1>
                 <p className="text-lg font-bold text-zinc-400 uppercase tracking-[0.2em] ml-1">
                   {t('launcher_subtitle')}
@@ -107,7 +113,10 @@ export function ProjectLauncher() {
                 onClick={() => setMode('create')}
                 className="group relative border-[3px] border-black p-8 text-left hover:bg-black transition-all duration-300"
               >
-                <Plus className="h-10 w-10 mb-12 group-hover:text-white transition-colors" strokeWidth={2.5} />
+                <Plus
+                  className="h-10 w-10 mb-12 group-hover:text-white transition-colors"
+                  strokeWidth={2.5}
+                />
                 <div className="space-y-1">
                   <h3 className="text-2xl font-black uppercase tracking-tight group-hover:text-white transition-colors">
                     {t('new_project')}
@@ -123,7 +132,10 @@ export function ProjectLauncher() {
                 onClick={handleOpenExisting}
                 className="group relative border-[3px] border-black p-8 text-left hover:bg-black transition-all duration-300"
               >
-                <FolderOpen className="h-10 w-10 mb-12 group-hover:text-white transition-colors" strokeWidth={2.5} />
+                <FolderOpen
+                  className="h-10 w-10 mb-12 group-hover:text-white transition-colors"
+                  strokeWidth={2.5}
+                />
                 <div className="space-y-1">
                   <h3 className="text-2xl font-black uppercase tracking-tight group-hover:text-white transition-colors">
                     {t('open_existing')}
@@ -160,12 +172,14 @@ export function ProjectLauncher() {
 
             <div className="border-[3px] border-black p-10 sm:p-16 space-y-12 shadow-[24px_24px_0_0_#f4f4f5]">
               <h2 className="text-5xl font-black tracking-tighter text-black uppercase leading-none">
-                {t('create_workspace').split(' ').map((word, i, arr) => (
-                  <React.Fragment key={i}>
-                    {word}
-                    {i < arr.length - 1 && <br />}
-                  </React.Fragment>
-                ))}
+                {t('create_workspace')
+                  .split(' ')
+                  .map((word, i, arr) => (
+                    <React.Fragment key={i}>
+                      {word}
+                      {i < arr.length - 1 && <br />}
+                    </React.Fragment>
+                  ))}
               </h2>
 
               <div className="space-y-10">
@@ -176,7 +190,7 @@ export function ProjectLauncher() {
                   </label>
                   <Input
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={e => setName(e.target.value)}
                     autoFocus
                     className="border-b-2 border-t-0 border-x-0 border-black rounded-none px-0 text-3xl font-bold focus-visible:ring-0 placeholder:text-zinc-100 h-14"
                     placeholder="My Workspace"
@@ -213,14 +227,15 @@ export function ProjectLauncher() {
                       <Plus className="h-5 w-5 animate-spin" />
                       {t('initializing')}
                     </div>
-                  ) : t('create_project_button')}
+                  ) : (
+                    t('create_project_button')
+                  )}
                 </Button>
               </div>
             </div>
           </div>
         )}
-
       </div>
     </div>
-  );
+  )
 }
