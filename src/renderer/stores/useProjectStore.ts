@@ -1334,7 +1334,9 @@ export const useProjectStore = create<ProjectState>()(
         return rest
       },
       onRehydrateStorage: () => state => {
+        console.log('[ProjectStore] Rehydrated state:', state);
         if (state) {
+          console.log('[ProjectStore] Files count:', state.files?.length);
           // Get all valid widget IDs from messages and dashboard
           const allWidgetIds = new Set<string>()
           state.sessions.forEach(s => {

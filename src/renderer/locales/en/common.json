@@ -89,6 +89,7 @@
   "select_x_first": "Select an X-axis first",
   "close": "Close",
   "save": "Save",
+  "back": "Back",
   "no_data": "No data to display",
   "page_of": "Page {{page}} of {{total}}",
   "prev": "Previous",
