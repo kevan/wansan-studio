@@ -23,7 +23,6 @@ import {
   Key,
   Link2,
   Plus,
-  RefreshCw,
   Sparkles,
   ToggleLeft,
   Trash2,
@@ -38,7 +37,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useToastStore } from '../stores/useToastStore'
-import { useReIngestFile } from '../hooks/useIPC'
 import { useState } from 'react'
 import { cn } from '@/utils/cn'
 import { ExpandableAction } from './ui/expandable-action'
@@ -63,7 +61,6 @@ export function SchemaEditor() {
   const { t } = useTranslation('common')
   const { t: tAnalysis } = useTranslation('analysis')
   const toast = useToastStore()
-  const reIngest = useReIngestFile()
 
   // 确保有选中的文件
   const currentFileId =
@@ -93,44 +90,8 @@ export function SchemaEditor() {
   const activeLinks = currentFile.relations || []
 
   // --- Handlers ---
-  const handleReload = async () => {
-    await toast.promise(
-      async () => {
-        const result = await reIngest.mutateAsync({
-          fileId: currentFile.id,
-          filePath: currentFile.path,
-          tableName: currentFile.tableName,
-          sheetName: currentFile.sheetName,
-          columns: currentFile.columns, // Pass current columns config
-        })
-        useProjectStore.getState().reloadFile(currentFile.id, result)
-      },
-      {
-        loading: t('reloading'),
-        success: t('reload_success'),
-        error: e => `${t('reload_failed')}: ${String(e)}`,
-      }
-    )
-  }
-
   const handleReplace = async () => {
-    if (!window.electronAPI) return
-    const result = await window.electronAPI.selectFile()
-    if (result.success && result.data) {
-      await toast.promise(
-        async () => {
-          const status = await replaceFile(currentFile.id, result.data)
-          if (status !== 'completed') {
-            throw new Error(t('replace_failed'))
-          }
-        },
-        {
-          loading: t('replacing_file'),
-          success: t('file_replaced'),
-          error: e => `${t('replace_failed')}: ${String(e)}`,
-        }
-      )
-    }
+    openWizard('replace', currentFile.id)
   }
 
   const handleDelete = () => {
@@ -212,105 +173,111 @@ export function SchemaEditor() {
       <div className="flex-1 overflow-y-auto min-h-0 relative bg-white pb-32">
         <div className="flex flex-col min-h-0">
           {/* Header */}
-          <div className="px-8 py-6 border-b border-zinc-100 bg-white shrink-0 relative">
-            <div className="flex flex-col gap-3 min-w-0">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2 bg-green-50 rounded-lg border border-green-100 shrink-0">
+          <div className="flex flex-col gap-3 px-8 py-5 border-b border-zinc-100 bg-white shrink-0">
+            {/* Top Row: Title & Actions */}
+            <div className="flex items-start justify-between gap-4">
+              {/* Title Section */}
+              <div className="flex items-center gap-3 min-w-0 pt-0.5">
+                <div className="p-2 bg-green-50 rounded-xl border border-green-100 shrink-0">
                   <FileSpreadsheet className="w-6 h-6 text-green-600" />
                 </div>
-                <h2 className="text-xl font-bold text-zinc-900 tracking-tight truncate whitespace-nowrap">
+                <h2 className="text-xl font-bold text-zinc-900 tracking-tight truncate">
                   {currentFile.name}
                 </h2>
               </div>
 
-              <div className="flex items-center flex-wrap gap-4 text-sm text-zinc-500 pl-1">
-                <div
-                  className="flex items-center gap-1.5 shrink-0 whitespace-nowrap"
-                  title="SQL Table Name"
-                >
-                  <Database className="w-3.5 h-3.5 text-zinc-400" />
-                  <span className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded text-zinc-700 select-all">
-                    {currentFile.tableName}
-                  </span>
-                </div>
+              {/* Actions Toolbar */}
+              <div className="flex items-center gap-1 p-1 bg-white border border-zinc-200/60 rounded-2xl shadow-sm shrink-0">
+                {currentFile.status === 'ready' && (
+                  <>
+                    {/* Group: Build */}
+                    <div className="flex items-center gap-1 pr-1 border-r border-zinc-100">
+                      <ExpandableAction
+                        icon={<Calculator className="w-4 h-4 text-purple-600" />}
+                        label={tAnalysis('smart_metric.add_button')}
+                        onClick={() => {
+                          setEditingMetric(undefined)
+                          setIsMetricModalOpen(true)
+                        }}
+                        className="hover:bg-purple-50 hover:border-purple-200"
+                      />
 
-                <div className="w-px h-3 bg-zinc-200 shrink-0" />
+                      <ExpandableAction
+                        icon={<Link2 className="w-4 h-4 text-indigo-600" />}
+                        label={t('add_new_link')}
+                        onClick={() => {
+                          setEditingRelation(undefined)
+                          setIsRelationModalOpen(true)
+                        }}
+                        className="hover:bg-indigo-50 hover:border-indigo-200"
+                      />
+                    </div>
 
-                {/* Stats */}
+                    {/* Group: Data */}
+                    <div className="flex items-center gap-1 px-1 border-r border-zinc-100">
+                      <ExpandableAction
+                        icon={<Plus className="w-4 h-4 text-emerald-600" />}
+                        label={t('append_data', 'Append')}
+                        onClick={() => openWizard('append', currentFile.id)}
+                        className="hover:bg-emerald-50 hover:border-emerald-200"
+                      />
 
-                <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
-                  <AlignJustify className="w-3.5 h-3.5 text-zinc-400" />
-                  <span>
-                    {currentFile.rowCount?.toLocaleString() ?? 0} {t('rows')}
-                  </span>
-                  <span>·</span>
-                  <span>
-                    {currentFile.columns.length} {t('field_name')}
-                  </span>
-                </div>
+                      <ExpandableAction
+                        icon={<FileInput className="w-4 h-4 text-amber-600" />}
+                        label={t('replace_source')}
+                        onClick={handleReplace}
+                        className="hover:bg-amber-50 hover:border-amber-200"
+                      />
+                    </div>
+                  </>
+                )}
 
-                <div className="w-px h-3 bg-zinc-200 shrink-0" />
-
-                <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
-                  <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                  <span className="text-xs">
-                    {t('last_updated')}:{' '}
-                    {new Date(currentFile.lastModified).toLocaleDateString()}
-                  </span>
+                {/* Group: Danger */}
+                <div className="flex items-center gap-1 pl-1">
+                  <ExpandableAction
+                    icon={<Trash2 className="w-4 h-4 text-red-500" />}
+                    label={t('remove_file')}
+                    onClick={handleDelete}
+                    className="hover:text-red-600 hover:bg-red-50 hover:border-red-200"
+                  />
                 </div>
               </div>
             </div>
 
-            <div className="absolute top-6 right-4 flex items-center gap-2 p-1 bg-white/80 backdrop-blur border border-zinc-200 rounded-lg shadow-sm hover:shadow transition-shadow">
-              {currentFile.status === 'ready' && (
-                <>
-                  <ExpandableAction
-                    icon={<Calculator className="w-4 h-4 text-purple-600" />}
-                    label={tAnalysis('smart_metric.add_button')}
-                    onClick={() => {
-                      setEditingMetric(undefined)
-                      setIsMetricModalOpen(true)
-                    }}
-                    className="hover:bg-purple-50 hover:border-purple-200"
-                  />
+            {/* Bottom Row: Metadata */}
+            <div className="flex items-center flex-wrap gap-4 text-sm text-zinc-500 pl-1">
+              <div
+                className="flex items-center gap-1.5 shrink-0 whitespace-nowrap"
+                title="SQL Table Name"
+              >
+                <Database className="w-4 h-4 text-zinc-400" />
+                <span className="font-mono text-xs bg-zinc-50 border border-zinc-200 px-2 py-0.5 rounded-lg text-zinc-600 select-all">
+                  {currentFile.tableName}
+                </span>
+              </div>
 
-                  <ExpandableAction
-                    icon={<Link2 className="w-4 h-4 text-indigo-600" />}
-                    label={t('add_new_link')}
-                    onClick={() => {
-                      setEditingRelation(undefined)
-                      setIsRelationModalOpen(true)
-                    }}
-                    className="hover:bg-indigo-50 hover:border-indigo-200"
-                  />
+              <div className="w-px h-3 bg-zinc-200 shrink-0" />
 
-                  <ExpandableAction
-                    icon={<Plus className="w-4 h-4 text-emerald-600" />}
-                    label={t('append_data', 'Append Data')}
-                    onClick={() => openWizard('append', currentFile.id)}
-                    className="hover:bg-emerald-50 hover:border-emerald-200"
-                  />
+              <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                <AlignJustify className="w-4 h-4 text-zinc-400" />
+                <span className="font-medium">
+                  {currentFile.rowCount?.toLocaleString() ?? 0} {t('rows')}
+                </span>
+                <span className="text-zinc-300">·</span>
+                <span className="font-medium">
+                  {currentFile.columns.length} {t('field_name')}
+                </span>
+              </div>
 
-                  <ExpandableAction
-                    icon={<RefreshCw className="w-4 h-4" />}
-                    label={t('reload_data')}
-                    onClick={handleReload}
-                  />
+              <div className="w-px h-3 bg-zinc-200 shrink-0" />
 
-                  <ExpandableAction
-                    icon={<FileInput className="w-4 h-4" />}
-                    label={t('replace_source')}
-                    onClick={handleReplace}
-                  />
-                </>
-              )}
-
-              <ExpandableAction
-                icon={<Trash2 className="w-4 h-4" />}
-                label={t('remove_file')}
-                onClick={handleDelete}
-                className="hover:text-red-600 hover:bg-red-50"
-              />
+              <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                <Clock className="w-4 h-4 text-zinc-400" />
+                <span className="text-xs">
+                  {t('last_updated')}:{' '}
+                  {new Date(currentFile.lastModified).toLocaleDateString()}
+                </span>
+              </div>
             </div>
           </div>
 

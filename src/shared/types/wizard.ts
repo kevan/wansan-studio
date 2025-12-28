@@ -1,7 +1,7 @@
 import { ColumnType } from '../types'
 
 export type WizardStep = 'select' | 'preview' | 'target' | 'summary'
-export type WizardMode = 'import' | 'append'
+export type WizardMode = 'import' | 'append' | 'replace'
 
 export interface ColumnConfig {
   name: string

@@ -17,6 +17,10 @@ import {
   ArrowRight,
   Link2,
   Check,
+  AlertTriangle,
+  MinusCircle,
+  PlusCircle,
+  Equal,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { RadioGroup, RadioGroupItem } from '../../ui/radio-group'
@@ -95,6 +99,26 @@ export function TargetSelectionStep() {
     JSON.stringify(currentTask?.columnMapping),
   ])
 
+  // --- REPLACE MODE DIFF LOGIC ---
+  const schemaDiff = useMemo(() => {
+    if (mode !== 'replace' || !targetFile || !currentTask) return null
+    
+    const originalColumns = targetFile.columns
+    const newColumns = currentTask.columns
+
+    const missing = originalColumns.filter(
+      old => !newColumns.some(n => n.name === old.name)
+    )
+    const added = newColumns.filter(
+      n => !originalColumns.some(old => old.name === n.name)
+    )
+    const kept = originalColumns.filter(
+      old => newColumns.some(n => n.name === old.name)
+    )
+
+    return { missing, added, kept }
+  }, [mode, targetFile, currentTask])
+
   if (!currentTask) return null
 
   const handleRename = (index: number, val: string) => {
@@ -114,12 +138,14 @@ export function TargetSelectionStep() {
         <div className="flex items-center gap-4">
           <div className="flex flex-col text-left">
             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">
-              {mode === 'append' ? 'Target Decision' : 'Target Configurations'}
+              {mode === 'append' ? 'Target Decision' : mode === 'replace' ? 'Schema Comparison' : 'Target Configurations'}
             </span>
             <span className="text-sm font-bold text-zinc-900 mt-1">
               {mode === 'append'
                 ? `Appending to ${targetFile?.name}`
-                : `${tasks.length} Assets Pending`}
+                : mode === 'replace' 
+                  ? `Replacing ${targetFile?.name}`
+                  : `${tasks.length} Assets Pending`}
             </span>
           </div>
         </div>
@@ -217,6 +243,82 @@ export function TargetSelectionStep() {
                 })}
               </div>
             </div>
+          ) : mode === 'replace' ? (
+             /* --- REPLACE MODE: Schema Diff --- */
+             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
+                {schemaDiff && schemaDiff.missing.length > 0 && (
+                  <div className="bg-rose-50 border-2 border-rose-100 rounded-2xl p-6 flex items-start gap-4">
+                    <div className="p-2 bg-rose-100 rounded-lg text-rose-600 shrink-0">
+                      <AlertTriangle className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-rose-900">Breaking Changes Detected</h4>
+                      <p className="text-sm text-rose-700 mt-1">
+                        The following columns are missing in the new file. Reports and metrics relying on these columns will break.
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {schemaDiff.missing.map(col => (
+                          <span key={col.name} className="px-2 py-1 bg-white border border-rose-200 rounded text-xs font-mono font-bold text-rose-700 flex items-center gap-1.5">
+                            <MinusCircle className="w-3 h-3" />
+                            {col.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-8">
+                  {/* LEFT: Original */}
+                  <div className="space-y-4">
+                     <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Original Schema</h4>
+                     <div className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm space-y-2 opacity-60 pointer-events-none grayscale">
+                        {targetFile?.columns.map(col => (
+                          <div key={col.name} className="flex items-center justify-between text-sm py-1 border-b border-zinc-50 last:border-0">
+                             <span className="font-mono text-zinc-600">{col.name}</span>
+                             <span className="text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-500">{col.type}</span>
+                          </div>
+                        ))}
+                     </div>
+                  </div>
+
+                  {/* RIGHT: New */}
+                  <div className="space-y-4">
+                     <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">New Schema</h4>
+                     <div className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm space-y-2">
+                        {/* Added */}
+                        {schemaDiff?.added.map(col => (
+                          <div key={col.name} className="flex items-center justify-between text-sm py-2 px-3 bg-emerald-50 border border-emerald-100 rounded-lg">
+                             <div className="flex items-center gap-2">
+                               <PlusCircle className="w-3.5 h-3.5 text-emerald-600" />
+                               <span className="font-mono font-bold text-emerald-900">{col.name}</span>
+                             </div>
+                             <span className="text-[10px] bg-white border border-emerald-200 px-1.5 py-0.5 rounded text-emerald-700">{col.type}</span>
+                          </div>
+                        ))}
+
+                        {/* Kept */}
+                        {schemaDiff?.kept.map(col => (
+                           <div key={col.name} className="flex items-center justify-between text-sm py-1 border-b border-zinc-50 last:border-0 px-2">
+                             <div className="flex items-center gap-2">
+                               <Equal className="w-3 h-3 text-zinc-300" />
+                               <span className="font-mono text-zinc-700">{col.name}</span>
+                             </div>
+                             <span className="text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-500">{col.type}</span>
+                          </div>
+                        ))}
+                     </div>
+                  </div>
+                </div>
+
+                {(!schemaDiff?.missing.length && !schemaDiff?.added.length) && (
+                   <div className="text-center p-8 bg-zinc-50 rounded-2xl border border-dashed border-zinc-200">
+                      <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+                      <p className="font-bold text-zinc-700">Perfect Match</p>
+                      <p className="text-sm text-zinc-500">The schema is identical. Safe to replace.</p>
+                   </div>
+                )}
+             </div>
           ) : (
             /* --- APPEND MODE: High Density UI --- */
             <div className="max-w-2xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-2">

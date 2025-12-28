@@ -80,6 +80,63 @@ export function DataIngestionWizard() {
             throw new Error(result.error || 'Append failed')
           }
           finalizedTempTables.add(task.tableName)
+        } else if (mode === 'replace' && targetTableId) {
+          // --- REPLACE MODE ---
+          const targetFile = files.find(f => f.id === targetTableId)
+          if (!targetFile) throw new Error('Target file not found for replacement')
+
+          // Reuse table name to overwrite
+          const finalTableName = targetFile.tableName
+
+          const result = await window.electronAPI.createTableFromSource({
+            filePath: task.filePath,
+            tableName: finalTableName,
+            sheetName:
+              task.sourceName === task.fileName ? undefined : task.sourceName,
+            columns: task.columns.map(c => ({ name: c.name, type: c.type })),
+            tempFilePath: task.tempFilePath,
+          })
+
+          if (!result.success || !result.data) {
+            throw new Error(result.error || 'Failed to replace table')
+          }
+
+          finalizedTempTables.add(task.tableName)
+
+          const columns = result.data.columns.map(c => {
+             // Try to preserve key status if column name matches
+             const oldCol = targetFile.columns.find(old => old.name === c.name)
+             return {
+              name: c.name,
+              safeName: c.name,
+              type: c.type,
+              sampleValues: c.sampleValues || [],
+              isKey: oldCol ? oldCol.isKey : false,
+              isPrimaryKey: oldCol ? oldCol.isPrimaryKey : false,
+             }
+          })
+
+          const displayName =
+            task.sourceName && task.sourceName !== task.fileName
+              ? `${task.fileName} - ${task.sourceName}`
+              : task.sourceName || task.fileName
+
+          // Use reloadFile to safely update schema and validate relations
+          useProjectStore.getState().reloadFile(targetFile.id, {
+             lastModified: Date.now(),
+             newColumns: columns as any
+          })
+
+          // Update other metadata that reloadFile doesn't handle
+          updateFile(targetFile.id, {
+             path: task.filePath,
+             name: displayName,
+             sheetName: task.sourceName === task.fileName ? undefined : task.sourceName,
+             rowCount: result.data.rowCount,
+          })
+
+          addedFileIds.push(targetFile.id)
+
         } else {
           // --- IMPORT MODE ---
           const finalTableName =
@@ -279,8 +336,8 @@ export function DataIngestionWizard() {
                           className="bg-black hover:bg-zinc-800 text-white px-8 font-bold"
                         >
                           {step === 'summary' 
-                            ? (mode === 'append' ? t('wizard.append_now') : t('wizard.import_now'))
-                            : tasks.length > 1 && (step === 'preview' || step === 'target') && currentTaskIndex < tasks.length - 1 
+                            ? (mode === 'append' ? t('wizard.append_now') : mode === 'replace' ? t('wizard.replace_now', 'Replace Now') : t('wizard.import_now'))
+                            : tasks.length > 1 && (step === 'preview' || step === 'target') && currentTaskIndex < tasks.length - 1 && mode !== 'replace'
                               ? t('wizard.next_task') 
                               : t('wizard.next')}
                         </Button>

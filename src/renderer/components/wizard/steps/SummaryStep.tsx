@@ -16,6 +16,11 @@ export function SummaryStep() {
   const { files } = useProjectStore()
   const { t } = useTranslation('common')
 
+  const title = mode === 'replace' ? t('wizard.summary_replace_title', 'Confirm Replacement') : t('wizard.summary_title')
+  const subtitle = mode === 'replace' 
+    ? t('wizard.summary_replace_desc', 'This action will overwrite the existing data.')
+    : t('wizard.summary_count', { count: tasks.length })
+
   return (
     <div className="h-full flex flex-col items-center justify-center p-8 overflow-y-auto">
       <div className="w-full max-w-2xl space-y-8 animate-in fade-in zoom-in-95 duration-500">
@@ -24,26 +29,28 @@ export function SummaryStep() {
             <CheckCircle2 className="w-8 h-8 text-indigo-600" />
           </div>
           <h3 className="text-2xl font-black text-black uppercase tracking-tight">
-            {t('wizard.summary_title')}
+            {title}
           </h3>
           <p className="text-zinc-500 text-sm">
-            {t('wizard.summary_count', { count: tasks.length })}
+            {subtitle}
           </p>
         </div>
 
         <div className="space-y-3">
           {tasks.map(task => {
             const pkColumn = task.columns.find(c => c.isPrimaryKey)
-            const targetFile =
-              mode === 'append'
-                ? files.find(
-                    f => f.id === (targetTableId || task.targetTableId)
-                  )
-                : null
+            let targetFile = null
+            
+            if (mode === 'append' || mode === 'replace') {
+                targetFile = files.find(f => f.id === (targetTableId || task.targetTableId))
+            }
+
             const displayTargetName =
               mode === 'append'
-                ? targetFile?.name || 'Target'
-                : task.finalTableName || task.tableName
+                ? `Appending to ${targetFile?.name || 'Target'}`
+                : mode === 'replace'
+                  ? `Replacing ${targetFile?.name || 'Target'}`
+                  : task.finalTableName || task.tableName
 
             return (
               <div

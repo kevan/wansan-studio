@@ -116,12 +116,22 @@ export function FileSelectionStep() {
 
         setAllTasks(newTasks) // Store locally
 
-        if (mode === 'append') {
+        if (mode === 'append' || mode === 'replace') {
           // Default to first, but allow switching
           if (newTasks.length > 0) {
-            const first = newTasks[0]
-            setSelectedTaskId(first.id)
-            setTasks([first])
+            let defaultTask = newTasks[0]
+            
+            // For replace mode, try to match the original sheet name
+            if (mode === 'replace' && targetTableId) {
+              const originalFile = projectFiles.find(f => f.id === targetTableId)
+              if (originalFile?.sheetName) {
+                const match = newTasks.find(t => t.sourceName === originalFile.sheetName)
+                if (match) defaultTask = match
+              }
+            }
+
+            setSelectedTaskId(defaultTask.id)
+            setTasks([defaultTask])
           }
         } else {
           // Import mode: default all to selected
@@ -140,22 +150,27 @@ export function FileSelectionStep() {
   }, [selectedFiles, setTasks, mode]) // Removed 'allTasks' dependency to avoid loop
 
   const handleToggleTask = (id: string) => {
-    if (mode === 'append') {
+    if (mode === 'append' || mode === 'replace') {
       setSelectedTaskId(id)
       const task = allTasks.find(t => t.id === id)
       if (task) {
-        // Re-apply target file's PK config to the newly selected task
-        const targetFile = projectFiles.find(f => f.id === targetTableId)
-        const updatedColumns = task.columns.map(col => {
-          const targetCol = targetFile?.columns.find(tc => tc.name === col.name)
-          return {
-            ...col,
-            isPrimaryKey: targetCol
-              ? !!targetCol.isPrimaryKey || !!targetCol.isKey
-              : false,
-          }
-        })
-        setTasks([{ ...task, columns: updatedColumns }])
+        // Re-apply target file's PK config to the newly selected task (only for append)
+        if (mode === 'append') {
+          const targetFile = projectFiles.find(f => f.id === targetTableId)
+          const updatedColumns = task.columns.map(col => {
+            const targetCol = targetFile?.columns.find(tc => tc.name === col.name)
+            return {
+              ...col,
+              isPrimaryKey: targetCol
+                ? !!targetCol.isPrimaryKey || !!targetCol.isKey
+                : false,
+            }
+          })
+          setTasks([{ ...task, columns: updatedColumns }])
+        } else {
+          // Replace mode: just set the task
+          setTasks([task])
+        }
       }
     } else {
       // Import mode: multi-select toggle
@@ -283,7 +298,7 @@ export function FileSelectionStep() {
                       </span>
                     </div>
                     <div className="pl-4">
-                      {mode === 'append' ? (
+                      {mode === 'append' || mode === 'replace' ? (
                         <div
                           className={cn(
                             'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all',

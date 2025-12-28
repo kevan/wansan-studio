@@ -194,10 +194,12 @@ export function ChartFullView() {
     effectiveType !== 'kpi' &&
     availableColumns.length > 0
 
+  const modalMaxWidth = effectiveType === 'table' ? 'max-w-[95vw]' : 'max-w-6xl'
+
   const content = (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
-      <div className="relative flex h-[80vh] w-[80vw] max-w-6xl rounded-xl border border-zinc-200 bg-white shadow-2xl overflow-hidden">
-        <div className="flex flex-1 flex-col">
+      <div className={cn("relative flex h-[80vh] w-[80vw] rounded-xl border border-zinc-200 bg-white shadow-2xl overflow-hidden transition-all duration-300", modalMaxWidth)}>
+        <div className="flex flex-1 flex-col min-w-0">
           <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3">
             <input
               className="w-full max-w-lg border-none text-lg font-semibold text-zinc-900 outline-none focus:ring-0"
@@ -223,12 +225,19 @@ export function ChartFullView() {
           </div>
 
           <div className="flex flex-1 overflow-hidden">
-            <div className="flex-1 p-5">
+            <div className="flex-1 p-5 min-w-0">
               <div className="h-full w-full rounded-lg border border-zinc-200 bg-zinc-50/60 p-4">
                 {isBigNumber && data.length > 0 && (
                   <BigNumberDisplay
-                    value={Object.values(data[0])[0] as any}
-                    label={Object.keys(data[0])[0]}
+                    value={(() => {
+                      const yCol = Array.isArray(localConfig?.y_axis) ? localConfig.y_axis[0] : localConfig?.y_axis;
+                      const targetCol = yCol || Object.keys(data[0])[0];
+                      return data[0][targetCol];
+                    })() as any}
+                    label={(() => {
+                      const yCol = Array.isArray(localConfig?.y_axis) ? localConfig.y_axis[0] : localConfig?.y_axis;
+                      return yCol || Object.keys(data[0])[0];
+                    })()}
                     variant="dashboard"
                   />
                 )}
@@ -267,7 +276,7 @@ export function ChartFullView() {
 
             <div
               className={cn(
-                'w-[320px] border-l border-zinc-200 bg-white p-4 overflow-y-auto'
+                'w-[320px] border-l border-zinc-200 bg-white p-4 overflow-y-auto shrink-0'
               )}
             >
               <div className="mb-4 text-xs font-bold text-zinc-400 uppercase tracking-widest">
@@ -304,6 +313,34 @@ export function ChartFullView() {
                     })}
                   </div>
                 </div>
+
+                {isBigNumber && (
+                  <div className="space-y-3">
+                    <div className="text-[11px] uppercase tracking-wide text-zinc-500">
+                      {t('value_column', 'Value Column')}
+                    </div>
+                    <select
+                      value={(() => {
+                        const yVal = localConfig?.y_axis;
+                        return Array.isArray(yVal) ? yVal[0] : (yVal || '');
+                      })()}
+                      onChange={e => {
+                        const val = e.target.value
+                        setLocalConfig(prev => ({
+                          ...(prev || {}),
+                          y_axis: val ? [val] : null,
+                        }))
+                      }}
+                      className="w-full rounded-md border border-zinc-200 px-2 py-2 text-sm text-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                    >
+                      {availableColumns.map(col => (
+                        <option key={col} value={col}>
+                          {col}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {showAxisControls && (
                   <div className="space-y-3">

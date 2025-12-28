@@ -8,7 +8,11 @@ import {
 } from '@shared/types/wizard'
 
 export interface WizardActions {
-  open: (mode?: WizardMode, targetTableId?: string) => void
+  open: (
+    mode?: WizardMode,
+    targetTableId?: string,
+    initialFiles?: { path: string; name: string; size: number }[]
+  ) => void
   close: () => void
   setStep: (step: WizardStep) => void // Reset currentTaskIndex here
   setFiles: (files: { path: string; name: string; size: number }[]) => void
@@ -46,7 +50,7 @@ export const useWizardStore = create<WizardState & WizardActions>(
   (set, get) => ({
     ...initialState,
 
-    open: async (mode = 'import', targetTableId) => {
+    open: async (mode = 'import', targetTableId, initialFiles = []) => {
       // Cleanup any orphaned staging tables from previous sessions
       if (window.electronAPI) {
         await window.electronAPI.cleanupAllStaging()
@@ -55,7 +59,8 @@ export const useWizardStore = create<WizardState & WizardActions>(
         ...initialState,
         isOpen: true,
         mode,
-        targetTableId,
+        targetTableId, // In 'replace' mode, this is the file ID being replaced
+        selectedFiles: initialFiles,
         tasks: [],
         tempTableNames: [],
       })

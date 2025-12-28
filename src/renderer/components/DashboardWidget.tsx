@@ -61,7 +61,7 @@ export function DashboardWidget({
     (chartType === 'table' || chartType === 'kpi') &&
     tableData &&
     tableData.length === 1 &&
-    Object.keys(tableData[0]).length === 1 // Only show Big Number if single row AND single column
+    Object.keys(tableData[0] || {}).length > 0
   const shouldShowTable =
     tableData &&
     tableData.length > 0 &&
@@ -145,8 +145,15 @@ export function DashboardWidget({
           {showBigNumber && (
             <div className="h-full w-full flex items-center justify-center">
               <BigNumberDisplay
-                value={Object.values(tableData[0])[0]}
-                label={Object.keys(tableData[0])[0]}
+                value={(() => {
+                  const yCol = Array.isArray(vizConfig?.y_axis) ? vizConfig.y_axis[0] : vizConfig?.y_axis;
+                  const targetCol = yCol || Object.keys(tableData[0])[0];
+                  return tableData[0][targetCol];
+                })()}
+                label={(() => {
+                   const yCol = Array.isArray(vizConfig?.y_axis) ? vizConfig.y_axis[0] : vizConfig?.y_axis;
+                   return yCol || Object.keys(tableData[0])[0];
+                })()}
                 variant={variant}
               />
             </div>
@@ -235,8 +242,15 @@ export function DashboardWidget({
         {showBigNumber && (
           <div className="h-full w-full flex items-center justify-center">
             <BigNumberDisplay
-              value={Object.values(tableData[0])[0]}
-              label={Object.keys(tableData[0])[0]}
+              value={(() => {
+                  const yCol = Array.isArray(vizConfig?.y_axis) ? vizConfig.y_axis[0] : vizConfig?.y_axis;
+                  const targetCol = yCol || Object.keys(tableData[0])[0];
+                  return tableData[0][targetCol];
+              })()}
+              label={(() => {
+                   const yCol = Array.isArray(vizConfig?.y_axis) ? vizConfig.y_axis[0] : vizConfig?.y_axis;
+                   return yCol || Object.keys(tableData[0])[0];
+              })()}
               variant={variant}
             />
           </div>

@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
-import { useParseFile, useSelectFiles } from '../hooks/useIPC'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useSettingsStore } from '../stores/useSettingsStore'
-import { useAutoLink } from '../hooks/useAutoLink'
+import { useWizardStore } from '../stores/useWizardStore' // Import Wizard Store
 import { loadDemoData } from '../lib/demo-data'
 import { useToastStore } from '../stores/useToastStore'
 import { Sparkles } from 'lucide-react'
@@ -16,122 +15,18 @@ interface WelcomeScreenProps {
 }
 
 export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
-  const parseFileMutation = useParseFile()
-  const selectFilesMutation = useSelectFiles()
-  const { addFile, updateFile } = useProjectStore()
-  const { checkAutoLink } = useAutoLink()
   const { addToast } = useToastStore()
   const { t } = useTranslation('chat')
   const { isActivated, checkGate, gateNode } = useProGate()
   const [isDragging, setIsDragging] = useState(false)
-  const [processingCount, setProcessingCount] = useState(0)
-  const [totalCount, setTotalCount] = useState(0)
   const [isLoadingDemo, setIsLoadingDemo] = useState(false)
+  
+  // Wizard Integration
+  const openWizard = useWizardStore(s => s.open)
+  const setFiles = useWizardStore(s => s.setFiles)
 
   const allowedExtensions = ['.xlsx', '.xls', '.csv', '.json']
   const maxSize = isActivated ? 200 * 1024 * 1024 : 50 * 1024 * 1024 // 200MB vs 50MB
-
-  // 处理单个文件
-  const processFile = async (
-    filePath: string,
-    fileName: string,
-    fileSize?: number
-  ) => {
-    // 添加文件到 store（状态: uploading）
-    const fileId = addFile({
-      name: fileName,
-      path: filePath,
-      tableName: '',
-      status: 'uploading',
-      size: fileSize,
-      columns: [],
-    })
-
-    // Switch to active file immediately
-    useProjectStore.getState().setActiveFile(fileId)
-
-    try {
-      // 更新状态为 processing
-      updateFile(fileId, { status: 'processing' })
-
-      // 解析文件
-      const result = await parseFileMutation.mutateAsync(filePath)
-      const parseResults = Array.isArray(result) ? result : [result]
-
-      if (parseResults.length === 0) {
-        throw new Error('No data found in file')
-      }
-
-      // Handle the first result (update the placeholder file we created)
-      const firstResult = parseResults[0]
-      updateFile(fileId, {
-        status: 'ready',
-        tableName: firstResult.tableName,
-        sheetName: firstResult.sheetName,
-        columns: firstResult.schema?.columns || [],
-        rowCount: firstResult.rowCount,
-      })
-
-      // Handle additional results (e.g. extra sheets)
-      for (let i = 1; i < parseResults.length; i++) {
-        const res = parseResults[i]
-        try {
-          addFile({
-            name: fileName,
-            path: filePath,
-            tableName: res.tableName,
-            sheetName: res.sheetName,
-            status: 'ready',
-            size: fileSize,
-            columns: res.schema?.columns || [],
-            rowCount: res.rowCount,
-          })
-        } catch (e) {
-          console.warn('Skipping duplicate or invalid sheet:', res.sheetName, e)
-        }
-      }
-
-      onDataImported?.(firstResult.tableName)
-      return true
-    } catch (error) {
-      // 更新状态为 error
-      updateFile(fileId, {
-        status: 'error',
-        error:
-          error instanceof Error ? error.message : t('sidebar.parse_failed'),
-      })
-      console.error('File processing error:', error)
-      return false
-    }
-  }
-
-  // 批量处理文件
-  const processFiles = async (
-    files: { path: string; name: string; size?: number }[]
-  ) => {
-    setTotalCount(files.length)
-    setProcessingCount(0)
-
-    for (const file of files) {
-      await processFile(file.path, file.name, file.size)
-      setProcessingCount(prev => prev + 1)
-    }
-
-    setTotalCount(0)
-    setProcessingCount(0)
-
-    // Trigger auto-link analysis
-    const currentFiles = useProjectStore.getState().files
-    console.log(
-      'WelcomeScreen: Batch processed. Triggering auto-link with:',
-      currentFiles.length,
-      'files'
-    )
-    checkAutoLink(currentFiles)
-
-    // Switch to Schema View
-    useProjectStore.getState().setView('schema')
-  }
 
   const handleFileSelect = async () => {
     const currentFiles = useProjectStore.getState().files
@@ -141,35 +36,36 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
     }
 
     try {
-      const result = await selectFilesMutation.mutateAsync()
-      if (result && result.length > 0) {
-        // Transform to match processFiles signature
-        const filesToProcess = result.map(fileData => ({
-          path: fileData.path,
-          name: fileData.path.split('/').pop() || 'unknown',
-          size: fileData.size,
+      const result = await window.electronAPI.selectFiles()
+      if (result.success && result.data && result.data.length > 0) {
+        
+        const filesToProcess = result.data.map(f => ({
+          path: f.path,
+          name: f.path.split(/[\\/]/).pop() || 'unknown',
+          size: f.size
         }))
 
         const oversizedFiles = filesToProcess.filter(f => f.size > maxSize)
-        const validSizeFiles = filesToProcess.filter(f => f.size <= maxSize)
-
+        
         if (oversizedFiles.length > 0) {
           addToast({
-            title: t('file_too_large_title'),
-            description: t('file_too_large_desc', {
-              limit: isActivated ? '200MB' : '50MB',
-              files: oversizedFiles.map(f => f.name).join(', '),
-            }),
-            type: 'warning',
+             title: t('file_too_large_title'),
+             description: t('file_too_large_desc', {
+               limit: isActivated ? '200MB' : '50MB',
+               files: oversizedFiles.map(f => f.name).join(', '),
+             }),
+             type: 'warning',
           })
+          return
         }
-
-        await processFiles(validSizeFiles)
+        
+        // Open Wizard with selected files
+        openWizard('import', undefined, filesToProcess)
       }
     } catch (error) {
       console.error('File selection error:', error)
       alert(
-        `文件选择失败: ${error instanceof Error ? error.message : '未知错误'}`
+        `File selection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       )
     }
   }
@@ -219,33 +115,31 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
       })
     }
 
-    // 过滤支持的文件类型
+    // Filter supported types
     const validFiles = validSizeFiles.filter(file => {
       const ext = '.' + file.name.split('.').pop()?.toLowerCase()
       return allowedExtensions.includes(ext)
     })
 
     if (validFiles.length === 0) {
-      alert(t('unsupported_file_type'))
+      if (validSizeFiles.length > 0) alert(t('unsupported_file_type'))
       return
     }
 
-    // 批量处理文件
-    await processFiles(
-      validFiles.map(f => ({
+    // Pass to Wizard
+    const mappedFiles = validFiles.map(f => ({
         path: window.electronAPI.getPathForFile(f),
         name: f.name,
         size: f.size,
-      }))
-    )
+    }))
+    
+    openWizard('import', undefined, mappedFiles)
   }
-
-  const isProcessing = totalCount > 0
 
   const handleLoadDemoData = async () => {
     setIsLoadingDemo(true)
     try {
-      // 从 i18n 获取 demo 提示词
+      // Demo data load...
       const demoPrompts = t('demo_prompts', { returnObjects: true }) as string[]
       const result = await loadDemoData(demoPrompts)
       if (result.success) {
@@ -284,28 +178,8 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        onClick={isProcessing ? undefined : handleFileSelect}
+        onClick={handleFileSelect}
       >
-        {/* 批量处理状态 */}
-        {isProcessing ? (
-          <div className="py-8">
-            <div className="w-16 h-16 mx-auto mb-6 wansan-spinner"></div>
-            <p className="text-lg font-medium text-zinc-700 mb-2">
-              {t('processing_files_count', {
-                current: processingCount + 1,
-                total: totalCount,
-              })}
-            </p>
-            <p className="text-sm text-zinc-500">{t('cleaning_cells')}</p>
-            {/* 进度条 */}
-            <div className="w-48 mx-auto mt-4 h-1.5 bg-zinc-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-indigo-600 transition-all duration-300"
-                style={{ width: `${(processingCount / totalCount) * 100}%` }}
-              />
-            </div>
-          </div>
-        ) : (
           <>
             {/* Icon */}
             <div className="w-20 h-20 mx-auto mb-6 bg-zinc-100 rounded-2xl flex items-center justify-center">
@@ -376,7 +250,6 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
               </div>
             </div>
           </>
-        )}
       </div>
     </div>
   )
