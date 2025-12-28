@@ -9,10 +9,12 @@ import {
   Database,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
+import { useTranslation } from 'react-i18next'
 
 export function SummaryStep() {
   const { tasks, mode, targetTableId } = useWizardStore()
   const { files } = useProjectStore()
+  const { t } = useTranslation('common')
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-8 overflow-y-auto">
@@ -22,10 +24,10 @@ export function SummaryStep() {
             <CheckCircle2 className="w-8 h-8 text-indigo-600" />
           </div>
           <h3 className="text-2xl font-black text-black uppercase tracking-tight">
-            Ready to Import
+            {t('wizard.summary_title')}
           </h3>
           <p className="text-zinc-500 text-sm">
-            Please review the import plan below before proceeding.
+            {t('wizard.summary_count', { count: tasks.length })}
           </p>
         </div>
 
@@ -75,12 +77,13 @@ export function SummaryStep() {
                   </div>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">
-                      {task.columns.length} Fields ·{' '}
-                      {task.rowCount.toLocaleString()} Rows
+                      {task.columns.length} {t('wizard.summary.columns')} ·{' '}
+                      {task.rowCount.toLocaleString()}{' '}
+                      {t('wizard.summary.rows')}
                     </span>
                     {pkColumn && (
                       <span className="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded font-bold border border-amber-100 flex items-center gap-1">
-                        Key: {pkColumn.name}
+                        {t('wizard.summary.target')}: {pkColumn.name}
                       </span>
                     )}
                   </div>
@@ -99,11 +102,9 @@ export function SummaryStep() {
 
         <div className="bg-zinc-900 p-4 rounded-xl text-zinc-400 text-[11px] leading-relaxed">
           <p className="font-bold text-zinc-200 mb-1 uppercase tracking-widest">
-            System Note
+            {t('wizard.summary.note_title')}
           </p>
-          Data will be stored in your local project bundle. Once imported, you
-          can perform multi-table analysis using AI. Large datasets might take a
-          few moments to index.
+          {t('wizard.summary.note_body')}
         </div>
       </div>
     </div>

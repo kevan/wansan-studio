@@ -45,40 +45,7 @@ import { ExpandableAction } from './ui/expandable-action'
 import { ConfirmDialog } from './modals/ConfirmDialog'
 import { MetricEditorModal } from './modals/metric-editor-modal'
 import { RelationEditorModal } from './modals/RelationEditorModal'
-
-interface FormatConfig {
-  label: string
-  icon: typeof Hash
-  bgColor: string
-  textColor: string
-}
-
-const FORMAT_CONFIG: Record<FormatType, FormatConfig> = {
-  number: {
-    label: 'format_number',
-    icon: Hash,
-    bgColor: 'bg-blue-50',
-    textColor: 'text-blue-600',
-  },
-  text: {
-    label: 'format_text',
-    icon: Type,
-    bgColor: 'bg-zinc-100',
-    textColor: 'text-zinc-600',
-  },
-  date: {
-    label: 'format_date',
-    icon: Calendar,
-    bgColor: 'bg-green-50',
-    textColor: 'text-green-600',
-  },
-  timestamp: {
-    label: 'format_datetime',
-    icon: Clock,
-    bgColor: 'bg-purple-50',
-    textColor: 'text-purple-600',
-  },
-}
+import { COLUMN_TYPE_CONFIG } from '@/src/lib/constants'
 
 export function SchemaEditor() {
   const files = useProjectStore(s => s.files)
@@ -663,8 +630,7 @@ function ColumnRow({
   onToggleKey: () => void
   isLinked: boolean
 }) {
-  const formatType = getUIFormatType(column.type)
-  const config = FORMAT_CONFIG[formatType]
+  const config = COLUMN_TYPE_CONFIG[column.type]
   const IconComponent = config.icon
   const { t } = useTranslation('common')
 

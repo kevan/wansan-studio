@@ -38,25 +38,28 @@ export class FileService {
     }
   }
 
-    private async parseExcelFile(filePath: string) {
-      console.log('[FileService] parseExcelFile start:', filePath)
-      try {
-        const fileName = basename(filePath)
-        
-        console.log('[FileService] Calling ingestExcelFile for preview...')
-        const schemas = await ingestExcelFile(
-          filePath,
-          this.databaseService,
-          fileName,
-          undefined,
-          undefined,
-          undefined,
-          'temp_preview_' 
-        )
-        console.log('[FileService] ingestExcelFile returned schemas:', schemas.length)
-  
-        const results = []
-        for (const schemaItem of schemas) {
+  private async parseExcelFile(filePath: string) {
+    console.log('[FileService] parseExcelFile start:', filePath)
+    try {
+      const fileName = basename(filePath)
+
+      console.log('[FileService] Calling ingestExcelFile for preview...')
+      const schemas = await ingestExcelFile(
+        filePath,
+        this.databaseService,
+        fileName,
+        undefined,
+        undefined,
+        undefined,
+        'temp_preview_'
+      )
+      console.log(
+        '[FileService] ingestExcelFile returned schemas:',
+        schemas.length
+      )
+
+      const results = []
+      for (const schemaItem of schemas) {
         const preview = await this.databaseService.query(
           `SELECT * FROM "${schemaItem.tableName}" LIMIT 100`
         )
@@ -89,145 +92,101 @@ export class FileService {
     }
   }
 
-    private async parseCSVFile(filePath: string) {
+  private async parseCSVFile(filePath: string) {
+    console.log('[FileService] parseCSVFile start:', filePath)
 
-      console.log('[FileService] parseCSVFile start:', filePath)
+    try {
+      const fileName = basename(filePath)
 
-      try {
+      const safePath = filePath.replace(/\\/g, '/')
 
-        const fileName = basename(filePath)
+      // 1. Get Preview Data & Count
 
-        const safePath = filePath.replace(/\\/g, '/')
+      console.log('[FileService] Fetching preview data...')
 
-  
+      const preview = await this.databaseService.query(
+        `SELECT * FROM read_csv_auto('${safePath}', SAMPLE_SIZE=-1, auto_detect=true) LIMIT 100`
+      )
 
-        // 1. Get Preview Data & Count
+      console.log('[FileService] Preview fetched, rows:', preview?.length)
 
-        console.log('[FileService] Fetching preview data...')
+      // 2. Get Schema
 
-        const preview = await this.databaseService.query(
+      console.log('[FileService] Fetching schema...')
 
-          `SELECT * FROM read_csv_auto('${safePath}', SAMPLE_SIZE=-1, auto_detect=true) LIMIT 100`
+      const columnsResult = await this.databaseService.query(
+        `DESCRIBE SELECT * FROM read_csv_auto('${safePath}', SAMPLE_SIZE=-1, auto_detect=true);`
+      )
 
-        )
+      console.log('[FileService] Schema fetched, cols:', columnsResult?.length)
 
-        console.log('[FileService] Preview fetched, rows:', preview?.length)
+      // 3. Process Schema & Extract Samples from Preview
 
-        
+      const columns: ColumnSchema[] = []
 
-        // 2. Get Schema
+      if (columnsResult && preview) {
+        for (const col of columnsResult) {
+          const finalType = normalizeDuckDBType(col.column_type)
 
-        console.log('[FileService] Fetching schema...')
+          // Extract up to 3 non-null samples from the preview data we already have
 
-        const columnsResult = await this.databaseService.query(
+          const samples = preview
 
-          `DESCRIBE SELECT * FROM read_csv_auto('${safePath}', SAMPLE_SIZE=-1, auto_detect=true);`
+            .map(row => row[col.column_name])
 
-        )
+            .filter(val => val !== null && val !== undefined && val !== '')
 
-        console.log('[FileService] Schema fetched, cols:', columnsResult?.length)
+            .slice(0, 3)
 
-  
+            .map(val => processSampleValue(val, finalType as ColumnType))
 
-        // 3. Process Schema & Extract Samples from Preview
+          columns.push({
+            name: col.column_name,
 
-        const columns: ColumnSchema[] = []
+            safeName: col.column_name,
 
-        if (columnsResult && preview) {
+            type: finalType as ColumnType,
 
-          for (const col of columnsResult) {
-
-            const finalType = normalizeDuckDBType(col.column_type)
-
-            
-
-            // Extract up to 3 non-null samples from the preview data we already have
-
-            const samples = preview
-
-              .map(row => row[col.column_name])
-
-              .filter(val => val !== null && val !== undefined && val !== '')
-
-              .slice(0, 3)
-
-              .map(val => processSampleValue(val, finalType as ColumnType))
-
-  
-
-            columns.push({
-
-              name: col.column_name,
-
-              safeName: col.column_name,
-
-              type: finalType as ColumnType,
-
-              sampleValues: samples,
-
-            })
-
-          }
-
+            sampleValues: samples,
+          })
         }
-
-  
-
-        const schema = {
-
-          tableName: '', 
-
-          description: fileName,
-
-          columns,
-
-        }
-
-  
-
-        console.log('[FileService] Fetching count...')
-
-        const countResult = await this.databaseService.query(
-
-          `SELECT COUNT(*) as count FROM read_csv_auto('${safePath}', auto_detect=true)`
-
-        )
-
-        console.log('[FileService] Count fetched:', countResult?.[0]?.count)
-
-  
-
-        return [
-
-          {
-
-            tableName: '',
-
-            schema,
-
-            rowCount: Number(countResult[0].count),
-
-            preview,
-
-          },
-
-        ]
-
-      } catch (error) {
-
-        console.error('[FileService] parseCSVFile Error:', error)
-
-        throw new Error(
-
-          `Failed to parse CSV file: ${error instanceof Error ? error.message : 'Unknown error'}`
-
-        )
-
       }
 
-    }
+      const schema = {
+        tableName: '',
 
-  
+        description: fileName,
+
+        columns,
+      }
+
+      console.log('[FileService] Fetching count...')
+
+      const countResult = await this.databaseService.query(
+        `SELECT COUNT(*) as count FROM read_csv_auto('${safePath}', auto_detect=true)`
+      )
+
+      console.log('[FileService] Count fetched:', countResult?.[0]?.count)
+
+      return [
+        {
+          tableName: '',
+
+          schema,
+
+          rowCount: Number(countResult[0].count),
+
+          preview,
+        },
+      ]
+    } catch (error) {
+      console.error('[FileService] parseCSVFile Error:', error)
+
+      throw new Error(
+        `Failed to parse CSV file: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+    }
+  }
 
   async reIngestFile(
     filePath: string,

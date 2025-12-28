@@ -1,15 +1,17 @@
 import { cn } from '@/utils/cn'
 import { WizardStep } from '@shared/types/wizard'
 import { Check } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
-const STEPS: { id: WizardStep; label: string }[] = [
-  { id: 'select', label: 'Select Files' },
-  { id: 'preview', label: 'Review Data' },
-  { id: 'target', label: 'Configure Target' }, // Skipped in simple append?
-  { id: 'summary', label: 'Summary' },
+const STEPS: { id: WizardStep; labelKey: string }[] = [
+  { id: 'select', labelKey: 'wizard.steps.select' },
+  { id: 'preview', labelKey: 'wizard.steps.preview' },
+  { id: 'target', labelKey: 'wizard.steps.target' },
+  { id: 'summary', labelKey: 'wizard.steps.summary' },
 ]
 
 export function Steps({ currentStep }: { currentStep: WizardStep }) {
+  const { t } = useTranslation('common')
   const currentIndex = STEPS.findIndex(s => s.id === currentStep)
 
   return (
@@ -51,7 +53,7 @@ export function Steps({ currentStep }: { currentStep: WizardStep }) {
                 isCurrent ? 'text-zinc-900' : 'text-zinc-400'
               )}
             >
-              {step.label}
+              {t(step.labelKey)}
             </span>
           </div>
         )

@@ -102,7 +102,7 @@ export function DataIngestionWizard() {
 
           // Map backend schema (with fresh samples) to frontend file model
           const columns = result.data.columns.map(c => {
-            const userConfig = task.columns.find(uc => uc.name === c.name);
+            const userConfig = task.columns.find(uc => uc.name === c.name)
             return {
               name: c.name,
               safeName: c.name,
@@ -115,9 +115,10 @@ export function DataIngestionWizard() {
 
           // Construct a friendly display name
           // If sourceName (Sheet1) != fileName (data.xlsx), show "data.xlsx - Sheet1"
-          const displayName = task.sourceName && task.sourceName !== task.fileName
-            ? `${task.fileName} - ${task.sourceName}`
-            : task.sourceName || task.fileName;
+          const displayName =
+            task.sourceName && task.sourceName !== task.fileName
+              ? `${task.fileName} - ${task.sourceName}`
+              : task.sourceName || task.fileName
 
           const fileId = addFile({
             name: displayName,
@@ -155,7 +156,10 @@ export function DataIngestionWizard() {
       setView('schema')
 
       toast.addToast({
-        title: `${mode === 'append' ? 'Data Appended' : 'Data Imported'} (${tasks.length} file(s))`,
+        title:
+          mode === 'append'
+            ? t('wizard.append_success')
+            : t('wizard.import_success'),
         type: 'success',
         duration: 3000,
       })
@@ -164,7 +168,7 @@ export function DataIngestionWizard() {
     } catch (e) {
       console.error('Final ingestion failed', e)
       toast.addToast({
-        title: `Ingestion Failed: ${e instanceof Error ? e.message : 'Unknown error'}`,
+        title: `${t('wizard.ingestion_failed')}: ${e instanceof Error ? e.message : 'Unknown error'}`,
         type: 'error',
         duration: 5000,
       })
@@ -174,15 +178,15 @@ export function DataIngestionWizard() {
   }
 
   const handleNext = () => {
-    // Multi-task navigation
-    if (step === 'preview' || step === 'target') {
+    // Multi-task navigation within a step
+    if (step === 'preview') {
       const isLastTask = currentTaskIndex === tasks.length - 1
       if (!isLastTask) {
         nextTask()
         return
       }
     }
-
+    
     // Step transitions
     if (step === 'select') {
       if (tasks.length > 0) setStep('preview')
@@ -196,14 +200,14 @@ export function DataIngestionWizard() {
   }
 
   const handleBack = () => {
-    // Multi-task navigation
+    // Multi-task navigation within a step
     if (step === 'preview') {
       if (currentTaskIndex > 0) {
         prevTask()
         return
       }
     }
-
+    
     // Step transitions
     if (step === 'preview') setStep('select')
     else if (step === 'target') setStep('preview')
@@ -224,10 +228,14 @@ export function DataIngestionWizard() {
 
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && handleCancel()}>
-      <DialogContent className="max-w-6xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl border-none">
-        <div className="px-8 py-5 border-b border-zinc-100 bg-white flex justify-between items-center shrink-0">
-          <h2 className="text-xl font-bold tracking-tight uppercase">
-            Data Ingestion
+      <DialogContent 
+        className="max-w-6xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl border-none"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
+        <div className="pl-8 pr-12 py-6 border-b border-zinc-100 bg-white flex justify-between items-center shrink-0">
+          <h2 className="text-xl font-bold tracking-tight uppercase text-zinc-900">
+            {t('wizard.title')}
           </h2>
           <Steps currentStep={step} />
         </div>
@@ -242,7 +250,7 @@ export function DataIngestionWizard() {
             <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4 animate-in fade-in">
               <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
               <span className="text-sm font-bold text-zinc-900 uppercase tracking-widest">
-                Finalizing Import...
+                {t('wizard.processing')}
               </span>
             </div>
           )}
@@ -263,21 +271,20 @@ export function DataIngestionWizard() {
               disabled={step === 'select' && currentTaskIndex === 0}
               className="border-zinc-200"
             >
-              Back
+              {t('wizard.back')}
             </Button>
-            <Button
-              onClick={handleNext}
-              disabled={isNextDisabled}
-              className="bg-black hover:bg-zinc-800 text-white px-8 font-bold"
-            >
-              {step === 'summary'
-                ? 'Finish'
-                : tasks.length > 1 &&
-                    (step === 'preview' || step === 'target') &&
-                    currentTaskIndex < tasks.length - 1
-                  ? 'Next Task'
-                  : 'Next'}
-            </Button>
+                        <Button
+                          onClick={handleNext}
+                          disabled={isNextDisabled}
+                          className="bg-black hover:bg-zinc-800 text-white px-8 font-bold"
+                        >
+                          {step === 'summary' 
+                            ? (mode === 'append' ? t('wizard.append_now') : t('wizard.import_now'))
+                            : tasks.length > 1 && (step === 'preview' || step === 'target') && currentTaskIndex < tasks.length - 1 
+                              ? t('wizard.next_task') 
+                              : t('wizard.next')}
+                        </Button>
+            
           </div>
         </div>
       </DialogContent>

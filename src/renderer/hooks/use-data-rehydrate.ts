@@ -67,7 +67,7 @@ export function useDataRehydrate() {
               console.warn(
                 `[Rehydrate] Persistence Miss: Table ${file.tableName} not found. Restoring...`
               )
-              
+
               // Now we show the loading UI because we are actually restoring
               setRestoring(true)
 

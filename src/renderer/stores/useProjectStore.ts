@@ -1247,7 +1247,8 @@ export const useProjectStore = create<ProjectState>()(
         }
       },
 
-      loadProject: (data: ProjectData) => set({ ...data, isProjectLoaded: true }),
+      loadProject: (data: ProjectData) =>
+        set({ ...data, isProjectLoaded: true }),
 
       cleanupZombieFiles: () =>
         set(state => ({

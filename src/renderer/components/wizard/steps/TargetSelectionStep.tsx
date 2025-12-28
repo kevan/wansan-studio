@@ -12,11 +12,18 @@ import {
   Edit3,
   ChevronLeft,
   ChevronRight,
+  FileSpreadsheet,
+  FileText,
+  ArrowRight,
+  Link2,
+  Check,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { RadioGroup, RadioGroupItem } from '../../ui/radio-group'
 import { Label } from '../../ui/label'
 import { Input } from '../../ui/input'
+import { sanitizeTableName } from '@shared/naming-utils'
+import { useTranslation } from 'react-i18next'
 
 export function TargetSelectionStep() {
   const {
@@ -29,21 +36,19 @@ export function TargetSelectionStep() {
     prevTask,
   } = useWizardStore()
   const { files } = useProjectStore()
+  const { t } = useTranslation('common')
   const [isPreChecking, setIsPreChecking] = useState(false)
 
   const currentTask = tasks[currentTaskIndex]
-
   const targetFile = files.find(f => f.id === targetTableId)
 
   // Use PKs from TARGET file for Append Mode, or from Task config for Import Mode
-
   const pkNames = useMemo(() => {
     if (mode === 'append' && targetFile) {
       return targetFile.columns
         .filter(c => c.isPrimaryKey || c.isKey)
         .map(c => c.name)
     }
-
     return (
       currentTask?.columns.filter(c => c.isPrimaryKey).map(c => c.name) || []
     )
@@ -51,23 +56,10 @@ export function TargetSelectionStep() {
 
   const preCheck = currentTask?.preCheckResult
 
-  // Collision Check for Import Mode
-  const isTableNameTaken = useMemo(() => {
-    if (mode !== 'import' || !currentTask?.finalTableName) return false
-    return files.some(f => f.tableName === currentTask.finalTableName)
-  }, [files, currentTask?.finalTableName, mode])
-
   // Trigger Pre-check (for Append Mode)
   useEffect(() => {
     if (!currentTask || !targetFile || mode !== 'append') return
-
-    // If no PKs selected, clear pre-check and skip
-    if (pkNames.length === 0) {
-      if (currentTask.preCheckResult) {
-        updateTask(currentTaskIndex, { preCheckResult: undefined })
-      }
-      return
-    }
+    if (pkNames.length === 0) return
 
     const runPreCheck = async () => {
       setIsPreChecking(true)
@@ -81,7 +73,7 @@ export function TargetSelectionStep() {
               : currentTask.sourceName,
           uniqueKeys: pkNames,
           columnMapping: currentTask.columnMapping || {},
-          tempFilePath: currentTask.tempFilePath, // Pass cached path
+          tempFilePath: currentTask.tempFilePath,
         })
 
         if (res.success && res.data) {
@@ -96,51 +88,43 @@ export function TargetSelectionStep() {
 
     runPreCheck()
   }, [
-    currentTask?.id,
+    currentTaskIndex,
     JSON.stringify(pkNames),
     targetFile?.id,
     mode,
-    currentTaskIndex,
     JSON.stringify(currentTask?.columnMapping),
   ])
 
   if (!currentTask) return null
 
-  const handleRename = (val: string) => {
-    const sanitized = val.toLowerCase().replace(/[^a-z0-9_]/g, '_')
-    updateTask(currentTaskIndex, { finalTableName: sanitized })
+  const handleRename = (index: number, val: string) => {
+    const sanitized = sanitizeTableName(val, undefined, '')
+    updateTask(index, { finalTableName: sanitized })
   }
 
-  const setStrategy = (val: 'ignore' | 'replace') => {
-    updateTask(currentTaskIndex, { conflictStrategy: val })
-  }
   const strategy = currentTask.conflictStrategy || 'ignore'
+  const mappedCount = Object.values(currentTask.columnMapping || {}).filter(
+    Boolean
+  ).length
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-zinc-50/30">
-      {/* Task Nav Header */}
+      {/* Header */}
       <div className="px-8 py-4 bg-zinc-100/50 border-b border-zinc-200 flex justify-between items-center shrink-0">
         <div className="flex items-center gap-4">
           <div className="flex flex-col text-left">
             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">
-              {mode === 'append' ? 'Review Conflicts' : 'Confirm Table Name'}
+              {mode === 'append' ? 'Target Decision' : 'Target Configurations'}
             </span>
             <span className="text-sm font-bold text-zinc-900 mt-1">
-              {currentTask.sourceName}
-            </span>
-          </div>
-          <div className="h-8 w-px bg-zinc-200" />
-          <div className="flex flex-col text-left">
-            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">
-              Progress
-            </span>
-            <span className="text-sm font-bold text-zinc-900 mt-1">
-              {currentTaskIndex + 1} of {tasks.length}
+              {mode === 'append'
+                ? `Appending to ${targetFile?.name}`
+                : `${tasks.length} Assets Pending`}
             </span>
           </div>
         </div>
 
-        {tasks.length > 1 && (
+        {mode === 'append' && tasks.length > 1 && (
           <div className="flex gap-2">
             <button
               onClick={prevTask}
@@ -160,73 +144,87 @@ export function TargetSelectionStep() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-8 space-y-10">
-        <div className="max-w-2xl mx-auto space-y-10">
+      <div className="flex-1 overflow-y-auto p-8">
+        <div className="max-w-4xl mx-auto space-y-8">
           {mode === 'import' ? (
-            /* --- IMPORT MODE: Rename Table --- */
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-              <div className="space-y-2">
-                <h4 className="text-xs font-black uppercase tracking-widest text-zinc-400 pl-1">
-                  Target Table Name
-                </h4>
-                <div
-                  className={cn(
-                    'bg-white border-2 p-5 rounded-2xl flex items-center gap-4 transition-all shadow-sm',
-                    isTableNameTaken
-                      ? 'border-rose-500 bg-rose-50/20'
-                      : 'border-zinc-200 focus-within:border-indigo-500'
-                  )}
-                >
-                  <div className="w-10 h-10 rounded-xl bg-zinc-50 flex items-center justify-center shrink-0">
-                    <Database className="w-5 h-5 text-zinc-400" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="text-[9px] font-bold uppercase text-zinc-400 tracking-tighter leading-none">
-                      Table Name
-                    </span>
-                    <div className="relative mt-0.5">
-                      <Input
-                        value={currentTask.finalTableName || ''}
-                        onChange={e => handleRename(e.target.value)}
-                        className="h-7 text-sm font-bold p-0 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
-                        placeholder="t_new_table"
-                      />
-                      <Edit3 className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-300 pointer-events-none" />
-                    </div>
-                  </div>
-                </div>
-                {isTableNameTaken && (
-                  <div className="flex items-center gap-2 text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-100 animate-in shake duration-300">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span className="text-xs font-bold uppercase tracking-tight">
-                      Name already taken. Please choose another.
-                    </span>
-                  </div>
-                )}
+            /* --- IMPORT MODE: Multi-Task List --- */
+            <div className="space-y-4">
+              <div className="grid grid-cols-[1fr_40px_1fr] px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                <span>{t('wizard.configuring_asset')}</span>
+                <span />
+                <span>{t('wizard.target_table')}</span>
               </div>
 
-              <div className="p-8 border-2 border-dashed border-zinc-200 rounded-2xl flex flex-col items-center justify-center text-center gap-4 bg-white/50">
-                <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-600" />
-                </div>
-                <div className="max-w-xs">
-                  <h4 className="text-lg font-bold text-zinc-900 uppercase tracking-tight">
-                    New Table Ready
-                  </h4>
-                  <p className="text-sm text-zinc-500 mt-2 font-medium">
-                    This file will be imported as a new table. Proceed to the
-                    final summary.
-                  </p>
-                </div>
+              <div className="space-y-3">
+                {tasks.map((task, idx) => {
+                  const isTaken = files.some(
+                    f => f.tableName === task.finalTableName
+                  )
+                  return (
+                    <div
+                      key={task.id}
+                      className="group flex items-center gap-4 bg-white border border-zinc-200 p-4 rounded-2xl shadow-sm hover:border-indigo-200 transition-all"
+                    >
+                      <div className="flex-1 flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-zinc-50 flex items-center justify-center shrink-0">
+                          {task.fileName.endsWith('.csv') ? (
+                            <FileText className="w-4 h-4 text-zinc-400" />
+                          ) : (
+                            <FileSpreadsheet className="w-4 h-4 text-zinc-400" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-zinc-900 truncate">
+                            {task.sourceName}
+                          </p>
+                          <p className="text-[10px] text-zinc-400 truncate">
+                            {task.fileName}
+                          </p>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-zinc-200 shrink-0" />
+                      <div className="flex-1 flex items-center gap-3 min-w-0">
+                        <div
+                          className={cn(
+                            'flex-1 flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all',
+                            isTaken
+                              ? 'bg-rose-50 border-rose-200'
+                              : 'bg-zinc-50 border-transparent group-hover:bg-white group-hover:border-indigo-100'
+                          )}
+                        >
+                          <Database
+                            className={cn(
+                              'w-3.5 h-3.5',
+                              isTaken ? 'text-rose-500' : 'text-zinc-400'
+                            )}
+                          />
+                          <Input
+                            value={task.finalTableName || ''}
+                            onChange={e => handleRename(idx, e.target.value)}
+                            className="h-6 text-sm font-mono font-bold p-0 border-none bg-transparent focus-visible:ring-0 shadow-none"
+                          />
+                          {isTaken ? (
+                            <div title={t('wizard.name_taken')}>
+                              <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
+                            </div>
+                          ) : (
+                            <Edit3 className="w-3 h-3 text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           ) : (
-            /* --- APPEND MODE: Conflict Check --- */
-            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2">
+            /* --- APPEND MODE: High Density UI --- */
+            <div className="max-w-2xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-2">
+              {/* Conflict Status Card */}
               {pkNames.length > 0 ? (
                 <div
                   className={cn(
-                    'p-8 rounded-2xl border-2 transition-all duration-500 text-center',
+                    'p-8 rounded-[2rem] border-2 transition-all duration-500 text-center relative overflow-hidden',
                     isPreChecking
                       ? 'bg-zinc-50 border-zinc-100'
                       : (preCheck?.duplicateRows || 0) > 0
@@ -234,7 +232,7 @@ export function TargetSelectionStep() {
                         : 'bg-emerald-50 border-emerald-100'
                   )}
                 >
-                  <div className="flex flex-col items-center gap-4">
+                  <div className="flex flex-col items-center gap-4 relative z-10">
                     <div
                       className={cn(
                         'w-16 h-16 rounded-full flex items-center justify-center shadow-sm',
@@ -262,116 +260,159 @@ export function TargetSelectionStep() {
                             : 'No Conflicts Detected'}
                       </h4>
                       <p className="text-sm text-zinc-500 font-medium mt-1">
-                        Unique Keys:{' '}
+                        Matching existing records via:{' '}
                         <span className="font-bold text-indigo-600">
                           {pkNames.join(', ')}
                         </span>
                       </p>
                     </div>
                     {!isPreChecking && preCheck && (
-                      <div className="mt-2 text-zinc-400 text-xs font-bold uppercase">
-                        {preCheck.totalRows.toLocaleString()} New Rows ·{' '}
-                        {preCheck.duplicateRows.toLocaleString()} Duplicates
+                      <div className="mt-2 flex items-center gap-4 text-zinc-400 text-[10px] font-black uppercase tracking-widest">
+                        <span>
+                          {preCheck.totalRows.toLocaleString()} Rows in file
+                        </span>
+                        <div className="w-1 h-1 rounded-full bg-zinc-200" />
+                        <span>
+                          {preCheck.duplicateRows.toLocaleString()} existing
+                        </span>
                       </div>
                     )}
                   </div>
                 </div>
               ) : (
-                <div className="p-8 border-2 border-amber-100 bg-amber-50/50 rounded-2xl flex flex-col items-center text-center gap-4">
+                <div className="p-8 border-2 border-dashed border-amber-200 bg-amber-50/30 rounded-[2rem] flex flex-col items-center text-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
                     <Info className="w-6 h-6" />
                   </div>
                   <div className="max-w-xs">
-                    <h4 className="text-lg font-bold text-amber-900">
-                      No Unique Key selected
+                    <h4 className="text-lg font-bold text-amber-900 uppercase tracking-tight">
+                      No Unique Key
                     </h4>
-                    <p className="text-sm text-amber-700 mt-1 font-medium leading-tight">
-                      All rows will be appended without checking for existing
-                      records. This may lead to duplicates.
+                    <p className="text-xs text-amber-700 mt-1 font-medium leading-normal">
+                      Data will be appended directly. This may create duplicate
+                      records as no identifier is set.
                     </p>
                   </div>
                 </div>
               )}
 
-              {/* Strategy Picker */}
+              {/* Strategy Selection - Optimized */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2 text-zinc-500 justify-center">
-                  <h4 className="text-xs font-black uppercase tracking-widest">
-                    Conflict Resolution Strategy
+                <div className="flex items-center gap-2 text-zinc-400 justify-center">
+                  <div className="h-px w-12 bg-zinc-200" />
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">
+                    Conflict Strategy
                   </h4>
+                  <div className="h-px w-12 bg-zinc-200" />
                 </div>
 
                 <RadioGroup
                   value={strategy}
-                  onValueChange={val => setStrategy(val as any)}
-                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                  onValueChange={val =>
+                    updateTask(currentTaskIndex, {
+                      conflictStrategy: val as any,
+                    })
+                  }
+                  className="grid grid-cols-1 gap-3"
                 >
                   <Label
                     htmlFor="strat-ignore"
                     className={cn(
-                      'flex flex-col text-center items-center justify-center p-6 border-2 rounded-2xl cursor-pointer transition-all bg-white',
+                      'flex items-center justify-between p-5 border transition-all cursor-pointer rounded-2xl group',
                       strategy === 'ignore'
-                        ? 'border-black shadow-lg ring-2 ring-black/5'
-                        : 'border-zinc-200 hover:border-zinc-300 shadow-sm'
+                        ? 'bg-indigo-50/50 border-indigo-200 ring-4 ring-indigo-50'
+                        : 'bg-white border-zinc-200 hover:border-zinc-300 shadow-sm'
                     )}
                   >
-                    <RadioGroupItem
-                      value="ignore"
-                      id="strat-ignore"
-                      className="sr-only"
-                    />
-                    <div
-                      className={cn(
-                        'w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-colors',
-                        strategy === 'ignore'
-                          ? 'bg-black text-white'
-                          : 'bg-zinc-100 text-zinc-400'
-                      )}
-                    >
-                      <History className="w-6 h-6" />
+                    <div className="flex items-center gap-5">
+                      <RadioGroupItem
+                        value="ignore"
+                        id="strat-ignore"
+                        className="sr-only"
+                      />
+                      <div
+                        className={cn(
+                          'w-12 h-12 rounded-xl flex items-center justify-center transition-colors shadow-sm',
+                          strategy === 'ignore'
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-zinc-100 text-zinc-400 group-hover:bg-zinc-200'
+                        )}
+                      >
+                        <History className="w-6 h-6" />
+                      </div>
+                      <div className="flex flex-col text-left">
+                        <span
+                          className={cn(
+                            'text-base font-bold',
+                            strategy === 'ignore'
+                              ? 'text-indigo-900'
+                              : 'text-zinc-900'
+                          )}
+                        >
+                          {t('wizard.strategy_ignore_title')}
+                        </span>
+                        <span className="text-xs text-zinc-500 font-medium leading-relaxed max-w-sm">
+                          {t('wizard.strategy_ignore_desc')}
+                        </span>
+                      </div>
                     </div>
-                    <span className="font-bold text-zinc-900">
-                      Ignore Duplicates
-                    </span>
-                    <span className="text-[11px] text-zinc-500 font-medium mt-1 leading-tight">
-                      Only add new records.
-                      <br />
-                      Keep existing data.
-                    </span>
+                    {strategy === 'ignore' ? (
+                      <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center shadow-sm">
+                        <Check className="w-4 h-4 text-white stroke-[3]" />
+                      </div>
+                    ) : (
+                      <div className="w-6 h-6 rounded-full border-2 border-zinc-100 group-hover:border-zinc-200" />
+                    )}
                   </Label>
 
                   <Label
                     htmlFor="strat-replace"
                     className={cn(
-                      'flex flex-col text-center items-center justify-center p-6 border-2 rounded-2xl cursor-pointer transition-all bg-white',
+                      'flex items-center justify-between p-5 border transition-all cursor-pointer rounded-2xl group',
                       strategy === 'replace'
-                        ? 'border-black shadow-lg ring-2 ring-black/5'
-                        : 'border-zinc-200 hover:border-zinc-300 shadow-sm'
+                        ? 'bg-indigo-50/50 border-indigo-200 ring-4 ring-indigo-50'
+                        : 'bg-white border-zinc-200 hover:border-zinc-300 shadow-sm'
                     )}
                   >
-                    <RadioGroupItem
-                      value="replace"
-                      id="strat-replace"
-                      className="sr-only"
-                    />
-                    <div
-                      className={cn(
-                        'w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-colors',
-                        strategy === 'replace'
-                          ? 'bg-black text-white'
-                          : 'bg-zinc-100 text-zinc-400'
-                      )}
-                    >
-                      <Copy className="w-6 h-6" />
+                    <div className="flex items-center gap-5">
+                      <RadioGroupItem
+                        value="replace"
+                        id="strat-replace"
+                        className="sr-only"
+                      />
+                      <div
+                        className={cn(
+                          'w-12 h-12 rounded-xl flex items-center justify-center transition-colors shadow-sm',
+                          strategy === 'replace'
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-zinc-100 text-zinc-400 group-hover:bg-zinc-200'
+                        )}
+                      >
+                        <Copy className="w-6 h-6" />
+                      </div>
+                      <div className="flex flex-col text-left">
+                        <span
+                          className={cn(
+                            'text-base font-bold',
+                            strategy === 'replace'
+                              ? 'text-indigo-900'
+                              : 'text-zinc-900'
+                          )}
+                        >
+                          {t('wizard.strategy_replace_title')}
+                        </span>
+                        <span className="text-xs text-zinc-500 font-medium leading-relaxed max-w-sm">
+                          {t('wizard.strategy_replace_desc')}
+                        </span>
+                      </div>
                     </div>
-                    <span className="font-bold text-zinc-900">
-                      Replace Duplicates
-                    </span>
-                    <span className="text-[11px] text-zinc-500 font-medium mt-1 leading-tight">
-                      Update existing records
-                      <br />
-                      with new file data.
-                    </span>
+                    {strategy === 'replace' ? (
+                      <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center shadow-sm">
+                        <Check className="w-4 h-4 text-white stroke-[3]" />
+                      </div>
+                    ) : (
+                      <div className="w-6 h-6 rounded-full border-2 border-zinc-100 group-hover:border-zinc-200" />
+                    )}
                   </Label>
                 </RadioGroup>
               </div>

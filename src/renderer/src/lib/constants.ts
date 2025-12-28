@@ -1,3 +1,13 @@
+import {
+  Calendar,
+  Clock,
+  Hash,
+  ToggleLeft,
+  Type,
+  LucideIcon,
+} from 'lucide-react'
+import { ColumnType } from '@shared/types'
+
 export const AI_PROVIDERS = {
   deepseek: {
     name: 'DeepSeek (深度求索)',
@@ -26,3 +36,56 @@ export const AI_PROVIDERS = {
 } as const
 
 export type AIProviderKey = keyof typeof AI_PROVIDERS
+
+export interface ColumnTypeDisplayConfig {
+  label: string
+  icon: LucideIcon
+  bgColor: string
+  textColor: string
+  uiLabel: string // For dropdown display like "Text", "Decimal"
+}
+
+export const COLUMN_TYPE_CONFIG: Record<ColumnType, ColumnTypeDisplayConfig> = {
+  VARCHAR: {
+    label: 'format_text',
+    icon: Type,
+    bgColor: 'bg-zinc-100',
+    textColor: 'text-zinc-600',
+    uiLabel: 'Text',
+  },
+  DOUBLE: {
+    label: 'format_decimal',
+    icon: Hash,
+    bgColor: 'bg-blue-50',
+    textColor: 'text-blue-600',
+    uiLabel: 'Decimal',
+  },
+  INTEGER: {
+    label: 'format_integer',
+    icon: Hash,
+    bgColor: 'bg-blue-50',
+    textColor: 'text-blue-600',
+    uiLabel: 'Integer',
+  },
+  DATE: {
+    label: 'format_date',
+    icon: Calendar,
+    bgColor: 'bg-green-50',
+    textColor: 'text-green-600',
+    uiLabel: 'Date',
+  },
+  TIMESTAMP: {
+    label: 'format_datetime',
+    icon: Clock,
+    bgColor: 'bg-purple-50',
+    textColor: 'text-purple-600',
+    uiLabel: 'Date Time',
+  },
+  BOOLEAN: {
+    label: 'type_boolean',
+    icon: ToggleLeft,
+    bgColor: 'bg-orange-50',
+    textColor: 'text-orange-700',
+    uiLabel: 'Boolean',
+  },
+}

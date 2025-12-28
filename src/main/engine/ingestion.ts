@@ -180,7 +180,9 @@ export async function ingestExcelFile(
       }
 
       if (message.success) {
-        console.log('[Ingestion] Worker reported success. Processing results...')
+        console.log(
+          '[Ingestion] Worker reported success. Processing results...'
+        )
         const results: TableSchema[] = []
         const { data, allSheetsCount } = message
 
@@ -274,7 +276,7 @@ export async function ingestExcelFile(
       }
     })
 
-    worker.on('error', (err) => {
+    worker.on('error', err => {
       console.error('[Ingestion] Worker error:', err)
       reject(err)
     })

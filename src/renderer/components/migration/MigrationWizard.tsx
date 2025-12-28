@@ -49,47 +49,33 @@ export function MigrationWizard() {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-white flex items-center justify-center p-6 sm:p-12 font-sans selection:bg-black selection:text-white">
-      {/* Swiss Style Grid Background (Subtle) */}
-      <div
-        className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{
-          backgroundImage:
-            'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-        }}
-      />
+    <div className="fixed inset-0 z-[100] bg-zinc-50 flex items-center justify-center p-6 sm:p-12 font-sans selection:bg-black selection:text-white">
+      {/* Subtle background gradient instead of grid */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white to-zinc-100 opacity-50 pointer-events-none" />
 
       <div className="w-full max-w-2xl relative">
-        {/* Content Wrapper */}
-        <div className="border-[3px] border-black bg-white p-8 sm:p-12 shadow-[16px_16px_0_0_#000]">
+        {/* Content Wrapper - Soft Shadow, Large Rounding, No Borders */}
+        <div className="bg-white p-10 sm:p-16 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] rounded-[2.5rem] relative overflow-hidden">
           {/* STEP 1: INTRO */}
           {step === 'intro' && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="space-y-4">
-                <div className="inline-block bg-black text-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em]">
+            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="space-y-6 text-center sm:text-left">
+                <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                  <SparklesIcon className="w-3 h-3" />
                   {version ? `v${version} Update` : 'Update'}
                 </div>
-                <h1 className="text-5xl sm:text-6xl font-black tracking-tighter leading-[0.9] text-black">
-                  {t('upgrade_title')
-                    .split(' ')
-                    .map((word, i, arr) => (
-                      <React.Fragment key={i}>
-                        {word}
-                        {i < arr.length - 1 && <br />}
-                      </React.Fragment>
-                    ))}
+                <h1 className="text-5xl sm:text-6xl font-bold tracking-tight leading-[1.1] text-zinc-900">
+                  {t('upgrade_title')}
                 </h1>
+                <p className="text-xl font-medium leading-relaxed text-zinc-500 max-w-md">
+                  {t('upgrade_desc')}
+                </p>
               </div>
 
-              <p className="text-xl font-medium leading-tight text-zinc-600 max-w-md">
-                {t('upgrade_desc')}
-              </p>
-
-              <div className="pt-4 flex flex-col sm:flex-row gap-4">
+              <div className="pt-4 flex flex-col sm:flex-row items-center gap-6">
                 <Button
                   onClick={() => setStep('config')}
-                  className="bg-black hover:bg-zinc-800 text-white rounded-none h-14 px-8 text-lg font-bold group"
+                  className="w-full sm:w-auto bg-zinc-900 hover:bg-black text-white rounded-2xl h-16 px-10 text-lg font-bold group shadow-lg shadow-zinc-200 transition-all active:scale-[0.98]"
                 >
                   {t('start_migration')}
                   <ArrowRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-1" />
@@ -97,7 +83,7 @@ export function MigrationWizard() {
 
                 <button
                   onClick={skipMigration}
-                  className="text-zinc-400 hover:text-red-600 text-xs font-bold uppercase tracking-widest transition-colors text-left sm:text-center self-center"
+                  className="text-zinc-400 hover:text-rose-500 text-xs font-bold uppercase tracking-widest transition-colors py-2"
                 >
                   {t('skip_migration')}
                 </button>
@@ -107,93 +93,106 @@ export function MigrationWizard() {
 
           {/* STEP 2: CONFIGURATION */}
           {step === 'config' && (
-            <div className="space-y-10 animate-in fade-in duration-500">
-              <h2 className="text-4xl font-black tracking-tighter text-black uppercase">
-                {t('setup_workspace')}
-              </h2>
+            <div className="space-y-12 animate-in fade-in duration-500">
+              <div className="space-y-2">
+                <h2 className="text-4xl font-bold tracking-tight text-zinc-900 uppercase">
+                  {t('setup_workspace')}
+                </h2>
+                <p className="text-sm text-zinc-400 font-medium">
+                  Choose a name and location for your new project bundle.
+                </p>
+              </div>
 
-              <div className="space-y-8">
+              <div className="space-y-10">
                 {/* Project Name */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 ml-1">
                     {t('project_name')}
                   </label>
                   <Input
                     value={projectName}
                     onChange={e => setProjectName(e.target.value)}
-                    className="border-b-2 border-t-0 border-x-0 border-black rounded-none px-0 text-2xl font-bold focus-visible:ring-0 placeholder:text-zinc-200"
+                    className="border-b border-t-0 border-x-0 border-zinc-100 rounded-none px-0 text-3xl font-bold focus-visible:ring-0 focus-visible:border-indigo-500 placeholder:text-zinc-100 transition-all duration-300 h-14"
                     placeholder="My Workspace"
                   />
                 </div>
 
                 {/* Path Selector */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 ml-1">
                     {t('directory')}
                   </label>
-                  <div className="flex gap-2 items-end">
-                    <div className="flex-1 border-b-2 border-black pb-2 text-sm font-bold truncate text-zinc-500">
-                      {targetPath || t('select_destination')}
+                  <div className="flex gap-4 items-center bg-zinc-50 p-4 rounded-2xl border border-zinc-100 hover:bg-white hover:border-zinc-200 transition-all group">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] font-black text-zinc-400 uppercase leading-none mb-1">
+                        Target Path
+                      </p>
+                      <p className="text-sm font-bold truncate text-zinc-600">
+                        {targetPath || t('select_destination')}
+                      </p>
                     </div>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       onClick={selectDirectory}
-                      className="border-2 border-black rounded-none font-bold hover:bg-black hover:text-white transition-all"
+                      className="h-10 px-4 rounded-xl font-bold text-xs bg-white shadow-sm border border-zinc-200 hover:border-zinc-900 transition-all"
                     >
-                      <FolderOpen className="h-4 w-4 mr-2" />
+                      <FolderOpen className="h-3.5 w-3.5 mr-2" />
                       {t('change_directory')}
                     </Button>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-6 flex gap-4">
+              <div className="pt-6 flex items-center gap-6">
                 <Button
                   onClick={handleStart}
                   disabled={!projectName || !targetPath}
-                  className="bg-black hover:bg-zinc-800 text-white rounded-none h-14 px-10 text-lg font-bold flex-1 sm:flex-none shadow-[8px_8px_0_0_#e2e8f0]"
+                  className="flex-1 h-16 bg-zinc-900 hover:bg-black text-white rounded-2xl text-lg font-bold shadow-xl shadow-zinc-100 disabled:bg-zinc-100 disabled:text-zinc-300 transition-all"
                 >
                   {t('create_project_button')}
                 </Button>
-                <Button
-                  variant="ghost"
+                <button
                   onClick={() => setStep('intro')}
-                  className="h-14 px-6 rounded-none font-bold text-zinc-400 hover:text-black"
+                  className="px-6 text-sm font-bold text-zinc-400 hover:text-zinc-900 transition-colors"
                 >
                   {t('common:back')}
-                </Button>
+                </button>
               </div>
             </div>
           )}
 
           {/* STEP 3: RUNNING */}
           {step === 'running' && (
-            <div className="space-y-10 py-4 animate-in fade-in duration-500 text-center sm:text-left">
-              <div className="space-y-4">
-                <div className="flex items-center justify-center sm:justify-start gap-4">
-                  <Loader2 className="h-10 w-10 animate-spin text-black" />
-                  <h2 className="text-4xl font-black tracking-tighter text-black uppercase">
+            <div className="space-y-12 py-4 animate-in fade-in duration-500">
+              <div className="space-y-6 text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start gap-5">
+                  <div className="relative">
+                    <div className="absolute inset-0 rounded-full bg-indigo-100 animate-ping opacity-25" />
+                    <Loader2 className="h-12 w-12 text-zinc-900 animate-spin relative" />
+                  </div>
+                  <h2 className="text-4xl font-bold tracking-tight text-zinc-900 uppercase">
                     {t('migrating')}
                   </h2>
                 </div>
-                <p className="text-lg font-bold text-zinc-500 italic max-w-sm">
+                <p className="text-lg font-medium text-zinc-500 italic max-w-sm">
                   {message}
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-black">
-                  <span>{t('progress')}</span>
+              <div className="space-y-4">
+                <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                  <span>Migration Progress</span>
                   <span>{Math.round((progress / total) * 100)}%</span>
                 </div>
                 <Progress
                   value={(progress / total) * 100}
-                  className="h-4 rounded-none border-2 border-black bg-zinc-100"
+                  className="h-3 rounded-full bg-zinc-100 overflow-hidden"
                 />
               </div>
 
-              <div className="bg-zinc-50 p-4 border-l-4 border-black">
-                <p className="text-xs font-bold text-black uppercase leading-relaxed">
+              <div className="bg-amber-50 p-5 rounded-2xl border border-amber-100 flex gap-4">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                <p className="text-[11px] font-bold text-amber-800 uppercase leading-relaxed">
                   {t('migration_warning')}
                 </p>
               </div>
@@ -202,43 +201,45 @@ export function MigrationWizard() {
 
           {/* STEP 4: SUCCESS */}
           {step === 'success' && (
-            <div className="space-y-8 animate-in zoom-in-95 duration-500 text-center">
+            <div className="space-y-10 animate-in zoom-in-95 duration-700 text-center">
               <div className="flex justify-center">
-                <div className="w-24 h-24 bg-black flex items-center justify-center">
+                <div className="w-24 h-24 bg-zinc-900 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-zinc-200">
                   <CheckCircle2 className="h-12 w-12 text-white" />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <h2 className="text-4xl font-black tracking-tighter text-black uppercase">
+              <div className="space-y-3">
+                <h2 className="text-4xl font-bold tracking-tight text-zinc-900 uppercase">
                   {t('upgrade_success')}
                 </h2>
-                <p className="text-lg font-medium text-zinc-500">
+                <p className="text-lg font-medium text-zinc-500 max-w-sm mx-auto">
                   {t('upgrade_success_desc')}
                 </p>
               </div>
 
               <Button
                 onClick={() => window.location.reload()}
-                className="bg-black hover:bg-zinc-800 text-white rounded-none h-14 px-12 text-lg font-bold shadow-[8px_8px_0_0_#e2e8f0]"
+                className="bg-zinc-900 hover:bg-black text-white rounded-2xl h-16 px-12 text-lg font-bold shadow-xl shadow-zinc-200 transition-all active:scale-[0.98]"
               >
                 {t('launch_wansan')}
               </Button>
             </div>
           )}
 
-          {/* STEP 5: ERROR */}
+          {/* STEP 4 (Cont): ERROR */}
           {step === 'error' && (
-            <div className="space-y-8 animate-in shake duration-500">
-              <div className="flex items-center gap-4 text-red-600">
-                <AlertCircle className="h-12 w-12" />
-                <h2 className="text-4xl font-black tracking-tighter uppercase">
+            <div className="space-y-10 animate-in shake duration-500">
+              <div className="flex items-center gap-5 text-rose-600">
+                <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100">
+                  <AlertCircle className="h-10 w-12" />
+                </div>
+                <h2 className="text-4xl font-bold tracking-tight uppercase leading-tight">
                   {t('migration_error')}
                 </h2>
               </div>
 
-              <div className="bg-red-50 p-6 border-2 border-red-600">
-                <p className="font-mono text-sm font-bold text-red-600 break-all">
+              <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-100">
+                <p className="font-mono text-sm font-bold text-zinc-600 break-all leading-relaxed">
                   {error || 'An unexpected error occurred.'}
                 </p>
               </div>
@@ -246,14 +247,14 @@ export function MigrationWizard() {
               <div className="flex gap-4">
                 <Button
                   onClick={() => setStep('config')}
-                  className="bg-red-600 hover:bg-red-700 text-white rounded-none h-14 px-10 text-lg font-bold flex-1"
+                  className="bg-rose-600 hover:bg-rose-700 text-white rounded-2xl h-16 px-10 text-lg font-bold flex-1 transition-all"
                 >
                   {t('try_again')}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={skipMigration}
-                  className="border-2 border-black rounded-none h-14 px-6 font-bold"
+                  className="border border-zinc-200 rounded-2xl h-16 px-8 font-bold text-zinc-500 hover:text-zinc-900 hover:border-zinc-900 transition-all"
                 >
                   {t('skip')}
                 </Button>
@@ -262,17 +263,38 @@ export function MigrationWizard() {
           )}
         </div>
 
-        {/* Swiss Footer Attribution */}
-        <div className="absolute -bottom-12 left-0 right-0 flex justify-between items-center px-2">
-          <div className="text-[10px] font-black uppercase tracking-widest text-zinc-300 flex items-center gap-2">
-            <Database className="h-3 w-3" />
-            Native Engine {version}
+        {/* Footer Info */}
+        <div className="mt-8 flex justify-between items-center px-6 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+          <div className="flex items-center gap-3">
+            <Database className="h-3.5 w-3.5" />
+            Wansan Engine v{version}
           </div>
-          <div className="text-[10px] font-black uppercase tracking-widest text-zinc-300">
-            © 2025 Wansan Studio
-          </div>
+          <div className="opacity-50">© 2025 Wansan Studio</div>
         </div>
       </div>
     </div>
+  )
+}
+
+function SparklesIcon(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+      <path d="M5 3v4" />
+      <path d="M19 17v4" />
+      <path d="M3 5h4" />
+      <path d="M17 19h4" />
+    </svg>
   )
 }

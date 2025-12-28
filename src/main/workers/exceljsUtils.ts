@@ -205,8 +205,8 @@ export async function processExcelFileStreaming(
             } else if ('result' in val) {
               val = (val as any).result
               if (val && typeof val === 'object' && !(val instanceof Date)) {
-                 if ('error' in val) val = (val as any).error
-                 else val = JSON.stringify(val)
+                if ('error' in val) val = (val as any).error
+                else val = JSON.stringify(val)
               }
             } else {
               // Fallback
@@ -434,8 +434,8 @@ export async function processExcelBufferExcelJS(
               val = (val as any).result
               // If result is also an object (e.g. error), handle it
               if (val && typeof val === 'object' && !(val instanceof Date)) {
-                 if ('error' in val) val = (val as any).error
-                 else val = JSON.stringify(val)
+                if ('error' in val) val = (val as any).error
+                else val = JSON.stringify(val)
               }
             } else {
               // Fallback for unknown objects to prevent [object Object]
@@ -446,7 +446,7 @@ export async function processExcelBufferExcelJS(
               }
             }
           }
-          
+
           // 0-based index
           filledRowData[colNumber - 1] = val
         }

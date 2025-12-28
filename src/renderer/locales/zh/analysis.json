@@ -1,11 +1,11 @@
 {
   "sql_editor": {
     "title": "编辑 SQL 查询",
-    "run": "运行 (预览)",
+    "run": "运行",
     "save": "保存并关闭",
     "cancel": "取消",
-    "reset": "重置为原始",
-    "copy": "复制 SQL",
+    "reset": "重置",
+    "copy": "复制",
     "copy_success": "SQL 已复制！",
     "run_success": "查询执行成功",
     "execution_time": "耗时",

@@ -348,7 +348,11 @@ function App() {
             <div className="relative">
               <div className="absolute inset-0 rounded-full bg-indigo-50 animate-ping opacity-25" />
               <div className="relative p-4 bg-white rounded-full border border-zinc-100 shadow-sm">
-                <img src={logo} className="h-12 w-12 grayscale opacity-50" alt="Loading" />
+                <img
+                  src={logo}
+                  className="h-12 w-12 grayscale opacity-50"
+                  alt="Loading"
+                />
               </div>
             </div>
             <div className="flex flex-col items-center gap-2">

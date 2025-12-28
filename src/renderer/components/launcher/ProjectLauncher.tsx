@@ -125,40 +125,40 @@ export function ProjectLauncher() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <button
                 onClick={() => setMode('create')}
-                className="group relative border-[3px] border-black p-8 text-left hover:bg-black transition-all duration-300"
+                className="group relative border border-zinc-200 p-8 text-left hover:border-black hover:bg-zinc-50 transition-all duration-300 rounded-2xl bg-white shadow-sm"
               >
                 <Plus
-                  className="h-10 w-10 mb-12 group-hover:text-white transition-colors"
+                  className="h-10 w-10 mb-12 text-black transition-colors"
                   strokeWidth={2.5}
                 />
                 <div className="space-y-1">
-                  <h3 className="text-2xl font-black uppercase tracking-tight group-hover:text-white transition-colors">
+                  <h3 className="text-2xl font-black uppercase tracking-tight text-black transition-colors">
                     {t('new_project')}
                   </h3>
-                  <p className="text-sm font-medium text-zinc-500 group-hover:text-zinc-400 transition-colors">
+                  <p className="text-sm font-medium text-zinc-500 transition-colors">
                     {t('new_project_desc')}
                   </p>
                 </div>
-                <ChevronRight className="absolute top-8 right-8 h-6 w-6 text-black group-hover:text-white opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                <ChevronRight className="absolute top-8 right-8 h-6 w-6 text-zinc-300 group-hover:text-black opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
               </button>
 
               <button
                 onClick={handleOpenExisting}
-                className="group relative border-[3px] border-black p-8 text-left hover:bg-black transition-all duration-300"
+                className="group relative border border-zinc-200 p-8 text-left hover:border-black hover:bg-zinc-50 transition-all duration-300 rounded-2xl bg-white shadow-sm"
               >
                 <FolderOpen
-                  className="h-10 w-10 mb-12 group-hover:text-white transition-colors"
+                  className="h-10 w-10 mb-12 text-black transition-colors"
                   strokeWidth={2.5}
                 />
                 <div className="space-y-1">
-                  <h3 className="text-2xl font-black uppercase tracking-tight group-hover:text-white transition-colors">
+                  <h3 className="text-2xl font-black uppercase tracking-tight text-black transition-colors">
                     {t('open_existing')}
                   </h3>
-                  <p className="text-sm font-medium text-zinc-500 group-hover:text-zinc-400 transition-colors">
+                  <p className="text-sm font-medium text-zinc-500 transition-colors">
                     {t('open_existing_desc')}
                   </p>
                 </div>
-                <ChevronRight className="absolute top-8 right-8 h-6 w-6 text-black group-hover:text-white opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                <ChevronRight className="absolute top-8 right-8 h-6 w-6 text-zinc-300 group-hover:text-black opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
               </button>
             </div>
 
@@ -184,7 +184,8 @@ export function ProjectLauncher() {
               {t('back_to_menu')}
             </button>
 
-            <div className="border-[3px] border-black p-10 sm:p-16 space-y-12 shadow-[24px_24px_0_0_#f4f4f5]">
+            <div className="border border-zinc-100 p-10 sm:p-16 space-y-12 shadow-2xl rounded-[3rem] bg-white relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-2 h-full bg-black" />
               <h2 className="text-5xl font-black tracking-tighter text-black uppercase leading-none">
                 {t('create_workspace')
                   .split(' ')
@@ -206,7 +207,7 @@ export function ProjectLauncher() {
                     value={name}
                     onChange={e => setName(e.target.value)}
                     autoFocus
-                    className="border-b-2 border-t-0 border-x-0 border-black rounded-none px-0 text-3xl font-bold focus-visible:ring-0 placeholder:text-zinc-100 h-14"
+                    className="border-b border-t-0 border-x-0 border-zinc-200 rounded-none px-0 text-3xl font-bold focus-visible:ring-0 focus-visible:border-black placeholder:text-zinc-100 h-14 transition-colors"
                     placeholder="My Workspace"
                   />
                 </div>
@@ -216,7 +217,7 @@ export function ProjectLauncher() {
                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
                     {t('directory')}
                   </label>
-                  <div className="flex gap-4 items-end border-b-2 border-black pb-2">
+                  <div className="flex gap-4 items-end border-b border-zinc-200 pb-2">
                     <div className="flex-1 text-sm font-bold truncate text-zinc-500">
                       {targetPath || t('select_destination')}
                     </div>
@@ -234,7 +235,7 @@ export function ProjectLauncher() {
                 <Button
                   onClick={handleCreate}
                   disabled={!name || !targetPath || isCreating}
-                  className="w-full h-16 bg-black hover:bg-zinc-800 text-white rounded-none text-xl font-black uppercase tracking-tight shadow-lg disabled:bg-zinc-200"
+                  className="w-full h-16 bg-black hover:bg-zinc-800 text-white rounded-2xl text-xl font-black uppercase tracking-tight shadow-lg disabled:bg-zinc-200"
                 >
                   {isCreating ? (
                     <div className="flex items-center gap-3">

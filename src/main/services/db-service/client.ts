@@ -26,7 +26,9 @@ export class NativeDBClient {
       // After waiting, if our desired path still doesn't match the one that was just initialized,
       // and we are requesting a specific file path, we MUST call connect() to switch.
       if (this.projectPath !== initialPath && initialPath !== ':memory:') {
-        console.log(`[DB-Client] Initialized path '${this.projectPath}' differs from requested '${initialPath}'. Switching...`)
+        console.log(
+          `[DB-Client] Initialized path '${this.projectPath}' differs from requested '${initialPath}'. Switching...`
+        )
         return this.connect(initialPath)
       }
       return
@@ -60,7 +62,9 @@ export class NativeDBClient {
           })
 
           this.child.on('exit', code => {
-            console.error(`[DB-Client] Utility Process exited with code: ${code}`)
+            console.error(
+              `[DB-Client] Utility Process exited with code: ${code}`
+            )
             this.child = null
             this.isReady = false
             this.initPromise = null
@@ -73,7 +77,9 @@ export class NativeDBClient {
         await this.send('CONNECT', { path: initialPath })
         this.projectPath = initialPath !== ':memory:' ? initialPath : null
         this.isReady = true
-        console.log(`[DB-Client] Native DB Client is ready. (Path: ${initialPath})`)
+        console.log(
+          `[DB-Client] Native DB Client is ready. (Path: ${initialPath})`
+        )
       } catch (err) {
         console.error(`[DB-Client] Failed to initialize:`, err)
         this.child = null
@@ -132,14 +138,16 @@ export class NativeDBClient {
     if (this.initPromise) {
       await this.initPromise
     }
-    
+
     // Check if we are already on this path
     const normalizedPath = path === ':memory:' ? null : path
     if (this.projectPath === normalizedPath && this.isReady) {
       return { status: 'Already connected', path }
     }
 
-    console.log(`[DB-Client] Switching connection from '${this.projectPath || ':memory:'}' to: ${path}`)
+    console.log(
+      `[DB-Client] Switching connection from '${this.projectPath || ':memory:'}' to: ${path}`
+    )
     const res = await this.send('CONNECT', { path })
     this.projectPath = path !== ':memory:' ? path : null
     this.isReady = true

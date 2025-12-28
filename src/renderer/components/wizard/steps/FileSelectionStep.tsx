@@ -9,6 +9,7 @@ import {
   FileText,
   Check,
   AlertCircle,
+  Database,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
@@ -39,6 +40,7 @@ export function FileSelectionStep() {
   }
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [allTasks, setAllTasks] = useState<IngestionTask[]>([])
 
   // Effect: When files change, parse them to get sheets/tasks
@@ -59,26 +61,36 @@ export function FileSelectionStep() {
             // Use Promise.all to handle async tableName generation
             const taskPromises = results.map(async (item: any) => {
               // For append mode, inherit PK/Key from target table
-              const targetFile = mode === 'append' ? projectFiles.find(f => f.id === targetTableId) : null;
+              const targetFile =
+                mode === 'append'
+                  ? projectFiles.find(f => f.id === targetTableId)
+                  : null
 
               const columns: ColumnConfig[] = item.schema.columns.map(
                 (c: ColumnSchema) => {
-                  const targetCol = targetFile?.columns.find(tc => tc.name === c.name);
+                  const targetCol = targetFile?.columns.find(
+                    tc => tc.name === c.name
+                  )
                   return {
                     name: c.name,
                     type: c.type,
-                    isPrimaryKey: targetCol ? (!!targetCol.isPrimaryKey || !!targetCol.isKey) : false,
+                    isPrimaryKey: targetCol
+                      ? !!targetCol.isPrimaryKey || !!targetCol.isKey
+                      : false,
                   }
                 }
               )
 
               const sourceName = item.sheetName || item.tableName || file.name
               let defaultTableName = item.tableName
-              
+
               if (mode === 'import') {
-                 // Pass raw names to backend to handle sanitization and unique check
-                 const res = await window.electronAPI.getUniqueTableName(file.name, item.sheetName)
-                 if (res.success) defaultTableName = res.data
+                // Pass raw names to backend to handle sanitization and unique check
+                const res = await window.electronAPI.getUniqueTableName(
+                  file.name,
+                  item.sheetName
+                )
+                if (res.success) defaultTableName = res.data
               }
 
               return {
@@ -93,28 +105,30 @@ export function FileSelectionStep() {
                 rowCount: item.rowCount || 0,
                 mode: mode,
                 status: 'pending',
-                tempFilePath: item.tempFilePath // Capture temp file path
+                tempFilePath: item.tempFilePath, // Capture temp file path
               } as IngestionTask
             })
-            
+
             const fileTasks = await Promise.all(taskPromises)
             newTasks.push(...fileTasks)
           }
         }
 
         setAllTasks(newTasks) // Store locally
-        
-        if (mode === 'append') {
-           // Default to first, but allow switching
-           if (newTasks.length > 0) {
-             const first = newTasks[0]
-             setSelectedTaskId(first.id)
-             setTasks([first])
-           }
-        } else {
-           setTasks(newTasks)
-        }
 
+        if (mode === 'append') {
+          // Default to first, but allow switching
+          if (newTasks.length > 0) {
+            const first = newTasks[0]
+            setSelectedTaskId(first.id)
+            setTasks([first])
+          }
+        } else {
+          // Import mode: default all to selected
+          const allIds = new Set(newTasks.map(t => t.id))
+          setSelectedIds(allIds)
+          setTasks(newTasks)
+        }
       } catch (err: any) {
         setError(err.message || 'Failed to parse files')
       } finally {
@@ -131,21 +145,34 @@ export function FileSelectionStep() {
       const task = allTasks.find(t => t.id === id)
       if (task) {
         // Re-apply target file's PK config to the newly selected task
-        const targetFile = projectFiles.find(f => f.id === targetTableId);
+        const targetFile = projectFiles.find(f => f.id === targetTableId)
         const updatedColumns = task.columns.map(col => {
-          const targetCol = targetFile?.columns.find(tc => tc.name === col.name);
+          const targetCol = targetFile?.columns.find(tc => tc.name === col.name)
           return {
             ...col,
-            isPrimaryKey: targetCol ? (!!targetCol.isPrimaryKey || !!targetCol.isKey) : false,
+            isPrimaryKey: targetCol
+              ? !!targetCol.isPrimaryKey || !!targetCol.isKey
+              : false,
           }
-        });
+        })
         setTasks([{ ...task, columns: updatedColumns }])
       }
+    } else {
+      // Import mode: multi-select toggle
+      const newSelected = new Set(selectedIds)
+      if (newSelected.has(id)) {
+        newSelected.delete(id)
+      } else {
+        newSelected.add(id)
+      }
+      setSelectedIds(newSelected)
+      // Update global tasks list
+      setTasks(allTasks.filter(t => newSelected.has(t.id)))
     }
   }
-  
-  // Use allTasks for rendering in append mode to show options
-  const displayTasks = mode === 'append' ? allTasks : tasks
+
+  // Use allTasks for rendering in all modes to ensure unselected items don't disappear
+  const displayTasks = allTasks
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-8">
@@ -162,11 +189,14 @@ export function FileSelectionStep() {
               {t('import_data')}
             </h3>
             <p className="text-sm text-zinc-500 mt-1">
-              Select Excel or CSV files to start
+              {t('import_data_desc')}
             </p>
           </div>
-          <Button variant="outline" className="mt-4 border-zinc-200 font-bold">
-            Choose Files
+          <Button
+            variant="outline"
+            className="mt-4 border-zinc-200 font-bold text-zinc-900 bg-white hover:bg-zinc-50"
+          >
+            {t('wizard.choose_files')}
           </Button>
         </div>
       ) : (
@@ -174,10 +204,10 @@ export function FileSelectionStep() {
           <div className="flex justify-between items-end">
             <div>
               <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-widest">
-                Selected Assets
+                {t('selected_data')}
               </h3>
               <p className="text-2xl font-black text-black uppercase mt-1">
-                {tasks.length} Worksheets Found
+                {t('wizard.worksheets_found', { count: displayTasks.length })}
               </p>
             </div>
             <Button
@@ -185,17 +215,18 @@ export function FileSelectionStep() {
               size="sm"
               onClick={handleSelectFiles}
               disabled={isParsing}
+              className="text-zinc-900 border-zinc-200 bg-white hover:bg-zinc-50"
             >
-              Change Selection
+              {t('wizard.change_selection')}
             </Button>
           </div>
 
-          <div className="bg-white border-2 border-black shadow-[8px_8px_0_0_#000] overflow-hidden">
+          <div className="bg-white border border-zinc-200 shadow-[4px_4px_0_0_rgba(0,0,0,0.05)] overflow-hidden rounded-xl">
             {isParsing ? (
               <div className="p-20 flex flex-col items-center justify-center gap-4">
                 <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
                 <span className="text-sm font-medium text-zinc-500 italic">
-                  Analyzing data structures...
+                  {t('wizard.analyzing_structure')}
                 </span>
               </div>
             ) : error ? (
@@ -266,8 +297,17 @@ export function FileSelectionStep() {
                           )}
                         </div>
                       ) : (
-                        <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-sm">
-                          <Check className="w-3 h-3 stroke-[3]" />
+                        <div
+                          className={cn(
+                            'w-5 h-5 rounded border-2 flex items-center justify-center transition-all',
+                            selectedIds.has(task.id)
+                              ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+                              : 'border-zinc-200 bg-white'
+                          )}
+                        >
+                          {selectedIds.has(task.id) && (
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          )}
                         </div>
                       )}
                     </div>

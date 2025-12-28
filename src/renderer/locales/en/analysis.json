@@ -1,11 +1,11 @@
 {
   "sql_editor": {
     "title": "Edit SQL Query",
-    "run": "Run (Preview)",
+    "run": "Run",
     "save": "Save & Close",
     "cancel": "Cancel",
-    "reset": "Reset to Original",
-    "copy": "Copy SQL",
+    "reset": "Reset",
+    "copy": "Copy",
     "copy_success": "SQL Copied!",
     "run_success": "Query Executed Successfully",
     "execution_time": "Execution Time",

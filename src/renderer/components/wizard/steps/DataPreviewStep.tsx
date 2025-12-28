@@ -25,6 +25,7 @@ import { IngestionTask, ColumnConfig } from '@shared/types/wizard'
 import { Input } from '../../ui/input'
 import { formatForDisplay } from '@shared/serialization'
 import { sanitizeTableName } from '@shared/naming-utils'
+import { COLUMN_TYPE_CONFIG } from '@/src/lib/constants'
 
 export function DataPreviewStep() {
   const {
@@ -45,22 +46,6 @@ export function DataPreviewStep() {
     if (mode !== 'append') return null
     return files.find(f => f.id === targetTableId)
   }, [files, targetTableId, mode])
-
-  // Log component mount and task info
-  useEffect(() => {
-    if (currentTask) {
-      console.log(
-        `[Wizard] Reviewing Task ${currentTaskIndex + 1}/${tasks.length}:`,
-        {
-          source: currentTask.sourceName,
-          rows: currentTask.rowCount,
-          mode: currentTask.mode,
-          tableName: currentTask.tableName,
-          data: currentTask.previewData, // 临时打印数据 JSON
-        }
-      )
-    }
-  }, [currentTaskIndex, tasks.length, currentTask])
 
   // Initialize Mapping for Append Mode (Configuration only)
   useEffect(() => {
@@ -113,8 +98,8 @@ export function DataPreviewStep() {
           <div className="flex flex-col">
             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">
               {mode === 'append'
-                ? `Mapping fields for: ${targetFile?.name}`
-                : 'Configuring Asset'}
+                ? t('wizard.mapping_fields', { name: targetFile?.name })
+                : t('wizard.configuring_asset')}
             </span>
             <span className="text-sm font-bold text-zinc-900 mt-1">
               {currentTask.sourceName}
@@ -123,11 +108,13 @@ export function DataPreviewStep() {
           <div className="h-8 w-px bg-zinc-200" />
           <div className="flex flex-col">
             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">
-              Data Volume
+              {t('wizard.data_volume')}
             </span>
             <span className="text-sm font-bold text-zinc-900 mt-1">
-              Previewing {currentTask.previewData.length} of{' '}
-              {currentTask.rowCount.toLocaleString()} rows
+              {t('wizard.preview_count', {
+                count: currentTask.previewData.length,
+                total: currentTask.rowCount.toLocaleString(),
+              })}
             </span>
           </div>
         </div>
@@ -203,7 +190,9 @@ export function DataPreviewStep() {
                         {cellValue !== null && cellValue !== undefined ? (
                           formatForDisplay(cellValue, col.type)
                         ) : (
-                          <span className="opacity-20 italic">null</span>
+                          <span className="opacity-20 italic">
+                            {t('no_data')}
+                          </span>
                         )}
                       </TableCell>
                     )
@@ -227,6 +216,7 @@ const ColumnPreviewHead = ({
   onTogglePK: () => void
   onTypeChange: (type: ColumnType) => void
 }) => {
+  const { t } = useTranslation('common')
   return (
     <TableHead className="px-4 py-3 border-b border-r border-zinc-200 min-w-[200px] max-w-[300px]">
       <div className="flex flex-col gap-2">
@@ -245,21 +235,23 @@ const ColumnPreviewHead = ({
                 ? 'text-indigo-600 bg-indigo-50'
                 : 'text-zinc-300 hover:text-zinc-500 hover:bg-zinc-100'
             )}
-            title="Set as unique key"
+            title={t('wizard.set_unique_key')}
           >
             <Key className="w-3.5 h-3.5" />
           </button>
         </div>
         <Select value={column.type} onValueChange={onTypeChange}>
           <SelectTrigger className="h-7 text-[10px] font-bold bg-white border-zinc-200 uppercase">
-            <SelectValue />
+            {t(COLUMN_TYPE_CONFIG[column.type as ColumnType]?.label) || (
+              <SelectValue />
+            )}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="VARCHAR">Text</SelectItem>
-            <SelectItem value="DOUBLE">Number</SelectItem>
-            <SelectItem value="DATE">Date</SelectItem>
-            <SelectItem value="TIMESTAMP">Date Time</SelectItem>
-            <SelectItem value="BOOLEAN">Boolean</SelectItem>
+            {Object.entries(COLUMN_TYPE_CONFIG).map(([type, cfg]) => (
+              <SelectItem key={type} value={type}>
+                {t(cfg.label)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -278,6 +270,7 @@ const ColumnMappingHead = ({
   currentMapping: Record<string, string | null> | undefined
   onMappingChange: (source: string | null, target: string) => void
 }) => {
+  const { t } = useTranslation('common')
   const unmappedSourceCols = useMemo(() => {
     if (!sourceColumns) return []
     const mapped = new Set(Object.values(currentMapping || {}).filter(Boolean))
@@ -297,7 +290,7 @@ const ColumnMappingHead = ({
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center gap-2">
           {targetColumn.isPrimaryKey && (
-            <div title="Primary Key of Target Table">
+            <div title={t('wizard.set_unique_key')}>
               <Key className="w-3.5 h-3.5 text-indigo-400" />
             </div>
           )}
@@ -308,7 +301,7 @@ const ColumnMappingHead = ({
             {targetColumn.name}
           </span>
           <span className="text-[10px] bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded font-bold border border-zinc-200">
-            TARGET
+            {t('wizard.target_label')}
           </span>
         </div>
 
@@ -328,10 +321,10 @@ const ColumnMappingHead = ({
               !currentSourceMapping && 'text-zinc-400'
             )}
           >
-            <SelectValue placeholder="Select source field..." />
+            <SelectValue placeholder={t('wizard.map_to_target')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">(Ignore Field)</SelectItem>
+            <SelectItem value="">({t('wizard.ignore_field')})</SelectItem>
             {unmappedSourceCols.map(sc => (
               <SelectItem key={sc} value={sc}>
                 {sc}
