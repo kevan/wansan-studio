@@ -58,6 +58,19 @@ const mockIPC: ElectronAPI = {
       data: { lastModified: Date.now(), newColumns: [] },
     }
   },
+  ingestPreCheck: async () => ({
+    success: true,
+    data: {
+      totalRows: 0,
+      duplicateRows: 0,
+      columnMatch: { matched: [], missing: [], extra: [] },
+    },
+  }),
+  appendData: async () => ({ success: true, data: { rowCount: 0 } }),
+  finalizeIngestion: async () => ({ success: true }),
+  cleanupIngestion: async () => ({ success: true }),
+  cleanupAllStaging: async () => ({ success: true }),
+  getUniqueTableName: async () => ({ success: true, data: 't_mock' }),
   getDeviceId: async (): Promise<IPCResponse<string>> => {
     return { success: true, data: 'mock-device-id' }
   },

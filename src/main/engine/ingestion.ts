@@ -141,7 +141,8 @@ export async function ingestExcelFile(
   fileName: string,
   targetTableName?: string,
   targetSheetName?: string,
-  onProgress?: (rowCount: number) => void
+  onProgress?: (rowCount: number) => void,
+  prefix: string = 't_'
 ): Promise<TableSchema[]> {
   // Resolve worker path
   let workerPath: string
@@ -200,7 +201,8 @@ export async function ingestExcelFile(
               tableName = await getUniqueTableName(
                 databaseService,
                 fileName,
-                sheetName
+                sheetName,
+                prefix
               )
             }
 
@@ -248,7 +250,8 @@ export async function ingestExcelFile(
 export async function getUniqueTableName(
   databaseService: DBService,
   originalName: string,
-  sheetName?: string
+  sheetName?: string,
+  prefix: string = 't_'
 ): Promise<string> {
   let baseName = path.parse(originalName).name
 
@@ -257,7 +260,7 @@ export async function getUniqueTableName(
   }
 
   // Allow Chinese, alphanum, underscore. Replace others with _
-  let safeName = 't_' + baseName.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '_')
+  let safeName = prefix + baseName.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '_')
   // Trim underscores
   safeName = safeName.replace(/_+/g, '_').replace(/_$/, '')
 

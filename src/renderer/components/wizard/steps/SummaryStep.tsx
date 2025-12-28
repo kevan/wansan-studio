@@ -1,5 +1,6 @@
 import React from 'react'
 import { useWizardStore } from '../../../stores/useWizardStore'
+import { useProjectStore } from '../../../stores/useProjectStore'
 import {
   CheckCircle2,
   FileSpreadsheet,
@@ -10,7 +11,8 @@ import {
 import { cn } from '@/utils/cn'
 
 export function SummaryStep() {
-  const { tasks } = useWizardStore()
+  const { tasks, mode, targetTableId } = useWizardStore()
+  const { files } = useProjectStore()
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-8 overflow-y-auto">
@@ -29,26 +31,17 @@ export function SummaryStep() {
 
         <div className="space-y-3">
           {tasks.map(task => {
-            const pkColumn = task.columns.find(c => c.isPrimaryKey)
-
+            const pkColumn = task.columns.find(c => c.isPrimaryKey);
+            const targetFile = mode === 'append' ? files.find(f => f.id === (targetTableId || task.targetTableId)) : null;
+            const displayTargetName = mode === 'append' ? (targetFile?.name || 'Target') : (task.finalTableName || task.tableName);
+            
             return (
-              <div
-                key={task.id}
-                className="bg-white border-2 border-zinc-100 p-4 rounded-xl flex items-center gap-4 shadow-sm"
-              >
-                <div
-                  className={cn(
-                    'p-2 rounded-lg shrink-0',
-                    task.fileName.endsWith('.csv')
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'bg-green-50 text-green-600'
-                  )}
-                >
-                  {task.fileName.endsWith('.csv') ? (
-                    <FileText className="w-5 h-5" />
-                  ) : (
-                    <FileSpreadsheet className="w-5 h-5" />
-                  )}
+              <div key={task.id} className="bg-white border-2 border-zinc-100 p-4 rounded-xl flex items-center gap-4 shadow-sm">
+                <div className={cn(
+                  "p-2 rounded-lg shrink-0",
+                  (task.fileName || '').endsWith('.csv') ? "bg-blue-50 text-blue-600" : "bg-green-50 text-green-600"
+                )}>
+                  {(task.fileName || '').endsWith('.csv') ? <FileText className="w-5 h-5" /> : <FileSpreadsheet className="w-5 h-5" />}
                 </div>
 
                 <div className="flex-1 min-w-0">
@@ -57,9 +50,7 @@ export function SummaryStep() {
                       {task.sourceName}
                     </span>
                     <ArrowRight className="w-3 h-3 text-zinc-300" />
-                    <span className="text-xs font-mono text-zinc-500 truncate italic">
-                      {task.tableName}
-                    </span>
+                    <span className="text-xs font-mono text-indigo-600 font-bold truncate">{displayTargetName}</span>
                   </div>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">

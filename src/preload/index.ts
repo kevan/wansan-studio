@@ -15,6 +15,7 @@ const electronAPI: ElectronAPI = {
 
   // 数据库操作
   runSQL: (sql: string) => ipcRenderer.invoke('run-sql', sql),
+  getUniqueTableName: (name: string, sheetName?: string) => ipcRenderer.invoke('get-unique-table-name', name, sheetName),
   generateSQL: (prompt: string, schema: any) =>
     ipcRenderer.invoke('generate-sql', prompt, schema),
   getSchema: (tableName?: string) =>
@@ -63,22 +64,16 @@ const electronAPI: ElectronAPI = {
   // 文件同步
   checkFilesConsistency: (files: any[]) =>
     ipcRenderer.invoke('check-files-consistency', files),
-  reIngestFile: (
-    fileId: string,
-    filePath: string,
-    tableName: string,
-    sheetName?: string
-  ) =>
-    ipcRenderer.invoke(
-      're-ingest-file',
-      fileId,
-      filePath,
-      tableName,
-      sheetName
-    ),
-
-  // 导出功能
-  exportPDF: (data: any) => ipcRenderer.invoke('export-pdf', data),
+    reIngestFile: (fileId: string, filePath: string, tableName: string, sheetName?: string) =>
+      ipcRenderer.invoke('re-ingest-file', fileId, filePath, tableName, sheetName),
+      ingestPreCheck: (params: any) => ipcRenderer.invoke('ingest:pre-check', params),
+        appendData: (params: any) => ipcRenderer.invoke('ingest:append', params),
+          finalizeIngestion: (tempName: string, finalName: string) => ipcRenderer.invoke('ingest:finalize', tempName, finalName),
+          cleanupIngestion: (tempTableNames: string[]) => ipcRenderer.invoke('ingest:cleanup', tempTableNames),
+          cleanupAllStaging: () => ipcRenderer.invoke('ingest:cleanup-all-staging'),
+        
+          // 导出功能
+              exportPDF: (data: any) => ipcRenderer.invoke('export-pdf', data),
   saveImage: (dataUrl: string, name?: string) =>
     ipcRenderer.invoke('save-image', dataUrl, name),
   saveFile: (content: string, extension: string, name: string) =>

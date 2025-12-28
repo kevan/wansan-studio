@@ -6,7 +6,7 @@ import { getDeviceId } from './device'
 import { secureSet, secureGet } from './secure-storage'
 import { executeSQL } from '../engine/executor'
 import { checkFilesConsistency } from '../engine/file-watcher'
-import { ingestJsonData } from '../engine/ingestion'
+import { ingestJsonData, getUniqueTableName } from '../engine/ingestion'
 import { exportWebReport } from './web-export'
 import fs from 'fs-extra'
 import os from 'os'
@@ -120,6 +120,15 @@ export function setupIPC(
       return { success: true, data: result.filePaths[0] }
     } catch (error) {
       return { success: false, error: 'Directory selection error' }
+    }
+  })
+
+  ipcMain.handle('get-unique-table-name', async (_event, name: string, sheetName?: string) => {
+    try {
+      const result = await getUniqueTableName(databaseService, name, sheetName)
+      return { success: true, data: result }
+    } catch (error) {
+      return { success: false, error: 'Failed to generate unique table name' }
     }
   })
 
@@ -358,6 +367,62 @@ export function setupIPC(
       }
     }
   )
+
+  ipcMain.handle('ingest:finalize', async (_event, tempName: string, finalName: string) => {
+    try {
+      await fileService.finalizeIngestion(tempName, finalName)
+      return { success: true }
+    } catch (error) {
+      console.error('Finalize ingestion error:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
+
+  ipcMain.handle('ingest:cleanup', async (_event, tempTableNames: string[]) => {
+    try {
+      await fileService.cleanupStaging(tempTableNames)
+      return { success: true }
+    } catch (error) {
+      console.error('Cleanup staging error:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
+
+  ipcMain.handle('ingest:cleanup-all-staging', async () => {
+    try {
+      await fileService.cleanupAllStaging()
+      return { success: true }
+    } catch (error) {
+      console.error('Cleanup all staging error:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
+
+  ipcMain.handle('ingest:pre-check', async (_event, params: any) => {
+    try {
+      const result = await fileService.ingestPreCheck(params)
+      return { success: true, data: result }
+    } catch (error) {
+      console.error('Ingest pre-check error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  })
+
+  ipcMain.handle('ingest:append', async (_event, params: any) => {
+    try {
+      const result = await fileService.appendData(params)
+      return { success: true, data: result }
+    } catch (error) {
+      console.error('Ingest append error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  })
 
   // 重新摄取文件
   ipcMain.handle(

@@ -7,13 +7,14 @@ import {
   ColumnConfig,
 } from '@shared/types/wizard'
 
-interface WizardActions {
-  open: (mode?: WizardMode, targetTableId?: string) => void
-  close: () => void
-  setStep: (step: WizardStep) => void
-  setFiles: (files: { path: string; name: string; size: number }[]) => void
-
+export interface WizardActions {
+  open: (mode?: WizardMode, targetTableId?: string) => void;
+  close: () => void;
+  setStep: (step: WizardStep) => void; // Reset currentTaskIndex here
+  setFiles: (files: { path: string; name: string; size: number }[]) => void;
+  
   // Task Management
+
   setTasks: (tasks: IngestionTask[]) => void
   updateTask: (index: number, updates: Partial<IngestionTask>) => void
   nextTask: () => boolean // Returns true if moved to next, false if last
@@ -37,23 +38,32 @@ const initialState: WizardState = {
   selectedFiles: [],
   tasks: [],
   currentTaskIndex: 0,
+  tempTableNames: [],
   isProcessing: false,
-}
+};
 
-export const useWizardStore = create<WizardState & WizardActions>(
-  (set, get) => ({
-    ...initialState,
+export const useWizardStore = create<WizardState & WizardActions>((set, get) => ({
+  ...initialState,
 
-    open: (mode = 'import', targetTableId) =>
-      set({ ...initialState, isOpen: true, mode, targetTableId, tasks: [] }), // Save targetTableId
-
-    close: () => set({ isOpen: false }),
-
-    setStep: step => set({ step }),
-
-    setFiles: selectedFiles => set({ selectedFiles }),
-
-    setTasks: tasks => set({ tasks, currentTaskIndex: 0 }),
+  open: async (mode = 'import', targetTableId) => {
+    // Cleanup any orphaned staging tables from previous sessions
+    if (window.electronAPI) {
+      await window.electronAPI.cleanupAllStaging()
+    }
+    set({ ...initialState, isOpen: true, mode, targetTableId, tasks: [], tempTableNames: [] })
+  },
+    
+  close: () => set({ isOpen: false }),
+  
+  setStep: (step) => set({ step, currentTaskIndex: 0 }), // Reset currentTaskIndex here
+  
+  setFiles: (selectedFiles) => set({ selectedFiles }),
+  
+  setTasks: (tasks) => set({
+    tasks, 
+    currentTaskIndex: 0,
+    tempTableNames: [...get().tempTableNames, ...tasks.map(t => t.tableName)]
+  }),
 
     updateTask: (index, updates) =>
       set(state => {
@@ -86,18 +96,11 @@ export const useWizardStore = create<WizardState & WizardActions>(
         const task = newTasks[taskIndex]
         if (!task) return state
 
-        const newColumns = task.columns.map(col =>
-          col.name === columnName ? { ...col, ...updates } : col
-        )
-
-        // Ensure only one primary key if isPrimaryKey is being set
-        if (updates.isPrimaryKey) {
-          newColumns.forEach(c => {
-            if (c.name !== columnName) c.isPrimaryKey = false
-          })
-        }
-
-        newTasks[taskIndex] = { ...task, columns: newColumns }
+    const newColumns = task.columns.map(col => 
+      col.name === columnName ? { ...col, ...updates } : col
+    );
+    
+    newTasks[taskIndex] = { ...task, columns: newColumns };
         return { tasks: newTasks }
       }),
 

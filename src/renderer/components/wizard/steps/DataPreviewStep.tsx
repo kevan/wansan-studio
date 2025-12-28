@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useEffect } from 'react'
 import { useWizardStore } from '../../../stores/useWizardStore'
+import { useProjectStore } from '../../../stores/useProjectStore'
 import {
   Table,
   TableBody,
@@ -16,179 +17,202 @@ import {
   SelectValue,
 } from '../../ui/select'
 import {
-  Hash,
-  Type,
-  Calendar,
-  Clock,
-  ToggleLeft,
   Key,
   ChevronLeft,
   ChevronRight,
-  Info,
+  Link2,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
-import { ColumnType } from '@shared/types'
+import { ColumnSchema, ColumnType } from '@shared/types'
 import { useTranslation } from 'react-i18next'
-
-const TYPE_ICONS: Record<ColumnType, any> = {
-  INTEGER: Hash,
-  DOUBLE: Hash,
-  VARCHAR: Type,
-  DATE: Calendar,
-  TIMESTAMP: Clock,
-  BOOLEAN: ToggleLeft,
-}
+import { ColumnConfig } from '@shared/types/wizard'
 
 export function DataPreviewStep() {
-  const { tasks, currentTaskIndex, updateColumnConfig, nextTask, prevTask } =
-    useWizardStore()
+  const { tasks, currentTaskIndex, updateColumnConfig, updateTask, nextTask, prevTask, mode, targetTableId } = useWizardStore()
+  const { files } = useProjectStore()
   const { t } = useTranslation('common')
 
   const currentTask = tasks[currentTaskIndex]
+  const targetFile = useMemo(() => {
+    if (mode !== 'append') return null
+    return files.find(f => f.id === targetTableId)
+  }, [files, targetTableId, mode])
+
+  // Initialize Mapping for Append Mode (Configuration only)
+  useEffect(() => {
+    if (mode === 'append' && currentTask && targetFile && !currentTask.columnMapping) {
+      const initialMapping: Record<string, string | null> = {};
+      const sourceCols = new Set(currentTask.columns.map(c => c.name));
+      targetFile.columns.forEach(targetCol => {
+        initialMapping[targetCol.name] = sourceCols.has(targetCol.name) ? targetCol.name : null;
+      });
+      updateTask(currentTaskIndex, { columnMapping: initialMapping });
+    }
+  }, [currentTask?.id, targetFile?.id, mode, updateTask, currentTaskIndex]);
+  
   if (!currentTask) return null
 
-  const handleTypeChange = (columnName: string, type: ColumnType) => {
-    updateColumnConfig(currentTaskIndex, columnName, { type })
-  }
-
-  const handleTogglePK = (columnName: string, isCurrentlyPK: boolean) => {
-    updateColumnConfig(currentTaskIndex, columnName, {
-      isPrimaryKey: !isCurrentlyPK,
-    })
+  const handleMappingChange = (source: string | null, target: string) => {
+    const newMapping = { ...(currentTask.columnMapping || {}), [target]: source };
+    updateTask(currentTaskIndex, { columnMapping: newMapping });
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden bg-white">
       {/* Header Info */}
       <div className="px-8 py-4 bg-zinc-100/50 border-b border-zinc-200 flex justify-between items-center shrink-0">
         <div className="flex items-center gap-4">
           <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-              Configuring Asset
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">
+              {mode === 'append' ? `Mapping fields for: ${targetFile?.name}` : 'Configuring Asset'}
             </span>
-            <span className="text-sm font-bold text-zinc-900">
+            <span className="text-sm font-bold text-zinc-900 mt-1">
               {currentTask.sourceName}
             </span>
           </div>
           <div className="h-8 w-px bg-zinc-200" />
           <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-              Progress
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">
+              Data Volume
             </span>
-            <span className="text-sm font-bold text-zinc-900">
-              {currentTaskIndex + 1} of {tasks.length}
+            <span className="text-sm font-bold text-zinc-900 mt-1">
+              Previewing {currentTask.previewData.length} of{' '}
+              {currentTask.rowCount.toLocaleString()} rows
             </span>
           </div>
         </div>
 
         {tasks.length > 1 && (
           <div className="flex gap-2">
-            <button
-              onClick={prevTask}
-              disabled={currentTaskIndex === 0}
-              className="p-1.5 rounded-md hover:bg-zinc-200 disabled:opacity-30 transition-colors"
-            >
+            <button onClick={prevTask} disabled={currentTaskIndex === 0} className="p-1.5 rounded-md hover:bg-zinc-200 disabled:opacity-30 transition-colors">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button
-              onClick={nextTask}
-              disabled={currentTaskIndex === tasks.length - 1}
-              className="p-1.5 rounded-md hover:bg-zinc-200 disabled:opacity-30 transition-colors"
-            >
+            <button onClick={nextTask} disabled={currentTaskIndex === tasks.length - 1} className="p-1.5 rounded-md hover:bg-zinc-200 disabled:opacity-30 transition-colors">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         )}
       </div>
-
-      {/* Main Table Area */}
-      <div className="flex-1 overflow-auto bg-white">
-        <Table className="border-separate border-spacing-0">
-          <TableHeader className="sticky top-0 z-20 bg-zinc-50 shadow-sm">
-            <TableRow>
-              {currentTask.columns.map(col => (
-                <TableHead
-                  key={col.name}
-                  className="px-4 py-3 border-b border-r border-zinc-200 min-w-[180px]"
-                >
-                  <div className="flex flex-col gap-2">
-                    {/* PK & Name */}
-                    <div className="flex items-center justify-between group">
-                      <span
-                        className="text-xs font-bold text-zinc-900 truncate pr-2"
-                        title={col.name}
-                      >
-                        {col.name}
-                      </span>
-                      <button
-                        onClick={() =>
-                          handleTogglePK(col.name, col.isPrimaryKey)
-                        }
-                        className={cn(
-                          'p-1 rounded transition-colors',
-                          col.isPrimaryKey
-                            ? 'text-indigo-600 bg-indigo-50'
-                            : 'text-zinc-300 hover:text-zinc-500 hover:bg-zinc-100'
-                        )}
-                        title="Set as unique key"
-                      >
-                        <Key className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    {/* Type Selector */}
-                    <Select
-                      value={col.type}
-                      onValueChange={val =>
-                        handleTypeChange(col.name, val as ColumnType)
-                      }
-                    >
-                      <SelectTrigger className="h-7 text-[10px] font-bold bg-white border-zinc-200 uppercase">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="VARCHAR">Text</SelectItem>
-                        <SelectItem value="DOUBLE">Number</SelectItem>
-                        <SelectItem value="DATE">Date</SelectItem>
-                        <SelectItem value="TIMESTAMP">Date Time</SelectItem>
-                        <SelectItem value="BOOLEAN">Boolean</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {currentTask.previewData.map((row, rowIdx) => (
-              <TableRow key={rowIdx} className="hover:bg-zinc-50/50">
-                {currentTask.columns.map(col => (
-                  <TableCell
-                    key={col.name}
-                    className="px-4 py-2 text-xs text-zinc-600 border-r border-zinc-100 font-mono"
-                  >
-                    {row[col.name] !== null ? (
-                      String(row[col.name])
-                    ) : (
-                      <span className="opacity-20 italic">null</span>
-                    )}
-                  </TableCell>
-                ))}
+      
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto bg-white">
+        <div className="overflow-x-auto">
+          <Table className="min-w-full border-collapse">
+            <TableHeader className="sticky top-0 z-20 bg-zinc-50 shadow-sm border-b">
+              <TableRow>
+                {mode === 'append' && targetFile ? (
+                  targetFile.columns.map(targetCol => (
+                    <ColumnMappingHead 
+                      key={targetCol.name} 
+                      targetColumn={targetCol} 
+                      sourceColumns={currentTask.columns}
+                      currentMapping={currentTask.columnMapping}
+                      onMappingChange={handleMappingChange}
+                    />
+                  ))
+                ) : (
+                  currentTask.columns.map(col => (
+                    <ColumnPreviewHead 
+                      key={col.name}
+                      column={col}
+                      onTogglePK={() => updateColumnConfig(currentTaskIndex, col.name, { isPrimaryKey: !col.isPrimaryKey })}
+                      onTypeChange={(type) => updateColumnConfig(currentTaskIndex, col.name, { type })}
+                    />
+                  ))
+                )}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Helper Footer */}
-      <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex items-center gap-2 shrink-0">
-        <Info className="w-4 h-4 text-blue-500" />
-        <p className="text-[11px] text-zinc-500 font-medium">
-          Verify data types and optionally set a{' '}
-          <span className="text-indigo-600 font-bold">Unique Key</span> (🔑) to
-          prevent duplicates during future updates.
-        </p>
+            </TableHeader>
+            <TableBody>
+              {currentTask.previewData.map((row, rowIdx) => (
+                <TableRow key={rowIdx} className="hover:bg-zinc-50/50">
+                  {(mode === 'append' && targetFile ? targetFile.columns : currentTask.columns).map(col => {
+                    const sourceColName = mode === 'append' ? currentTask.columnMapping?.[col.name] : col.name;
+                    const cellValue = sourceColName ? row[sourceColName] : null;
+                    
+                    return (
+                      <TableCell key={col.name} className="px-4 py-2 text-xs text-zinc-600 border-r border-zinc-100 font-mono truncate max-w-[300px]">
+                        {cellValue !== null && cellValue !== undefined ? String(cellValue) : <span className="opacity-20 italic">null</span>}
+                      </TableCell>
+                    )
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
+  )
+}
+
+const ColumnPreviewHead = ({ column, onTogglePK, onTypeChange }: { column: any, onTogglePK: () => void, onTypeChange: (type: ColumnType) => void }) => {
+  return (
+    <TableHead className="px-4 py-3 border-b border-r border-zinc-200 min-w-[200px] max-w-[300px]">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between group">
+          <span className="text-xs font-bold text-zinc-900 truncate pr-2" title={column.name}>{column.name}</span>
+          <button onClick={onTogglePK} className={cn('p-1 rounded transition-colors', column.isPrimaryKey ? 'text-indigo-600 bg-indigo-50' : 'text-zinc-300 hover:text-zinc-500 hover:bg-zinc-100')} title="Set as unique key">
+            <Key className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <Select value={column.type} onValueChange={onTypeChange}>
+          <SelectTrigger className="h-7 text-[10px] font-bold bg-white border-zinc-200 uppercase"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="VARCHAR">Text</SelectItem>
+            <SelectItem value="DOUBLE">Number</SelectItem>
+            <SelectItem value="DATE">Date</SelectItem>
+            <SelectItem value="TIMESTAMP">Date Time</SelectItem>
+            <SelectItem value="BOOLEAN">Boolean</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </TableHead>
+  )
+}
+
+const ColumnMappingHead = ({ targetColumn, sourceColumns, currentMapping, onMappingChange }: { targetColumn: ColumnSchema, sourceColumns: ColumnConfig[], currentMapping: Record<string, string | null> | undefined, onMappingChange: (source: string | null, target: string) => void }) => {
+  const unmappedSourceCols = useMemo(() => {
+    if (!sourceColumns) return []
+    const mapped = new Set(Object.values(currentMapping || {}).filter(Boolean))
+    const mappedSourceForThisTarget = currentMapping?.[targetColumn.name]
+    
+    return sourceColumns.filter(sc => 
+      !mapped.has(sc.name) || (mappedSourceForThisTarget === sc.name)
+    ).map(c => c.name)
+  }, [currentMapping, sourceColumns, targetColumn.name])
+  
+  const currentSourceMapping = currentMapping?.[targetColumn.name];
+
+  return (
+    <TableHead className="px-4 py-3 border-b border-r border-zinc-200 min-w-[240px] max-w-[300px]">
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center gap-2">
+          {targetColumn.isPrimaryKey && (
+            <div title="Primary Key of Target Table">
+              <Key className="w-3.5 h-3.5 text-indigo-400" />
+            </div>
+          )}
+          <span className="text-xs font-bold text-zinc-900 truncate" title={targetColumn.name}>{targetColumn.name}</span>
+          <span className="text-[10px] bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded font-bold border border-zinc-200">TARGET</span>
+        </div>
+        
+        <div className="flex items-center justify-center h-5">
+          <Link2 className="w-4 h-4 text-indigo-300" />
+        </div>
+        
+        <Select 
+          value={currentSourceMapping || ''}
+          onValueChange={(val) => onMappingChange(val === '' ? null : val, targetColumn.name)}
+        >
+          <SelectTrigger className={cn("h-8 text-xs bg-white", !currentSourceMapping && "text-zinc-400")}><SelectValue placeholder="Select source field..." /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">(Ignore Field)</SelectItem>
+            {unmappedSourceCols.map((sc) => (
+              <SelectItem key={sc} value={sc}>{sc}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </TableHead>
   )
 }

@@ -13,6 +13,7 @@ export class NativeDatabaseService {
   }
 
   async query(sql: string): Promise<any[]> {
+    console.log('[NativeDB] Query:', sql)
     return dbClient.executeQuery(sql)
   }
 
@@ -22,6 +23,7 @@ export class NativeDatabaseService {
     data: any[]
     columnFields: Array<{ name: string; type: string }>
   }> {
+    console.log('[NativeDB] QueryWithSchema:', sql)
     const res = await dbClient.executeQueryFull(sql)
     return {
       data: res.data || [],
@@ -30,6 +32,7 @@ export class NativeDatabaseService {
   }
 
   async exec(sql: string): Promise<void> {
+    console.log('[NativeDB] Exec:', sql)
     await dbClient.executeQuery(sql)
   }
 

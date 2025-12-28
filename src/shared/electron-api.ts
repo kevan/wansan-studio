@@ -6,6 +6,33 @@ import {
   AIConfigResponse,
 } from './api-types'
 
+export interface IngestPreCheckParams {
+  filePath: string;
+  targetTableName: string;
+  sheetName?: string;
+  uniqueKeys?: string[];
+  columnMapping: Record<string, string | null>; // Add this
+}
+
+export interface IngestPreCheckResponse {
+  totalRows: number;
+  duplicateRows: number;
+  columnMatch: {
+    matched: string[];
+    missing: string[];
+    extra: string[];
+  };
+}
+
+export interface AppendDataParams {
+  filePath: string;
+  targetTableName: string;
+  sheetName?: string;
+  uniqueKeys?: string[];
+  strategy: 'ignore' | 'replace';
+  columnMapping: Record<string, string | null>;
+}
+
 export interface ElectronAPI {
   // Generic invoke (keep for flexibility, but usage should be minimized)
   invoke: (channel: string, ...args: any[]) => Promise<IPCResponse>
@@ -22,6 +49,15 @@ export interface ElectronAPI {
     tableName: string,
     sheetName?: string
   ) => Promise<IPCResponse<ReloadResult>>
+  ingestPreCheck: (
+    params: IngestPreCheckParams
+  ) => Promise<IPCResponse<IngestPreCheckResponse>>
+  appendData: (
+    params: AppendDataParams
+  ) => Promise<IPCResponse<{ rowCount: number }>>
+  finalizeIngestion: (tempTableName: string, finalTableName: string) => Promise<IPCResponse>
+  cleanupIngestion: (tempTableNames: string[]) => Promise<IPCResponse>
+  cleanupAllStaging: () => Promise<IPCResponse>
   saveImage: (dataUrl: string, name?: string) => Promise<IPCResponse>
   saveFile: (
     content: string,
@@ -32,6 +68,7 @@ export interface ElectronAPI {
 
   // Database Operations
   runSQL: (sql: string) => Promise<RunSQLResponse>
+  getUniqueTableName: (name: string, sheetName?: string) => Promise<IPCResponse<string>>
   getSchema: (tableName?: string) => Promise<IPCResponse>
   deleteTable: (tableName?: string) => Promise<IPCResponse>
   resetDB: () => Promise<IPCResponse>

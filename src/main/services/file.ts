@@ -10,35 +10,38 @@ import {
 import { DEMO_DATA } from '../../shared/demo-data'
 import { ReloadResult, ColumnSchema, ColumnType } from '../../shared/types'
 import { normalizeDuckDBType } from '../../shared/type-utils'
+import { IngestPreCheckParams, IngestPreCheckResponse, AppendDataParams } from '../../shared/electron-api'
 
-// Helper to infer TIMESTAMP type from column name if DuckDB detects it as number
 export class FileService {
   constructor(private databaseService: NativeDatabaseService) {}
 
-  async parseFile(filePath: string) {
+  async parseFile(filePath: string, prefix: string = 'temp_ingest_') {
     console.log('parseFile', filePath)
     const ext = extname(filePath).toLowerCase()
 
     switch (ext) {
       case '.xlsx':
       case '.xls':
-        return this.parseExcelFile(filePath)
+        return this.parseExcelFile(filePath, prefix)
       case '.csv':
-        return this.parseCSVFile(filePath)
       case '.json':
-        return this.parseJsonFile(filePath)
+        return this.parseCSVFile(filePath, prefix)
       default:
         throw new Error(`Unsupported file type: ${ext}`)
     }
   }
 
-  private async parseExcelFile(filePath: string) {
+  private async parseExcelFile(filePath: string, prefix: string = 't_') {
     try {
       const fileName = basename(filePath)
       const schemas = await ingestExcelFile(
         filePath,
         this.databaseService,
-        fileName
+        fileName,
+        undefined,
+        undefined,
+        undefined,
+        prefix
       )
 
       const results = []
@@ -77,16 +80,17 @@ export class FileService {
     }
   }
 
-  private async parseCSVFile(filePath: string) {
+  private async parseCSVFile(filePath: string, prefix: string = 't_') {
     try {
       const fileName = basename(filePath)
-      const tableName = await getUniqueTableName(this.databaseService, fileName)
+      const tableName = await getUniqueTableName(this.databaseService, fileName, undefined, prefix)
 
       // Use DuckDB's read_csv_auto to handle the CSV directly from the file path
       // [FIX] Escape backslashes for Windows paths
       const safePath = filePath.replace(/\\/g, '/')
+      await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
       await this.databaseService.exec(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${safePath}', SAMPLE_SIZE=-1, auto_detect=true)`
+        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${safePath}', HEADER = TRUE, SAMPLE_SIZE = -1, auto_detect=true)`
       )
 
       // Fetch schema using PRAGMA table_info for consistency
@@ -140,80 +144,15 @@ export class FileService {
       )
     }
   }
-
-  private async parseJsonFile(filePath: string) {
-    try {
-      const fileName = basename(filePath)
-      const tableName = await getUniqueTableName(this.databaseService, fileName)
-
-      // Use DuckDB's read_json_auto to handle the JSON directly from the file path
-      // [FIX] Escape backslashes for Windows paths
-      const safePath = filePath.replace(/\\/g, '/')
-      await this.databaseService.exec(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${safePath}', format='auto', auto_detect=true)`
-      )
-
-      // Fetch schema using PRAGMA table_info for consistency
-      const columnsResult = await this.databaseService.query(
-        `PRAGMA table_info('${tableName}');`
-      )
-
-      const columns: ColumnSchema[] = []
-      for (const col of columnsResult) {
-        // Apply semantic type inference
-        const finalType = normalizeDuckDBType(col.type)
-
-        const sampleValues = await getSampleValues(
-          this.databaseService,
-          tableName,
-          col.name,
-          finalType
-        )
-        columns.push({
-          name: col.name,
-          safeName: col.name,
-          type: finalType as ColumnType,
-          sampleValues,
-        })
-      }
-
-      const schema = {
-        tableName,
-        description: fileName,
-        columns,
-      }
-
-      const preview = await this.databaseService.query(
-        `SELECT * FROM "${tableName}" LIMIT 5`
-      )
-      const countResult = await this.databaseService.query(
-        `SELECT COUNT(*) as count FROM "${tableName}"`
-      )
-
-      return [
-        {
-          tableName,
-          schema,
-          rowCount: countResult[0].count,
-          preview,
-        },
-      ]
-    } catch (error) {
-      console.error('Failed to parse JSON file:', error)
-      throw new Error(
-        `Failed to parse JSON file: ${error instanceof Error ? error.message : 'Unknown error'}. The JSON might have inconsistent field types or structure.`
-      )
-    }
-  }
+  
   async reIngestFile(
     filePath: string,
     tableName: string,
-    sheetName?: string, // New optional param
+    sheetName?: string,
     onProgress?: (rowCount: number) => void
   ): Promise<ReloadResult> {
     // 处理 Demo 数据（DEMO_MEMORY 路径）
     if (filePath === 'DEMO_MEMORY') {
-      // 重新摄取 Demo 数据
       const result = await ingestJsonData(
         this.databaseService,
         tableName,
@@ -238,18 +177,16 @@ export class FileService {
     if (ext === '.xlsx' || ext === '.xls') {
       const fileName = basename(filePath)
       // ingestExcelFile returns TableSchema[]
+      // We pass the targetTableName to force overwrite
       const schemas = await ingestExcelFile(
         filePath,
         this.databaseService,
         fileName,
-        tableName,
+        tableName, // targetTableName
         sheetName,
-        onProgress
+        onProgress,
+        't_' // Permanent prefix for re-ingest
       )
-      // Since we pass tableName (and maybe sheetName), we expect 1 result which matches our target.
-      // If we didn't pass sheetName and there are multiple sheets, ingestExcelFile might behave legacy (first sheet) or return all?
-      // With my update, if targetTableName is passed and NO sheetName, it assumes first sheet.
-      // If we want specific sheet, sheetName MUST be passed.
 
       if (schemas.length > 0) {
         columns = schemas[0].columns
@@ -261,22 +198,17 @@ export class FileService {
     } else if (ext === '.csv') {
       await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
 
-      // Use DuckDB's read_csv_auto to handle the CSV directly from the file path
-      // [FIX] Escape backslashes for Windows paths
       const safePath = filePath.replace(/\\/g, '/')
       await this.databaseService.exec(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${safePath}', SAMPLE_SIZE=-1, auto_detect=true)`
+        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${safePath}', HEADER = TRUE, SAMPLE_SIZE = -1, auto_detect=true)`
       )
 
-      // Fetch schema for the reloaded CSV
       const columnsResult = await this.databaseService.query(
         `PRAGMA table_info('${tableName}');`
       )
 
       for (const col of columnsResult) {
-        // Apply semantic type inference
         const finalType = normalizeDuckDBType(col.type)
-
         const sampleValues = await getSampleValues(
           this.databaseService,
           tableName,
@@ -294,22 +226,17 @@ export class FileService {
     } else if (ext === '.json') {
       await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
 
-      // Use DuckDB's read_json_auto to re-ingest JSON file directly from path
-      // [FIX] Escape backslashes for Windows paths
       const safePath = filePath.replace(/\\/g, '/')
       await this.databaseService.exec(
         `CREATE TABLE "${tableName}" AS SELECT * FROM read_json_auto('${safePath}', format='auto', auto_detect=true)`
       )
 
-      // Fetch schema for the reloaded JSON
       const columnsResult = await this.databaseService.query(
         `PRAGMA table_info('${tableName}');`
       )
 
       for (const col of columnsResult) {
-        // Apply semantic type inference
         const finalType = normalizeDuckDBType(col.type)
-
         const sampleValues = await getSampleValues(
           this.databaseService,
           tableName,
@@ -332,6 +259,144 @@ export class FileService {
     return {
       lastModified: stats.mtimeMs,
       newColumns: columns,
+    }
+  }
+
+  async finalizeIngestion(tempTableName: string, finalTableName: string) {
+    console.log('[FileService] finalizeIngestion', tempTableName, finalTableName)
+    await this.databaseService.exec(`ALTER TABLE "${tempTableName}" RENAME TO "${finalTableName}" `)
+  }
+
+  async cleanupStaging(tempTableNames: string[]) {
+    console.log('[FileService] cleanupStaging', tempTableNames)
+    for (const name of tempTableNames) {
+      await this.databaseService.exec(`DROP TABLE IF EXISTS "${name}" `)
+    }
+  }
+
+  async cleanupAllStaging(): Promise<void> {
+    console.log('[FileService] cleanupAllStaging: Dropping all temp_ingest_* tables.')
+    const tables = await this.databaseService.query(
+      `SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'temp_ingest_%'`
+    );
+    for (const table of tables) {
+      await this.databaseService.exec(`DROP TABLE IF EXISTS "${(table as any).table_name}" `)
+    }
+  }
+
+  async ingestPreCheck(
+    params: IngestPreCheckParams
+  ): Promise<IngestPreCheckResponse> {
+    const { filePath, targetTableName, sheetName, uniqueKeys, columnMapping } = params
+    const parseResults = await this.parseFile(filePath)
+    
+    if (!parseResults || parseResults.length === 0) {
+      throw new Error('Failed to parse file or no sheets found for pre-check');
+    }
+
+    const targetSheet = sheetName
+      ? parseResults.find(r => r.sheetName === sheetName)
+      : parseResults[0]
+
+    if (!targetSheet) throw new Error('Source sheet not found');
+    const taskTable = targetSheet.tableName;
+    const totalRows = Number(targetSheet.rowCount);
+
+    try {
+      const sourceCols = (await this.databaseService.query(`PRAGMA table_info('${taskTable}')`)).map((c: any) => c.name)
+      const targetCols = (await this.databaseService.query(`PRAGMA table_info('${targetTableName}')`)).map((c: any) => c.name)
+      const targetSet = new Set(targetCols)
+      const sourceSet = new Set(sourceCols)
+
+      let duplicateRows = 0
+      if (uniqueKeys && uniqueKeys.length > 0) {
+        // Filter unique keys that are actually mapped to source columns
+        const validKeys = uniqueKeys.filter(k => targetSet.has(k) && sourceSet.has(columnMapping[k] as string))
+        
+        if (validKeys.length > 0) {
+          const joinConditions = validKeys.map(k => {
+            const sourceCol = columnMapping[k];
+            return `t1."${sourceCol}" = t2."${k}"`;
+          }).join(' AND ');
+
+          const dupRes = await this.databaseService.query(`
+            SELECT COUNT(*) as count 
+            FROM "${taskTable}" AS t1 
+            JOIN "${targetTableName}" AS t2 ON ${joinConditions}
+          `);
+          duplicateRows = Number(dupRes[0].count);
+        }
+      }
+
+      return {
+        totalRows,
+        duplicateRows,
+        columnMatch: { 
+          matched: sourceCols.filter(c => targetSet.has(c)), 
+          missing: targetCols.filter(c => !sourceSet.has(c)), 
+          extra: sourceCols.filter(c => !targetSet.has(c)) 
+        },
+      }
+    } finally {
+      await this.databaseService.exec(`DROP TABLE IF EXISTS "${taskTable}" `)
+    }
+  }
+
+  async appendData(params: AppendDataParams): Promise<{ rowCount: number }> {
+    const { filePath, targetTableName, sheetName, uniqueKeys, strategy, columnMapping } = params
+    const parseResults = await this.parseFile(filePath)
+    const targetSheet = sheetName ? parseResults.find(r => r.sheetName === sheetName) : parseResults[0]
+    if (!targetSheet) throw new Error('Source sheet not found')
+    const taskTable = targetSheet.tableName
+
+    try {
+      const mappedSelects: string[] = []
+      const targetCols: string[] = []
+      
+      for (const [targetCol, sourceCol] of Object.entries(columnMapping)) {
+        if (sourceCol) {
+          mappedSelects.push(`"${sourceCol}" AS "${targetCol}" `)
+          targetCols.push(`"${targetCol}" `)
+        }
+      }
+      
+      if (targetCols.length === 0) throw new Error("No columns were mapped.")
+      
+      const selectClause = mappedSelects.join(', ')
+      const colList = targetCols.join(', ')
+
+      if (uniqueKeys && uniqueKeys.length > 0) {
+        const validPKs = uniqueKeys.filter(k => columnMapping[k])
+
+        if (validPKs.length > 0) {
+          if (strategy === 'replace') {
+            const deleteWhere = validPKs.map(k => `"${k}" IN (SELECT "${columnMapping[k]}" FROM "${taskTable}")`).join(' AND ')
+            await this.databaseService.exec(`DELETE FROM "${targetTableName}" WHERE ${deleteWhere}`)
+          }
+          
+          const insertQuery = `
+            INSERT INTO "${targetTableName}" (${colList})
+            SELECT ${selectClause} 
+            FROM "${taskTable}" AS src
+            ${strategy === 'ignore' ? `WHERE NOT EXISTS (
+              SELECT 1 FROM "${targetTableName}" AS tgt 
+              WHERE ${validPKs.map(k => `tgt."${k}" = src."${columnMapping[k]}"`).join(' AND ')}
+            )` : ''}
+          `
+          await this.databaseService.exec(insertQuery)
+
+        } else {
+          // No valid keys to join on, so just bulk insert
+          await this.databaseService.exec(`INSERT INTO "${targetTableName}" (${colList}) SELECT ${selectClause} FROM "${taskTable}" `)
+        }
+      } else {
+        await this.databaseService.exec(`INSERT INTO "${targetTableName}" (${colList}) SELECT ${selectClause} FROM "${taskTable}" `)
+      }
+
+      const countRes = await this.databaseService.query(`SELECT COUNT(*) as count FROM "${targetTableName}" `)
+      return { rowCount: Number(countRes[0].count) }
+    } finally {
+      await this.databaseService.exec(`DROP TABLE IF EXISTS "${taskTable}" `)
     }
   }
 }

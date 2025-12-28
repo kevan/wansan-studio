@@ -80,10 +80,10 @@ export async function processExcelFileStreaming(
   onProgress?: (rowCount: number) => void
 ): Promise<{ results: StreamingProcessResult[]; allSheetsCount: number }> {
   const options = {
-    sharedStrings: 'cache',
-    styles: 'cache', // CRITICAL: Enable styles to detect date formats
-    hyperlinks: 'ignore',
-    worksheets: 'emit',
+    sharedStrings: 'emit' as const,
+    styles: 'cache' as const,
+    hyperlinks: 'emit' as const,
+    worksheets: 'emit' as const,
   }
 
   // @ts-ignore

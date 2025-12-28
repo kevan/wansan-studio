@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { useWizardStore } from '../../../stores/useWizardStore'
+import { useWizardStore } from '@/stores/useWizardStore'
+import { useProjectStore } from '@/stores/useProjectStore'
 import { Button } from '../../ui/button'
 import {
   FileSpreadsheet,
@@ -15,27 +16,23 @@ import { IngestionTask, ColumnConfig } from '@shared/types/wizard'
 import { ColumnSchema } from '@shared/types'
 
 export function FileSelectionStep() {
-  const { selectedFiles, setFiles, tasks, setTasks, mode } = useWizardStore()
+  const { selectedFiles, setFiles, tasks, setTasks, mode, targetTableId } = useWizardStore()
+  const { files: projectFiles } = useProjectStore()
   const { t } = useTranslation('common')
   const [isParsing, setIsParsing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleSelectFiles = async () => {
     if (!window.electronAPI) return
-    // In append mode, we only want one file
-    const result =
-      mode === 'append'
-        ? await window.electronAPI.selectFile()
-        : await window.electronAPI.selectFiles()
+    const result = await window.electronAPI.selectFiles()
 
-    if (result.success && result.data) {
-      if (mode === 'append') {
-        const filePath = result.data as string
-        const fileName = filePath.split('/').pop() || ''
-        setFiles([{ path: filePath, name: fileName, size: 0 }])
-      } else {
-        setFiles(result.data as { path: string; name: string; size: number }[])
-      }
+    if (result.success && result.data && result.data.length > 0) {
+      // Map result to include 'name' derived from path
+      const filesWithNames = result.data.map(f => ({
+        ...f,
+        name: f.path.split(/[\\/]/).pop() || 'unknown',
+      }))
+      setFiles(filesWithNames)
     }
   }
 
@@ -57,22 +54,31 @@ export function FileSelectionStep() {
             const results = Array.isArray(res.data) ? res.data : [res.data]
 
             results.forEach((item: any) => {
+              // For append mode, inherit PK/Key from target table
+              const targetFile = mode === 'append' ? projectFiles.find(f => f.id === targetTableId) : null;
+              
               const columns: ColumnConfig[] = item.schema.columns.map(
-                (c: ColumnSchema) => ({
-                  name: c.name,
-                  type: c.type,
-                  isPrimaryKey: false,
-                })
+                (c: ColumnSchema) => {
+                  const targetCol = targetFile?.columns.find(tc => tc.name === c.name);
+                  return {
+                    name: c.name,
+                    type: c.type,
+                    isPrimaryKey: targetCol ? (!!targetCol.isPrimaryKey || !!targetCol.isKey) : false,
+                  }
+                }
               )
 
               newTasks.push({
                 id: crypto.randomUUID(),
-                sourceName: item.sheetName || item.tableName || file.name,
+                sourceName: item.sheetName || file.name,
                 fileName: file.name,
                 filePath: file.path,
                 tableName: item.tableName,
+                finalTableName: item.tableName.startsWith('temp_ingest_') 
+                  ? item.tableName.replace('temp_ingest_', 't_') 
+                  : item.tableName,
                 columns,
-                previewData: item.previewData || [],
+                previewData: item.preview || [],
                 rowCount: item.rowCount || 0,
                 mode: mode,
                 status: 'pending',
@@ -189,12 +195,12 @@ export function FileSelectionStep() {
                     <div
                       className={cn(
                         'p-2 rounded-lg shrink-0',
-                        task.fileName.endsWith('.csv')
+                        (task.fileName || '').endsWith('.csv')
                           ? 'bg-blue-50 text-blue-600'
                           : 'bg-green-50 text-green-600'
                       )}
                     >
-                      {task.fileName.endsWith('.csv') ? (
+                      {(task.fileName || '').endsWith('.csv') ? (
                         <FileText className="w-5 h-5" />
                       ) : (
                         <FileSpreadsheet className="w-5 h-5" />
@@ -212,7 +218,7 @@ export function FileSelectionStep() {
                         )}
                       </div>
                       <p className="text-xs text-zinc-400 truncate mt-0.5">
-                        {task.fileName}
+                        {task.fileName || 'Untitled'}
                       </p>
                     </div>
                     <div className="text-right shrink-0">

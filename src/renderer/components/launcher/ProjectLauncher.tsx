@@ -44,6 +44,11 @@ export function ProjectLauncher() {
     })
   }, [])
 
+  // Set migration flag to prevent re-triggering migration wizard
+  React.useEffect(() => {
+    localStorage.setItem('wansan-migration-v1.3', 'true');
+  }, []);
+
   const handleOpenExisting = async () => {
     try {
       await openProject() // Triggers system dialog via useProjectIO -> projectService
