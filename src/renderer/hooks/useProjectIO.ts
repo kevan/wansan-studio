@@ -1,5 +1,7 @@
 import { useCallback } from 'react'
 import { useProjectStore } from '../stores/useProjectStore'
+import { useSettingsStore } from '../stores/useSettingsStore'
+import { useProGate } from '@/hooks/use-pro-gate'
 import { projectService } from '../services/project-service'
 import {
   ProjectManifest,
@@ -10,10 +12,14 @@ import { FileNode, SmartMetric, SyncStatus, TableRelation } from '@shared/types'
 import { Relation, Session, ProjectData } from '@shared/types/project'
 import { ReportData } from '@shared/types/dashboard'
 
+const TRIAL_PROJECT_LIMIT = 2
+
 export function useProjectIO() {
   const currentProjectPath = useProjectStore(state => state.currentProjectPath)
   const setProjectPath = useProjectStore(state => state.setProjectPath)
   const loadProjectToStore = useProjectStore(state => state.loadProject)
+  const { addRecentProject, recentProjectPaths, isActivated } = useSettingsStore()
+  const { checkGate, gateNode } = useProGate()
 
   const saveProject = useCallback(async () => {
     const state = useProjectStore.getState()
@@ -149,6 +155,7 @@ export function useProjectIO() {
       // 4. Load into Store
       loadProjectToStore(projectData)
       setProjectPath(data.path)
+      addRecentProject(data.path)
 
       // 5. Trigger a refresh to get row counts and samples if possible?
       // The store has `refreshSessionWidgets`, but for files we might need `reloadFile`.
@@ -159,12 +166,19 @@ export function useProjectIO() {
 
   const createProject = useCallback(
     async (name: string, location: string) => {
+      // Limit Check
+      if (!isActivated && recentProjectPaths.length >= TRIAL_PROJECT_LIMIT) {
+        checkGate('Multi-Project', () => {})
+        return null
+      }
+
       const path = await projectService.create(name, location)
       // After create, we usually want to open it immediately.
       await openProject(path)
+      addRecentProject(path)
       return path
     },
-    [openProject]
+    [openProject, isActivated, recentProjectPaths, addRecentProject, checkGate]
   )
 
   const closeProject = useCallback(async () => {
@@ -179,5 +193,6 @@ export function useProjectIO() {
     openProject,
     createProject,
     closeProject,
+    gateNode, // Export gateNode so callers can render it
   }
 }

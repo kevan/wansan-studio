@@ -6,6 +6,7 @@ import { useToastStore } from '@/stores/useToastStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useTranslation } from 'react-i18next'
+import { useSettingsStore } from '@/stores/useSettingsStore'
 import {
   Plus,
   FolderOpen,
@@ -14,6 +15,7 @@ import {
   Monitor,
   ChevronRight,
   Sparkles,
+  History,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import logo from '@/src/assets/logo.png'
@@ -28,7 +30,8 @@ export function ProjectLauncher() {
   const [isCreating, setIsCreating] = useState(false)
   const [version, setVersion] = useState('')
 
-  const { createProject, openProject } = useProjectIO()
+  const { createProject, openProject, gateNode } = useProjectIO()
+  const recentProjectPaths = useSettingsStore(s => s.recentProjectPaths)
 
   // Initialize app version
   React.useEffect(() => {
@@ -125,42 +128,70 @@ export function ProjectLauncher() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <button
                 onClick={() => setMode('create')}
-                className="group relative border border-zinc-200 p-8 text-left hover:border-black hover:bg-zinc-50 transition-all duration-300 rounded-2xl bg-white shadow-sm"
+                className="group relative border border-zinc-200 p-6 text-left hover:border-black hover:bg-zinc-50 transition-all duration-300 rounded-2xl bg-white shadow-sm"
               >
                 <Plus
-                  className="h-10 w-10 mb-12 text-black transition-colors"
+                  className="h-8 w-8 mb-8 text-black transition-colors"
                   strokeWidth={2.5}
                 />
                 <div className="space-y-1">
-                  <h3 className="text-2xl font-black uppercase tracking-tight text-black transition-colors">
+                  <h3 className="text-xl font-black uppercase tracking-tight text-black transition-colors">
                     {t('new_project')}
                   </h3>
-                  <p className="text-sm font-medium text-zinc-500 transition-colors">
+                  <p className="text-xs font-medium text-zinc-500 transition-colors">
                     {t('new_project_desc')}
                   </p>
                 </div>
-                <ChevronRight className="absolute top-8 right-8 h-6 w-6 text-zinc-300 group-hover:text-black opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                <ChevronRight className="absolute top-6 right-6 h-5 w-5 text-zinc-300 group-hover:text-black opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
               </button>
 
               <button
                 onClick={handleOpenExisting}
-                className="group relative border border-zinc-200 p-8 text-left hover:border-black hover:bg-zinc-50 transition-all duration-300 rounded-2xl bg-white shadow-sm"
+                className="group relative border border-zinc-200 p-6 text-left hover:border-black hover:bg-zinc-50 transition-all duration-300 rounded-2xl bg-white shadow-sm"
               >
                 <FolderOpen
-                  className="h-10 w-10 mb-12 text-black transition-colors"
+                  className="h-8 w-8 mb-8 text-black transition-colors"
                   strokeWidth={2.5}
                 />
                 <div className="space-y-1">
-                  <h3 className="text-2xl font-black uppercase tracking-tight text-black transition-colors">
+                  <h3 className="text-xl font-black uppercase tracking-tight text-black transition-colors">
                     {t('open_existing')}
                   </h3>
                   <p className="text-sm font-medium text-zinc-500 transition-colors">
                     {t('open_existing_desc')}
                   </p>
                 </div>
-                <ChevronRight className="absolute top-8 right-8 h-6 w-6 text-zinc-300 group-hover:text-black opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                <ChevronRight className="absolute top-6 right-6 h-5 w-5 text-zinc-300 group-hover:text-black opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
               </button>
             </div>
+
+            {/* Recent Projects */}
+            {recentProjectPaths.length > 0 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-150">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                  <History className="h-3 w-3" />
+                  {t('recent_projects', 'Recent Projects')}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {recentProjectPaths.map(path => {
+                    const name = path.split(/[\\/]/).pop()?.replace('.wansan', '') || 'Untitled'
+                    return (
+                      <button
+                        key={path}
+                        onClick={() => openProject(path)}
+                        className="group flex items-center justify-between p-4 border border-zinc-100 rounded-xl hover:border-black hover:bg-zinc-50 transition-all text-left"
+                      >
+                        <div className="min-w-0">
+                          <div className="text-sm font-bold text-black truncate">{name}</div>
+                          <div className="text-[10px] text-zinc-400 truncate mt-0.5">{path}</div>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-zinc-200 group-hover:text-black transition-colors shrink-0 ml-2" />
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Footer Attribution */}
             <div className="pt-8 border-t border-zinc-100 flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-zinc-300">
@@ -251,6 +282,7 @@ export function ProjectLauncher() {
           </div>
         )}
       </div>
+      {gateNode}
     </div>
   )
 }

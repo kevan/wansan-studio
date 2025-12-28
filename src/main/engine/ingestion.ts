@@ -146,7 +146,8 @@ export async function ingestExcelFile(
   targetSheetName?: string,
   onProgress?: (rowCount: number) => void,
   prefix: string = 't_',
-  typesParam?: string // Add this
+  typesParam?: string,
+  limitRows?: number
 ): Promise<TableSchema[]> {
   // Resolve worker path
   const workerPath = isDev()
@@ -222,12 +223,12 @@ export async function ingestExcelFile(
               ? `${typesParam}, auto_detect=true`
               : `HEADER = TRUE, SAMPLE_SIZE = -1, auto_detect=true`
 
+            const limitClause = limitRows ? ` LIMIT ${limitRows}` : ''
+
             await databaseService.exec(
               `CREATE TABLE "${tableName}" AS
-
                                 SELECT *
-
-                                FROM read_csv_auto('${safeCsvPath}', ${loadOptions})`
+                                FROM read_csv_auto('${safeCsvPath}', ${loadOptions})${limitClause}`
             )
 
             // [OPTIMIZATION] We DO NOT unlink here anymore.

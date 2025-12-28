@@ -29,6 +29,9 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { DomainRule } from '@shared/types'
 
+import { useSettingsStore } from '@/stores/useSettingsStore'
+import { useProGate } from '@/hooks/use-pro-gate'
+
 interface SortableItemProps {
   rule: DomainRule
   onToggle: (id: string) => void
@@ -126,6 +129,7 @@ interface RuleEditorProps {
   placeholder?: string
   emptyMessage?: string
   addButtonLabel?: string
+  scope?: 'global' | 'project'
 }
 
 export function RuleEditor({
@@ -138,8 +142,11 @@ export function RuleEditor({
   placeholder,
   emptyMessage,
   addButtonLabel,
+  scope = 'project',
 }: RuleEditorProps) {
   const { t } = useTranslation('settings')
+  const { isActivated } = useSettingsStore()
+  const { checkGate, gateNode } = useProGate()
   const [newRule, setNewRule] = useState('')
 
   const sensors = useSensors(
@@ -151,6 +158,13 @@ export function RuleEditor({
 
   const handleAdd = () => {
     if (!newRule.trim()) return
+
+    // Limit check for project-level rules in TRIAL mode: Strictly Pro only
+    if (!isActivated && scope === 'project') {
+      checkGate(t('domain.project_title'), () => {})
+      return
+    }
+
     onAdd(newRule.trim())
     setNewRule('')
   }
@@ -227,6 +241,7 @@ export function RuleEditor({
           </DndContext>
         )}
       </div>
+      {gateNode}
     </div>
   )
 }

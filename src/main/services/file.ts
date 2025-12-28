@@ -360,6 +360,7 @@ export class FileService {
       .join(', ')
 
     const typesParam = `types={${typesSql}}`
+    const limitClause = params.limitRows ? ` LIMIT ${params.limitRows}` : ''
 
     let tempFileToDrop: string | undefined
 
@@ -377,7 +378,7 @@ export class FileService {
           await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
 
           await this.databaseService.exec(
-            `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${safeTempPath}', ${loadOptions})`
+            `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${safeTempPath}', ${loadOptions})${limitClause}`
           )
         } else {
           // CACHE MISS
@@ -399,7 +400,8 @@ export class FileService {
 
             't_',
 
-            typesParam
+            typesParam,
+            params.limitRows // Pass limit to Excel ingestion if applicable
           )
 
           if (schemas.length === 0)
@@ -415,7 +417,7 @@ export class FileService {
         await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
 
         await this.databaseService.exec(
-          `CREATE TABLE "${tableName}" AS SELECT * FROM ${reader}('${safePath}', ${typesParam}, auto_detect=true)`
+          `CREATE TABLE "${tableName}" AS SELECT * FROM ${reader}('${safePath}', ${typesParam}, auto_detect=true)${limitClause}`
         )
       }
 

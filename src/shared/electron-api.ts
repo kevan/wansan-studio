@@ -33,6 +33,7 @@ export interface AppendDataParams {
   strategy: 'ignore' | 'replace'
   columnMapping: Record<string, string | null>
   tempFilePath?: string // Cached CSV path
+  limitRows?: number // Max rows allowed
 }
 
 export interface CreateTableParams {
@@ -41,6 +42,7 @@ export interface CreateTableParams {
   sheetName?: string
   columns: Array<{ name: string; type: string }> // User-confirmed types
   tempFilePath?: string // Cached CSV path
+  limitRows?: number // Max rows allowed
 }
 
 export interface ElectronAPI {

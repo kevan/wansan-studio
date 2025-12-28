@@ -9,9 +9,12 @@ import { DataPreviewStep } from './steps/DataPreviewStep'
 import { TargetSelectionStep } from './steps/TargetSelectionStep'
 import { SummaryStep } from './steps/SummaryStep'
 import { Loader2 } from 'lucide-react'
-import { useAutoLink } from '../../hooks/useAutoLink'
+import { useAutoLink } from '@/hooks/useAutoLink.ts'
 import { useMemo } from 'react'
-import { useToastStore } from '../../stores/useToastStore'
+import { useToastStore } from '@/stores/useToastStore.ts'
+import { useSettingsStore } from '@/stores/useSettingsStore.ts'
+
+const TRIAL_ROW_LIMIT = 50000
 
 export function DataIngestionWizard() {
   const {
@@ -30,6 +33,7 @@ export function DataIngestionWizard() {
     tempTableNames,
   } = useWizardStore()
   const { files, addFile, updateFile, setView } = useProjectStore()
+  const { isActivated } = useSettingsStore()
   const { checkAutoLink } = useAutoLink()
   const { t } = useTranslation('common')
   const toast = useToastStore()
@@ -50,6 +54,8 @@ export function DataIngestionWizard() {
 
   const handleFinish = async () => {
     setProcessing(true)
+    const limitRows = isActivated ? undefined : TRIAL_ROW_LIMIT
+
     try {
       const addedFileIds: string[] = []
       const finalizedTempTables = new Set<string>()
@@ -72,6 +78,7 @@ export function DataIngestionWizard() {
             strategy: task.conflictStrategy || 'ignore',
             columnMapping: task.columnMapping || {},
             tempFilePath: task.tempFilePath, // Pass cached CSV path
+            limitRows,
           })
 
           if (result.success && result.data) {
@@ -95,6 +102,7 @@ export function DataIngestionWizard() {
               task.sourceName === task.fileName ? undefined : task.sourceName,
             columns: task.columns.map(c => ({ name: c.name, type: c.type })),
             tempFilePath: task.tempFilePath,
+            limitRows,
           })
 
           if (!result.success || !result.data) {
@@ -149,6 +157,7 @@ export function DataIngestionWizard() {
               task.sourceName === task.fileName ? undefined : task.sourceName,
             columns: task.columns.map(c => ({ name: c.name, type: c.type })),
             tempFilePath: task.tempFilePath, // Pass cached CSV path
+            limitRows,
           })
 
           if (!result.success || !result.data) {
@@ -243,7 +252,7 @@ export function DataIngestionWizard() {
         return
       }
     }
-    
+
     // Step transitions
     if (step === 'select') {
       if (tasks.length > 0) setStep('preview')
@@ -264,7 +273,7 @@ export function DataIngestionWizard() {
         return
       }
     }
-    
+
     // Step transitions
     if (step === 'preview') setStep('select')
     else if (step === 'target') setStep('preview')
@@ -285,7 +294,7 @@ export function DataIngestionWizard() {
 
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && handleCancel()}>
-      <DialogContent 
+      <DialogContent
         className="max-w-6xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl border-none"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
@@ -335,13 +344,13 @@ export function DataIngestionWizard() {
                           disabled={isNextDisabled}
                           className="bg-black hover:bg-zinc-800 text-white px-8 font-bold"
                         >
-                          {step === 'summary' 
+                          {step === 'summary'
                             ? (mode === 'append' ? t('wizard.append_now') : mode === 'replace' ? t('wizard.replace_now', 'Replace Now') : t('wizard.import_now'))
                             : tasks.length > 1 && (step === 'preview' || step === 'target') && currentTaskIndex < tasks.length - 1 && mode !== 'replace'
-                              ? t('wizard.next_task') 
+                              ? t('wizard.next_task')
                               : t('wizard.next')}
                         </Button>
-            
+
           </div>
         </div>
       </DialogContent>

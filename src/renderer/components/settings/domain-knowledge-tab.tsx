@@ -33,6 +33,7 @@ export function DomainKnowledgeTab() {
           onRemove={removeDomainRule}
           onUpdate={updateDomainRule}
           onReorder={reorderDomainRules}
+          scope="global"
         />
       </div>
     </div>

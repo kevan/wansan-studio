@@ -1,25 +1,14 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
-import { useProjectStore } from '../../stores/useProjectStore'
-import { useSettingsStore } from '@/stores/useSettingsStore'
-import { useParseFile } from '../../hooks/useIPC'
 import { DataTreeManager } from '../data-tree'
-import { useAutoLink } from '../../hooks/useAutoLink'
-import { useFileSync } from '../../hooks/useFileSync'
 import { Button } from '../ui/button'
-import { useToastStore } from '../../stores/useToastStore'
 import { useTranslation } from 'react-i18next'
-import { useProGate } from '@/hooks/use-pro-gate'
-import { ColumnSchema } from '@shared/types'
 
-import { useWizardStore } from '../../stores/useWizardStore'
+import { useWizardStore } from '@/stores/useWizardStore.ts'
 
 export function DataAssetsView() {
-  const { addFile, updateFile } = useProjectStore()
-  const { isActivated, checkGate, gateNode } = useProGate()
   const [isImporting, setIsImporting] = useState(false)
   const openWizard = useWizardStore(s => s.open)
-  const addToast = useToastStore(state => state.addToast)
   const { t } = useTranslation('common')
 
   // 处理多文件导入
@@ -29,7 +18,6 @@ export function DataAssetsView() {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {gateNode}
       <div className="px-4 pb-4 pt-4 border-b border-zinc-200 space-y-2">
         <Button
           onClick={handleImportClick}

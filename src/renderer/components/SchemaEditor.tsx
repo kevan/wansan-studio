@@ -37,7 +37,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useToastStore } from '../stores/useToastStore'
+import { useReIngestFile } from '../hooks/useIPC'
 import { useState } from 'react'
+import { useProGate } from '@/hooks/use-pro-gate'
 import { cn } from '@/utils/cn'
 import { ExpandableAction } from './ui/expandable-action'
 import { ConfirmDialog } from './modals/ConfirmDialog'
@@ -60,7 +62,9 @@ export function SchemaEditor() {
 
   const { t } = useTranslation('common')
   const { t: tAnalysis } = useTranslation('analysis')
+  const { checkGate, gateNode } = useProGate()
   const toast = useToastStore()
+  const reIngest = useReIngestFile()
 
   // 确保有选中的文件
   const currentFileId =
@@ -90,6 +94,19 @@ export function SchemaEditor() {
   const activeLinks = currentFile.relations || []
 
   // --- Handlers ---
+  const handleAppend = () => {
+    checkGate(t('append_data', 'Append'), () => {
+      openWizard('append', currentFile.id)
+    })
+  }
+
+  const handleAddMetric = () => {
+    checkGate(tAnalysis('smart_metric.add_button'), () => {
+      setEditingMetric(undefined)
+      setIsMetricModalOpen(true)
+    })
+  }
+
   const handleReplace = async () => {
     openWizard('replace', currentFile.id)
   }
@@ -190,18 +207,14 @@ export function SchemaEditor() {
               <div className="flex items-center gap-1 p-1 bg-white border border-zinc-200/60 rounded-2xl shadow-sm shrink-0">
                 {currentFile.status === 'ready' && (
                   <>
-                    {/* Group: Build */}
-                    <div className="flex items-center gap-1 pr-1 border-r border-zinc-100">
-                      <ExpandableAction
-                        icon={<Calculator className="w-4 h-4 text-purple-600" />}
-                        label={tAnalysis('smart_metric.add_button')}
-                        onClick={() => {
-                          setEditingMetric(undefined)
-                          setIsMetricModalOpen(true)
-                        }}
-                        className="hover:bg-purple-50 hover:border-purple-200"
-                      />
-
+                                      {/* Group: Build */}
+                                      <div className="flex items-center gap-1 pr-1 border-r border-zinc-100">
+                                        <ExpandableAction
+                                          icon={<Calculator className="w-4 h-4 text-purple-600" />}
+                                          label={tAnalysis('smart_metric.add_button')}
+                                          onClick={handleAddMetric}
+                                          className="hover:bg-purple-50 hover:border-purple-200"
+                                        />
                       <ExpandableAction
                         icon={<Link2 className="w-4 h-4 text-indigo-600" />}
                         label={t('add_new_link')}
@@ -214,16 +227,15 @@ export function SchemaEditor() {
                     </div>
 
                     {/* Group: Data */}
-                    <div className="flex items-center gap-1 px-1 border-r border-zinc-100">
-                      <ExpandableAction
-                        icon={<Plus className="w-4 h-4 text-emerald-600" />}
-                        label={t('append_data', 'Append')}
-                        onClick={() => openWizard('append', currentFile.id)}
-                        className="hover:bg-emerald-50 hover:border-emerald-200"
-                      />
-
-                      <ExpandableAction
-                        icon={<FileInput className="w-4 h-4 text-amber-600" />}
+                                      <div className="flex items-center gap-1 px-1 border-r border-zinc-100">
+                                        <ExpandableAction
+                                          icon={<Plus className="w-4 h-4 text-emerald-600" />}
+                                          label={t('append_data', 'Append')}
+                                          onClick={handleAppend}
+                                          className="hover:bg-emerald-50 hover:border-emerald-200"
+                                        />
+                    
+                                        <ExpandableAction                        icon={<FileInput className="w-4 h-4 text-amber-600" />}
                         label={t('replace_source')}
                         onClick={handleReplace}
                         className="hover:bg-amber-50 hover:border-amber-200"
@@ -398,6 +410,7 @@ export function SchemaEditor() {
           />
         </>
       )}
+      {gateNode}
     </div>
   )
 }

@@ -17,6 +17,8 @@ import { useSettingsStore } from './useSettingsStore'
 import { FilterParam } from '@shared/schemas/analysis'
 import { DuckDBViewManager } from '../lib/duckdb-view-manager'
 
+const TRIAL_FILE_LIMIT = 3
+
 // 生成唯一 ID
 const generateId = () =>
   `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
@@ -743,9 +745,9 @@ export const useProjectStore = create<ProjectState>()(
         const { isActivated } = useSettingsStore.getState()
         const currentCount = get().files.length
 
-        if (!isActivated && currentCount >= 1) {
+        if (!isActivated && currentCount >= TRIAL_FILE_LIMIT) {
           throw new Error(
-            'Trial version supports only 1 file. Please activate Pro for unlimited files.'
+            'Trial version supports only 3 files. Please activate Pro for unlimited files.'
           )
         }
 

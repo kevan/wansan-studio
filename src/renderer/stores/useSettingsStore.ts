@@ -42,6 +42,7 @@ export interface SettingsState {
   remoteConfig: RemoteConfig
   dismissedAnnouncementId: string | null
   domainRules: DomainRule[]
+  recentProjectPaths: string[]
   setProvider: (provider: AIProviderKey) => void
   activateLicense: (code: string) => boolean
   loadSensitiveData: () => Promise<void>
@@ -52,6 +53,7 @@ export interface SettingsState {
   removeDomainRule: (id: string) => void
   updateDomainRule: (id: string, content: string) => void
   reorderDomainRules: (oldIndex: number, newIndex: number) => void
+  addRecentProject: (path: string) => void
   updateSettings: (
     patch: Partial<
       Omit<
@@ -98,6 +100,7 @@ const initialSettingsState: Omit<
   | 'removeDomainRule'
   | 'updateDomainRule'
   | 'reorderDomainRules'
+  | 'addRecentProject'
 > = {
   provider: 'deepseek',
   apiKey: '',
@@ -109,6 +112,7 @@ const initialSettingsState: Omit<
   remoteConfig: {},
   dismissedAnnouncementId: null,
   domainRules: [],
+  recentProjectPaths: [],
 }
 
 export const SETTINGS_STORAGE_KEY = 'wansan-settings-v1'
@@ -211,6 +215,12 @@ export const useSettingsStore = create<SettingsState>()(
           const [removed] = newRules.splice(oldIndex, 1)
           newRules.splice(newIndex, 0, removed)
           return { domainRules: newRules }
+        }),
+      addRecentProject: path =>
+        set(state => {
+          const filtered = (state.recentProjectPaths || []).filter(p => p !== path)
+          const newList = [path, ...filtered].slice(0, 10)
+          return { recentProjectPaths: newList }
         }),
       updateSettings: patch =>
         set(state => {
