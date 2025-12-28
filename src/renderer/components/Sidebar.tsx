@@ -97,35 +97,50 @@ export function Sidebar(_props: SidebarProps) {
 
       {/* --- FOOTER (FLAT DESIGN) --- */}
       {sidebarMode === 'sessions' && (
-        <div className="p-2 border-t border-zinc-200 dark:border-zinc-800 space-y-1 shrink-0">
+        <div className="px-3 py-3 border-t border-zinc-200 dark:border-zinc-800/50 space-y-1.5 shrink-0">
           {/* Data Assets (Flat List Item) */}
           <button
             onClick={() => setSidebarMode('data')}
-            className="w-full px-3 py-2 text-sm text-left rounded-md flex items-center gap-3 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors group"
+            className="w-full px-2.5 py-2 text-sm text-left rounded-lg flex items-center gap-2.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100/80 dark:hover:bg-zinc-900/80 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all group active:scale-[0.98]"
           >
-            <Database className="w-4 h-4 shrink-0 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
+            <div className="w-7 h-7 flex items-center justify-center shrink-0">
+              <Database className="w-4 h-4 opacity-70 group-hover:opacity-100 transition-opacity" />
+            </div>
             <span className="font-medium flex-1">
               {t('data_assets', 'Data Assets')}
             </span>
+            <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-40 transition-opacity" />
           </button>
 
           {/* User & System (Compact Row) */}
-          <div
-            onClick={() =>
-              document.dispatchEvent(
-                new CustomEvent('open-settings', { detail: 'general' })
-              )
-            }
-            className="flex items-center justify-between px-3 py-2 mt-1 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors group/user cursor-pointer"
-          >
-            <div className="flex items-center gap-3 overflow-hidden">
-              <div className="w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-600 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700 shrink-0">
+          <div className="flex items-center gap-1">
+            <div
+              onClick={() =>
+                document.dispatchEvent(
+                  new CustomEvent('open-settings', { detail: 'general' })
+                )
+              }
+              className="flex-1 flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-zinc-100/80 dark:hover:bg-zinc-900/80 transition-all group/user cursor-pointer active:scale-[0.98] overflow-hidden"
+            >
+              <div className="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 shrink-0 shadow-sm group-hover/user:border-zinc-300 dark:group-hover/user:border-zinc-600 transition-colors">
                 {username.slice(0, 2).toUpperCase()}
               </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 group-hover/user:text-zinc-900 dark:group-hover/user:text-zinc-100 truncate">
+              <div className="flex flex-col min-w-0 leading-tight">
+                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200 truncate">
                   {username}
-                </span>
+                </div>
+                <div className="flex items-center gap-1 mt-0.5">
+                  {settings.isActivated ? (
+                    <div className="text-[9px] text-amber-600 dark:text-amber-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                      <Sparkles className="w-2.5 h-2.5 fill-current" />
+                      <span>{t('sidebar.pro_active', 'PRO ACTIVE')}</span>
+                    </div>
+                  ) : (
+                    <div className="text-[9px] text-zinc-400 dark:text-zinc-500 font-medium uppercase tracking-wider">
+                      {t('sidebar.trial_mode', 'TRIAL MODE')}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -136,13 +151,13 @@ export function Sidebar(_props: SidebarProps) {
                 closeProject()
               }}
               title={t('close_project', 'Close Project')}
-              className="text-zinc-400 dark:text-zinc-600 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 shrink-0"
+              className="text-zinc-400 dark:text-zinc-600 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all p-2 rounded-lg shrink-0 active:scale-90"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
     </aside>
-  )
+  );
 }

@@ -53,7 +53,7 @@
   },
   "license": {
     "title": "授权状态",
-    "pro_active": "专业版已激活",
+    "pro_active": "专业版",
     "trial_mode": "试用模式",
     "enter_code_placeholder": "输入激活码",
     "activate_button": "激活",
