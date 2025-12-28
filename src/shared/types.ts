@@ -23,6 +23,8 @@ export interface TableSchema {
   description?: string // Original file name for AI context (e.g., "Sales 2023.xlsx")
   columns: ColumnSchema[]
   smartMetrics?: SmartMetric[] // Metrics to be displayed in the schema
+  tempFilePath?: string // Path to temporary file (e.g. converted CSV) for cleanup
+  sheetName?: string // Source sheet name for Excel files
 }
 
 export interface AIAnalysisResult {

@@ -4,10 +4,29 @@
  * Example: product_id__base_price
  */
 export function getJoinedColumnName(
-  foreignKey: string,
-  targetColumn: string
+  prefix: string,
+  columnName: string
 ): string {
-  return `${foreignKey}__${targetColumn}`
+  return `${prefix}__${columnName}`
+}
+
+export function sanitizeTableName(
+  originalName: string,
+  sheetName?: string,
+  prefix: string = 't_'
+): string {
+  let baseName = originalName.split('.').slice(0, -1).join('.') || originalName
+
+  if (sheetName) {
+    baseName = `${baseName}_${sheetName}`
+  }
+
+  // Allow Chinese, alphanum, underscore. Replace others with _
+  let safeName = prefix + baseName.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '_')
+  // Trim underscores
+  safeName = safeName.replace(/_+/g, '_').replace(/_$/, '')
+
+  return safeName.toLowerCase()
 }
 
 /**

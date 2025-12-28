@@ -214,7 +214,12 @@ class WansanApp {
       throw new Error('Services not initialized')
     }
 
-    setupIPC(this.databaseService, this.aiService)
+    const { fileService } = setupIPC(this.databaseService, this.aiService)
+
+    // Cleanup orphaned temp files from previous sessions on boot
+    fileService.cleanupTempFiles().catch(err => {
+      console.error('[Main] Initial cleanup failed:', err)
+    })
   }
 
   private setupAppEvents() {

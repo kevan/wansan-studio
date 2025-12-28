@@ -12,64 +12,68 @@ export class NativeDBClient {
   >()
   private initPromise: Promise<void> | null = null
   private isReady = false
+  private projectPath: string | null = null
 
   async init(initialPath: string = ':memory:') {
-    if (this.initPromise) return this.initPromise
+    // If already ready and path matches, do nothing
+    if (this.isReady && this.projectPath === initialPath) {
+      return
+    }
+
+    // If initialization is in progress, wait for it
+    if (this.initPromise) {
+      await this.initPromise
+      // After waiting, if our desired path still doesn't match the one that was just initialized,
+      // and we are requesting a specific file path, we MUST call connect() to switch.
+      if (this.projectPath !== initialPath && initialPath !== ':memory:') {
+        console.log(`[DB-Client] Initialized path '${this.projectPath}' differs from requested '${initialPath}'. Switching...`)
+        return this.connect(initialPath)
+      }
+      return
+    }
 
     this.initPromise = (async () => {
       try {
-        // ... previous spawn logic ...
         const entryPath = join(
           app.getAppPath(),
           'dist/main/services/db-service/entry.cjs'
         )
 
-        console.log(`[DB-Client] Checking entry file: ${entryPath}`)
-        if (!fs.existsSync(entryPath)) {
-          throw new Error(`Entry file not found at ${entryPath}`)
+        if (!this.child) {
+          console.log(`[DB-Client] Spawning Utility Process...`)
+          this.child = utilityProcess.fork(entryPath, [], {
+            serviceName: 'Wansan-DB-Service',
+            stdio: 'inherit',
+          })
+
+          this.child.on('message', (msg: DBResponse) => {
+            const handler = this.pendingRequests.get(msg.reqId)
+            if (handler) {
+              if (msg.success) {
+                if (handler.returnFull) handler.resolve(msg)
+                else handler.resolve(msg.data)
+              } else {
+                handler.reject(new Error(msg.error))
+              }
+              this.pendingRequests.delete(msg.reqId)
+            }
+          })
+
+          this.child.on('exit', code => {
+            console.error(`[DB-Client] Utility Process exited with code: ${code}`)
+            this.child = null
+            this.isReady = false
+            this.initPromise = null
+            this.projectPath = null
+          })
         }
 
-        console.log(`[DB-Client] Spawning Utility Process...`)
-        this.child = utilityProcess.fork(entryPath, [], {
-          serviceName: 'Wansan-DB-Service',
-          stdio: 'inherit',
-        })
-
-        this.child.on('spawn', () => {
-          console.log(
-            `[DB-Client] Utility Process successfully spawned (PID: ${this.child?.pid})`
-          )
-        })
-
-        this.child.on('message', (msg: DBResponse) => {
-          const handler = this.pendingRequests.get(msg.reqId)
-          if (handler) {
-            if (msg.success) {
-              if (handler.returnFull) {
-                handler.resolve(msg)
-              } else {
-                handler.resolve(msg.data)
-              }
-            } else {
-              handler.reject(new Error(msg.error))
-            }
-            this.pendingRequests.delete(msg.reqId)
-          }
-        })
-
-        this.child.on('exit', code => {
-          console.error(`[DB-Client] Utility Process exited with code: ${code}`)
-          this.child = null
-          this.isReady = false
-          this.initPromise = null
-        })
-
-        // Wait for designated initial connection
-        await this.connect(initialPath)
+        // Connect DB
+        console.log(`[DB-Client] Initializing connection to: ${initialPath}`)
+        await this.send('CONNECT', { path: initialPath })
+        this.projectPath = initialPath !== ':memory:' ? initialPath : null
         this.isReady = true
-        console.log(
-          `[DB-Client] Native DB Client is ready. Initial Path: ${initialPath}`
-        )
+        console.log(`[DB-Client] Native DB Client is ready. (Path: ${initialPath})`)
       } catch (err) {
         console.error(`[DB-Client] Failed to initialize:`, err)
         this.child = null
@@ -118,14 +122,28 @@ export class NativeDBClient {
     return res.data
   }
 
-  async connect(path?: string) {
-    if (!this.child && !this.initPromise) {
-      await this.init(path || ':memory:')
-      return { status: 'Connected', path: path || ':memory:' } // Already connected via init
-    } else if (this.initPromise) {
+  async connect(path: string = ':memory:') {
+    // If not even forked yet, use init
+    if (!this.child) {
+      return this.init(path)
+    }
+
+    // If init is currently running, wait for it
+    if (this.initPromise) {
       await this.initPromise
     }
-    return this.send('CONNECT', { path })
+    
+    // Check if we are already on this path
+    const normalizedPath = path === ':memory:' ? null : path
+    if (this.projectPath === normalizedPath && this.isReady) {
+      return { status: 'Already connected', path }
+    }
+
+    console.log(`[DB-Client] Switching connection from '${this.projectPath || ':memory:'}' to: ${path}`)
+    const res = await this.send('CONNECT', { path })
+    this.projectPath = path !== ':memory:' ? path : null
+    this.isReady = true
+    return res
   }
 
   async getSchema(tableName?: string) {

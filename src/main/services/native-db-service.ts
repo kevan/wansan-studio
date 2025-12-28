@@ -17,9 +17,7 @@ export class NativeDatabaseService {
     return dbClient.executeQuery(sql)
   }
 
-  async queryWithSchema(
-    sql: string
-  ): Promise<{
+  async queryWithSchema(sql: string): Promise<{
     data: any[]
     columnFields: Array<{ name: string; type: string }>
   }> {

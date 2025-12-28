@@ -114,7 +114,11 @@ export class ProjectManager {
     await fs.writeFile(lockPath, process.pid.toString())
     this.currentProjectPath = projectPath
 
-    // Read Data
+    // 1. Connect DB First!
+    const dbPath = path.join(projectPath, 'source.duckdb')
+    await this.nativeDB.initialize(dbPath)
+
+    // 2. Read Meta Data
     const manifest: ProjectManifest = await fs.readJSON(manifestPath)
 
     let semantic: SemanticLayer
@@ -132,10 +136,6 @@ export class ProjectManager {
       console.warn('Failed to read session.json, using default', e)
       session = {}
     }
-
-    // Connect DB
-    const dbPath = path.join(projectPath, 'source.duckdb')
-    await this.nativeDB.initialize(dbPath)
 
     return {
       path: projectPath,

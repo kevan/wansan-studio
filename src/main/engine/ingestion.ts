@@ -1,11 +1,14 @@
 import { app } from 'electron'
-import * as path from 'path'
+import path from 'path'
 import fs from 'fs-extra'
-import { Worker } from 'worker_threads'
+import { fork } from 'child_process'
+import { isDev } from '../utils/env'
 import { NativeDatabaseService } from '../services/native-db-service'
-import { ColumnSchema, ColumnType, TableSchema } from '../../shared/types'
-import { processSampleValue } from '../../shared/serialization'
+import { TableSchema, ColumnSchema, ColumnType } from '../../shared/types'
 import { normalizeDuckDBType } from '../../shared/type-utils'
+import { processSampleValue } from '../../shared/serialization'
+import { sanitizeTableName } from '../../shared/naming-utils'
+import { TempFileManager } from '../utils/temp-manager'
 
 type DBService = NativeDatabaseService
 
@@ -142,39 +145,42 @@ export async function ingestExcelFile(
   targetTableName?: string,
   targetSheetName?: string,
   onProgress?: (rowCount: number) => void,
-  prefix: string = 't_'
+  prefix: string = 't_',
+  typesParam?: string // Add this
 ): Promise<TableSchema[]> {
   // Resolve worker path
-  let workerPath: string
-  if (app.isPackaged) {
-    // In production, app.asar is where the code lives.
-    // We assume the worker file is bundled and present in dist.
-    workerPath = path.join(
-      process.resourcesPath,
-      'app.asar/dist/main/workers/excelWorker.cjs'
-    )
-  } else {
-    // In development
-    workerPath = path.join(
-      app.getAppPath(),
-      'dist/main/workers/excelWorker.cjs'
-    )
-  }
+  const workerPath = isDev()
+    ? path.join(process.cwd(), 'dist/main/workers/excelWorker.js')
+    : path.join(__dirname, '../workers/excelWorker.js')
 
-  const outputDir = app.getPath('temp')
+  // Use a dedicated subdirectory for temp files
+  const tempDir = await TempFileManager.ensureTempDir()
+  console.log('[Ingestion] Using temp dir:', tempDir)
 
   return new Promise((resolve, reject) => {
-    const worker = new Worker(workerPath, {
-      workerData: { filePath, outputDir, targetSheetName, targetTableName },
+    console.log('[Ingestion] Forking worker at:', workerPath)
+    const worker = fork(workerPath, [], {
+      execArgv: [], // No special args needed
     })
 
-    worker.on('message', async message => {
+    console.log('[Ingestion] Sending payload to worker...')
+    worker.send({
+      filePath,
+      outputDir: tempDir,
+      targetSheetName,
+      targetTableName,
+      prefix,
+    })
+
+    worker.on('message', async (message: any) => {
+      console.log('[Ingestion] Received message type:', message.type)
       if (message.type === 'progress') {
         if (onProgress) onProgress(message.rowCount)
         return
       }
 
       if (message.success) {
+        console.log('[Ingestion] Worker reported success. Processing results...')
         const results: TableSchema[] = []
         const { data, allSheetsCount } = message
 
@@ -207,29 +213,57 @@ export async function ingestExcelFile(
             }
 
             // Ingest directly from filesystem path (DuckDB optimization)
-            // No need to load content into memory or registerFileText
-            // [FIX] Escape backslashes for Windows paths in SQL string
+
             const safeCsvPath = csvFilePath.replace(/\\/g, '/')
+
+            const loadOptions = typesParam
+              ? `${typesParam}, auto_detect=true`
+              : `HEADER = TRUE, SAMPLE_SIZE = -1, auto_detect=true`
+
             await databaseService.exec(
               `CREATE TABLE "${tableName}" AS
-                    SELECT *
-                    FROM read_csv_auto('${safeCsvPath}', HEADER = TRUE, SAMPLE_SIZE = -1, auto_detect = true)`
+
+                                SELECT *
+
+                                FROM read_csv_auto('${safeCsvPath}', ${loadOptions})`
             )
 
-            // [OPTIMIZATION] Free disk space: remove the temp csv file
-            await fs
-              .unlink(csvFilePath)
-              .catch(e => console.error('Failed to cleanup temp CSV:', e))
+            // [OPTIMIZATION] We DO NOT unlink here anymore.
+            // The file path is returned in 'tempFilePath' and will be cleaned up by the caller (FileService)
+            // after the entire wizard flow is complete or cancelled.
 
             const description =
               allSheetsCount > 1 ? `${fileName} - ${sheetName}` : fileName
 
-            const schema = await fetchTableSchema(
-              databaseService,
-              tableName,
-              description
+            // Fetch schema for the reloaded CSV to ensure columns are populated
+            const columnsResult = await databaseService.query(
+              `PRAGMA table_info('${tableName}');`
             )
-            results.push(schema)
+            const columns: ColumnSchema[] = []
+            for (const col of columnsResult) {
+              const finalType = normalizeDuckDBType(col.type)
+              const sampleValues = await getSampleValues(
+                databaseService,
+                tableName,
+                col.name,
+                finalType
+              )
+              columns.push({
+                name: col.name,
+                safeName: col.name,
+                type: finalType as ColumnType,
+                sampleValues,
+              })
+            }
+
+            // Process schema and return
+            results.push({
+              tableName,
+              columns,
+              description: `${fileName} - ${sheetName}`,
+              tempFilePath: csvFilePath,
+              sheetName, // Explicitly pass sheetName
+            })
           }
           resolve(results)
         } catch (dbError) {
@@ -240,8 +274,12 @@ export async function ingestExcelFile(
       }
     })
 
-    worker.on('error', reject)
+    worker.on('error', (err) => {
+      console.error('[Ingestion] Worker error:', err)
+      reject(err)
+    })
     worker.on('exit', code => {
+      console.log('[Ingestion] Worker exited with code:', code)
       if (code !== 0) reject(new Error(`Worker stopped with exit code ${code}`))
     })
   })
@@ -253,16 +291,7 @@ export async function getUniqueTableName(
   sheetName?: string,
   prefix: string = 't_'
 ): Promise<string> {
-  let baseName = path.parse(originalName).name
-
-  if (sheetName) {
-    baseName = `${baseName}_${sheetName}`
-  }
-
-  // Allow Chinese, alphanum, underscore. Replace others with _
-  let safeName = prefix + baseName.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '_')
-  // Trim underscores
-  safeName = safeName.replace(/_+/g, '_').replace(/_$/, '')
+  const safeName = sanitizeTableName(originalName, sheetName, prefix)
 
   let currentName = safeName
   let counter = 1

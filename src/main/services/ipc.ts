@@ -12,6 +12,7 @@ import fs from 'fs-extra'
 import os from 'os'
 import type {
   TableSchema,
+  ColumnSchema,
   FileNode,
   RelationSuggestion,
   ContextAnalysisResult,
@@ -123,14 +124,21 @@ export function setupIPC(
     }
   })
 
-  ipcMain.handle('get-unique-table-name', async (_event, name: string, sheetName?: string) => {
-    try {
-      const result = await getUniqueTableName(databaseService, name, sheetName)
-      return { success: true, data: result }
-    } catch (error) {
-      return { success: false, error: 'Failed to generate unique table name' }
+  ipcMain.handle(
+    'get-unique-table-name',
+    async (_event, name: string, sheetName?: string) => {
+      try {
+        const result = await getUniqueTableName(
+          databaseService,
+          name,
+          sheetName
+        )
+        return { success: true, data: result }
+      } catch (error) {
+        return { success: false, error: 'Failed to generate unique table name' }
+      }
     }
-  })
+  )
 
   // 执行 SQL
   ipcMain.handle('run-sql', async (_event, sql: string) => {
@@ -368,25 +376,34 @@ export function setupIPC(
     }
   )
 
-  ipcMain.handle('ingest:finalize', async (_event, tempName: string, finalName: string) => {
+  ipcMain.handle('ingest:create-table', async (_event, params: any) => {
     try {
-      await fileService.finalizeIngestion(tempName, finalName)
-      return { success: true }
+      const result = await fileService.createTableFromSource(params)
+      return { success: true, data: result }
     } catch (error) {
-      console.error('Finalize ingestion error:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+      console.error('Create table from source error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
     }
   })
 
-  ipcMain.handle('ingest:cleanup', async (_event, tempTableNames: string[]) => {
-    try {
-      await fileService.cleanupStaging(tempTableNames)
-      return { success: true }
-    } catch (error) {
-      console.error('Cleanup staging error:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  ipcMain.handle(
+    'ingest:cleanup',
+    async (_event, tempTableNames: string[], tempFilePaths?: string[]) => {
+      try {
+        await fileService.cleanupStaging(tempTableNames, tempFilePaths)
+        return { success: true }
+      } catch (error) {
+        console.error('Cleanup staging error:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      }
     }
-  })
+  )
 
   ipcMain.handle('ingest:cleanup-all-staging', async () => {
     try {
@@ -394,7 +411,10 @@ export function setupIPC(
       return { success: true }
     } catch (error) {
       console.error('Cleanup all staging error:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
     }
   })
 
@@ -432,7 +452,8 @@ export function setupIPC(
       fileId: string,
       filePath: string,
       tableName: string,
-      sheetName?: string
+      sheetName?: string,
+      columns?: ColumnSchema[]
     ) => {
       try {
         const onProgress = (rowCount: number) => {
@@ -443,7 +464,8 @@ export function setupIPC(
           filePath,
           tableName,
           sheetName,
-          onProgress
+          onProgress,
+          columns
         )
         return { success: true, data: result }
       } catch (error) {
@@ -630,4 +652,6 @@ export function setupIPC(
   )
 
   console.log('IPC handlers registered and updated successfully')
+
+  return { fileService }
 }

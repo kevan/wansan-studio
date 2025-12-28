@@ -11,6 +11,7 @@ import { SummaryStep } from './steps/SummaryStep'
 import { Loader2 } from 'lucide-react'
 import { useAutoLink } from '../../hooks/useAutoLink'
 import { useMemo } from 'react'
+import { useToastStore } from '../../stores/useToastStore'
 
 export function DataIngestionWizard() {
   const {
@@ -31,13 +32,17 @@ export function DataIngestionWizard() {
   const { files, addFile, updateFile, setView } = useProjectStore()
   const { checkAutoLink } = useAutoLink()
   const { t } = useTranslation('common')
+  const toast = useToastStore()
 
   const handleCancel = async () => {
-    if (tempTableNames.length > 0) {
+    // Collect temp files from all tasks
+    const tempFiles = tasks.map(t => t.tempFilePath).filter(Boolean) as string[]
+
+    if (tempTableNames.length > 0 || tempFiles.length > 0) {
       try {
-        await window.electronAPI.cleanupIngestion(tempTableNames)
+        await window.electronAPI.cleanupIngestion(tempTableNames, tempFiles)
       } catch (e) {
-        console.error('Failed to cleanup staging tables', e)
+        console.error('Failed to cleanup staging tables/files', e)
       }
     }
     close()
@@ -65,7 +70,8 @@ export function DataIngestionWizard() {
               task.sourceName === task.fileName ? undefined : task.sourceName,
             uniqueKeys: pkNames,
             strategy: task.conflictStrategy || 'ignore',
-            columnMapping: task.columnMapping || {}
+            columnMapping: task.columnMapping || {},
+            tempFilePath: task.tempFilePath, // Pass cached CSV path
           })
 
           if (result.success && result.data) {
@@ -76,50 +82,99 @@ export function DataIngestionWizard() {
           finalizedTempTables.add(task.tableName)
         } else {
           // --- IMPORT MODE ---
-          const finalTableName = task.finalTableName || task.tableName.replace('temp_ingest_', 't_');
+          const finalTableName =
+            task.finalTableName || task.tableName.replace('temp_ingest_', 't_')
 
-          await window.electronAPI.finalizeIngestion(task.tableName, finalTableName)
+          const result = await window.electronAPI.createTableFromSource({
+            filePath: task.filePath,
+            tableName: finalTableName,
+            sheetName:
+              task.sourceName === task.fileName ? undefined : task.sourceName,
+            columns: task.columns.map(c => ({ name: c.name, type: c.type })),
+            tempFilePath: task.tempFilePath, // Pass cached CSV path
+          })
+
+          if (!result.success || !result.data) {
+            throw new Error(result.error || 'Failed to create table')
+          }
+
           finalizedTempTables.add(task.tableName)
 
-          const columns = task.columns.map(c => ({
-            name: c.name, safeName: c.name, type: c.type,
-            sampleValues: [], isKey: c.isPrimaryKey, isPrimaryKey: c.isPrimaryKey,
-          }))
+          // Map backend schema (with fresh samples) to frontend file model
+          const columns = result.data.columns.map(c => {
+            const userConfig = task.columns.find(uc => uc.name === c.name);
+            return {
+              name: c.name,
+              safeName: c.name,
+              type: c.type,
+              sampleValues: c.sampleValues || [], // Use fresh samples from DB
+              isKey: userConfig?.isPrimaryKey || false,
+              isPrimaryKey: userConfig?.isPrimaryKey || false,
+            }
+          })
+
+          // Construct a friendly display name
+          // If sourceName (Sheet1) != fileName (data.xlsx), show "data.xlsx - Sheet1"
+          const displayName = task.sourceName && task.sourceName !== task.fileName
+            ? `${task.fileName} - ${task.sourceName}`
+            : task.sourceName || task.fileName;
 
           const fileId = addFile({
-            name: task.sourceName,
+            name: displayName,
             path: task.filePath,
             tableName: finalTableName,
             sheetName:
               task.sourceName === task.fileName ? undefined : task.sourceName,
             status: 'ready',
             columns: columns as any,
-            rowCount: task.rowCount,
+            rowCount: result.data.rowCount,
           })
           addedFileIds.push(fileId)
         }
       }
 
-      const tablesToClean = tempTableNames.filter(name => !finalizedTempTables.has(name))
-      if (tablesToClean.length > 0) {
-        await window.electronAPI.cleanupIngestion(tablesToClean)
+      const tablesToClean = tempTableNames.filter(
+        name => !finalizedTempTables.has(name)
+      )
+
+      // Also clean up temp files for tasks that were NOT finalized
+      // (Though createTableFromSource cleans up on success, if we skipped any task here, we should clean its file)
+      const filesToClean = tasks
+        .filter(t => !finalizedTempTables.has(t.tableName))
+        .map(t => t.tempFilePath)
+        .filter(Boolean) as string[]
+
+      if (tablesToClean.length > 0 || filesToClean.length > 0) {
+        await window.electronAPI.cleanupIngestion(tablesToClean, filesToClean)
       }
 
       if (addedFileIds.length > 0) {
         checkAutoLink(useProjectStore.getState().files)
       }
-      
+
       setView('schema')
+
+      toast.addToast({
+        title: `${mode === 'append' ? 'Data Appended' : 'Data Imported'} (${tasks.length} file(s))`,
+        type: 'success',
+        duration: 3000,
+      })
+
       close()
     } catch (e) {
       console.error('Final ingestion failed', e)
+      toast.addToast({
+        title: `Ingestion Failed: ${e instanceof Error ? e.message : 'Unknown error'}`,
+        type: 'error',
+        duration: 5000,
+      })
     } finally {
       setProcessing(false)
     }
   }
 
   const handleNext = () => {
-    // Multi-task navigation within a step
+    // Multi-task navigation
     if (step === 'preview' || step === 'target') {
       const isLastTask = currentTaskIndex === tasks.length - 1
       if (!isLastTask) {
@@ -127,7 +182,7 @@ export function DataIngestionWizard() {
         return
       }
     }
-    
+
     // Step transitions
     if (step === 'select') {
       if (tasks.length > 0) setStep('preview')
@@ -141,30 +196,31 @@ export function DataIngestionWizard() {
   }
 
   const handleBack = () => {
-    // Multi-task navigation within a step
-    if (step === 'preview' || step === 'target') {
+    // Multi-task navigation
+    if (step === 'preview') {
       if (currentTaskIndex > 0) {
         prevTask()
         return
       }
     }
-    
+
     // Step transitions
     if (step === 'preview') setStep('select')
     else if (step === 'target') setStep('preview')
     else if (step === 'summary') setStep('target')
   }
-  
+
   const isNextDisabled = useMemo(() => {
-    if (step === 'select') return tasks.length === 0;
-    
-    // Validation for Target step in Import mode
+    if (step === 'select') return tasks.length === 0
     if (step === 'target' && mode === 'import') {
-      const currentTask = tasks[currentTaskIndex];
-      return !currentTask?.finalTableName || files.some(f => f.tableName === currentTask.finalTableName);
+      const currentTask = tasks[currentTaskIndex]
+      return (
+        !currentTask?.finalTableName ||
+        files.some(f => f.tableName === currentTask.finalTableName)
+      )
     }
-    return false;
-  }, [step, tasks, currentTaskIndex, mode, files]);
+    return false
+  }, [step, tasks, currentTaskIndex, mode, files])
 
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && handleCancel()}>
@@ -193,7 +249,11 @@ export function DataIngestionWizard() {
         </div>
 
         <div className="px-8 py-5 border-t border-zinc-100 bg-white flex justify-between shrink-0">
-          <Button variant="ghost" onClick={handleCancel} className="text-zinc-500">
+          <Button
+            variant="ghost"
+            onClick={handleCancel}
+            className="text-zinc-500"
+          >
             {t('cancel')}
           </Button>
           <div className="flex gap-3">
@@ -210,7 +270,13 @@ export function DataIngestionWizard() {
               disabled={isNextDisabled}
               className="bg-black hover:bg-zinc-800 text-white px-8 font-bold"
             >
-              {step === 'summary' ? 'Finish' : tasks.length > 1 && (step === 'preview' || step === 'target') && currentTaskIndex < tasks.length - 1 ? 'Next Task' : 'Next'}
+              {step === 'summary'
+                ? 'Finish'
+                : tasks.length > 1 &&
+                    (step === 'preview' || step === 'target') &&
+                    currentTaskIndex < tasks.length - 1
+                  ? 'Next Task'
+                  : 'Next'}
             </Button>
           </div>
         </div>

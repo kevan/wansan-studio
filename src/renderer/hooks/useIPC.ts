@@ -51,7 +51,8 @@ const mockIPC: ElectronAPI = {
     _fileId: string,
     _filePath: string,
     _tableName: string,
-    _sheetName?: string
+    _sheetName?: string,
+    _columns?: any[]
   ): Promise<IPCResponse<any>> => {
     return {
       success: true,
@@ -67,7 +68,10 @@ const mockIPC: ElectronAPI = {
     },
   }),
   appendData: async () => ({ success: true, data: { rowCount: 0 } }),
-  finalizeIngestion: async () => ({ success: true }),
+  createTableFromSource: async () => ({
+    success: true,
+    data: { rowCount: 0, columns: [] },
+  }),
   cleanupIngestion: async () => ({ success: true }),
   cleanupAllStaging: async () => ({ success: true }),
   getUniqueTableName: async () => ({ success: true, data: 't_mock' }),
@@ -288,17 +292,20 @@ export function useReIngestFile() {
       filePath,
       tableName,
       sheetName,
+      columns,
     }: {
       fileId: string
       filePath: string
       tableName: string
       sheetName?: string
+      columns?: any[]
     }) => {
       const response = await getIpc().reIngestFile(
         fileId,
         filePath,
         tableName,
-        sheetName
+        sheetName,
+        columns
       )
       if (!response.success) {
         throw new Error(response.error || 'Failed to re-ingest file')

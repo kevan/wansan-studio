@@ -80,7 +80,7 @@ export async function processExcelFileStreaming(
   onProgress?: (rowCount: number) => void
 ): Promise<{ results: StreamingProcessResult[]; allSheetsCount: number }> {
   const options = {
-    sharedStrings: 'emit' as const,
+    sharedStrings: 'cache' as const,
     styles: 'cache' as const,
     hyperlinks: 'emit' as const,
     worksheets: 'emit' as const,
@@ -116,7 +116,7 @@ export async function processExcelFileStreaming(
     }
 
     try {
-      const tempCsvName = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.csv`
+      const tempCsvName = `temp_ingest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.csv`
       const csvFilePath = path.join(outputDir, tempCsvName)
       const writeStream = fs.createWriteStream(csvFilePath, {
         encoding: 'utf8',
@@ -198,12 +198,23 @@ export async function processExcelFileStreaming(
 
           // Handle Rich Text / Hyperlinks
           if (val && typeof val === 'object' && !(val instanceof Date)) {
-            if ('richText' in val) {
+            if ('richText' in val && Array.isArray((val as any).richText)) {
               val = (val as any).richText.map((t: any) => t.text).join('')
             } else if ('text' in val && 'hyperlink' in val) {
               val = (val as any).text
             } else if ('result' in val) {
               val = (val as any).result
+              if (val && typeof val === 'object' && !(val instanceof Date)) {
+                 if ('error' in val) val = (val as any).error
+                 else val = JSON.stringify(val)
+              }
+            } else {
+              // Fallback
+              try {
+                val = JSON.stringify(val)
+              } catch {
+                val = String(val)
+              }
             }
           }
           values[i - 1] = val
@@ -412,23 +423,30 @@ export async function processExcelBufferExcelJS(
             val = cell.master.value
           }
 
-          // ExcelJS Rich Text / Hyperlinks / Formula
-          if (val && typeof val === 'object') {
-            if ('richText' in val) {
+          // Handle Rich Text / Hyperlinks / Formula
+          if (val && typeof val === 'object' && !(val instanceof Date)) {
+            if ('richText' in val && Array.isArray((val as any).richText)) {
               val = (val as any).richText.map((t: any) => t.text).join('')
             } else if ('text' in val && 'hyperlink' in val) {
               val = (val as any).text
             } else if ('result' in val) {
-              // Formula
+              // Formula result
               val = (val as any).result
-            } else if (val instanceof Date) {
-              // Keep Date object
+              // If result is also an object (e.g. error), handle it
+              if (val && typeof val === 'object' && !(val instanceof Date)) {
+                 if ('error' in val) val = (val as any).error
+                 else val = JSON.stringify(val)
+              }
             } else {
-              // Unknown object, maybe error
-              val = String(val)
+              // Fallback for unknown objects to prevent [object Object]
+              try {
+                val = JSON.stringify(val)
+              } catch {
+                val = String(val)
+              }
             }
           }
-
+          
           // 0-based index
           filledRowData[colNumber - 1] = val
         }

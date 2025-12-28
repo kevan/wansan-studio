@@ -14,24 +14,16 @@ export function useDataRehydrate() {
   const markFileMissing = useProjectStore(state => state.markFileMissing)
   const addToast = useToastStore(state => state.addToast)
   const { mutateAsync: reIngestFile } = useReIngestFile()
+  const isProjectLoaded = useProjectStore(s => s.isProjectLoaded)
 
   const [hydrated, setHydrated] = useState(false)
   const hasRunRef = useRef(false)
 
-  useEffect(() => {
-    // Check if already hydrated
-    if (useProjectStore.persist?.hasHydrated?.()) {
-      setHydrated(true)
-    }
-
-    const unsub = useProjectStore.persist?.onFinishHydration?.(() => {
-      setHydrated(true)
-    })
-    return () => unsub?.()
-  }, [])
+  // ... (persist hydration effect) ...
 
   useEffect(() => {
-    if (!hydrated || hasRunRef.current) return
+    // Only run if store is hydrated AND project is fully loaded
+    if (!hydrated || hasRunRef.current || !isProjectLoaded) return
 
     // 1. Identify files that need physical verification
     const filesToRestore = useProjectStore
@@ -39,12 +31,11 @@ export function useDataRehydrate() {
       .files.filter(f => f.status === 'ready' && f.tableName)
 
     if (filesToRestore.length === 0) {
-      setRestoring(false)
       return
     }
 
     hasRunRef.current = true
-    setRestoring(true)
+    // Don't setRestoring(true) yet. We do it only if we find missing tables.
     let cancelled = false
 
     const syncDatabase = async () => {
@@ -76,12 +67,16 @@ export function useDataRehydrate() {
               console.warn(
                 `[Rehydrate] Persistence Miss: Table ${file.tableName} not found. Restoring...`
               )
+              
+              // Now we show the loading UI because we are actually restoring
+              setRestoring(true)
 
               const result = await reIngestFile({
                 fileId: file.id,
                 filePath: file.path,
                 tableName: file.tableName,
                 sheetName: file.sheetName,
+                columns: file.columns,
               })
 
               if (cancelled) return

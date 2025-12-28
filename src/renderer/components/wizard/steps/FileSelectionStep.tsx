@@ -14,9 +14,11 @@ import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import { IngestionTask, ColumnConfig } from '@shared/types/wizard'
 import { ColumnSchema } from '@shared/types'
+import { sanitizeTableName } from '@shared/naming-utils'
 
 export function FileSelectionStep() {
-  const { selectedFiles, setFiles, tasks, setTasks, mode, targetTableId } = useWizardStore()
+  const { selectedFiles, setFiles, tasks, setTasks, mode, targetTableId } =
+    useWizardStore()
   const { files: projectFiles } = useProjectStore()
   const { t } = useTranslation('common')
   const [isParsing, setIsParsing] = useState(false)
@@ -37,6 +39,7 @@ export function FileSelectionStep() {
   }
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [allTasks, setAllTasks] = useState<IngestionTask[]>([])
 
   // Effect: When files change, parse them to get sheets/tasks
   useEffect(() => {
@@ -53,10 +56,11 @@ export function FileSelectionStep() {
           if (res.success && res.data) {
             const results = Array.isArray(res.data) ? res.data : [res.data]
 
-            results.forEach((item: any) => {
+            // Use Promise.all to handle async tableName generation
+            const taskPromises = results.map(async (item: any) => {
               // For append mode, inherit PK/Key from target table
               const targetFile = mode === 'append' ? projectFiles.find(f => f.id === targetTableId) : null;
-              
+
               const columns: ColumnConfig[] = item.schema.columns.map(
                 (c: ColumnSchema) => {
                   const targetCol = targetFile?.columns.find(tc => tc.name === c.name);
@@ -68,29 +72,49 @@ export function FileSelectionStep() {
                 }
               )
 
-              newTasks.push({
+              const sourceName = item.sheetName || item.tableName || file.name
+              let defaultTableName = item.tableName
+              
+              if (mode === 'import') {
+                 // Pass raw names to backend to handle sanitization and unique check
+                 const res = await window.electronAPI.getUniqueTableName(file.name, item.sheetName)
+                 if (res.success) defaultTableName = res.data
+              }
+
+              return {
                 id: crypto.randomUUID(),
-                sourceName: item.sheetName || file.name,
+                sourceName: sourceName,
                 fileName: file.name,
                 filePath: file.path,
-                tableName: item.tableName,
-                finalTableName: item.tableName.startsWith('temp_ingest_') 
-                  ? item.tableName.replace('temp_ingest_', 't_') 
-                  : item.tableName,
+                tableName: item.tableName, // This is empty/temp from parseFile
+                finalTableName: defaultTableName,
                 columns,
                 previewData: item.preview || [],
                 rowCount: item.rowCount || 0,
                 mode: mode,
                 status: 'pending',
-              })
+                tempFilePath: item.tempFilePath // Capture temp file path
+              } as IngestionTask
             })
+            
+            const fileTasks = await Promise.all(taskPromises)
+            newTasks.push(...fileTasks)
           }
         }
 
-        // In append mode, if multiple results found, we might need to let user pick.
-        // For now, if mode is append, we default to the first one but will let user pick in the UI.
-        setTasks(newTasks)
-        if (newTasks.length > 0) setSelectedTaskId(newTasks[0].id)
+        setAllTasks(newTasks) // Store locally
+        
+        if (mode === 'append') {
+           // Default to first, but allow switching
+           if (newTasks.length > 0) {
+             const first = newTasks[0]
+             setSelectedTaskId(first.id)
+             setTasks([first])
+           }
+        } else {
+           setTasks(newTasks)
+        }
+
       } catch (err: any) {
         setError(err.message || 'Failed to parse files')
       } finally {
@@ -99,29 +123,29 @@ export function FileSelectionStep() {
     }
 
     parseFiles()
-  }, [selectedFiles, setTasks, mode])
-
-  // If append mode, filter tasks to only the selected one when moving forward
-  useEffect(() => {
-    if (mode === 'append' && selectedTaskId) {
-      const activeTask = tasks.find(t => t.id === selectedTaskId)
-      if (activeTask) {
-        // We don't want to wipe other tasks yet, but we need to signal which one is active.
-        // Actually, the wizard store should probably only have the ACTIVE tasks.
-      }
-    }
-  }, [selectedTaskId, mode, tasks])
+  }, [selectedFiles, setTasks, mode]) // Removed 'allTasks' dependency to avoid loop
 
   const handleToggleTask = (id: string) => {
     if (mode === 'append') {
       setSelectedTaskId(id)
-      // Update store to only have this one task?
-      // Or just handle it during handleNext in Wizard.tsx.
-      // Let's do it here for simplicity.
-      const task = tasks.find(t => t.id === id)
-      if (task) setTasks([task])
+      const task = allTasks.find(t => t.id === id)
+      if (task) {
+        // Re-apply target file's PK config to the newly selected task
+        const targetFile = projectFiles.find(f => f.id === targetTableId);
+        const updatedColumns = task.columns.map(col => {
+          const targetCol = targetFile?.columns.find(tc => tc.name === col.name);
+          return {
+            ...col,
+            isPrimaryKey: targetCol ? (!!targetCol.isPrimaryKey || !!targetCol.isKey) : false,
+          }
+        });
+        setTasks([{ ...task, columns: updatedColumns }])
+      }
     }
   }
+  
+  // Use allTasks for rendering in append mode to show options
+  const displayTasks = mode === 'append' ? allTasks : tasks
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-8">
@@ -181,7 +205,7 @@ export function FileSelectionStep() {
               </div>
             ) : (
               <div className="divide-y divide-zinc-100">
-                {tasks.map(task => (
+                {displayTasks.map(task => (
                   <div
                     key={task.id}
                     onClick={() => handleToggleTask(task.id)}

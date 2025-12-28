@@ -85,3 +85,30 @@
 - **组件化**: 向导的每个步骤都应设计为可复用的 React 组件。
 
 通过这个统一的向导，我们将极大地提升数据接入的健壮性和用户体验，为后续的分析功能奠定坚实基础。
+
+---
+
+## 5. Phase 3: Data Integrity Refactor (Planned)
+
+**背景**: 目前的 `parseFile` 在预览阶段就直接创建了物理表（暂存表），导致 DuckDB 的自动类型推断（Auto-Detection）过早生效。例如，文本类型的 "001" 可能被错误地推断并存储为整数 `1`，且不可逆。
+
+**目标**: 实施 **延迟建表 (Lazy Ingestion)** 策略，确保物理表的创建发生在用户确认类型配置之后。
+
+### 5.1 架构变更
+1.  **预览阶段 (Read-Only)**:
+    *   **CSV**: 使用 `SELECT * FROM read_csv_auto(...) LIMIT 100` 仅读取数据流，**不创建表**。
+    *   **Excel**: 使用流式解析器读取前 100 行用于展示，同样**不创建表**。
+    *   **输出**: 返回推断的 Schema 和预览数据给前端。
+
+2.  **执行阶段 (Type-Enforced Write)**:
+    *   前端将用户确认的 Schema（列名 + 类型）传回后端。
+    *   后端构造带有强制类型的 SQL 语句：
+        ```sql
+        CREATE TABLE t_final AS 
+        SELECT * FROM read_csv_auto('source.csv', types={'code': 'VARCHAR', 'amount': 'DOUBLE'})
+        ```
+    *   这确保了 "001" 能够按照用户指定的 `VARCHAR` 类型被正确入库。
+
+### 5.2 API 变更
+*   **`parseFile`**: 仅返回预览数据，不再产生副作用（不建表）。
+*   **`createTableFromSource` (New)**: 替代 `finalizeIngestion`，接收完整的列配置并在入库时强制应用类型。

@@ -1,4 +1,4 @@
-import { ReloadResult, DomainRule } from './types'
+import { ReloadResult, DomainRule, ColumnSchema } from './types'
 import {
   IPCResponse,
   RunSQLResponse,
@@ -7,30 +7,40 @@ import {
 } from './api-types'
 
 export interface IngestPreCheckParams {
-  filePath: string;
-  targetTableName: string;
-  sheetName?: string;
-  uniqueKeys?: string[];
-  columnMapping: Record<string, string | null>; // Add this
+  filePath: string
+  targetTableName: string
+  sheetName?: string
+  uniqueKeys?: string[]
+  columnMapping: Record<string, string | null>
+  tempFilePath?: string // Cached CSV path
 }
 
 export interface IngestPreCheckResponse {
-  totalRows: number;
-  duplicateRows: number;
+  totalRows: number
+  duplicateRows: number
   columnMatch: {
-    matched: string[];
-    missing: string[];
-    extra: string[];
-  };
+    matched: string[]
+    missing: string[]
+    extra: string[]
+  }
 }
 
 export interface AppendDataParams {
-  filePath: string;
-  targetTableName: string;
-  sheetName?: string;
-  uniqueKeys?: string[];
-  strategy: 'ignore' | 'replace';
-  columnMapping: Record<string, string | null>;
+  filePath: string
+  targetTableName: string
+  sheetName?: string
+  uniqueKeys?: string[]
+  strategy: 'ignore' | 'replace'
+  columnMapping: Record<string, string | null>
+  tempFilePath?: string // Cached CSV path
+}
+
+export interface CreateTableParams {
+  filePath: string
+  tableName: string
+  sheetName?: string
+  columns: Array<{ name: string; type: string }> // User-confirmed types
+  tempFilePath?: string // Cached CSV path
 }
 
 export interface ElectronAPI {
@@ -47,7 +57,8 @@ export interface ElectronAPI {
     fileId: string,
     filePath: string,
     tableName: string,
-    sheetName?: string
+    sheetName?: string,
+    columns?: ColumnSchema[] // Add this
   ) => Promise<IPCResponse<ReloadResult>>
   ingestPreCheck: (
     params: IngestPreCheckParams
@@ -55,8 +66,13 @@ export interface ElectronAPI {
   appendData: (
     params: AppendDataParams
   ) => Promise<IPCResponse<{ rowCount: number }>>
-  finalizeIngestion: (tempTableName: string, finalTableName: string) => Promise<IPCResponse>
-  cleanupIngestion: (tempTableNames: string[]) => Promise<IPCResponse>
+  createTableFromSource: (
+    params: CreateTableParams
+  ) => Promise<IPCResponse<{ rowCount: number; columns: ColumnSchema[] }>>
+  cleanupIngestion: (
+    tempTableNames: string[],
+    tempFilePaths?: string[]
+  ) => Promise<IPCResponse>
   cleanupAllStaging: () => Promise<IPCResponse>
   saveImage: (dataUrl: string, name?: string) => Promise<IPCResponse>
   saveFile: (
@@ -68,7 +84,10 @@ export interface ElectronAPI {
 
   // Database Operations
   runSQL: (sql: string) => Promise<RunSQLResponse>
-  getUniqueTableName: (name: string, sheetName?: string) => Promise<IPCResponse<string>>
+  getUniqueTableName: (
+    name: string,
+    sheetName?: string
+  ) => Promise<IPCResponse<string>>
   getSchema: (tableName?: string) => Promise<IPCResponse>
   deleteTable: (tableName?: string) => Promise<IPCResponse>
   resetDB: () => Promise<IPCResponse>

@@ -60,6 +60,7 @@ function App() {
   const { isMigrationNeeded, isChecking, checkStatus } = useMigrationStore()
   const { status: saveStatus, lastError: saveError, forceSave } = useAutoSave()
   const currentProjectPath = useProjectStore(s => s.currentProjectPath)
+  const isProjectLoaded = useProjectStore(s => s.isProjectLoaded)
 
   useEffect(() => {
     checkStatus()
@@ -341,6 +342,23 @@ function App() {
         <MigrationWizard />
       ) : !currentProjectPath ? (
         <ProjectLauncher />
+      ) : !isProjectLoaded ? (
+        <div className="h-screen w-screen bg-white flex flex-col items-center justify-center animate-in fade-in duration-500">
+          <div className="flex flex-col items-center gap-6">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-indigo-50 animate-ping opacity-25" />
+              <div className="relative p-4 bg-white rounded-full border border-zinc-100 shadow-sm">
+                <img src={logo} className="h-12 w-12 grayscale opacity-50" alt="Loading" />
+              </div>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                Initializing Workspace
+              </p>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="h-screen w-screen overflow-hidden bg-zinc-50 flex flex-col">
           <UpdateModal />

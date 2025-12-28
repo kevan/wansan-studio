@@ -12,7 +12,6 @@ import {
   AlignJustify,
   Calculator,
   Calendar,
-  Check,
   ChevronDown,
   Clock,
   Database,
@@ -41,7 +40,6 @@ import {
 import { useToastStore } from '../stores/useToastStore'
 import { useReIngestFile } from '../hooks/useIPC'
 import { useState } from 'react'
-import { Input } from './ui/input'
 import { cn } from '@/utils/cn'
 import { ExpandableAction } from './ui/expandable-action'
 import { ConfirmDialog } from './modals/ConfirmDialog'
@@ -136,6 +134,7 @@ export function SchemaEditor() {
           filePath: currentFile.path,
           tableName: currentFile.tableName,
           sheetName: currentFile.sheetName,
+          columns: currentFile.columns, // Pass current columns config
         })
         useProjectStore.getState().reloadFile(currentFile.id, result)
       },
@@ -668,20 +667,6 @@ function ColumnRow({
   const config = FORMAT_CONFIG[formatType]
   const IconComponent = config.icon
   const { t } = useTranslation('common')
-  const updateColumn = useProjectStore(s => s.updateColumn)
-  const [isRenaming, setIsRenaming] = useState(false)
-  const [alias, setAlias] = useState(column.alias || column.name)
-
-  const submitRename = () => {
-    if (alias.trim() && alias !== (column.alias || column.name)) {
-      updateColumn(fileId, column.name, { alias: alias.trim() })
-    }
-    setIsRenaming(false)
-  }
-
-  const handleTypeChange = (newType: string) => {
-    updateColumn(fileId, column.name, { type: newType as ColumnType })
-  }
 
   return (
     <tr className="hover:bg-zinc-50 transition-colors group">
@@ -695,55 +680,18 @@ function ColumnRow({
             <Key className="w-3 h-3" />
           </button>
           <div className="flex items-center gap-2 flex-1 min-w-0 group/name">
-            {isRenaming ? (
-              <div className="flex items-center gap-1 flex-1">
-                <Input
-                  autoFocus
-                  value={alias}
-                  onChange={e => setAlias(e.target.value)}
-                  onBlur={submitRename}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') submitRename()
-                    if (e.key === 'Escape') {
-                      setAlias(column.alias || column.name)
-                      setIsRenaming(false)
-                    }
-                  }}
-                  className="h-7 text-sm py-0 px-2"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-green-600 shrink-0"
-                  onClick={submitRename}
-                >
-                  <Check className="w-4 h-4" />
-                </Button>
-              </div>
-            ) : (
-              <>
-                <span
-                  className={cn(
-                    'text-sm truncate',
-                    column.alias ? 'text-zinc-900 font-medium' : 'text-zinc-600'
-                  )}
-                >
-                  {column.alias || column.name}
-                </span>
-                {column.alias && (
-                  <span className="text-[10px] text-zinc-400 font-mono">
-                    ({column.name})
-                  </span>
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0"
-                  onClick={() => setIsRenaming(true)}
-                >
-                  <Edit2 className="w-3 h-3 text-zinc-400" />
-                </Button>
-              </>
+            <span
+              className={cn(
+                'text-sm truncate',
+                column.alias ? 'text-zinc-900 font-medium' : 'text-zinc-600'
+              )}
+            >
+              {column.alias || column.name}
+            </span>
+            {column.alias && (
+              <span className="text-[10px] text-zinc-400 font-mono">
+                ({column.name})
+              </span>
             )}
           </div>
           {isLinked && (
@@ -754,37 +702,15 @@ function ColumnRow({
         </div>
       </td>
       <td className="px-4 py-3">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className={cn(
-                'inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded whitespace-nowrap cursor-pointer hover:opacity-80 transition-opacity',
-                config.bgColor,
-                config.textColor
-              )}
-            >
-              <IconComponent className="w-3.5 h-3.5" /> {t(config.label)}{' '}
-              <ChevronDown className="w-3 h-3 opacity-50" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-32">
-            <DropdownMenuItem onClick={() => handleTypeChange('VARCHAR')}>
-              <Type className="w-4 h-4 mr-2" /> {t('format_text')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleTypeChange('DOUBLE')}>
-              <Hash className="w-4 h-4 mr-2" /> {t('format_number')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleTypeChange('DATE')}>
-              <Calendar className="w-4 h-4 mr-2" /> {t('format_date')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleTypeChange('TIMESTAMP')}>
-              <Clock className="w-4 h-4 mr-2" /> {t('format_datetime')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleTypeChange('BOOLEAN')}>
-              <ToggleLeft className="w-4 h-4 mr-2" /> {t('type_boolean')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <span
+          className={cn(
+            'inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded whitespace-nowrap cursor-default opacity-80',
+            config.bgColor,
+            config.textColor
+          )}
+        >
+          <IconComponent className="w-3.5 h-3.5" /> {t(config.label)}
+        </span>
       </td>
       <td className="px-4 py-3">
         {Array.isArray(column.sampleValues) &&

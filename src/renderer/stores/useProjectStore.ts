@@ -45,6 +45,7 @@ export interface ProjectState extends ProjectData {
   abortControllers: Record<string, AbortController>
   smartFilterRequest: SmartFilterRequest | null
   currentProjectPath: string | null
+  isProjectLoaded: boolean // Transient flag to indicate project fully loaded
 
   // Actions
   setSidebarMode: (mode: 'sessions' | 'data') => void
@@ -143,22 +144,25 @@ const createNewSession = (): Session => ({
   },
 })
 
-const initialProjectState: ProjectData & { currentProjectPath: string | null } =
-  {
-    meta: {
-      id: crypto.randomUUID(),
-      name: 'Untitled Project',
-      version: '1.1.0',
-      created: Date.now(),
-    },
-    files: [],
-    sessions: [],
-    activeSessionId: '',
-    activeView: 'chat',
-    activeFileId: null,
-    widgetRegistry: {},
-    currentProjectPath: null,
-  }
+const initialProjectState: ProjectData & {
+  currentProjectPath: string | null
+  isProjectLoaded: boolean
+} = {
+  meta: {
+    id: crypto.randomUUID(),
+    name: 'Untitled Project',
+    version: '1.1.0',
+    created: Date.now(),
+  },
+  files: [],
+  sessions: [],
+  activeSessionId: '',
+  activeView: 'chat',
+  activeFileId: null,
+  widgetRegistry: {},
+  currentProjectPath: null,
+  isProjectLoaded: false,
+}
 
 export const useProjectStore = create<ProjectState>()(
   persist(
@@ -172,7 +176,7 @@ export const useProjectStore = create<ProjectState>()(
       sidebarMode: 'sessions',
       suggestedPrompts: [],
       selectedNode: null,
-      isRestoring: true,
+      isRestoring: false,
       isRefreshing: false,
       smartFilterRequest: null,
       currentProjectPath: null,
@@ -1243,7 +1247,7 @@ export const useProjectStore = create<ProjectState>()(
         }
       },
 
-      loadProject: (data: ProjectData) => set({ ...data }),
+      loadProject: (data: ProjectData) => set({ ...data, isProjectLoaded: true }),
 
       cleanupZombieFiles: () =>
         set(state => ({
@@ -1332,6 +1336,7 @@ export const useProjectStore = create<ProjectState>()(
         set({
           ...initialProjectState,
           currentProjectPath: null,
+          isProjectLoaded: false,
           isRestoring: false,
         })
       },
@@ -1353,6 +1358,7 @@ export const useProjectStore = create<ProjectState>()(
           sidebarMode,
           selectedNode,
           smartFilterRequest,
+          isProjectLoaded, // Exclude from persistence
           ...rest
         } = state
 
@@ -1394,10 +1400,11 @@ export const useProjectStore = create<ProjectState>()(
           })
 
           // 3. Set restoring state
-          const hasFilesToRestore = state.files.some(
-            f => f.status === 'ready' && f.tableName
-          )
-          state.setRestoring(hasFilesToRestore)
+          // DEPRECATED: Don't auto-set restoring. Wait for project load.
+          // const hasFilesToRestore = state.files.some(
+          //   f => f.status === 'ready' && f.tableName
+          // )
+          // state.setRestoring(hasFilesToRestore)
         }
       },
     }

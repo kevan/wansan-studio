@@ -12,32 +12,33 @@ export interface ColumnConfig {
 }
 
 export interface IngestionTask {
-  id: string;
-  sourceName: string;      // Sheet name or filename
-  fileName: string;        // Original filename;
-  filePath: string;
-  tableName: string;       // Proposed DuckDB table name (staging)
-  finalTableName?: string;  // Permanent table name (t_...)
-  columns: ColumnConfig[];
-  previewData: any[];
-  rowCount: number;
-  
+  id: string
+  sourceName: string // Sheet name or file name
+  fileName: string
+  filePath: string
+  tempFilePath?: string // Path to cached temp file (e.g. converted CSV)
+  tableName: string // Temp table name in DB
+  finalTableName?: string
+  columns: ColumnConfig[]
+  previewData: any[]
+  rowCount: number
+
   // Configuration
-  mode: WizardMode;
-  targetTableId?: string;  // For append mode;
-  conflictStrategy?: 'ignore' | 'replace';
-  columnMapping?: Record<string, string | null>; // { targetCol: sourceCol }
+  mode: WizardMode
+  targetTableId?: string // For append mode;
+  conflictStrategy?: 'ignore' | 'replace'
+  columnMapping?: Record<string, string | null> // { targetCol: sourceCol }
   preCheckResult?: {
-    totalRows: number;
-    duplicateRows: number;
+    totalRows: number
+    duplicateRows: number
     columnMatch: {
-      matched: string[];
-      missing: string[];
-      extra: string[];
-    };
-  };
-  status: 'pending' | 'processing' | 'completed' | 'error';
-  error?: string;
+      matched: string[]
+      missing: string[]
+      extra: string[]
+    }
+  }
+  status: 'pending' | 'processing' | 'completed' | 'error'
+  error?: string
 }
 
 export interface WizardState {
@@ -50,10 +51,10 @@ export interface WizardState {
   selectedFiles: { path: string; name: string; size: number }[]
 
   // Tasks (One per sheet/file)
-  tasks: IngestionTask[];
-  currentTaskIndex: number;
-  tempTableNames: string[]; // Track created temp tables
-  
+  tasks: IngestionTask[]
+  currentTaskIndex: number
+  tempTableNames: string[] // Track created temp tables
+
   // UI Helpers
   isProcessing: boolean
 }
