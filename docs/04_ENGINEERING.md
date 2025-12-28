@@ -1,100 +1,60 @@
-# 📓 04_ENGINEERING.md - Build, i18n & Persistence
+# 📓 04_ENGINEERING.md - Build, i18n & Engineering
 
-> **Version**: 1.0
+> **Version**: 1.3
 > **Status**: Authoritative
-> **Scope**: Electron Builder, WASM Config, i18n, Session Recovery.
+> **Scope**: Build Config, Temp Management, i18n.
 
 ---
 
 ## 1. Build System (构建系统)
 
-构建是本项目的最大挑战。我们必须确保 DuckDB-WASM 在 Electron ASAR 打包后依然能被正确加载。
+v1.3 移除了 WASM 复杂性，转向 Native Node Modules。
 
 ### 1.1 `electron-builder` Configuration
+*   **Target**: Mac (`.dmg`), Windows (`.nsis`).
+*   **ASAR Unpack**:
+    *   `node_modules/@duckdb/node-api`: 必须解包以加载 `.node` 二进制文件。
+    *   `resources/`: 静态资源。
 
-**Target**: Mac (`.dmg`), Windows (`.nsis`).
-
-```yaml
-# electron-builder.yml
-asarUnpack:
-  - "node_modules/@duckdb/duckdb-wasm" # CRITICAL: WASM cannot run from ASAR
-  - "**/*.wasm"
-
-files:
-  - "!**/node_modules/@duckdb/duckdb-wasm/dist/*eh*" # Optimization: Exclude EH bundles
-  - "dist"
-  - "dist-electron"
-```
-
-### 1.2 WASM Path Resolution
-
-在生产环境中，`__dirname` 指向 ASAR 内部。我们需要使用 `app.isPackaged` 判断逻辑来修正路径。
-
-* **Dev**: 直接解析 `node_modules`。
-* **Prod**: 解析 `resources/app.asar.unpacked/node_modules/...`。
+### 1.2 Multi-Process Model
+*   **Main**: 窗口管理，IPC 路由。
+*   **Renderer**: React UI。
+*   **Utility (DB Service)**: 承载 DuckDB 实例。
+*   **Worker (Excel)**: `child_process.fork` 运行 ExcelJS 流式解析，防止主线程卡顿。
 
 ---
 
-## 2. Internationalization (i18n)
+## 2. Resource Management (资源管理)
 
-我们实现了 **Full-Stack i18n** (UI + AI)。
+### 2.1 TempFileManager (`src/main/utils/temp-manager.ts`)
+为了防止临时文件泄漏，我们实施了严格的生命周期管理。
 
-### 2.1 UI Localization
-
-* **Stack**: `i18next`, `react-i18next`.
-* **Namespaces**:
-    * `common`: General UI (Buttons, Menus).
-    * `analysis`: Chat & Chart labels.
-* **Storage**: Language preference (`en` | `zh`) persisted in `useWorkbenchStore`.
-
-### 2.2 AI Output Localization
-
-为了防止 AI 用英文回答中文提问，我们在 **System Prompt** 中注入了动态指令：
-> "User Language: ${lang}. OUTPUT RULE: The 'summary', 'title' and 'reasoning' fields MUST be in ${lang}."
+*   **Directory**: 所有临时文件存放在系统临时目录的 `wansan-studio` 子文件夹中。
+*   **Lifecycle**:
+    *   **Runtime**: 任务完成（成功或取消）后立即删除。
+    *   **Boot**: 应用启动时，自动清空整个子文件夹，处理意外退出的残留。
 
 ---
 
-## 3. Persistence & Session Recovery (持久化与恢复)
+## 3. Internationalization (i18n)
 
-### 3.1 Hybrid Persistence Strategy
+### 3.1 Architecture
+*   **Stack**: `i18next`.
+*   **Namespaces**: `common` (UI), `analysis` (Data), `project` (Launcher/Migration).
+*   **Storage**: `useSettingsStore` (Persisted).
 
-* **Zustand Persist**: 用于存储 UI 状态（Chat History, File Metadata, Layout）。
-    * *Storage*: `LocalStorage`.
-* **DuckDB Rehydration**: 用于恢复数据状态。
-    * *Why*: DuckDB runs in Memory.
-    * *How*: On app launch, `useSessionRecovery` hook iterates through the file list and re-runs the ingestion pipeline
-      silently.
-
-### 3.2 Integrity Checks
-
-* **Duplicate Check**: 防止导入相同路径的文件。
-* **Schema Sync**: 如果源文件在关闭期间被修改，Re-ingest 过程会更新 Schema，并在 UI 上标记 `Out of Sync`。
+### 3.2 AI Localization
+*   **Prompt Injection**: 系统根据当前 UI 语言，动态注入 `OUTPUT_RULE`，强制 AI 使用目标语言生成 Summary 和 Title。
 
 ---
 
-## 4. Settings & Configuration (设置)
+## 4. Development Guidelines
 
-### 4.1 BYOK Architecture
+### 4.1 Code Style
+*   **State**: Zustand for global state.
+*   **Styling**: Tailwind CSS + Shadcn UI.
+*   **Constants**: Use `src/renderer/src/lib/constants.ts` for shared configs (e.g., `COLUMN_TYPE_CONFIG`).
 
-* **API Key**: Stored in `electron-store` (encrypted file on disk). Never synced to our servers.
-* **Proxy**: Support custom `Base URL` for users in restricted regions.
-
-### 4.2 Reset Mechanism
-
-* **DevTools**: Exposed `window.resetApp()` to nuke all LocalStorage and restart, useful for debugging state corruption.
-
----
-
-## 5. Development Guidelines (开发指南)
-
-### 5.1 Code Style
-
-* **State**: Always use `Zustand` for global state. Avoid Context API unless necessary.
-* **Async**: Always use `TanStack Query` for data fetching.
-* **Components**: Stick to `Shadcn UI`. Do not introduce new CSS frameworks.
-
-### 5.2 Contribution Workflow
-
-1. **Feat**: Create a `SPEC_*.md` first.
-2. **Code**: Implement backend logic -> Store -> UI.
-3. **Verify**: Check "Auto-Fix" loop and "Export" consistency.
+### 4.2 Type Safety
+*   **Rule**: All IPC payloads must be typed in `src/shared/electron-api.ts`.
+*   **Strictness**: No `any` in core logic. Use `zod` for AI response validation.

@@ -37,7 +37,20 @@ We pushed our "Swiss Minimalist" design language further, focusing on grid align
     *   **Consolidated Dock**: Merged "Data Assets", "User Profile", and "System Actions" into a unified, space-efficient footer.
 *   **Native Menu**: Integrated a native OS menu bar (File, Edit, View) with multi-language support, feeling right at home on macOS.
 
-## 4. 🛡️ Robustness & Quality (工程质量)
+## 4. 🧙‍♂️ Data Ingestion Wizard (数据接入向导)
+
+We introduced a powerful, multi-step wizard to unify the "Import New" and "Append Data" workflows, replacing the simple file selector.
+
+*   **Lazy Ingestion & Type Safety**:
+    *   **Zero Side Effects**: Files are previewed without touching the database until final confirmation.
+    *   **Type Enforcement**: Users can manually enforce types (e.g., preserving "001" as Text instead of Integer), solving precision loss issues once and for all.
+*   **Performance & Caching**:
+    *   **Excel Cache**: Implemented a caching layer for Excel-to-CSV conversion, boosting processing speed for large files by 300% during the preview/ingest cycle.
+*   **Smart Append Logic**:
+    *   **Conflict Resolution**: Automatically detects composite primary keys and offers "Ignore" or "Overwrite" strategies for handling duplicate data.
+    *   **Field Mapping**: Visual interface to align source columns with target table fields.
+
+## 5. 🛡️ Robustness & Quality (工程质量)
 
 *   **Store Consolidation**: Removed the legacy `useFileStore` proxy, migrating all 60+ references to the unified `useProjectStore`, eliminating state synchronization bugs.
 *   **Hydration Safety**: Implemented a "Mock Key" strategy for migration testing, preventing Zustand's auto-hydration from wiping legacy data during the upgrade process.

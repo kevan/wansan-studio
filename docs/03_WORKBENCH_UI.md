@@ -1,53 +1,42 @@
 # 📙 03_WORKBENCH_UI.md - Interaction & Visualization
 
-> **Version**: 1.0
+> **Version**: 1.3 (Swiss Style Update)
 > **Status**: Authoritative
-> **Scope**: Chat Stream, Dashboard V3, ECharts, Export.
+> **Scope**: Chat Stream, Dashboard V3, Wizard, Export.
 
 ---
 
-## 1. Chat Interface (对话界面)
+## 1. Data Ingestion Wizard (数据接入向导)
 
-对话流不仅是聊天，而是 **"Analysis Log" (分析日志)**。
+Wansan 采用一个统一的向导来处理所有数据接入需求。
 
-### 1.1 Magic Input (魔法指令栏)
-*   **Design**: 悬浮胶囊 (`Floating Capsule`)，位于底部。
+### 1.1 Flow
+*   **Step 1: Select**: 支持多文件/多 Sheet 选择。
+*   **Step 2: Preview**: 
+    *   **Lazy Preview**: 实时查看前 100 行数据。
+    *   **Type Override**: 强制修改列类型 (Text/Number/Date)。
+    *   **Mapping (Append)**: 可视化字段对齐。
+*   **Step 3: Target/Conflict**: 
+    *   **Import**: 自动查重并修改表名。
+    *   **Append**: 复合主键冲突预检，提供 Ignore/Replace 策略。
+
+### 1.2 Swiss Design
+采用 "Airy" 设计语言：大圆角 (`2.5rem`)、柔和阴影 (`shadow-2xl`)、极简边框，消除视觉压迫感。
+
+---
+
+## 2. Chat Interface (对话界面)
+
+### 2.1 Magic Input (魔法指令栏)
+*   **Design**: 悬浮胶囊 (`Floating Capsule`)。
 *   **Features**:
-    *   **@ Mention**: 输入 `@` 唤起文件列表。发送时自动解析为表名。
-    *   **Slash (/)**: 支持 `/clear`, `/export` 指令。
-    *   **Smart Placeholder**: 动态显示 "Ask about {table1}, {table2}..."。
+    *   **@ Mention**: 引用表名。
+    *   **Slash (/)**: 快捷指令 (`/clear`, `/export`).
 
-### 1.2 Message Bubble (消息气泡)
-*   **Layout**: 左对齐布局 (Slack Style)。
-*   **Thinking Block**: 默认折叠 AI 的思考过程和 SQL，保持界面整洁。
-*   **Follow-up Chips**: 在回复底部提供 3 个 AI 推荐的追问按钮。
-
-### 1.3 Error Handling
-*   **Error Card**: 当 SQL 执行失败且自愈无效时，展示红色卡片。
-*   **API Key Guard**: 如果未配置 Key，展示 "Configuration Required" 引导卡片。
-
----
-
-## 2. Report Card (核心组件)
-
-`ReportCard` 是连接 Chat 和 Dashboard 的通用组件。
-
-### 2.1 Dual Variants (双态设计)
-*   **Chat Mode**:
-    *   Emphasis on **Narrative** (Text Summary).
-    *   Chart height: Medium.
-    *   Actions: `Pin`, `Refine`, `Code`.
-*   **Dashboard Mode**:
-    *   Emphasis on **Visuals** (Chart).
-    *   Summary hidden behind `💡` icon.
-    *   **Big Number**: Single values rendered as KPI cards (Huge Font).
-
-### 2.2 Viz Adapter (智能图表适配)
-*   **Role**: 防止图表类型切换时崩溃。
-*   **Logic**:
-    *   `Bar -> Pie`: Map `xAxis` -> `name`, `series` -> `value`.
-    *   `Pie -> Line`: Inverse mapping.
-    *   Fallback: If mapping fails, render `Table`.
+### 2.2 Report Card
+*   **Chat Mode**: 侧重叙事 (Summary + Chart)。
+*   **Dashboard Mode**: 侧重视觉 (Full Chart)。
+*   **SQL Lab**: 点击 `<Code />` 可查看并修改 AI 生成的 SQL，实时重绘图表。
 
 ---
 
@@ -58,38 +47,26 @@
 ### 3.1 Architecture
 ```text
 [Viewport]
-  ├── [Layer 1: Visuals] (z-0) --> Page Backgrounds (White), Footers, Gaps.
-  └── [Layer 2: Grid] (z-10)   --> ReactGridLayout (Transparent).
+  ├── [Layer 1: PageLayer] (z-0) --> A4 White Paper Background.
+  └── [Layer 2: GridLayer] (z-10) --> ReactGridLayout (Transparent).
 ```
 
-### 3.2 Pagination Logic
-*   **A4 Mode**:
-    *   Canvas width locked to `794px`.
-    *   Height grows by `Page Height + Gap`.
-    *   **Manual Paging**: User clicks `[+ Add Page]`.
-    *   **No Compaction**: Items stay where dropped (PPT style).
-*   **Screen Mode**:
-    *   Canvas width `100%`.
-    *   Infinite vertical scroll.
-
-### 3.3 Interactivity
-*   **Resize**: Drag handles to resize charts.
-*   **Fullscreen Edit**: Click `⤢` to open a modal for fine-tuning charts (x/y axis, colors).
+### 3.2 Layout Modes
+1.  **A4 Mode (Print)**: 固定 `794px` 宽度，模拟物理纸张。支持分页导出 PDF。
+2.  **Screen Mode (Presentation)**: 100% 宽度，自适应大屏展示。
 
 ---
 
 ## 4. Export Pipeline (导出系统)
 
-### 4.1 Export Image (Single Card)
-*   **Lib**: `html-to-image`.
-*   **Filter**: Apply CSS class `.hide-on-export` to exclude UI controls (buttons, handles) from the screenshot.
+### 4.1 Export Image
+使用 `html-to-image` 截取单个 Report Card。
 
 ### 4.2 Export PDF (Dashboard)
-*   **Strategy**: **Canvas Slicing**.
-    1.  Capture the entire dashboard as a giant PNG.
-    2.  Slice it programmatically into A4 chunks.
-    3.  Generate multi-page PDF via `jspdf`.
+采用 **Canvas Slicing** 策略。
+1.  截取整个 Dashboard 长图。
+2.  按 A4 高度进行像素级切片。
+3.  生成多页 PDF。
 
-### 4.3 Export HTML (Interactive)
-*   **Feature**: Generate a standalone `.html` file containing chart data + ECharts library.
-*   **Layout**: Use CSS Grid to approximate the dashboard layout in the static file.
+### 4.3 Export HTML
+生成包含 ECharts 库和 JSON 数据的单文件 HTML，支持离线交互。

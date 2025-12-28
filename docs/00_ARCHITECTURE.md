@@ -27,10 +27,10 @@
 *   **Build Tool**: `electron-builder` (supporting ASAR unpack for WASM).
 
 ### 2.2 Data Engine (数据引擎)
-*   **Database**: **DuckDB-WASM** (`@duckdb/duckdb-wasm`).
-    *   *Mode*: **Node Blocking Mode** (`duckdb-node-blocking`).
-    *   *Reasoning*: 相比 Native Binding，WASM 提供了绝对的稳定性（无 SIGSEGV 崩溃）和跨平台一致性，牺牲约 20% 性能换取 100% 可靠性。
-*   **Ingestion**: `xlsx` (SheetJS) for parsing Excel; `fs` streams for CSV.
+*   **Database**: **DuckDB Native** (`@duckdb/node-api`).
+    *   *Mode*: **Native Process**.
+    *   *Reasoning*: v1.3 迁移至 Native 绑定，以支持本地文件持久化 (`.duckdb`)、大文件流式读取和多线程性能。运行于独立的 `Utility Process` 以保证主进程稳定。
+*   **Ingestion**: `ExcelJS` (Stream) + `fs-extra` + DuckDB `read_csv_auto`.
 
 ### 2.3 Frontend (渲染进程)
 *   **Framework**: **React 18** + **Vite**.
@@ -45,29 +45,29 @@
 
 ## 3. Process Architecture (进程架构)
 
-Wansan 遵循严格的 **双进程分离 (Main-Renderer Separation)** 模型，通过 ContextBridge 安全通信。
+Wansan 遵循 **Sidecar 模式**，将繁重的数据库任务隔离。
 
 ```mermaid
 graph TD
     subgraph "Main Process (Node.js)"
         Main[Main Controller]
-        DB[(DuckDB WASM Instance)]
         FS[File System]
         AI[OpenAI API Client]
-        
-        Main <--> DB
-        Main <--> FS
-        Main <--> AI
+        PM[Project Manager]
+    end
+
+    subgraph "Utility Process (DB Service)"
+        DB[Native DuckDB Engine]
     end
 
     subgraph "Renderer Process (React)"
         UI[User Interface]
         Store[Zustand Store]
-        Chart[ECharts]
     end
 
-    UI -- IPC (Invoke) --> Main
-    Main -- IPC (Result/Error) --> UI
+    UI -- IPC --> Main
+    Main -- MessagePort --> DB
+    DB -- Result --> Main
 ```
 
 ### 3.1 IPC Communication Pattern
@@ -98,24 +98,23 @@ graph TD
 
 ## 5. Persistence Strategy (持久化策略)
 
-为了 MVP 的敏捷性，我们采用了 **混合持久化** 方案。
+v1.3 引入了 **Project Bundle (`.wansan`)** 架构，实现了真正的本地持久化。
 
-### 5.1 Metadata Persistence
-*   **Mechanism**: `zustand/middleware/persist`.
-*   **Storage**: `LocalStorage`.
+### 5.1 The Bundle
+*   **Path**: 用户指定目录 (e.g., `~/Documents/MyAnalysis.wansan`).
 *   **Content**:
-    *   `wansan-files`: 文件路径、Schema 缓存、关联关系。
-    *   `wansan-chat`: 完整的对话历史（含缓存的图表数据）。
-    *   `wansan-workbench`: 看板布局配置。
+    *   `source.duckdb`: 包含所有表数据和视图的物理数据库文件。
+    *   `wansan.json`: 项目元数据 (Manifest)。
+    *   `session.json`: UI 状态 (Layout, Chat History)。
 
-### 5.2 Data Session Recovery (Re-Ingestion)
-由于 DuckDB 运行在内存模式，应用重启后数据会丢失。
-*   **Solution**: **Auto Re-ingest**.
+### 5.2 Startup Sequence (启动保护)
+*   **Race Condition Fix**: 引入 `isProjectLoaded` 瞬态标志。
 *   **Flow**:
-    1.  App Launch -> Hydrate Zustand Stores.
-    2.  Check `files` list.
-    3.  Silently trigger `reIngestFile(path)` for all files in background.
-    4.  UI shows "Restoring Session..." until DB is ready.
+    1.  App 启动。
+    2.  `useProjectInit` 检测上次路径 -> 调用 `openProject`。
+    3.  Backend 连接 `source.duckdb`。
+    4.  Frontend 收到 `success` -> 设置 `isProjectLoaded = true`。
+    5.  此时才允许 `useDataRehydrate` 等组件查询数据库。
 
 ---
 

@@ -1,46 +1,47 @@
 # 📗 01_DATA_ENGINE.md - Ingestion, Storage & Management
 
-> **Version**: 1.0
+> **Version**: 1.3 (Native Update)
 > **Status**: Authoritative
-> **Scope**: DuckDB Implementation, File Parsing, Tree UI, Sync Logic.
+> **Scope**: Native DuckDB, Lazy Ingestion, File Sync.
 
 ---
 
-## 1. Database Architecture (DuckDB WASM)
+## 1. Database Architecture (Native DuckDB)
 
-Wansan 使用 **DuckDB-WASM** 作为核心计算引擎。虽然运行在 Node.js 环境中，但我们选择 WASM 以确保绝对的稳定性和跨平台兼容性。
+v1.3 从 WASM 迁移至 **Native DuckDB (`@duckdb/node-api`)**，通过独立的 Utility Process 运行，解决了内存限制和持久化问题。
 
-### 1.1 Service Encapsulation (`DatabaseService`)
-*   **Initialization**: 必须使用 `duckdb-node-blocking` 绑定。这是规避 Node Worker 通信问题的关键。
-*   **Concurrency**: 引入 `async-mutex`。所有查询必须串行执行，防止 WASM 实例在并发请求下崩溃。
-*   **Lifetime**: 单例模式，随应用启动而初始化，随应用关闭而销毁（内存数据易失）。
-
-### 1.2 Query Interface
-*   **Input**: SQL String (DuckDB Dialect).
-*   **Output**: JSON Array (Arrow Table converted to JSON).
-*   **Error Handling**: 捕获所有 C++ 异常，转换为 JS Error 并透传给前端（用于触发 Auto-Fix）。
+### 1.1 Service Encapsulation (`NativeDBClient`)
+*   **Utility Process**: 数据库引擎在独立的 Node 进程中运行 (`entry.ts`)，通过 IPC 与主进程通信。这确保了主进程 UI 的流畅性，并提供了崩溃隔离。
+*   **Startup Guard**: 引入 `isProjectLoaded` 状态。前端在收到 `project:open` 成功信号前，严禁发起 SQL 查询，防止意外连接到 `:memory:` 临时库。
 
 ---
 
-## 2. Ingestion Pipeline (数据入库流水线)
+## 2. Ingestion Pipeline: Lazy Ingestion (延迟入库)
 
-由于 WASM 无法直接读取本地文件系统（FS Sandbox），我们采用了 **"Temp File Bridge"** 策略。
+为了解决 DuckDB 自动推断导致的类型丢失问题（如文本 "001" 变为数字 `1`），我们实施了 **Lazy Ingestion** 策略。
 
 ### 2.1 The Flow
-1.  **File Selection**: 用户选择 `.xlsx`, `.csv`, `.json`。
-2.  **Preprocessing (Node.js)**:
-    *   **Excel**: 使用 `xlsx` 库读取。执行 **Unmerge Algorithm** (填充合并单元格)。将 Sheet 转换为 CSV 字符串。
-    *   **JSON**: 扁平化处理（如果根是 Object）。
-3.  **WASM Registration**:
-    *   调用 `db.registerFileText('temp_import.csv', content)` 将处理后的 CSV 写入 WASM 的虚拟文件系统。
-4.  **SQL Loading**:
-    *   执行 `CREATE TABLE "t_name" AS SELECT * FROM read_csv_auto('temp_import.csv')`。
-5.  **Cleanup**:
-    *   执行 `db.registerFileText('temp_import.csv', '')` 释放虚拟内存。
+1.  **Preview Phase (Read-Only)**:
+    *   用户选择文件。
+    *   **Excel**: 使用 `ExcelJS` (Stream) 读取前 100 行，生成临时 CSV (`temp/wansan-studio/temp_ingest_xxx.csv`)。
+    *   **CSV**: 直接使用 `read_csv_auto` 读取前 100 行。
+    *   **Action**: 仅返回 Schema 和预览数据给前端，**不创建数据库表**。
+2.  **Configuration Phase**:
+    *   用户在向导中确认/修改列类型 (e.g., 将 `id` 强制设为 `VARCHAR`)。
+    *   前端生成 `TableSchema` 配置。
+3.  **Execution Phase (Type Enforcement)**:
+    *   前端调用 `createTableFromSource(config)`。
+    *   后端构造带有 `types` 参数的 SQL:
+        ```sql
+        CREATE TABLE t_sales AS 
+        SELECT * FROM read_csv_auto('source.csv', types={'id': 'VARCHAR'})
+        ```
+    *   **Result**: 物理表被创建，数据类型与用户意图完全一致。
 
-### 2.2 Semantic Naming
-*   **Table Name**: 使用 sanitised 文件名 (e.g., `t_sales_2023`)。
-*   **Metadata**: 将原始文件名 (`Sales 2023.xlsx`) 存入 Store，并在 Prompt 中告知 AI。
+### 2.2 Excel Caching (性能优化)
+*   **Strategy**: Excel 转 CSV 是昂贵操作。我们在 Preview 阶段生成的临时 CSV 会被缓存。
+*   **Reuse**: 后续的 Conflict Check (追加预检) 和 Final Ingestion 直接复用该 CSV，将大文件导入的转换次数从 3 次降低为 1 次。
+*   **Cleanup**: `TempFileManager` 负责在任务完成或应用退出时清理 `wansan-studio` 临时目录。
 
 ---
 
@@ -51,59 +52,25 @@ Wansan 使用 **DuckDB-WASM** 作为核心计算引擎。虽然运行在 Node.js
 ### 3.1 Tree Structure
 ```text
 📂 Project Root
- ├── 🔗 Relationships (Group)
- │    ├── Link: Orders.uid <-> Users.id
- │    └── ...
- ├── 📄 orders.xlsx (File Node) [Status: Ready]
- │    ├── 🆔 Order_ID  (PK Indicator)
- │    ├── 💰 Amount    (Numeric Icon)
- │    └── 📅 Date      (Date Icon)
+ ├── 📄 orders.xlsx (File Node)
+ │    ├── 🆔 Order_ID  (PK)
+ │    ├── 💰 Amount    (Numeric)
+ │    └── 📅 Date      (Date)
  └── 📄 users.json (File Node)
-      └── ...
 ```
 
 ### 3.2 Interactions
-*   **Click**: 切换中间面板视图 (Chat / Schema Editor / Relations)。
-*   **Context Menu (Right Click)**:
-    *   **File**: `Reload Data`, `Delete`, `Preview`.
-    *   **Column**: `Rename Alias`, `Change Type`.
-*   **Visual Feedback**:
-    *   **Yellow Dot**: 文件已过期 (Out of Sync)。
-    *   **Spinning**: 正在重新入库。
+*   **Click**: 切换中间面板视图 (Chat / Schema Editor)。
+*   **Context Menu**:
+    *   `Reload Data`: 触发 `reIngestFile` (带类型参数)。
+    *   `Replace Source`: 替换底层文件但保留表结构。
 
 ---
 
 ## 4. Synchronization Strategy (数据同步)
 
-为了解决“用户修改 Excel 后，Wansan 数据滞后”的问题，我们实施了 **"On-Focus Check"** 策略。
+### 4.1 Re-Ingest with Types
+当用户点击刷新或进行数据恢复时，系统调用 `reIngestFile`。为了防止类型退化（Regression），该调用**必须**携带当前 Store 中保存的列类型配置。
 
-### 4.1 Detection (被动检测)
-*   **Trigger**: `window.onFocus` (用户切换回 Wansan 窗口)。
-*   **Logic**:
-    1.  遍历所有已导入文件。
-    2.  比较 `fs.stat(path).mtimeMs` 与 Store 中的 `lastModified`。
-    3.  如果有差异，将文件状态标记为 `out-of-sync`。
-*   **UI**: 树节点显示黄色警告。
-
-### 4.2 Reconciliation (主动刷新)
-*   **Action**: 用户点击 `[Reload]` 或 `[Reload All]`。
-*   **Logic**:
-    1.  重新运行 Ingestion Pipeline。
-    2.  **Schema Merge**: 对比新旧列名。
-        *   如果列名匹配：保留用户设置的 Alias 和 Type。
-        *   如果列名消失：清理对应的关联关系。
-    3.  更新 Store 时间戳。
-
----
-
-## 5. One-Shot Context Analysis (智能上下文)
-
-在文件成功入库后，系统会自动触发一次 **Schema Analysis** 任务，以节省 Token 并提升体验。
-
-### 5.1 The Prompt
-*   **Input**: 全量 Table Schemas。
-*   **Task**:
-    1.  **Infer Relations**: 猜测表间关联 (e.g., `orders.uid` = `users.id`)。
-    2.  **Generate Starters**: 生成 4 个基于当前数据的推荐问题。
-    3.  **Summarize**: 生成一句话数据综述。
-*   **Storage**: 结果存入 `useProjectStore`。
+### 4.2 Self-Healing
+如果 `.duckdb` 文件丢失或损坏，`useDataRehydrate` 会检测到表缺失，并利用源文件路径和保存的 Schema 自动重建数据表，实现无感恢复。
