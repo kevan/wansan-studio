@@ -1,6 +1,6 @@
 import { Message } from './chat'
 import { ReportWidget, ReportData } from './dashboard'
-import { FileNode, RelationSuggestion } from '../types'
+import { FileNode, RelationSuggestion, DomainRule } from '../types'
 
 export interface Relation {
   id: string
@@ -41,4 +41,5 @@ export interface ProjectData {
   activeView: ViewMode
   activeFileId: string | null
   widgetRegistry: Record<string, ReportData>
+  domainRules?: DomainRule[] // Project-level domain rules
 }

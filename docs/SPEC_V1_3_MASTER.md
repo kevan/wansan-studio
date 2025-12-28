@@ -50,7 +50,17 @@ We introduced a powerful, multi-step wizard to unify the "Import New" and "Appen
     *   **Conflict Resolution**: Automatically detects composite primary keys and offers "Ignore" or "Overwrite" strategies for handling duplicate data.
     *   **Field Mapping**: Visual interface to align source columns with target table fields.
 
-## 5. 🛡️ Robustness & Quality (工程质量)
+## 5. 🧠 Project-Level Business Memory (业务记忆)
+
+We decentralized the "Domain Knowledge" feature, allowing each project to maintain its own business context.
+
+*   **Hierarchical Memory**:
+    *   **Global Memory**: User-level preferences (e.g., language style) stored in Settings.
+    *   **Project Memory**: Project-specific logic (e.g., "Fiscal year starts in April") stored in the project bundle.
+*   **AI Context Fusion**: The AI engine now intelligently merges Global and Project memories into a unified system prompt, ensuring context-aware analysis without cross-project pollution.
+*   **Drag-and-Drop Management**: Upgraded the rule editor with drag-and-drop sorting for better organization.
+
+## 6. 🛡️ Robustness & Quality (工程质量)
 
 *   **Store Consolidation**: Removed the legacy `useFileStore` proxy, migrating all 60+ references to the unified `useProjectStore`, eliminating state synchronization bugs.
 *   **Hydration Safety**: Implemented a "Mock Key" strategy for migration testing, preventing Zustand's auto-hydration from wiping legacy data during the upgrade process.

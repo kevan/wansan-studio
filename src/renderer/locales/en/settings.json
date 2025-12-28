@@ -12,13 +12,6 @@
     "data": "Data",
     "about": "About"
   },
-  "domain": {
-    "title": "Domain Knowledge",
-    "description": "Define custom business rules that the AI should always follow (e.g. Fiscal year starts in April).",
-    "placeholder": "Enter a business rule...",
-    "add": "Add Rule",
-    "empty": "No rules yet. Add one to teach the AI!"
-  },
   "ai": {
     "provider_label": "AI Provider",
     "provider_openai": "OpenAI",

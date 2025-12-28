@@ -330,7 +330,9 @@ const sendMessage = async (
       throw new Error('Generation aborted by user')
 
     const resolvedPrompt = resolveMentions(hiddenPrompt || text)
-    const { domainRules } = useSettingsStore.getState()
+    const globalRules = useSettingsStore.getState().domainRules || []
+    const projectRules = useProjectStore.getState().domainRules || []
+    const combinedRules = [...globalRules, ...projectRules]
 
     const aiStartTime = Date.now()
     const planResponse = await window.electronAPI.askAI(
@@ -339,7 +341,7 @@ const sendMessage = async (
       resolvedRelations,
       context,
       language,
-      domainRules
+      combinedRules
     )
     const aiLatency = Date.now() - aiStartTime
 
@@ -566,7 +568,9 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
       throw new Error('Generation aborted by user')
 
     const resolvedPrompt = resolveMentions(originalQuery)
-    const { domainRules } = useSettingsStore.getState()
+    const globalRules = useSettingsStore.getState().domainRules || []
+    const projectRules = useProjectStore.getState().domainRules || []
+    const combinedRules = [...globalRules, ...projectRules]
 
     const aiStartTime = Date.now()
     const planResponse = await window.electronAPI.askAI(
@@ -575,7 +579,7 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
       relations,
       context,
       language,
-      domainRules
+      combinedRules
     )
     const aiLatency = Date.now() - aiStartTime
 
@@ -748,12 +752,15 @@ const autoFixMessage = async (
     if (!originalSql)
       throw new Error(i18n.t('error_no_sql_to_fix', { ns: 'chat' }))
 
-    const { domainRules } = useSettingsStore.getState()
+    const globalRules = useSettingsStore.getState().domainRules || []
+    const projectRules = useProjectStore.getState().domainRules || []
+    const combinedRules = [...globalRules, ...projectRules]
+
     const fixResult = await window.electronAPI.fixSQL(
       originalSql,
       error,
       schemas,
-      domainRules
+      combinedRules
     )
     if (!fixResult.success || !fixResult.data)
       throw new Error(

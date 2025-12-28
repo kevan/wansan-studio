@@ -10,6 +10,7 @@ import {
   Bot,
   ChevronRight,
   LogOut,
+  BrainCircuit,
 } from 'lucide-react'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { Button } from './ui/button'
@@ -19,6 +20,7 @@ import { DataAssetsView } from './sidebar/DataAssetsView'
 import { SessionListView } from './sidebar/SessionListView'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useUserInfo } from '@/hooks/useIPC'
+import { ProjectRulesModal } from './modals/ProjectRulesModal'
 
 interface SidebarProps {
   onImportData?: () => void
@@ -38,6 +40,7 @@ export function Sidebar(_props: SidebarProps) {
   const createSession = useProjectStore(state => state.createSession)
   const { data: userInfo } = useUserInfo()
   const username = userInfo?.username || 'User'
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false)
 
   return (
     <aside className="wansan-sidebar flex flex-col h-full bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 shrink-0">
@@ -112,6 +115,19 @@ export function Sidebar(_props: SidebarProps) {
             <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-40 transition-opacity" />
           </button>
 
+          {/* Business Rules */}
+          <button
+            onClick={() => setIsRulesModalOpen(true)}
+            className="w-full px-2.5 py-2 text-sm text-left rounded-lg flex items-center gap-2.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100/80 dark:hover:bg-zinc-900/80 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all group active:scale-[0.98]"
+          >
+            <div className="w-7 h-7 flex items-center justify-center shrink-0">
+              <BrainCircuit className="w-4 h-4 opacity-70 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <span className="font-medium flex-1">
+              {t('domain.title', 'Business Rules')}
+            </span>
+          </button>
+
           {/* User & System (Compact Row) */}
           <div className="flex items-center gap-1">
             <div
@@ -132,7 +148,7 @@ export function Sidebar(_props: SidebarProps) {
                 <div className="flex items-center gap-1 mt-0.5">
                   {settings.isActivated ? (
                     <div className="text-[9px] text-amber-600 dark:text-amber-500 font-bold uppercase tracking-wider flex items-center gap-1">
-                      <Sparkles className="w-2.5 h-2.5 fill-current" />
+                      <Crown className="w-2.5 h-2.5 fill-current" />
                       <span>{t('sidebar.pro_active', 'PRO ACTIVE')}</span>
                     </div>
                   ) : (
@@ -158,6 +174,10 @@ export function Sidebar(_props: SidebarProps) {
           </div>
         </div>
       )}
+      <ProjectRulesModal
+        isOpen={isRulesModalOpen}
+        onClose={() => setIsRulesModalOpen(false)}
+      />
     </aside>
   );
 }

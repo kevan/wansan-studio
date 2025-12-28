@@ -51,6 +51,7 @@ export interface SettingsState {
   toggleDomainRule: (id: string) => void
   removeDomainRule: (id: string) => void
   updateDomainRule: (id: string, content: string) => void
+  reorderDomainRules: (oldIndex: number, newIndex: number) => void
   updateSettings: (
     patch: Partial<
       Omit<
@@ -96,6 +97,7 @@ const initialSettingsState: Omit<
   | 'toggleDomainRule'
   | 'removeDomainRule'
   | 'updateDomainRule'
+  | 'reorderDomainRules'
 > = {
   provider: 'deepseek',
   apiKey: '',
@@ -203,6 +205,13 @@ export const useSettingsStore = create<SettingsState>()(
             r.id === id ? { ...r, content } : r
           ),
         })),
+      reorderDomainRules: (oldIndex, newIndex) =>
+        set(state => {
+          const newRules = [...state.domainRules]
+          const [removed] = newRules.splice(oldIndex, 1)
+          newRules.splice(newIndex, 0, removed)
+          return { domainRules: newRules }
+        }),
       updateSettings: patch =>
         set(state => {
           let nextState = { ...state, ...patch }

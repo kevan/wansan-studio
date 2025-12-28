@@ -117,6 +117,11 @@ export interface ProjectState extends ProjectData {
     fileId: string,
     result: { lastModified: number; newColumns: ColumnSchema[] }
   ) => number
+  addDomainRule: (content: string) => void
+  toggleDomainRule: (id: string) => void
+  removeDomainRule: (id: string) => void
+  updateDomainRule: (id: string, content: string) => void
+  reorderDomainRules: (oldIndex: number, newIndex: number) => void
   replaceFile: (
     fileId: string,
     newPath: string,
@@ -1106,6 +1111,46 @@ export const useProjectStore = create<ProjectState>()(
         })
         return droppedRelationsCount
       },
+
+      addDomainRule: content =>
+        set(state => ({
+          domainRules: [
+            ...(state.domainRules || []),
+            {
+              id: crypto.randomUUID(),
+              content,
+              isEnabled: true,
+              createdAt: Date.now(),
+            },
+          ],
+        })),
+
+      toggleDomainRule: id =>
+        set(state => ({
+          domainRules: (state.domainRules || []).map(r =>
+            r.id === id ? { ...r, isEnabled: !r.isEnabled } : r
+          ),
+        })),
+
+      removeDomainRule: id =>
+        set(state => ({
+          domainRules: (state.domainRules || []).filter(r => r.id !== id),
+        })),
+
+      updateDomainRule: (id, content) =>
+        set(state => ({
+          domainRules: (state.domainRules || []).map(r =>
+            r.id === id ? { ...r, content } : r
+          ),
+        })),
+
+      reorderDomainRules: (oldIndex, newIndex) =>
+        set(state => {
+          const newRules = [...(state.domainRules || [])]
+          const [removed] = newRules.splice(oldIndex, 1)
+          newRules.splice(newIndex, 0, removed)
+          return { domainRules: newRules }
+        }),
 
       replaceFile: async (
         fileId: string,

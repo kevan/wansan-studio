@@ -218,6 +218,16 @@
   "showing_n_of_total": "显示前 {{n}} 条，共 {{total}} 条数据",
   "data_summary": "数据摘要",
   "data_visualization": "数据可视化",
+  "domain": {
+    "title": "业务记忆",
+    "description": "帮助 AI 更好地理解您的业务术语、度量指标和逻辑。",
+    "placeholder": "教给 AI 一条业务规则...",
+    "add": "添加指令",
+    "empty": "暂无记忆。添加指令来教导 AI！",
+    "project_title": "项目业务记忆",
+    "project_description": "定义仅适用于当前项目的业务上下文。这些指令将与全局记忆合并。",
+    "project_empty": "暂无项目级记忆。"
+  },
   "trial_limit_reached_title": "达到试用限制",
   "trial_limit_file_desc": "试用版最多支持 1 个文件。请激活专业版以解锁无限文件。",
   "pro_feature_title": "专业版功能",
