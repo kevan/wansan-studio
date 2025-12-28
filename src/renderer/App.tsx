@@ -17,6 +17,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
   RotateCcw,
+  Square,
 } from 'lucide-react'
 import { DashboardCanvasV3 } from './components/dashboard-v3'
 import { cn } from '@/utils/cn'
@@ -172,26 +173,26 @@ function App() {
     }
   }
 
-  const togglePresentation = () => {
-    const left = leftPanelRef.current
-    const middle = middlePanelRef.current
-    const right = rightPanelRef.current
-    if (!left || !middle || !right) return
-
-    if (isPresentationMode) {
-      left.expand?.()
-      middle.expand?.()
-      right.resize?.(45)
+  const toggleFocusMode = () => {
+    if (isLeftCollapsed && isRightCollapsed) {
+      // Restore default: expand left
+      leftPanelRef.current?.expand?.()
+      leftPanelRef.current?.resize?.(20)
       setIsLeftCollapsed(false)
-      setIsChatCollapsed(false)
+    } else {
+      // Collapse everything for Focus Mode
+      leftPanelRef.current?.collapse?.()
+      rightPanelRef.current?.collapse?.()
+      setIsLeftCollapsed(true)
+      setIsRightCollapsed(true)
+    }
+  }
+
+  const togglePresentation = () => {
+    if (isPresentationMode) {
       window.electronAPI?.windowControl?.('exit-fullscreen')
       setIsPresentationMode(false)
     } else {
-      left.collapse?.()
-      middle.collapse?.()
-      right.expand?.()
-      setIsLeftCollapsed(true)
-      setIsChatCollapsed(true)
       window.electronAPI?.windowControl?.('enter-fullscreen')
       setIsPresentationMode(true)
     }
@@ -224,22 +225,6 @@ function App() {
   }, [mainPanelLayout])
 
   useEffect(() => {
-    const maybeOpenOnMaximize = () => {
-      const isMaximized =
-        window.innerWidth >=
-          (window.screen.availWidth ?? window.innerWidth) - 2 &&
-        window.innerHeight >=
-          (window.screen.availHeight ?? window.innerHeight) - 2
-      if (isMaximized && isRightCollapsed) {
-        window.dispatchEvent(new Event('wansan:open-dashboard'))
-      }
-    }
-    maybeOpenOnMaximize()
-    window.addEventListener('resize', maybeOpenOnMaximize)
-    return () => window.removeEventListener('resize', maybeOpenOnMaximize)
-  }, [isRightCollapsed])
-
-  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isPresentationMode) {
         togglePresentation()
@@ -257,26 +242,9 @@ function App() {
     if (window.electronAPI.onWindowStateChanged) {
       unsubWindow = window.electronAPI.onWindowStateChanged(
         ({ isFullScreen }) => {
-          const left = leftPanelRef.current
-          const middle = middlePanelRef.current
-          const right = rightPanelRef.current
-          if (!left || !middle || !right) return
-
           if (isFullScreen && !isPresentationMode) {
-            // 进入全屏 -> 开启演示模式 UI
-            left.collapse?.()
-            middle.collapse?.()
-            right.expand?.()
-            setIsLeftCollapsed(true)
-            setIsChatCollapsed(true)
             setIsPresentationMode(true)
           } else if (!isFullScreen && isPresentationMode) {
-            // 退出全屏 -> 还原 UI
-            left.expand?.()
-            middle.expand?.()
-            right.resize?.(mainPanelLayout[2] || 45)
-            setIsLeftCollapsed(false)
-            setIsChatCollapsed(false)
             setIsPresentationMode(false)
           }
         }
@@ -379,22 +347,10 @@ function App() {
             {/* LEFT ZONE */}
             <div
               className={cn(
-                'flex items-center gap-4 non-draggable shrink-0',
+                'flex items-center gap-3 non-draggable shrink-0',
                 platform === 'darwin' && !isPresentationMode ? 'pl-16' : 'pl-4'
               )}
             >
-              {!isPresentationMode && (
-                <>
-                  <button
-                    className={`h-8 w-8 rounded-md border border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200 transition-colors ${isLeftCollapsed ? 'text-zinc-400' : ''}`}
-                    onClick={toggleLeft}
-                    title={t('toggle_data_tree')}
-                  >
-                    <PanelLeft className="h-4 w-4 mx-auto" />
-                  </button>
-                  <div className="h-4 w-px bg-zinc-300 dark:bg-zinc-700" />
-                </>
-              )}
               {/* Logo Image */}
               <div className="flex items-center gap-2">
                 <img
@@ -413,70 +369,99 @@ function App() {
               onDoubleClick={handleHeaderDoubleClick}
             />
             {/* RIGHT ZONE */}
-            <div className="flex items-center gap-2 non-draggable shrink-0">
+            <div className="flex items-center gap-1 non-draggable shrink-0">
               {/* Auto-Save Indicator */}
               {currentProjectPath && (
-                <AutoSaveIndicator
-                  status={saveStatus}
-                  error={saveError}
-                  onForceSave={forceSave}
-                />
+                <div className="mr-2">
+                  <AutoSaveIndicator
+                    status={saveStatus}
+                    error={saveError}
+                    onForceSave={forceSave}
+                  />
+                </div>
               )}
 
-              {!isRightCollapsed && (
+              {/* Layout Control Group */}
+              <div className="flex items-center bg-zinc-100/50 dark:bg-zinc-800/50 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50">
+                {!isPresentationMode && (
+                  <>
+                    {/* Toggle Left Sidebar */}
+                    <button
+                      className={cn(
+                        'h-7 w-8 rounded-md flex items-center justify-center transition-all active:scale-95 group',
+                        !isLeftCollapsed && !isRightCollapsed
+                          ? 'text-zinc-900 bg-white shadow-sm border border-zinc-200/50 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600'
+                          : isLeftCollapsed
+                            ? 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50'
+                            : 'text-zinc-900 bg-white/50 dark:bg-zinc-800/50'
+                      )}
+                      onClick={toggleLeft}
+                      title={t('toggle_data_tree')}
+                    >
+                      <PanelLeft className="h-3.5 w-3.5" />
+                    </button>
+
+                    {/* Focus Mode (Center Only) */}
+                    <button
+                      className={cn(
+                        'h-7 w-8 rounded-md flex items-center justify-center transition-all active:scale-95 border ml-0.5',
+                        isLeftCollapsed && isRightCollapsed
+                          ? 'bg-white text-zinc-900 border-zinc-200 shadow-sm dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600'
+                          : 'border-transparent text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50'
+                      )}
+                      onClick={toggleFocusMode}
+                      title={t('focus_mode', 'Focus Mode')}
+                    >
+                      <Square className="h-3 w-3" />
+                    </button>
+
+                    {/* Toggle Right Dashboard */}
+                    <button
+                      className={cn(
+                        'h-7 w-8 rounded-md flex items-center justify-center transition-all active:scale-95 border ml-0.5',
+                        isRightCollapsed
+                          ? 'border-transparent text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50'
+                          : 'bg-white text-zinc-900 border-zinc-200 shadow-sm dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600'
+                      )}
+                      onClick={toggleRight}
+                      title={
+                        isRightCollapsed
+                          ? t('show_dashboard')
+                          : t('hide_dashboard')
+                      }
+                    >
+                      {isRightCollapsed ? (
+                        <PanelRightOpen className="h-3.5 w-3.5" />
+                      ) : (
+                        <PanelRightClose className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+
+                    <div className="h-3 w-px bg-zinc-300 dark:bg-zinc-700 mx-1" />
+                  </>
+                )}
+
+                {/* Toggle Presentation Mode */}
                 <button
-                  className={`h-8 gap-2 px-3 rounded-md border border-transparent text-xs font-medium flex items-center transition-colors ${
+                  className={cn(
+                    'h-7 px-2 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-95',
                     isPresentationMode
-                      ? 'bg-zinc-800 text-white'
-                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-                  }`}
+                      ? 'bg-zinc-900 text-white shadow-md dark:bg-zinc-100 dark:text-zinc-900'
+                      : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200/50'
+                  )}
                   onClick={togglePresentation}
                   title={isPresentationMode ? t('exit') : t('present')}
                 >
                   {isPresentationMode ? (
-                    <RotateCcw className="h-3.5 w-3.5" />
+                    <RotateCcw className="h-3 w-3" />
                   ) : (
-                    <MonitorPlay className="h-3.5 w-3.5" />
+                    <MonitorPlay className="h-3 w-3" />
                   )}
-                  <span className="hidden sm:inline">
+                  <span className="hidden lg:inline">
                     {isPresentationMode ? t('exit') : t('present')}
                   </span>
                 </button>
-              )}
-
-              {!isPresentationMode && (
-                <>
-                  {!isRightCollapsed && (
-                    <div className="h-4 w-[1px] bg-zinc-200" />
-                  )}
-
-                  <button
-                    className={cn(
-                      'h-8 gap-2 px-3 rounded-md border text-xs font-medium flex items-center transition-colors',
-                      isRightCollapsed
-                        ? 'bg-black text-white border-black hover:bg-zinc-800'
-                        : 'border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-200'
-                    )}
-                    onClick={toggleRight}
-                    title={
-                      isRightCollapsed
-                        ? t('show_dashboard')
-                        : t('hide_dashboard')
-                    }
-                  >
-                    {isRightCollapsed ? (
-                      <PanelRightOpen className="h-3.5 w-3.5" />
-                    ) : (
-                      <PanelRightClose className="h-3.5 w-3.5" />
-                    )}
-                    <span className="hidden sm:inline">
-                      {isRightCollapsed
-                        ? t('show_dashboard')
-                        : t('hide_dashboard')}
-                    </span>
-                  </button>
-                </>
-              )}
+              </div>
             </div>
           </header>
 
