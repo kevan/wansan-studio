@@ -36,10 +36,20 @@ export function useProjectIO() {
       name: f.name,
       originalPath: f.path,
       tableName: f.tableName,
+      sheetName: f.sheetName,
+      status: f.status, // Add status
+      rowCount: f.rowCount, // Add rowCount
+      lastModified: f.lastModified, // Add lastModified
+      createdAt: f.createdAt, // Add createdAt
       columns: f.columns.map(c => ({
         name: c.name,
         type: c.type,
         safeName: c.safeName,
+        sampleValues: c.sampleValues, // Add sampleValues
+        nullable: c.nullable, // Add nullable
+        isKey: c.isKey, // Add isKey
+        isPrimaryKey: c.isPrimaryKey, // Add isPrimaryKey
+        alias: c.alias, // Add alias
       })),
     }))
 
@@ -92,8 +102,26 @@ export function useProjectIO() {
 
   const openProject = useCallback(
     async (path?: string) => {
+      let targetPath = path
+
+      // If no path provided, open dialog
+      if (!targetPath) {
+        // We need to call service to pick a file before checkGate because we need the path
+        targetPath = await projectService.selectDirectory()
+        if (!targetPath) return // User cancelled
+      }
+
+      // Limit Check for TRIAL users
+      if (!isActivated && recentProjectPaths.length >= 2) {
+        const isRecent = recentProjectPaths.includes(targetPath)
+        if (!isRecent) {
+          checkGate('Multi-Project', () => {})
+          return null
+        }
+      }
+
       // 1. Call Service
-      const data: ProjectLoadResult = await projectService.open(path as string)
+      const data: ProjectLoadResult = await projectService.open(targetPath)
 
       // 2. Reconstruct State
       // Map Assets -> FileNode[]
@@ -107,22 +135,24 @@ export function useProjectIO() {
           name: asset.name,
           path: asset.originalPath,
           tableName: asset.tableName,
-          sheetName: undefined,
-          status: 'ready' as SyncStatus,
-          progress: 100,
-          size: 0,
+          sheetName: asset.sheetName,
+          status: (asset.status || 'ready') as SyncStatus, // Use saved status
+          progress: 100, // Always 100 on load
+          size: 0, // Not saved yet, can re-fetch if needed
           columns: asset.columns.map(c => ({
             name: c.name,
             safeName: c.safeName,
             type: c.type as any,
-            sampleValues: [],
-            nullable: true,
-            isKey: false,
+            sampleValues: c.sampleValues || [], // Use saved sampleValues
+            nullable: c.nullable ?? true, // Use saved nullable or default
+            isKey: c.isKey ?? false, // Use saved isKey or default
+            isPrimaryKey: c.isPrimaryKey ?? false, // Use saved isPrimaryKey or default
+            alias: c.alias, // Use saved alias
           })),
-          rowCount: 0,
-          error: undefined,
-          lastModified: now,
-          createdAt: now,
+          rowCount: asset.rowCount || 0, // Use saved rowCount
+          error: undefined, // Error status not persisted
+          lastModified: asset.lastModified || now, // Use saved lastModified
+          createdAt: asset.createdAt || now, // Use saved createdAt
           smartMetrics: metrics,
           relations: relations,
         }
@@ -167,7 +197,7 @@ export function useProjectIO() {
       // The store has `refreshSessionWidgets`, but for files we might need `reloadFile`.
       // For now we just load the state.
     },
-    [loadProjectToStore, setProjectPath]
+    [loadProjectToStore, setProjectPath, isActivated, addRecentProject, checkGate]
   )
 
   const createProject = useCallback(
@@ -179,9 +209,13 @@ export function useProjectIO() {
       }
 
       const path = await projectService.create(name, location)
+      
+      // CRITICAL: Add to recent list BEFORE opening to pass the limit check inside openProject
+      addRecentProject(path)
+      
       // After create, we usually want to open it immediately.
       await openProject(path)
-      addRecentProject(path)
+      
       Analytics.track('project_created', {})
       return path
     },
@@ -200,6 +234,7 @@ export function useProjectIO() {
     openProject,
     createProject,
     closeProject,
+    checkGate, // Export checkGate
     gateNode, // Export gateNode so callers can render it
   }
 }

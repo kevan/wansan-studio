@@ -71,6 +71,7 @@ export interface ProjectState extends ProjectData {
   updateMessage: (id: string, updates: Partial<Message>) => void
   deleteMessage: (id: string) => void
   setReplyTo: (messageId: string | null) => void
+  setInputDraft: (draft: string) => void
   setAbortController: (ac: AbortController | null) => void
   addWidget: (widget: ReportWidget | any) => void
   removeWidget: (id: string) => void
@@ -143,6 +144,7 @@ const createNewSession = (): Session => ({
   lastModified: Date.now(),
   messages: [],
   replyToId: undefined,
+  inputDraft: '',
   dashboard: {
     widgets: [],
     layoutMode: 'a4',
@@ -527,6 +529,13 @@ export const useProjectStore = create<ProjectState>()(
             s.id === state.activeSessionId
               ? { ...s, replyToId: replyToId ?? undefined }
               : s
+          ),
+        })),
+
+      setInputDraft: draft =>
+        set(state => ({
+          sessions: state.sessions.map(s =>
+            s.id === state.activeSessionId ? { ...s, inputDraft: draft } : s
           ),
         })),
 

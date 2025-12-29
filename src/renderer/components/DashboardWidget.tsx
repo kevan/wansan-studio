@@ -5,6 +5,7 @@ import { cn } from '../utils/cn'
 import { Lightbulb } from 'lucide-react'
 import { ReportTable } from './report/report-table'
 import { useTranslation } from 'react-i18next'
+import { getDisplayMode } from '../utils/viz-logic'
 
 interface DashboardWidgetProps {
   title: string
@@ -57,19 +58,8 @@ export function DashboardWidget({
 }: DashboardWidgetProps) {
   const [showSummary, setShowSummary] = useState(false)
   const { t } = useTranslation('common')
-  const showBigNumber =
-    (chartType === 'table' || chartType === 'kpi') &&
-    tableData &&
-    tableData.length === 1 &&
-    Object.keys(tableData[0] || {}).length > 0
-  const shouldShowTable =
-    tableData &&
-    tableData.length > 0 &&
-    !showBigNumber &&
-    (chartType === 'table' ||
-      chartType === 'kpi' ||
-      !vizConfig?.x_axis ||
-      !vizConfig?.y_axis)
+  
+  const displayMode = getDisplayMode(chartType, tableData || [], vizConfig)
 
   // Dashboard Layout (Chart focused)
   if (variant === 'dashboard') {
@@ -126,23 +116,19 @@ export function DashboardWidget({
 
         {/* Chart takes priority space */}
         <div className="flex-1 min-h-0 w-full mb-0 p-2">
-          {chartType !== 'table' &&
-            chartType !== 'kpi' &&
-            chartType !== 'text' &&
-            vizConfig?.x_axis &&
-            vizConfig?.y_axis && (
-              <A4Chart
-                type={chartType}
-                title={chartTitle}
-                data={tableData}
-                config={vizConfig}
-                className="h-full w-full"
-                messageId={messageId}
-              />
-            )}
+          {displayMode === 'chart' && (
+            <A4Chart
+              type={chartType}
+              title={chartTitle}
+              data={tableData}
+              config={vizConfig}
+              className="h-full w-full"
+              messageId={messageId}
+            />
+          )}
 
           {/* Big Number Mode for Dashboard */}
-          {showBigNumber && (
+          {displayMode === 'bignumber' && tableData && (
             <div className="h-full w-full flex items-center justify-center">
               <BigNumberDisplay
                 value={(() => {
@@ -159,36 +145,9 @@ export function DashboardWidget({
             </div>
           )}
 
-          {/* Fallback to Data Table (Hide if Big Number is shown) */}
-          {shouldShowTable && (
+          {/* Fallback to Data Table */}
+          {displayMode === 'table' && (
             <div className="h-full w-full overflow-auto space-y-4">
-              {chartType === 'kpi' && tableData.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {tableData.slice(0, 4).map((row, idx) => {
-                    const entries = Object.entries(row)
-                    const first = entries[0] || [t('value'), '—']
-                    const second = entries[1]
-                    return (
-                      <div
-                        key={idx}
-                        className="rounded-lg border border-zinc-200 bg-white p-3 shadow-sm"
-                      >
-                        <div className="text-xs text-zinc-500 mb-1">
-                          {first[0]}
-                        </div>
-                        <div className="text-xl font-semibold text-zinc-900">
-                          {first[1] as any}
-                        </div>
-                        {second && (
-                          <div className="text-xs text-zinc-500 mt-1">
-                            {second[0]}: {second[1] as any}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
               <ReportTable
                 data={tableData}
                 columnFields={columnFields}
@@ -221,25 +180,21 @@ export function DashboardWidget({
           </div>
         )}
 
-        {chartType !== 'table' &&
-          chartType !== 'kpi' &&
-          chartType !== 'text' &&
-          vizConfig?.x_axis &&
-          vizConfig?.y_axis && (
-            <div className="h-[250px] w-full px-4 pb-4 pt-2">
-              <A4Chart
-                type={chartType}
-                title={chartTitle}
-                data={tableData}
-                config={vizConfig}
-                className="h-full w-full"
-                messageId={messageId}
-              />
-            </div>
-          )}
+        {displayMode === 'chart' && (
+          <div className="h-[250px] w-full px-4 pb-4 pt-2">
+            <A4Chart
+              type={chartType}
+              title={chartTitle}
+              data={tableData}
+              config={vizConfig}
+              className="h-full w-full"
+              messageId={messageId}
+            />
+          </div>
+        )}
 
         {/* Big Number Mode */}
-        {showBigNumber && (
+        {displayMode === 'bignumber' && tableData && (
           <div className="h-full w-full flex items-center justify-center">
             <BigNumberDisplay
               value={(() => {
@@ -257,7 +212,7 @@ export function DashboardWidget({
         )}
 
         {/* Data Table */}
-        {shouldShowTable && (
+        {displayMode === 'table' && (
           <div>
             <h4 className="text-sm font-semibold text-zinc-800 mb-2">
               {t('data_detail')}

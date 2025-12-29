@@ -52,7 +52,12 @@ export function MagicInput({
   messages,
   className,
 }: MagicInputProps) {
-  const [value, setValue] = useState('')
+  const activeSession = useProjectStore(state =>
+    state.sessions.find(s => s.id === state.activeSessionId)
+  )
+  const value = activeSession?.inputDraft ?? ''
+  const setInputDraft = useProjectStore(state => state.setInputDraft)
+  
   const [cursorPosition, setCursorPosition] = useState(0)
   const [mention, setMention] = useState<MentionState>({ active: false })
   const [mentionIndex, setMentionIndex] = useState(0)
@@ -96,7 +101,7 @@ export function MagicInput({
       const actualIndex = messages.length - 1 - lastUserMsgIndex
       const userMsg = messages[actualIndex]
 
-      setValue(userMsg.content)
+      setInputDraft(userMsg.content)
 
       // Remove user message
       removeMessage(userMsg.id)
@@ -297,7 +302,7 @@ export function MagicInput({
     const insertion = `@${tableName} `
     const nextValue = `${before}${insertion}${after}`
     const newCursor = before.length + insertion.length
-    setValue(nextValue)
+    setInputDraft(nextValue)
     setMention({ active: false })
     setTimeout(() => {
       textareaRef.current?.focus()
@@ -307,7 +312,7 @@ export function MagicInput({
   }
 
   const insertPrompt = (prompt: string) => {
-    setValue(prompt)
+    setInputDraft(prompt)
     setTriggerType(null)
     setPopoverOpen(false)
     textareaRef.current?.focus()
@@ -350,13 +355,13 @@ export function MagicInput({
           await exportDebugLog()
           addToast({ title: t('debug_export_success_toast'), type: 'success' })
         }
-        setValue('')
+        setInputDraft('')
         return
       }
     }
 
     onSubmit(trimmed)
-    setValue('')
+    setInputDraft('')
   }
 
   const detectMention = (text: string, caret: number): MentionState => {
@@ -602,7 +607,7 @@ export function MagicInput({
               className="w-full resize-none bg-transparent border-none shadow-none outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 pr-12 text-base text-zinc-900 placeholder:text-zinc-400 leading-relaxed"
               value={value}
               onChange={e => {
-                setValue(e.target.value)
+                setInputDraft(e.target.value)
                 setCursorPosition(e.target.selectionStart)
               }}
               onSelect={e => setCursorPosition(e.currentTarget.selectionStart)}

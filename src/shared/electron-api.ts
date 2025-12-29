@@ -155,5 +155,13 @@ export interface ElectronAPI {
   onFileProgress: (
     callback: (data: { fileId: string; progress: number }) => void
   ) => () => void
+  onParseProgress: (
+    callback: (data: {
+      filePath: string
+      count?: number
+      isPercentage?: boolean
+      progress?: number
+    }) => void
+  ) => () => void
   onCommandCloseProject: (callback: () => void) => () => void
 }

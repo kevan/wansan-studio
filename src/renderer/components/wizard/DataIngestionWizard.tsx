@@ -128,8 +128,8 @@ export function DataIngestionWizard() {
 
           const displayName =
             task.sourceName && task.sourceName !== task.fileName
-              ? `${task.fileName} - ${task.sourceName}`
-              : task.sourceName || task.fileName
+              ? `${task.fileName.replace(/\.xlsx?$/, '')} - ${task.sourceName}`
+              : task.sourceName || task.fileName.replace(/\.xlsx?$/, '')
 
           // Use reloadFile to safely update schema and validate relations
           useProjectStore.getState().reloadFile(targetFile.id, {
@@ -140,7 +140,7 @@ export function DataIngestionWizard() {
           // Update other metadata that reloadFile doesn't handle
           updateFile(targetFile.id, {
              path: task.filePath,
-             name: displayName,
+             name: task.finalDisplayName || displayName,
              sheetName: task.sourceName === task.fileName ? undefined : task.sourceName,
              rowCount: result.data.rowCount,
           })
@@ -185,11 +185,11 @@ export function DataIngestionWizard() {
           // If sourceName (Sheet1) != fileName (data.xlsx), show "data.xlsx - Sheet1"
           const displayName =
             task.sourceName && task.sourceName !== task.fileName
-              ? `${task.fileName} - ${task.sourceName}`
-              : task.sourceName || task.fileName
+              ? `${task.fileName.replace(/\.xlsx?$/, '')} - ${task.sourceName}`
+              : task.sourceName || task.fileName.replace(/\.xlsx?$/, '')
 
           const fileId = addFile({
-            name: displayName,
+            name: task.finalDisplayName || displayName,
             path: task.filePath,
             tableName: finalTableName,
             sheetName:

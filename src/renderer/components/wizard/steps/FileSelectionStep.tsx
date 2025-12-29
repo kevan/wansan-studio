@@ -31,6 +31,12 @@ export function FileSelectionStep() {
   const { t } = useTranslation('common')
   const [isParsing, setIsParsing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [parseProgress, setParseProgress] = useState<{
+    path: string
+    count?: number
+    isPercentage?: boolean
+    progress?: number
+  } | null>(null)
 
   const handleSelectFiles = async () => {
     if (!window.electronAPI) return
@@ -50,6 +56,15 @@ export function FileSelectionStep() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [allTasks, setAllTasks] = useState<IngestionTask[]>([])
 
+  useEffect(() => {
+    const unsub = window.electronAPI?.onParseProgress(data => {
+      setParseProgress(data as any)
+    })
+    return () => {
+      unsub && unsub()
+    }
+  }, [])
+
   // Effect: When files change, parse them to get sheets/tasks
   useEffect(() => {
     if (selectedFiles.length === 0) return
@@ -57,12 +72,16 @@ export function FileSelectionStep() {
     const parseFiles = async () => {
       setIsParsing(true)
       setError(null)
+      setParseProgress(null)
       const newTasks: IngestionTask[] = []
 
       try {
         for (const file of selectedFiles) {
           const res = await window.electronAPI.parseFile(file.path)
-          if (res.success && res.data) {
+          if (!res.success) {
+            throw new Error(res.error || 'Failed to parse file')
+          }
+          if (res.data) {
             const results = Array.isArray(res.data) ? res.data : [res.data]
 
             // Use Promise.all to handle async tableName generation
@@ -100,6 +119,11 @@ export function FileSelectionStep() {
                 if (res.success) defaultTableName = res.data
               }
 
+              const displayName =
+                item.sheetName && item.sheetName !== file.name
+                  ? `${file.name.replace(/\.xlsx?$/, '')} - ${item.sheetName}`
+                  : item.sheetName || file.name.replace(/\.xlsx?$/, '')
+
               return {
                 id: crypto.randomUUID(),
                 sourceName: sourceName,
@@ -107,12 +131,13 @@ export function FileSelectionStep() {
                 filePath: file.path,
                 tableName: item.tableName, // This is empty/temp from parseFile
                 finalTableName: defaultTableName,
+                finalDisplayName: displayName,
                 columns,
                 previewData: item.preview || [],
                 rowCount: item.rowCount || 0,
                 mode: mode,
                 status: 'pending',
-                tempFilePath: item.tempFilePath, // Capture temp file path
+                tempFilePath: item.schema?.tempFilePath, // Correctly access nested property
               } as IngestionTask
             })
 
@@ -256,6 +281,13 @@ export function FileSelectionStep() {
                 <span className="text-sm font-medium text-zinc-500 italic">
                   {t('wizard.analyzing_structure')}
                 </span>
+                {parseProgress && (
+                  <span className="text-xs text-zinc-400 font-mono">
+                    {parseProgress.isPercentage
+                      ? `Processing... ${parseProgress.progress?.toFixed(0)}%`
+                      : `Reading ${parseProgress.count?.toLocaleString()} rows...`}
+                  </span>
+                )}
               </div>
             ) : error ? (
               <div className="p-12 text-center space-y-4">

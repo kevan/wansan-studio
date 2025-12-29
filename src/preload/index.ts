@@ -141,6 +141,14 @@ const electronAPI: ElectronAPI = {
     ipcRenderer.on('file:progress', listener)
     return () => ipcRenderer.removeListener('file:progress', listener)
   },
+  onParseProgress: (
+    callback: (data: { filePath: string; count: number }) => void
+  ) => {
+    const listener = (_event: any, data: { filePath: string; count: number }) =>
+      callback(data)
+    ipcRenderer.on('file:parse-progress', listener)
+    return () => ipcRenderer.removeListener('file:parse-progress', listener)
+  },
   onCommandCloseProject: (callback: () => void) => {
     const listener = () => callback()
     ipcRenderer.on('command:close-project', listener)

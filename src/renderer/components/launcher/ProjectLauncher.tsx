@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Sparkles,
   History,
+  Trash2,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import logo from '@/src/assets/logo.png'
@@ -30,8 +31,10 @@ export function ProjectLauncher() {
   const [isCreating, setIsCreating] = useState(false)
   const [version, setVersion] = useState('')
 
-  const { createProject, openProject, gateNode } = useProjectIO()
+  const { createProject, openProject, checkGate, gateNode } = useProjectIO()
   const recentProjectPaths = useSettingsStore(s => s.recentProjectPaths)
+  const removeRecentProject = useSettingsStore(s => s.removeRecentProject)
+  const isActivated = useSettingsStore(s => s.isActivated)
 
   // Initialize app version
   React.useEffect(() => {
@@ -91,7 +94,7 @@ export function ProjectLauncher() {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-white flex items-center justify-center p-6 sm:p-12 font-sans selection:bg-black selection:text-white">
+    <div className="fixed inset-0 z-40 bg-white flex items-center justify-center p-6 sm:p-12 font-sans selection:bg-black selection:text-white">
       {/* Swiss Style Grid Background */}
       <div
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
@@ -127,7 +130,13 @@ export function ProjectLauncher() {
             {/* Action Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <button
-                onClick={() => setMode('create')}
+                onClick={() => {
+                  if (!isActivated && recentProjectPaths.length >= 2) {
+                    checkGate('Multi-Project', () => setMode('create'))
+                  } else {
+                    setMode('create')
+                  }
+                }}
                 className="group relative border border-zinc-200 p-6 text-left hover:border-black hover:bg-zinc-50 transition-all duration-300 rounded-2xl bg-white shadow-sm"
               >
                 <Plus
@@ -176,17 +185,27 @@ export function ProjectLauncher() {
                   {recentProjectPaths.map(path => {
                     const name = path.split(/[\\/]/).pop()?.replace('.wansan', '') || 'Untitled'
                     return (
-                      <button
-                        key={path}
-                        onClick={() => openProject(path)}
-                        className="group flex items-center justify-between p-4 border border-zinc-100 rounded-xl hover:border-black hover:bg-zinc-50 transition-all text-left"
-                      >
-                        <div className="min-w-0">
-                          <div className="text-sm font-bold text-black truncate">{name}</div>
-                          <div className="text-[10px] text-zinc-400 truncate mt-0.5">{path}</div>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-zinc-200 group-hover:text-black transition-colors shrink-0 ml-2" />
-                      </button>
+                      <div key={path} className="group relative flex items-center gap-2">
+                        <button
+                          onClick={() => openProject(path)}
+                          className="flex-1 flex items-center justify-between p-4 border border-zinc-100 rounded-xl hover:border-black hover:bg-zinc-50 transition-all text-left min-w-0"
+                        >
+                          <div className="min-w-0 pr-4">
+                            <div className="text-sm font-bold text-black truncate">{name}</div>
+                            <div className="text-[10px] text-zinc-400 truncate mt-0.5">{path}</div>
+                          </div>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            removeRecentProject(path)
+                          }}
+                          className="p-3 rounded-xl hover:bg-red-50 text-zinc-300 hover:text-red-500 transition-all shrink-0"
+                          title="Remove from recents"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     )
                   })}
                 </div>

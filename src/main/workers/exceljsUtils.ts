@@ -325,10 +325,14 @@ export async function processExcelFileStreaming(
 export async function processExcelBufferExcelJS(
   fileBuffer: Buffer,
   targetSheetName?: string,
-  targetTableName?: string
+  targetTableName?: string,
+  onProgress?: (rowCount: number, isIntermediate?: boolean) => void
 ): Promise<{ results: ExcelProcessResult[]; allSheetsCount: number }> {
   const workbook = new ExcelJS.Workbook()
   await workbook.xlsx.load(fileBuffer as any)
+
+  // After the most expensive part (load), signal that we are halfway
+  if (onProgress) onProgress(0, true) // Intermediate progress
 
   const results: ExcelProcessResult[] = []
 
@@ -349,109 +353,83 @@ export async function processExcelBufferExcelJS(
   for (const worksheet of sheetsToProcess) {
     try {
       // 1. Extract data matrix from worksheet
-      // ExcelJS rows are 1-based
       const data: any[][] = []
+      const totalRows = worksheet.rowCount
+
+      // Pre-check for merges to optimize
+      const hasMerges = worksheet.hasMerges
 
       worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-        // exceljs row.values is [undefined, val1, val2, ...] because of 1-based indexing
-        // We slice(1) to get 0-based array
-        // However, row.values might be an object if columns are defined, but here we load from buffer so it should be array-like
-        // A safer way is to iterate cells
-
-        const rowData: any[] = []
-        // Determine row span. row.cellCount isn't always reliable for sparse rows?
-        // Use worksheet.columnCount or similar?
-        // Let's just use the cell values.
-
-        // Note: row.values exists but has the 1-based quirk.
-        if (Array.isArray(row.values)) {
-          // row.values[0] is undefined/empty.
-          // We need to handle sparse arrays carefully.
-          // Mapping row.values to a clean array
-          const values = row.values as any[]
-          // ExcelJS values array length = max column index + 1
-          for (let i = 1; i < values.length; i++) {
-            rowData[i - 1] = values[i]
-          }
-        } else if (typeof row.values === 'object') {
-          // Should not happen for basic load, but handle just in case
-          // row.values might be {1: 'a', 2: 'b'}
-          // ...
-          // Let's stick to iterating cells if unsure, but row.values is faster
-          const values = row.values as any
-          // Find max key?
-          // Simplest: iterate columns
-          worksheet.columns?.forEach((col, idx) => {
-            // ... this is complex without knowing headers.
-          })
-        }
-
-        // Handling Merged Cells:
-        // ExcelJS returns the value for the master cell.
-        // For other cells in the merge, value is null/undefined usually.
-        // But the cell object has .master.
-        // We need to fill the value if it's merged.
-
         const filledRowData: any[] = []
-        const maxCol = worksheet.columnCount // or calculate from row
-
-        // Actually, let's iterate up to the last cell index of this row
-        const cellCount = row.cellCount
-        // But row.cellCount only counts non-empty?
-        // row.actualCellCount ?
-
-        // Better approach: Iterate from 1 to row.cellCount (or explicit bounds)
-        // But wait, row.getCell(i) is robust.
-
-        // Performance Warning: getCell might be slow if called millions of times.
-        // Let's try to trust row.values first, and handle merges separately?
-        // Or just use getCell which handles merges automatically?
-        // "When a cell is part of a merge, its value is shared..." - Wait, checking docs.
-        // ExcelJS: "Master cell has the value. Other cells share the value IF accessed via API?"
-        // Checking: cell.value might be the value or null. cell.master is the master cell.
-
-        for (let colNumber = 1; colNumber <= row.cellCount; colNumber++) {
-          // This might skip trailing empty cells
-          // We want consistent columns.
-          // We'll normalize length later (padding).
-
-          const cell = row.getCell(colNumber)
-
-          // Handle Merge: if cell is merged but not master, use master's value
-          let val = cell.value
-          if (cell.isMerged && cell.master && cell !== cell.master) {
-            val = cell.master.value
-          }
-
-          // Handle Rich Text / Hyperlinks / Formula
-          if (val && typeof val === 'object' && !(val instanceof Date)) {
-            if ('richText' in val && Array.isArray((val as any).richText)) {
-              val = (val as any).richText.map((t: any) => t.text).join('')
-            } else if ('text' in val && 'hyperlink' in val) {
-              val = (val as any).text
-            } else if ('result' in val) {
-              // Formula result
-              val = (val as any).result
-              // If result is also an object (e.g. error), handle it
+        
+        if (!hasMerges && Array.isArray(row.values)) {
+           // FAST PATH: No merges, use values directly
+           const values = row.values as any[]
+           // ExcelJS values are 1-based (index 0 is undefined)
+           for (let i = 1; i < values.length; i++) {
+             let val = values[i]
+             
+             // Handle Complex Types (Rich Text, Hyperlink, Formula Error)
+             if (val && typeof val === 'object' && !(val instanceof Date)) {
+                // If it's an object, we might need to inspect it or use getCell to be safe
+                // But getCell is slow. Let's try to extract common patterns first.
+                if ('richText' in val) {
+                   val = (val as any).richText.map((t: any) => t.text).join('')
+                } else if ('text' in val && 'hyperlink' in val) {
+                   val = (val as any).text
+                } else if ('result' in val) {
+                   val = (val as any).result
+                   if (val && typeof val === 'object' && !(val instanceof Date)) {
+                      val = (val as any).error || JSON.stringify(val)
+                   }
+                } else {
+                   // Fallback to getCell for unknown objects
+                   const cell = row.getCell(i)
+                   val = cell.value
+                }
+             }
+             filledRowData[i - 1] = val
+           }
+        } else {
+           // SLOW PATH: Merges exist or row.values is weird
+           // Fallback to cell iteration
+           for (let colNumber = 1; colNumber <= row.cellCount; colNumber++) {
+              const cell = row.getCell(colNumber)
+              let val = cell.value
+              if (cell.isMerged && cell.master && cell !== cell.master) {
+                val = cell.master.value
+              }
+              
+              // Handle Rich Text / Hyperlinks
               if (val && typeof val === 'object' && !(val instanceof Date)) {
-                if ('error' in val) val = (val as any).error
-                else val = JSON.stringify(val)
+                if ('richText' in val && Array.isArray((val as any).richText)) {
+                  val = (val as any).richText.map((t: any) => t.text).join('')
+                } else if ('text' in val && 'hyperlink' in val) {
+                  val = (val as any).text
+                } else if ('result' in val) {
+                  val = (val as any).result
+                  if (val && typeof val === 'object' && !(val instanceof Date)) {
+                    if ('error' in val) val = (val as any).error
+                    else val = JSON.stringify(val)
+                  }
+                } else {
+                  try {
+                    val = JSON.stringify(val)
+                  } catch {
+                    val = String(val)
+                  }
+                }
               }
-            } else {
-              // Fallback for unknown objects to prevent [object Object]
-              try {
-                val = JSON.stringify(val)
-              } catch {
-                val = String(val)
-              }
-            }
-          }
-
-          // 0-based index
-          filledRowData[colNumber - 1] = val
+              filledRowData[colNumber - 1] = val
+           }
         }
 
         data.push(filledRowData)
+
+        // Report progress
+        if (onProgress && totalRows > 0 && rowNumber % 1000 === 0) {
+          onProgress((rowNumber / totalRows) * 100)
+        }
       })
 
       if (data.length === 0) continue

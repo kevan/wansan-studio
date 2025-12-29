@@ -43,13 +43,14 @@ export function normalizeDuckDBType(duckType: string): ColumnType {
   }
 
   // 2. Integers (Handle BIGINT carefully)
+  // HUGEINT and BIGINT are too large for standard JS number, treat as string to preserve precision
+  if (type === 'HUGEINT' || type === 'BIGINT' || type === 'UBIGINT') {
+    return 'VARCHAR'
+  }
   if (
-    type === 'BIGINT' ||
     type === 'INTEGER' ||
     type === 'SMALLINT' ||
     type === 'TINYINT' ||
-    type === 'HUGEINT' ||
-    type === 'UBIGINT' ||
     type === 'USMALLINT' ||
     type === 'UTINYINT'
   ) {

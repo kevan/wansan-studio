@@ -175,8 +175,10 @@ export function TargetSelectionStep() {
           {mode === 'import' ? (
             /* --- IMPORT MODE: Multi-Task List --- */
             <div className="space-y-4">
-              <div className="grid grid-cols-[1fr_40px_1fr] px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+              <div className="grid grid-cols-[1fr_20px_1fr_20px_1fr] px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
                 <span>{t('wizard.configuring_asset')}</span>
+                <span />
+                <span>{t('wizard.target_display_name', 'Display Name')}</span>
                 <span />
                 <span>{t('wizard.target_table')}</span>
               </div>
@@ -207,6 +209,14 @@ export function TargetSelectionStep() {
                             {task.fileName}
                           </p>
                         </div>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-zinc-200 shrink-0" />
+                      <div className="flex-1">
+                        <Input
+                           value={task.finalDisplayName || ''}
+                           onChange={e => updateTask(idx, { finalDisplayName: e.target.value })}
+                           className="h-9 text-sm font-medium p-2 border-zinc-200 focus-visible:ring-1 focus-visible:ring-indigo-300"
+                         />
                       </div>
                       <ArrowRight className="w-4 h-4 text-zinc-200 shrink-0" />
                       <div className="flex-1 flex items-center gap-3 min-w-0">

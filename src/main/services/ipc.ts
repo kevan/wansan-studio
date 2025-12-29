@@ -46,9 +46,12 @@ export function setupIPC(
   })
 
   // 文件解析
-  ipcMain.handle('parse-file', async (_event, filePath: string) => {
+  ipcMain.handle('parse-file', async (event, filePath: string) => {
     try {
-      const result = await fileService.parseFile(filePath)
+      const onProgress = (count: number) => {
+        event.sender.send('file:parse-progress', { filePath, count })
+      }
+      const result = await fileService.parseFile(filePath, onProgress)
       return { success: true, data: result }
     } catch (error) {
       console.error('Parse file error:', error)

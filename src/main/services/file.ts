@@ -22,14 +22,14 @@ import {
 export class FileService {
   constructor(private databaseService: NativeDatabaseService) {}
 
-  async parseFile(filePath: string) {
+  async parseFile(filePath: string, onProgress?: (count: number) => void) {
     console.log('parseFile', filePath)
     const ext = extname(filePath).toLowerCase()
 
     switch (ext) {
       case '.xlsx':
       case '.xls':
-        return this.parseExcelFile(filePath)
+        return this.parseExcelFile(filePath, onProgress)
       case '.csv':
       case '.json':
         return this.parseCSVFile(filePath)
@@ -38,7 +38,10 @@ export class FileService {
     }
   }
 
-  private async parseExcelFile(filePath: string) {
+  private async parseExcelFile(
+    filePath: string,
+    onProgress?: (count: number) => void
+  ) {
     console.log('[FileService] parseExcelFile start:', filePath)
     try {
       const fileName = basename(filePath)
@@ -50,7 +53,7 @@ export class FileService {
         fileName,
         undefined,
         undefined,
-        undefined,
+        onProgress,
         'temp_preview_'
       )
       console.log(

@@ -141,6 +141,7 @@ const mockIPC: ElectronAPI = {
   onWindowStateChanged: () => () => {},
   onFileProgress: () => () => {},
   onCommandCloseProject: () => () => {},
+  onParseProgress: () => () => {},
 }
 
 function getIpc() {

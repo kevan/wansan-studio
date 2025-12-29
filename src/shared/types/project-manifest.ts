@@ -14,7 +14,21 @@ export interface ProjectManifest {
     name: string
     originalPath: string // Absolute path
     tableName: string
-    columns: Array<{ name: string; type: string; safeName: string }>
+    sheetName?: string
+    status?: string // SyncStatus
+    rowCount?: number
+    lastModified?: number
+    createdAt?: number
+    columns: Array<{
+      name: string
+      type: string
+      safeName: string
+      sampleValues?: any[]
+      nullable?: boolean
+      isKey?: boolean
+      isPrimaryKey?: boolean
+      alias?: string
+    }>
   }>
   settings: {
     theme?: 'light' | 'dark'

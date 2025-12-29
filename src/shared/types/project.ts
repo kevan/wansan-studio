@@ -20,6 +20,7 @@ export interface Session {
   lastModified: number
   messages: Message[]
   replyToId?: string
+  inputDraft?: string
   dashboard: {
     widgets: ReportWidget[]
     layoutMode: 'a4' | 'screen'

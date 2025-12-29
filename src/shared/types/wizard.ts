@@ -19,6 +19,7 @@ export interface IngestionTask {
   tempFilePath?: string // Path to cached temp file (e.g. converted CSV)
   tableName: string // Temp table name in DB
   finalTableName?: string
+  finalDisplayName?: string // User-editable name for the FileNode
   columns: ColumnConfig[]
   previewData: any[]
   rowCount: number

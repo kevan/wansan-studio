@@ -54,6 +54,7 @@ export interface SettingsState {
   updateDomainRule: (id: string, content: string) => void
   reorderDomainRules: (oldIndex: number, newIndex: number) => void
   addRecentProject: (path: string) => void
+  removeRecentProject: (path: string) => void
   updateSettings: (
     patch: Partial<
       Omit<
@@ -101,6 +102,7 @@ const initialSettingsState: Omit<
   | 'updateDomainRule'
   | 'reorderDomainRules'
   | 'addRecentProject'
+  | 'removeRecentProject'
 > = {
   provider: 'deepseek',
   apiKey: '',
@@ -224,6 +226,10 @@ export const useSettingsStore = create<SettingsState>()(
           const newList = [path, ...filtered].slice(0, 10)
           return { recentProjectPaths: newList }
         }),
+      removeRecentProject: path =>
+        set(state => ({
+          recentProjectPaths: (state.recentProjectPaths || []).filter(p => p !== path),
+        })),
       updateSettings: patch =>
         set(state => {
           let nextState = { ...state, ...patch }

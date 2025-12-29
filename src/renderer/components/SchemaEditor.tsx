@@ -27,9 +27,16 @@ import {
   ToggleLeft,
   Trash2,
   Type,
+  Info,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from './ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +44,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useToastStore } from '../stores/useToastStore'
-import { useReIngestFile } from '../hooks/useIPC'
 import { useState } from 'react'
 import { useProGate } from '@/hooks/use-pro-gate'
 import { cn } from '@/utils/cn'
@@ -51,8 +57,6 @@ export function SchemaEditor() {
   const files = useProjectStore(s => s.files)
   const activeFileId = useProjectStore(s => s.activeFileId)
   const toggleKeyColumn = useProjectStore(s => s.toggleKeyColumn)
-  const openSqlLab = useSqlLabStore(s => s.open)
-  const replaceFile = useProjectStore(s => s.replaceFile)
   const removeFile = useProjectStore(s => s.removeFile)
   const addSmartMetric = useProjectStore(s => s.addSmartMetric)
   const removeSmartMetric = useProjectStore(s => s.removeSmartMetric)
@@ -64,7 +68,6 @@ export function SchemaEditor() {
   const { t: tAnalysis } = useTranslation('analysis')
   const { checkGate, gateNode } = useProGate()
   const toast = useToastStore()
-  const reIngest = useReIngestFile()
 
   // 确保有选中的文件
   const currentFileId =
@@ -89,9 +92,6 @@ export function SchemaEditor() {
   >(undefined)
 
   if (!currentFile) return null
-
-  // Compute Active Links (Outbound)
-  const activeLinks = currentFile.relations || []
 
   // --- Handlers ---
   const handleAppend = () => {
@@ -201,20 +201,42 @@ export function SchemaEditor() {
                 <h2 className="text-xl font-bold text-zinc-900 tracking-tight truncate">
                   {currentFile.name}
                 </h2>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="w-4 h-4 text-zinc-300 hover:text-zinc-500 transition-colors" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs break-words">
+                      <div className="space-y-1.5 p-1 text-xs">
+                        <div className="font-bold">Source Info</div>
+                        <div>
+                          <div className="text-zinc-400">Path</div>
+                          <div className="font-mono">{currentFile.path}</div>
+                        </div>
+                        {currentFile.sheetName && (
+                          <div>
+                            <div className="text-zinc-400">Sheet</div>
+                            <div className="font-mono">{currentFile.sheetName}</div>
+                          </div>
+                        )}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
 
               {/* Actions Toolbar */}
               <div className="flex items-center gap-1 p-1 bg-white border border-zinc-200/60 rounded-2xl shadow-sm shrink-0">
                 {currentFile.status === 'ready' && (
                   <>
-                                      {/* Group: Build */}
-                                      <div className="flex items-center gap-1 pr-1 border-r border-zinc-100">
-                                        <ExpandableAction
-                                          icon={<Calculator className="w-4 h-4 text-purple-600" />}
-                                          label={tAnalysis('smart_metric.add_button')}
-                                          onClick={handleAddMetric}
-                                          className="hover:bg-purple-50 hover:border-purple-200"
-                                        />
+                    {/* Group: Build */}
+                    <div className="flex items-center gap-1 pr-1 border-r border-zinc-100">
+                      <ExpandableAction
+                        icon={<Calculator className="w-4 h-4 text-purple-600" />}
+                        label={tAnalysis('smart_metric.add_button')}
+                        onClick={handleAddMetric}
+                        className="hover:bg-purple-50 hover:border-purple-200"
+                      />
                       <ExpandableAction
                         icon={<Link2 className="w-4 h-4 text-indigo-600" />}
                         label={t('add_new_link')}
@@ -227,15 +249,15 @@ export function SchemaEditor() {
                     </div>
 
                     {/* Group: Data */}
-                                      <div className="flex items-center gap-1 px-1 border-r border-zinc-100">
-                                        <ExpandableAction
-                                          icon={<Plus className="w-4 h-4 text-emerald-600" />}
-                                          label={t('append_data', 'Append')}
-                                          onClick={handleAppend}
-                                          className="hover:bg-emerald-50 hover:border-emerald-200"
-                                        />
-                    
-                                        <ExpandableAction                        icon={<FileInput className="w-4 h-4 text-amber-600" />}
+                    <div className="flex items-center gap-1 px-1 border-r border-zinc-100">
+                      <ExpandableAction
+                        icon={<Plus className="w-4 h-4 text-emerald-600" />}
+                        label={t('append_data', 'Append')}
+                        onClick={handleAppend}
+                        className="hover:bg-emerald-50 hover:border-emerald-200"
+                      />
+                      <ExpandableAction
+                        icon={<FileInput className="w-4 h-4 text-amber-600" />}
                         label={t('replace_source')}
                         onClick={handleReplace}
                         className="hover:bg-amber-50 hover:border-amber-200"
@@ -509,7 +531,10 @@ function SmartMetricRow({
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center justify-between group/row">
-          <code className="text-xs font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600 truncate max-w-[200px]">
+          <code
+            className="text-xs font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600 truncate max-w-[250px]"
+            title={metric.sqlExpression}
+          >
             {metric.sqlExpression}
           </code>
           <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
@@ -554,24 +579,25 @@ function RelationRow({
           <div className="p-1 bg-indigo-100 rounded text-indigo-600">
             <Link2 className="w-3 h-3" />
           </div>
-          <span className="text-sm font-medium text-zinc-900 truncate">
+          <span className="text-sm text-zinc-600 truncate">
             {targetName}
           </span>
         </div>
       </td>
-      <td className="px-4 py-3">
-        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border bg-indigo-50 text-indigo-700 border-indigo-200">
-          {relation.joinType || 'LEFT'} JOIN
-        </span>
-      </td>
-      <td className="px-4 py-3">
+      <td colSpan={2} className="px-4 py-3">
         <div className="flex items-center justify-between group/row">
-          <div className="flex items-center gap-1.5">
-            <code className="text-[11px] font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600">
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            <code
+              className="text-[11px] font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600 truncate max-w-[150px]"
+              title={relation.sourceColumn}
+            >
               {relation.sourceColumn}
             </code>
             <span className="text-zinc-400 text-[10px] font-bold">=</span>
-            <code className="text-[11px] font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600">
+            <code
+              className="text-[11px] font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600 truncate max-w-[150px]"
+              title={relation.targetColumn}
+            >
               {relation.targetColumn}
             </code>
           </div>

@@ -24,6 +24,7 @@ import type {
 import { useTranslation } from 'react-i18next'
 import { adaptChartConfig } from '@/lib/viz-adapter'
 import type { AIAnalysisResult } from '@shared/types'
+import { getDisplayMode } from '@/utils/viz-logic'
 
 type VizType = NonNullable<AIAnalysisResult['visualization']>['type']
 
@@ -179,22 +180,12 @@ export function ChartFullView() {
     setEditingReportId(null)
   }
 
-  const isBigNumber =
-    (effectiveType === 'table' || effectiveType === 'kpi') &&
-    data.length === 1 &&
-    Object.keys(data[0] || {}).length > 0
-
-  const showTable =
-    data.length > 0 &&
-    !isBigNumber &&
-    (effectiveType === 'table' || !localConfig?.x_axis || !localConfig?.y_axis)
-
+  const displayMode = getDisplayMode(effectiveType, data, localConfig)
+  
   const showAxisControls =
-    effectiveType !== 'table' &&
-    effectiveType !== 'kpi' &&
-    availableColumns.length > 0
-
-  const modalMaxWidth = effectiveType === 'table' ? 'max-w-[95vw]' : 'max-w-6xl'
+    displayMode === 'chart' && availableColumns.length > 0
+  
+  const modalMaxWidth = displayMode === 'table' ? 'max-w-[95vw]' : 'max-w-6xl'
 
   const content = (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
@@ -227,7 +218,7 @@ export function ChartFullView() {
           <div className="flex flex-1 overflow-hidden">
             <div className="flex-1 p-5 min-w-0">
               <div className="h-full w-full rounded-lg border border-zinc-200 bg-zinc-50/60 p-4">
-                {isBigNumber && data.length > 0 && (
+                {displayMode === 'bignumber' && data.length > 0 && (
                   <BigNumberDisplay
                     value={(() => {
                       const yCol = Array.isArray(localConfig?.y_axis) ? localConfig.y_axis[0] : localConfig?.y_axis;
@@ -242,9 +233,7 @@ export function ChartFullView() {
                   />
                 )}
 
-                {!isBigNumber &&
-                  effectiveType !== 'table' &&
-                  effectiveType !== 'kpi' && (
+                {displayMode === 'chart' && (
                     <A4Chart
                       type={effectiveType}
                       title={localTitle}
@@ -254,7 +243,7 @@ export function ChartFullView() {
                     />
                   )}
 
-                {showTable && (
+                {displayMode === 'table' && (
                   <div className="h-full w-full overflow-auto">
                     <ReportTable
                       data={data}
@@ -266,7 +255,7 @@ export function ChartFullView() {
                   </div>
                 )}
 
-                {!data.length && (
+                {displayMode === 'empty' && (
                   <div className="flex h-full items-center justify-center text-sm text-zinc-500">
                     {t('no_data')}
                   </div>
@@ -314,7 +303,7 @@ export function ChartFullView() {
                   </div>
                 </div>
 
-                {isBigNumber && (
+                {displayMode === 'bignumber' && (
                   <div className="space-y-3">
                     <div className="text-[11px] uppercase tracking-wide text-zinc-500">
                       {t('value_column', 'Value Column')}
