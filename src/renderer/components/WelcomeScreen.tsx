@@ -24,7 +24,6 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
   const openWizard = useWizardStore(s => s.open)
 
   const allowedExtensions = ['.xlsx', '.xls', '.csv', '.json']
-  const maxSize = 200 * 1024 * 1024 // 200MB
 
   const TRIAL_FILE_LIMIT = 3
 
@@ -43,20 +42,6 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
           name: f.path.split(/[\\/]/).pop() || 'unknown',
           size: f.size,
         }))
-
-        const oversizedFiles = filesToProcess.filter(f => f.size > maxSize)
-
-        if (oversizedFiles.length > 0) {
-          addToast({
-            title: t('file_too_large_title'),
-            description: t('file_too_large_desc', {
-              limit: '200MB',
-              files: oversizedFiles.map(f => f.name).join(', '),
-            }),
-            type: 'warning',
-          })
-          return
-        }
 
         // Open Wizard with selected files
         openWizard('import', undefined, filesToProcess)
@@ -100,28 +85,14 @@ export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
     const droppedFiles = Array.from(e.dataTransfer.files)
     console.log('handleDrop', droppedFiles)
 
-    const oversizedFiles = droppedFiles.filter(f => f.size > maxSize)
-    const validSizeFiles = droppedFiles.filter(f => f.size <= maxSize)
-
-    if (oversizedFiles.length > 0) {
-      addToast({
-        title: t('file_too_large_title'),
-        description: t('file_too_large_desc', {
-          limit: '200MB',
-          files: oversizedFiles.map(f => f.name).join(', '),
-        }),
-        type: 'warning',
-      })
-    }
-
     // Filter supported types
-    const validFiles = validSizeFiles.filter(file => {
+    const validFiles = droppedFiles.filter(file => {
       const ext = '.' + file.name.split('.').pop()?.toLowerCase()
       return allowedExtensions.includes(ext)
     })
 
     if (validFiles.length === 0) {
-      if (validSizeFiles.length > 0) alert(t('unsupported_file_type'))
+      if (validFiles.length > 0) alert(t('unsupported_file_type'))
       return
     }
 
