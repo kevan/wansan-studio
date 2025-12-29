@@ -402,6 +402,13 @@ const sendMessage = async (
       }
     }
 
+    Analytics.track('analysis_generated', {
+      viz_type: plan.visualization?.type || 'unknown',
+      is_template: plan.is_template || false,
+      missing_params_count: plan.missing_params?.length || 0,
+      ai_latency: aiLatency,
+    })
+
     const refinementHint =
       (plan.reasoning || '').toLowerCase().includes('modified previous sql') ||
       !!context
@@ -428,15 +435,9 @@ const sendMessage = async (
     const execution = await window.electronAPI.runSQL(plan.sql)
     const dbLatency = Date.now() - dbStartTime
 
-    if (!execution.success || !execution.data)
+    if (!execution.success || !execution.data) {
       throw new Error(execution.error || 'SQL execution failed')
-
-    const { data, columnFields } = execution.data
-
-    Analytics.track('analysis_generated', {
-      viz_type: plan.visualization?.type || 'unknown',
-      status: 'success',
-    })
+    }
 
     updateMessage(botMsgId, msg => ({
       ...msg,
@@ -451,8 +452,8 @@ const sendMessage = async (
         suggestions: plan.suggestions,
         chartType: plan.visualization?.type,
         chartTitle: plan.title,
-        tableData: data,
-        columnFields,
+        tableData: execution.data.data,
+        columnFields: execution.data.columnFields,
         vizConfig: plan.visualization?.config as any,
         is_template: plan.is_template,
         missing_params: plan.missing_params as any,
@@ -640,6 +641,13 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
       }
     }
 
+    Analytics.track('analysis_generated', {
+      viz_type: plan.visualization?.type || 'unknown',
+      is_template: plan.is_template || false,
+      missing_params_count: plan.missing_params?.length || 0,
+      ai_latency: aiLatency,
+    })
+
     updateMessage(messageId, msg => ({
       ...msg,
       status: 'planning',
@@ -656,15 +664,9 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
     const execution = await window.electronAPI.runSQL(plan.sql)
     const dbLatency = Date.now() - dbStartTime
 
-    if (!execution.success || !execution.data)
+    if (!execution.success || !execution.data) {
       throw new Error(execution.error || 'SQL execution failed')
-
-    const { data, columnFields } = execution.data
-
-    Analytics.track('analysis_generated', {
-      viz_type: plan.visualization?.type || 'unknown',
-      status: 'success',
-    })
+    }
 
     updateMessage(messageId, msg => ({
       ...msg,
@@ -679,8 +681,8 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
         suggestions: plan.suggestions,
         chartType: plan.visualization?.type,
         chartTitle: plan.title,
-        tableData: data,
-        columnFields,
+        tableData: execution.data.data,
+        columnFields: execution.data.columnFields,
         vizConfig: plan.visualization?.config as any,
         is_template: plan.is_template,
         missing_params: plan.missing_params as any,
