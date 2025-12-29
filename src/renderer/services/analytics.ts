@@ -22,6 +22,8 @@ export const Analytics = {
           deviceId,
           isActivated,
           timestamp: Date.now(),
+          version: __APP_VERSION__,
+          platform: window.electronAPI.platform,
           ...properties,
         }),
       }).catch(err => console.error('Telemetry failed', err))

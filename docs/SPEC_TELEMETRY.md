@@ -53,7 +53,19 @@ A lightweight wrapper around `fetch`.
     *   `report_generated`: (duration_ms, file_type, viz_type)
     *   **NEVER TRACK**: File names, column names, SQL queries.
 
-## 4. Implementation Steps
+## 4. v1.3.0 Events (New)
+
+| Category | Event Name | Properties | Trigger |
+| :--- | :--- | :--- | :--- |
+| **Project** | `project_created` | `source` (launcher/menu) | User creates a new project. |
+| **Project** | `project_opened` | `source` (launcher/recent/dialog) | User opens an existing project. |
+| **Data Wizard** | `ingest_wizard_completed` | `mode` (import/append/replace), `row_count` | User finishes data ingestion. |
+| **Data Wizard** | `ingest_wizard_cancelled` | `step` | User closes wizard before finishing. |
+| **Memory** | `domain_rule_added` | `scope` (global/project) | User adds a business rule. |
+| **License** | `gate_triggered` | `feature` (append/project_rule/...) | User hits a Trial limit. |
+| **License** | `gate_converted` | `source_feature` | User clicks "Unlock Pro" in gate dialog. |
+
+## 5. Implementation Steps
 
 1.  **Cloud**: Update Worker code to add `/v1/ingest`. Deploy.
 2.  **Client**: Create `AnalyticsService`.

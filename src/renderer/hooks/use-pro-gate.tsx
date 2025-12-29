@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useSettingsStore } from '../stores/useSettingsStore'
 import { ProGateModal } from '../components/modals/ProGateModal'
+import { Analytics } from '../services/analytics'
 
 export function useProGate() {
   const isActivated = useSettingsStore(s => s.isActivated)
@@ -11,6 +12,7 @@ export function useProGate() {
       if (isActivated) {
         callback()
       } else {
+        Analytics.track('gate_triggered', { feature: featureName })
         setGateFeature(featureName)
       }
     },

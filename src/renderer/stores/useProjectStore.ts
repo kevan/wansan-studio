@@ -1114,7 +1114,8 @@ export const useProjectStore = create<ProjectState>()(
         return droppedRelationsCount
       },
 
-      addDomainRule: content =>
+      addDomainRule: content => {
+        Analytics.track('domain_rule_added', { scope: 'project' })
         set(state => ({
           domainRules: [
             ...(state.domainRules || []),
@@ -1125,7 +1126,8 @@ export const useProjectStore = create<ProjectState>()(
               createdAt: Date.now(),
             },
           ],
-        })),
+        }))
+      },
 
       toggleDomainRule: id =>
         set(state => ({

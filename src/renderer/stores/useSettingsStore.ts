@@ -160,7 +160,7 @@ export const useSettingsStore = create<SettingsState>()(
         if (validBetaCodes.includes(normalizedCode)) {
           set({ isActivated: true })
           Analytics.track('beta_activated', {
-            code_prefix: normalizedCode.substring(0, 4),
+            code_prefix: normalizedCode.substring(0, 6),
           })
           return true
         }
@@ -172,7 +172,7 @@ export const useSettingsStore = create<SettingsState>()(
         ) {
           set({ isActivated: true })
           Analytics.track('beta_activated', {
-            code_prefix: normalizedCode.substring(0, 4),
+            code_prefix: normalizedCode.substring(0, 6),
           })
           return true
         }
@@ -181,7 +181,8 @@ export const useSettingsStore = create<SettingsState>()(
       },
       setRemoteConfig: (cfg: RemoteConfig) => set({ remoteConfig: cfg }),
       dismissAnnouncement: (id: string) => set({ dismissedAnnouncementId: id }),
-      addDomainRule: content =>
+      addDomainRule: content => {
+        Analytics.track('domain_rule_added', { scope: 'global' })
         set(state => ({
           domainRules: [
             ...state.domainRules,
@@ -192,7 +193,8 @@ export const useSettingsStore = create<SettingsState>()(
               createdAt: Date.now(),
             },
           ],
-        })),
+        }))
+      },
       toggleDomainRule: id =>
         set(state => ({
           domainRules: state.domainRules.map(r =>

@@ -11,8 +11,9 @@ import { SummaryStep } from './steps/SummaryStep'
 import { Loader2 } from 'lucide-react'
 import { useAutoLink } from '@/hooks/useAutoLink.ts'
 import { useMemo } from 'react'
-import { useToastStore } from '@/stores/useToastStore.ts'
-import { useSettingsStore } from '@/stores/useSettingsStore.ts'
+import { useToastStore } from '../../stores/useToastStore'
+import { useSettingsStore } from '../../stores/useSettingsStore'
+import { Analytics } from '../../services/analytics'
 
 const TRIAL_ROW_LIMIT = 50000
 
@@ -49,6 +50,7 @@ export function DataIngestionWizard() {
         console.error('Failed to cleanup staging tables/files', e)
       }
     }
+    Analytics.track('ingest_wizard_cancelled', { step, mode })
     close()
   }
 
@@ -220,6 +222,11 @@ export function DataIngestionWizard() {
       }
 
       setView('schema')
+
+      Analytics.track('ingest_wizard_completed', {
+        mode,
+        file_count: tasks.length
+      })
 
       toast.addToast({
         title:

@@ -31,11 +31,7 @@ export function useBootSequence() {
         // Config fetching is now handled by useRemoteConfig hook
 
         // Track App Launched
-        Analytics.track('app_launched', {
-          version: __APP_VERSION__,
-          platform: window.electronAPI.platform,
-          // deviceId and isActivated are read from useSettingsStore within Analytics.track
-        })
+        Analytics.track('app_launched', {})
       } catch (error) {
         console.error('[Boot] Sequence fatal error:', error)
       }

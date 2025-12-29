@@ -11,6 +11,7 @@ import {
 import { FileNode, SmartMetric, SyncStatus, TableRelation } from '@shared/types'
 import { Relation, Session, ProjectData } from '@shared/types/project'
 import { ReportData } from '@shared/types/dashboard'
+import { Analytics } from '../services/analytics'
 
 const TRIAL_PROJECT_LIMIT = 2
 
@@ -157,6 +158,11 @@ export function useProjectIO() {
       setProjectPath(data.path)
       addRecentProject(data.path)
 
+      Analytics.track('project_opened', {
+        asset_count: files.length,
+        has_metrics: files.some(f => (f.smartMetrics?.length || 0) > 0),
+      })
+
       // 5. Trigger a refresh to get row counts and samples if possible?
       // The store has `refreshSessionWidgets`, but for files we might need `reloadFile`.
       // For now we just load the state.
@@ -176,6 +182,7 @@ export function useProjectIO() {
       // After create, we usually want to open it immediately.
       await openProject(path)
       addRecentProject(path)
+      Analytics.track('project_created', {})
       return path
     },
     [openProject, isActivated, recentProjectPaths, addRecentProject, checkGate]
