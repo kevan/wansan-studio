@@ -213,7 +213,7 @@ export function MagicInput({
           resetChat()
           addToast({ title: t('chat_cleared'), type: 'info', duration: 2500 })
           setPopoverOpen(false)
-          setValue('')
+          setInputDraft('')
         },
       },
       {
@@ -222,7 +222,7 @@ export function MagicInput({
         icon: RefreshCw,
         action: async () => {
           setPopoverOpen(false)
-          setValue('')
+          setInputDraft('')
 
           try {
             setRefreshing(true)
@@ -250,7 +250,7 @@ export function MagicInput({
         action: () => {
           handleExportMarkdown()
           setPopoverOpen(false)
-          setValue('')
+          setInputDraft('')
         },
         className: !isActivated ? 'text-zinc-400' : '',
       },
@@ -260,7 +260,7 @@ export function MagicInput({
         icon: Bug,
         action: async () => {
           setPopoverOpen(false)
-          setValue('')
+          setInputDraft('')
           await exportDebugLog()
           addToast({ title: t('debug_export_success_toast'), type: 'success' })
         },

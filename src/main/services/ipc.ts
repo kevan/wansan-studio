@@ -48,8 +48,17 @@ export function setupIPC(
   // 文件解析
   ipcMain.handle('parse-file', async (event, filePath: string) => {
     try {
-      const onProgress = (count: number) => {
-        event.sender.send('file:parse-progress', { filePath, count })
+      const onProgress = (info: {
+        rowCount?: number
+        isPercentage?: boolean
+        progress?: number
+      }) => {
+        event.sender.send('file:parse-progress', {
+          filePath,
+          count: info.rowCount,
+          isPercentage: info.isPercentage,
+          progress: info.progress,
+        })
       }
       const result = await fileService.parseFile(filePath, onProgress)
       return { success: true, data: result }
@@ -459,8 +468,17 @@ export function setupIPC(
       columns?: ColumnSchema[]
     ) => {
       try {
-        const onProgress = (rowCount: number) => {
-          event.sender.send('file:progress', { fileId, progress: rowCount })
+        const onProgress = (info: {
+          rowCount?: number
+          isPercentage?: boolean
+          progress?: number
+        }) => {
+          event.sender.send('file:progress', {
+            fileId,
+            progress: info.rowCount,
+            isPercentage: info.isPercentage,
+            percentage: info.progress,
+          })
         }
 
         const result = await fileService.reIngestFile(

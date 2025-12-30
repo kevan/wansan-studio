@@ -51,53 +51,16 @@ async function fetchTableSchema(
 }
 
 /**
- * 摄取 JSON 数据到 DuckDB（用于 Demo 数据）
+ * Ingests JSON data into a table and returns the schema
  */
 export async function ingestJsonData(
   databaseService: DBService,
   tableName: string,
   rows: any[]
 ): Promise<TableSchema> {
-  if (!rows || rows.length === 0) {
-    throw new Error('No data provided')
-  }
-
-  const tempFileName = `${tableName}.json`
-
   try {
-    // [FIX] Pre-process rows to convert Date objects to wall-time strings
-    // to prevent timezone shifts during JSON.stringify (UTC conversion)
-    const processedRows = rows.map(row => {
-      const newRow: any = {}
-      for (const [key, val] of Object.entries(row)) {
-        if (val instanceof Date && !isNaN(val.getTime())) {
-          // Use LOCAL components to get "Wall Time" literal values
-          const year = val.getFullYear()
-          const month = String(val.getMonth() + 1).padStart(2, '0')
-          const day = String(val.getDate()).padStart(2, '0')
-          const hours = val.getHours()
-          const minutes = val.getMinutes()
-          const seconds = val.getSeconds()
-
-          // Smart formatting: if time is midnight, use YYYY-MM-DD for DATE inference
-          if (hours === 0 && minutes === 0 && seconds === 0) {
-            newRow[key] = `${year}-${month}-${day}`
-          } else {
-            const h = String(hours).padStart(2, '0')
-            const min = String(minutes).padStart(2, '0')
-            const s = String(seconds).padStart(2, '0')
-            newRow[key] = `${year}-${month}-${day}T${h}:${min}:${s}.000`
-          }
-        } else {
-          newRow[key] = val
-        }
-      }
-      return newRow
-    })
-
-    const jsonContent = JSON.stringify(processedRows)
-
-    // For Native, we must write to a physical file in temp dir
+    const jsonContent = JSON.stringify(rows)
+    const tempFileName = `temp_${Date.now()}.json`
     const tempPath = path.join(app.getPath('temp'), tempFileName)
     await fs.writeFile(tempPath, jsonContent)
     // DuckDB expects forward slashes
@@ -144,7 +107,11 @@ export async function ingestExcelFile(
   fileName: string,
   targetTableName?: string,
   targetSheetName?: string,
-  onProgress?: (rowCount: number) => void,
+  onProgress?: (progressInfo: {
+    rowCount?: number
+    isPercentage?: boolean
+    progress?: number
+  }) => void,
   prefix: string = 't_',
   typesParam?: string,
   limitRows?: number
@@ -176,7 +143,13 @@ export async function ingestExcelFile(
     worker.on('message', async (message: any) => {
       console.log('[Ingestion] Received message type:', message.type)
       if (message.type === 'progress') {
-        if (onProgress) onProgress(message.rowCount)
+        if (onProgress) {
+          onProgress({
+            rowCount: message.rowCount,
+            isPercentage: message.isPercentage,
+            progress: message.progress,
+          })
+        }
         return
       }
 
@@ -205,7 +178,7 @@ export async function ingestExcelFile(
             // Logic to determine table name
             if (targetTableName && data.length === 1) {
               tableName = targetTableName
-              await databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
+              await databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`) 
             } else {
               tableName = await getUniqueTableName(
                 databaseService,

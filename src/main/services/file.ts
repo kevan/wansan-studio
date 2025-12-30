@@ -22,7 +22,14 @@ import {
 export class FileService {
   constructor(private databaseService: NativeDatabaseService) {}
 
-  async parseFile(filePath: string, onProgress?: (count: number) => void) {
+  async parseFile(
+    filePath: string,
+    onProgress?: (info: {
+      rowCount?: number
+      isPercentage?: boolean
+      progress?: number
+    }) => void
+  ) {
     console.log('parseFile', filePath)
     const ext = extname(filePath).toLowerCase()
 
@@ -40,7 +47,11 @@ export class FileService {
 
   private async parseExcelFile(
     filePath: string,
-    onProgress?: (count: number) => void
+    onProgress?: (info: {
+      rowCount?: number
+      isPercentage?: boolean
+      progress?: number
+    }) => void
   ) {
     console.log('[FileService] parseExcelFile start:', filePath)
     try {
@@ -195,7 +206,11 @@ export class FileService {
     filePath: string,
     tableName: string,
     sheetName?: string,
-    onProgress?: (rowCount: number) => void,
+    onProgress?: (info: {
+      rowCount?: number
+      isPercentage?: boolean
+      progress?: number
+    }) => void,
     knownColumns?: ColumnSchema[] // Add this param
   ): Promise<ReloadResult> {
     // 处理 Demo 数据（DEMO_MEMORY 路径）
