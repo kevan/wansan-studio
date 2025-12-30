@@ -30,34 +30,32 @@ const getLinearGradient = (color: string) => {
 
 export function applyWansanTheme(option: EChartsOption): EChartsOption {
   const isDark = document.documentElement.classList.contains('dark')
-  
+
   // Theme Colors
   const textColor = isDark ? '#a1a1aa' : '#71717a' // zinc-400 / zinc-500
   const axisColor = isDark ? '#3f3f46' : '#e4e4e7' // zinc-700 / zinc-200
   const splitLineColor = isDark ? '#27272a' : '#f4f4f5' // zinc-800 / zinc-100
-  const tooltipBg = isDark ? 'rgba(24, 24, 27, 0.9)' : 'rgba(255, 255, 255, 0.95)'
+  const tooltipBg = isDark
+    ? 'rgba(24, 24, 27, 0.9)'
+    : 'rgba(255, 255, 255, 0.95)'
   const tooltipBorder = isDark ? '#27272a' : '#e4e4e7'
 
   // 1. Enhance Series (Bar, Line, Pie)
   const series = Array.isArray(option.series)
     ? option.series.map((s: any, index) => {
         const baseColor = COLORS[index % COLORS.length]
-        
+
         // Bar Chart Styling
         if (s.type === 'bar') {
           return {
             ...s,
             itemStyle: {
-              borderRadius: [6, 6, 0, 0], // Rounded top
-              color: baseColor, // Could use gradient here if desired
+              borderRadius: [4, 4, 0, 0], // Slightly reduce radius for sharper look
+              color: baseColor,
               ...s.itemStyle,
             },
             barMaxWidth: 40,
-            showBackground: true,
-            backgroundStyle: {
-              color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
-              borderRadius: [6, 6, 0, 0],
-            },
+            // showBackground: false, // Removed to fix 'shadow' complaint
           }
         }
 
@@ -75,10 +73,12 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
               shadowOffsetY: 4,
               ...s.lineStyle,
             },
-            areaStyle: s.areaStyle ? {
-              opacity: 0.2,
-              color: getLinearGradient(baseColor)
-            } : undefined
+            areaStyle: s.areaStyle
+              ? {
+                  opacity: 0.2,
+                  color: getLinearGradient(baseColor),
+                }
+              : undefined,
           }
         }
 
@@ -95,15 +95,15 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
             },
             label: {
               show: false, // Cleaner look
-              position: 'center'
+              position: 'center',
             },
             emphasis: {
               label: {
                 show: true,
                 fontSize: 16,
-                fontWeight: 'bold'
-              }
-            }
+                fontWeight: 'bold',
+              },
+            },
           }
         }
 
@@ -158,7 +158,7 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
     color: COLORS,
     backgroundColor: 'transparent',
     title: { show: false }, // Managed by React components
-    
+
     // 3. Grid Layout
     grid: {
       top: 30,
@@ -186,7 +186,8 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
         fontFamily: 'Inter, system-ui, sans-serif',
       },
       padding: [10, 14],
-      extraCssText: 'box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); border-radius: 12px; backdrop-filter: blur(8px);',
+      extraCssText:
+        'box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); border-radius: 12px; backdrop-filter: blur(8px);',
       ...(option.tooltip as any),
     },
 
