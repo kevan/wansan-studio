@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import type { LoadingType } from '../../shared/types'
-import { ReportCard } from './chat/ReportCard'
+import { ChatReportCard } from './viz/containers/ChatReportCard'
 import { ErrorCard } from './chat/error-card'
 import { EmptyState } from './chat/empty-state'
 import { MagicInput } from './chat/magic-input'
@@ -23,6 +23,7 @@ import { format } from 'sql-formatter'
 
 import { AnalysisTemplateCard } from './chat/analysis-template-card'
 import { FilterParam } from '@shared/schemas/analysis'
+import { VizSummary } from './viz/core/VizSummary'
 
 export interface ChatMessage {
   id: string
@@ -103,9 +104,9 @@ export function ChatInterface({
             />
           </div>
         ) : (
-          messages.map((message, idx) => (
+          messages.map((message, messageIdx) => (
             <div
-              key={message.id || `msg-${idx}`}
+              key={message.id || `msg-${messageIdx}`}
               className="flex gap-4 w-full max-w-5xl mx-auto group animate-in fade-in slide-in-from-bottom-2 relative"
             >
               {/* Avatar */}
@@ -208,10 +209,12 @@ export function ChatInterface({
                       </div>
                     )}
 
-                    {/* Display message content (Analysis Summary) */}
+                    {/* Show content (Summary) */}
                     {(message.content || message.reportData?.summary) && (
                       <div className="mb-3 text-zinc-600 text-[14px] leading-relaxed">
-                        {message.content || message.reportData?.summary}
+                        <VizSummary 
+                          content={message.content || message.reportData?.summary} 
+                        />
                       </div>
                     )}
 
@@ -249,7 +252,7 @@ export function ChatInterface({
                           // Case 2: Standard Report or Configured Template
                           return (
                             <>
-                              <ReportCard
+                              <ChatReportCard
                                 messageId={message.id}
                                 message={message}
                                 reportData={report}
@@ -270,7 +273,7 @@ export function ChatInterface({
                               {report.suggestions && report.suggestions.length > 0 && (
                                 <MessageSuggestions
                                   suggestions={report.suggestions}
-                                  isLast={idx === messages.length - 1}
+                                  isLast={messageIdx === messages.length - 1}
                                   onSelect={handleQuerySubmit}
                                   isChatLoading={isChatLoading}
                                   isRestoring={isRestoring}
