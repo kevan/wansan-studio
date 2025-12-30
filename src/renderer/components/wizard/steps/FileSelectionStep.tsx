@@ -284,8 +284,8 @@ export function FileSelectionStep() {
                 {parseProgress && (
                   <span className="text-xs text-zinc-400 font-mono">
                     {parseProgress.isPercentage
-                      ? `Processing... ${parseProgress.progress?.toFixed(0)}%`
-                      : `Reading ${parseProgress.count?.toLocaleString()} rows...`}
+                      ? t('wizard.processing_percent', { progress: parseProgress.progress?.toFixed(0) })
+                      : t('wizard.reading_rows', { count: parseProgress.count || 0 })}
                   </span>
                 )}
               </div>

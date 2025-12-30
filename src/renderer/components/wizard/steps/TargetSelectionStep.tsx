@@ -21,6 +21,7 @@ import {
   MinusCircle,
   PlusCircle,
   Equal,
+  Sparkles,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { RadioGroup, RadioGroupItem } from '../../ui/radio-group'
@@ -28,6 +29,7 @@ import { Label } from '../../ui/label'
 import { Input } from '../../ui/input'
 import { sanitizeTableName } from '@shared/naming-utils'
 import { useTranslation } from 'react-i18next'
+import { useSettingsStore } from '@/stores/useSettingsStore'
 
 export function TargetSelectionStep() {
   const {
@@ -40,6 +42,7 @@ export function TargetSelectionStep() {
     prevTask,
   } = useWizardStore()
   const { files } = useProjectStore()
+  const { isActivated } = useSettingsStore()
   const { t } = useTranslation('common')
   const [isPreChecking, setIsPreChecking] = useState(false)
 
@@ -138,14 +141,14 @@ export function TargetSelectionStep() {
         <div className="flex items-center gap-4">
           <div className="flex flex-col text-left">
             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">
-              {mode === 'append' ? 'Target Decision' : mode === 'replace' ? 'Schema Comparison' : 'Target Configurations'}
+              {mode === 'append' ? t('wizard.target_decision') : mode === 'replace' ? t('wizard.schema_comparison') : t('wizard.target_configurations')}
             </span>
             <span className="text-sm font-bold text-zinc-900 mt-1">
               {mode === 'append'
-                ? `Appending to ${targetFile?.name}`
+                ? t('wizard.appending_to', { name: targetFile?.name })
                 : mode === 'replace' 
-                  ? `Replacing ${targetFile?.name}`
-                  : `${tasks.length} Assets Pending`}
+                  ? t('wizard.replacing', { name: targetFile?.name })
+                  : t('wizard.assets_pending', { count: tasks.length })}
             </span>
           </div>
         </div>
@@ -172,6 +175,23 @@ export function TargetSelectionStep() {
 
       <div className="flex-1 overflow-y-auto p-8">
         <div className="max-w-4xl mx-auto space-y-8">
+          {/* Trial Limit Banner */}
+          {!isActivated && (
+            <div className="bg-amber-50/50 border border-amber-100 rounded-2xl p-5 flex items-start gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
+              <div className="p-2 bg-amber-100 rounded-xl text-amber-600 shrink-0">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-amber-900 uppercase tracking-tight">
+                  {t('wizard.trial_limit_banner_title')}
+                </h4>
+                <p className="text-xs text-amber-700 font-medium leading-relaxed">
+                  {t('wizard.trial_limit_banner_desc')}
+                </p>
+              </div>
+            </div>
+          )}
+
           {mode === 'import' ? (
             /* --- IMPORT MODE: Multi-Task List --- */
             <div className="space-y-4">
@@ -188,10 +208,15 @@ export function TargetSelectionStep() {
                   const isTaken = files.some(
                     f => f.tableName === task.finalTableName
                   )
+                  const isTruncated = !isActivated && task.rowCount > 50000
+
                   return (
                     <div
                       key={task.id}
-                      className="group flex items-center gap-4 bg-white border border-zinc-200 p-4 rounded-2xl shadow-sm hover:border-indigo-200 transition-all"
+                      className={cn(
+                        "group flex items-center gap-4 bg-white border p-4 rounded-2xl shadow-sm transition-all relative overflow-hidden",
+                        isTruncated ? "border-amber-200 ring-2 ring-amber-50" : "border-zinc-200 hover:border-indigo-200"
+                      )}
                     >
                       <div className="flex-1 flex items-center gap-3 min-w-0">
                         <div className="w-8 h-8 rounded-lg bg-zinc-50 flex items-center justify-center shrink-0">
@@ -205,9 +230,17 @@ export function TargetSelectionStep() {
                           <p className="text-sm font-bold text-zinc-900 truncate">
                             {task.sourceName}
                           </p>
-                          <p className="text-[10px] text-zinc-400 truncate">
-                            {task.fileName}
-                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <p className="text-[10px] text-zinc-400 truncate">
+                              {task.fileName}
+                            </p>
+                            {isTruncated && (
+                              <span className="flex items-center gap-1 text-[9px] font-black text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded uppercase tracking-tighter shrink-0">
+                                <AlertTriangle className="w-2.5 h-2.5" />
+                                {t('wizard.truncated_hint')}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <ArrowRight className="w-4 h-4 text-zinc-200 shrink-0" />
@@ -262,9 +295,9 @@ export function TargetSelectionStep() {
                       <AlertTriangle className="w-6 h-6" />
                     </div>
                     <div>
-                      <h4 className="text-lg font-bold text-rose-900">Breaking Changes Detected</h4>
+                      <h4 className="text-lg font-bold text-rose-900">{t('wizard.breaking_changes_title')}</h4>
                       <p className="text-sm text-rose-700 mt-1">
-                        The following columns are missing in the new file. Reports and metrics relying on these columns will break.
+                        {t('wizard.breaking_changes_desc')}
                       </p>
                       <div className="flex flex-wrap gap-2 mt-3">
                         {schemaDiff.missing.map(col => (
@@ -281,7 +314,7 @@ export function TargetSelectionStep() {
                 <div className="grid grid-cols-2 gap-8">
                   {/* LEFT: Original */}
                   <div className="space-y-4">
-                     <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Original Schema</h4>
+                     <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{t('wizard.original_schema')}</h4>
                      <div className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm space-y-2 opacity-60 pointer-events-none grayscale">
                         {targetFile?.columns.map(col => (
                           <div key={col.name} className="flex items-center justify-between text-sm py-1 border-b border-zinc-50 last:border-0">
@@ -294,7 +327,7 @@ export function TargetSelectionStep() {
 
                   {/* RIGHT: New */}
                   <div className="space-y-4">
-                     <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">New Schema</h4>
+                     <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{t('wizard.new_schema')}</h4>
                      <div className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm space-y-2">
                         {/* Added */}
                         {schemaDiff?.added.map(col => (
@@ -324,8 +357,8 @@ export function TargetSelectionStep() {
                 {(!schemaDiff?.missing.length && !schemaDiff?.added.length) && (
                    <div className="text-center p-8 bg-zinc-50 rounded-2xl border border-dashed border-zinc-200">
                       <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-                      <p className="font-bold text-zinc-700">Perfect Match</p>
-                      <p className="text-sm text-zinc-500">The schema is identical. Safe to replace.</p>
+                      <p className="font-bold text-zinc-700">{t('wizard.perfect_match_title')}</p>
+                      <p className="text-sm text-zinc-500">{t('wizard.perfect_match_desc')}</p>
                    </div>
                 )}
              </div>
