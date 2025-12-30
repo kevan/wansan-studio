@@ -279,6 +279,8 @@
     "pro_active": "专业版",
     "trial_mode": "试用模式",
     "license_active": "授权已激活",
+    "special_access": "特殊授权",
+    "expired": "已过期",
     "unlock_full_access": "解锁完整版",
     "file_too_large_title": "文件过大",
     "file_too_large_desc": "超出 Beta 限制 (100MB)。已跳过文件: {{files}}",

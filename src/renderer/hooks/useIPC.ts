@@ -142,6 +142,7 @@ const mockIPC: ElectronAPI = {
   onFileProgress: () => () => {},
   onCommandCloseProject: () => () => {},
   onParseProgress: () => () => {},
+  onRemoteConfig: () => () => {},
 }
 
 function getIpc() {

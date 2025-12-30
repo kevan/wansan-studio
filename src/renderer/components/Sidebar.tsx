@@ -146,7 +146,28 @@ export function Sidebar(_props: SidebarProps) {
                   {username}
                 </div>
                 <div className="flex items-center gap-1 mt-0.5">
-                  {settings.isActivated ? (
+                  {settings.isSpecialChannel ? (
+                    <div
+                      className={cn(
+                        'text-[9px] font-black uppercase tracking-[0.15em] flex items-center gap-1 px-1.5 py-0.5 rounded-sm',
+                        settings.isExpired
+                          ? 'bg-red-50 text-red-600 border border-red-100'
+                          : 'bg-zinc-900 text-white dark:bg-white dark:text-black'
+                      )}
+                    >
+                      {settings.isExpired ? (
+                        <span>{t('sidebar.expired', 'EXPIRED')}</span>
+                      ) : (
+                        <>
+                          <Sparkles className="w-2.5 h-2.5 fill-current" />
+                          <span className="truncate max-w-[80px]">
+                            {settings.remoteConfig.channel ||
+                              t('sidebar.special_access', 'SPECIAL')}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  ) : settings.isActivated ? (
                     <div className="text-[9px] text-amber-600 dark:text-amber-500 font-bold uppercase tracking-wider flex items-center gap-1">
                       <Crown className="w-2.5 h-2.5 fill-current" />
                       <span>{t('sidebar.pro_active', 'PRO ACTIVE')}</span>
@@ -179,5 +200,5 @@ export function Sidebar(_props: SidebarProps) {
         onClose={() => setIsRulesModalOpen(false)}
       />
     </aside>
-  );
+  )
 }

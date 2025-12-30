@@ -139,7 +139,6 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     const settingsStore = useSettingsStore.getState()
     settingsStore.updateSettings({
       hasCompletedOnboarding: false,
-      isActivated: false,
       apiKey: '',
     })
     settingsStore.resetPreferences()
@@ -176,15 +175,16 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     // 2. Clear Migration Flag
     localStorage.removeItem('wansan-migration-v1.3')
 
-    // 3. Mock Settings
+    // 3. Mock Settings (Legacy Version 2)
     localStorage.setItem(
       SETTINGS_STORAGE_KEY,
       JSON.stringify({
         state: {
           language: 'en',
           hasCompletedOnboarding: true,
+          isActivated: true, // Legacy activated state
         },
-        version: 3,
+        version: 2, // Simulate older version to trigger migrate()
       })
     )
 

@@ -1,0 +1,82 @@
+name: Build Special Channel
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel_name:
+        description: 'Channel Name (e.g. DeepSeek_Corp)'
+        required: true
+        default: 'Special_Channel'
+      expiry_date:
+        description: 'Expiry Date (YYYY-MM-DD)'
+        required: true
+        default: '2026-12-31'
+      ai_provider:
+        description: 'AI Provider (deepseek/openai/custom)'
+        required: true
+        default: 'deepseek'
+      ai_base_url:
+        description: 'AI Base URL'
+        required: true
+        default: 'https://api.deepseek.com'
+      ai_models:
+        description: 'Models (comma separated)'
+        required: true
+        default: 'deepseek-chat,deepseek-coder'
+      os:
+        description: 'OS (macos-latest / windows-latest)'
+        required: true
+        default: 'macos-latest'
+        type: choice
+        options:
+          - macos-latest
+          - windows-latest
+
+jobs:
+  build:
+    runs-on: ${{ inputs.os }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          
+      - name: Install Dependencies
+        run: npm ci
+        
+      # Build Renderer & Main with Injected Variables
+      # Note: VITE_ prefixed variables are automatically picked up by Vite (Renderer)
+      # For Main process (tsup), we need to ensure they are available or use define
+      - name: Build
+        run: npm run build
+        env:
+          # Inject Channel info
+          VITE_SPECIAL_CHANNEL: ${{ inputs.channel_name }}
+          VITE_DEFAULT_EXPIRY: ${{ inputs.expiry_date }}
+          
+          # Inject Managed AI Config
+          VITE_BUILTIN_PROVIDER: ${{ inputs.ai_provider }}
+          VITE_BUILTIN_BASE_URL: ${{ inputs.ai_base_url }}
+          VITE_BUILTIN_MODELS: ${{ inputs.ai_models }}
+          
+          # Inject Encrypted Key (From Secrets)
+          # You must populate this secret in GitHub Repo Settings
+          VITE_BUILTIN_API_KEY: ${{ secrets.SPECIAL_CHANNEL_OBFUSCATED_KEY }}
+
+      - name: Package Application
+        run: npm run dist
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Wansan-${{ inputs.channel_name }}-${{ inputs.os }}
+          path: |
+            release/*.dmg
+            release/*.exe
+            release/*.zip

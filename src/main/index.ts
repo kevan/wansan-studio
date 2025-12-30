@@ -12,6 +12,7 @@ import { dbClient } from './services/db-service/client'
 import { ProjectManager } from './services/project-manager'
 import { registerProjectHandlers } from './ipc/project-ipc'
 import { createApplicationMenu } from './config/menu'
+import { authService } from './services/auth-service'
 
 class WansanApp {
   private mainWindow: BrowserWindow | null = null
@@ -65,6 +66,9 @@ class WansanApp {
 
     // Register Project IPC Handlers
     registerProjectHandlers(this.projectManager)
+
+    // Fetch Remote Config
+    this.fetchRemoteConfig()
 
     // Handle Language Change
     ipcMain.handle('app:set-language', (_event, lang: 'en' | 'zh') => {
@@ -253,6 +257,43 @@ class WansanApp {
 
   public getAIService(): AIService | null {
     return this.aiService
+  }
+
+  private async fetchRemoteConfig() {
+    try {
+      // 1. Fetch from Remote (Async)
+      const remoteData = await authService.fetchRemoteConfig()
+
+      // 2. Calculate final Auth State (Merging Local + Remote)
+      const authState = await authService.getAuthState(remoteData)
+
+      // 3. Prepare Config Payload
+      const config = {
+        ...(remoteData || {}),
+        ...authState, // isActivated, channel, specialExpiry, etc.
+        // Fallback for offline mode if remoteData is null
+        isOffline: !remoteData,
+      }
+
+      // 4. Send to Renderer
+      this.sendConfigToRenderer(config)
+    } catch (e) {
+      console.error('[Main] Auth flow failed:', e)
+      // Extreme fallback
+      this.sendConfigToRenderer({ isOffline: true })
+    }
+  }
+
+  private sendConfigToRenderer(config: any) {
+    if (this.mainWindow) {
+      if (this.mainWindow.webContents.isLoading()) {
+        this.mainWindow.webContents.once('did-finish-load', () => {
+          this.mainWindow?.webContents.send('app:remote-config', config)
+        })
+      } else {
+        this.mainWindow.webContents.send('app:remote-config', config)
+      }
+    }
   }
 }
 

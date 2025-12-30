@@ -19,7 +19,8 @@ export function useProjectIO() {
   const currentProjectPath = useProjectStore(state => state.currentProjectPath)
   const setProjectPath = useProjectStore(state => state.setProjectPath)
   const loadProjectToStore = useProjectStore(state => state.loadProject)
-  const { addRecentProject, recentProjectPaths, isActivated } = useSettingsStore()
+  const { addRecentProject, recentProjectPaths, isActivated } =
+    useSettingsStore()
   const { checkGate, gateNode } = useProGate()
 
   const saveProject = useCallback(async () => {
@@ -197,7 +198,13 @@ export function useProjectIO() {
       // The store has `refreshSessionWidgets`, but for files we might need `reloadFile`.
       // For now we just load the state.
     },
-    [loadProjectToStore, setProjectPath, isActivated, addRecentProject, checkGate]
+    [
+      loadProjectToStore,
+      setProjectPath,
+      isActivated,
+      addRecentProject,
+      checkGate,
+    ]
   )
 
   const createProject = useCallback(
@@ -209,13 +216,13 @@ export function useProjectIO() {
       }
 
       const path = await projectService.create(name, location)
-      
+
       // CRITICAL: Add to recent list BEFORE opening to pass the limit check inside openProject
       addRecentProject(path)
-      
+
       // After create, we usually want to open it immediately.
       await openProject(path)
-      
+
       Analytics.track('project_created', {})
       return path
     },

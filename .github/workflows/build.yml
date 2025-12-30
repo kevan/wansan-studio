@@ -52,16 +52,3 @@ jobs:
             dist_electron/*.exe
           draft: false
           prerelease: true
-
-#      - name: Upload Artifacts to Release
-#        uses: softprops/action-gh-release@v1
-#        if: startsWith(github.ref, 'refs/tags/')
-#        with:
-#          files: |
-#            dist_electron/*.dmg
-#            dist_electron/*.exe
-#            dist_electron/*.zip
-#          draft: true # Create a Draft Release for you to review
-#          prerelease: true
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -133,6 +133,7 @@ export interface AIConfig {
   apiKey?: string
   baseURL?: string
   model?: string
+  isManaged?: boolean // [NEW] Indicates build-time injected config
 }
 
 export interface DomainRule {

@@ -279,9 +279,10 @@
     "duplicate_file_skipped_desc": "{{fileName}} already imported, skipping.",
     "parse_failed": "Parse Failed",
     "license_active": "License Active",
-    "pro_active": "PRO ACTIVE",
-    "trial_mode": "TRIAL MODE",
+    "special_access": "SPECIAL ACCESS",
+    "expired": "EXPIRED",
     "unlock_full_access": "Unlock Full Access",
+
     "file_too_large_title": "File Too Large",
     "file_too_large_desc": "Exceeded Beta limit (100MB). Skipped: {{files}}",
     "trial_limit_multi_sheet_title": "Trial Limit Reached",

@@ -154,6 +154,11 @@ const electronAPI: ElectronAPI = {
     ipcRenderer.on('command:close-project', listener)
     return () => ipcRenderer.removeListener('command:close-project', listener)
   },
+  onRemoteConfig: (callback: (config: any) => void) => {
+    const listener = (_event: any, config: any) => callback(config)
+    ipcRenderer.on('app:remote-config', listener)
+    return () => ipcRenderer.removeListener('app:remote-config', listener)
+  },
 }
 
 // 将 API 暴露给渲染进程

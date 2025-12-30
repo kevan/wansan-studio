@@ -35,6 +35,8 @@ export const AI_PROVIDERS = {
   },
 } as const
 
+export const DEFAULT_SPECIAL_EXPIRY = '2026-12-31'
+
 export type AIProviderKey = keyof typeof AI_PROVIDERS
 
 export interface ColumnTypeDisplayConfig {

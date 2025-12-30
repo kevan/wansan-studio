@@ -164,4 +164,5 @@ export interface ElectronAPI {
     }) => void
   ) => () => void
   onCommandCloseProject: (callback: () => void) => () => void
+  onRemoteConfig: (callback: (config: any) => void) => () => void
 }

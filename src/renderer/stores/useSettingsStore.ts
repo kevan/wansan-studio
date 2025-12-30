@@ -1,6 +1,10 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { AI_PROVIDERS, type AIProviderKey } from '@/src/lib/constants'
+import {
+  AI_PROVIDERS,
+  type AIProviderKey,
+  DEFAULT_SPECIAL_EXPIRY,
+} from '@/src/lib/constants'
 import { createBigIntStorage } from '@shared/serialization.ts'
 import type { AIConfig, DomainRule } from '@shared/types'
 import { Analytics } from '../services/analytics'
@@ -19,6 +23,9 @@ export interface RemoteConfig {
   latest_version?: string
   download_url?: string
   beta_code?: string
+  specialExpiry?: string
+  channel?: string
+  isActivated?: boolean
   announcement?: {
     id: string
     text: string | { [lang: string]: string }
@@ -43,6 +50,8 @@ export interface SettingsState {
   dismissedAnnouncementId: string | null
   domainRules: DomainRule[]
   recentProjectPaths: string[]
+  isSpecialChannel: boolean
+  isExpired: boolean
   setProvider: (provider: AIProviderKey) => void
   activateLicense: (code: string) => boolean
   loadSensitiveData: () => Promise<void>
@@ -72,6 +81,27 @@ export interface SettingsState {
   ) => void
   completeOnboarding: () => void
   resetPreferences: () => void
+}
+
+const checkExpiry = (
+  remoteConfig: RemoteConfig
+): { isSpecial: boolean; isExpired: boolean; shouldActivate: boolean } => {
+  // 核心变更：完全依赖后端下发的 channel 字段
+  const channel = remoteConfig.channel
+  const isSpecial = typeof channel === 'string' && channel.length > 0
+
+  if (!isSpecial)
+    return { isSpecial: false, isExpired: false, shouldActivate: false }
+
+  const expiryDateStr = remoteConfig.specialExpiry || DEFAULT_SPECIAL_EXPIRY
+  const expiryDate = new Date(expiryDateStr)
+  const isExpired = new Date() > expiryDate
+
+  return {
+    isSpecial: true,
+    isExpired,
+    shouldActivate: !isExpired,
+  }
 }
 
 const getProviderDefaults = (provider: AIProviderKey) => {
@@ -115,6 +145,8 @@ const initialSettingsState: Omit<
   dismissedAnnouncementId: null,
   domainRules: [],
   recentProjectPaths: [],
+  isSpecialChannel: false,
+  isExpired: false,
 }
 
 export const SETTINGS_STORAGE_KEY = 'wansan-settings-v1'
@@ -155,10 +187,12 @@ export const useSettingsStore = create<SettingsState>()(
         }
       },
       activateLicense: (code: string) => {
-        const { validBetaCodes, remoteConfig } = get()
+        const { validBetaCodes } = get()
         const normalizedCode = code.trim().toUpperCase()
+        if (!normalizedCode) return false
 
-        // Check dynamic list
+        // 公测阶段：纯前端验证，无需存储 Key 到安全存储
+        // 只要匹配 BetaCode，直接标记为激活并持久化
         if (validBetaCodes.includes(normalizedCode)) {
           set({ isActivated: true })
           Analytics.track('beta_activated', {
@@ -166,23 +200,40 @@ export const useSettingsStore = create<SettingsState>()(
           })
           return true
         }
-
-        // Check remote config beta_code
-        if (
-          remoteConfig.beta_code &&
-          remoteConfig.beta_code.toUpperCase() === normalizedCode
-        ) {
-          set({ isActivated: true })
-          Analytics.track('beta_activated', {
-            code_prefix: normalizedCode.substring(0, 6),
-          })
-          return true
-        }
-
         return false
       },
-      setRemoteConfig: (cfg: RemoteConfig) => set({ remoteConfig: cfg }),
+      setRemoteConfig: (cfg: RemoteConfig) => {
+        const { isSpecial, isExpired, shouldActivate } = checkExpiry(cfg)
+        set(state => {
+          // 基础状态
+          let newIsActivated = state.isActivated
+
+          // 1. 特殊渠道：完全由后端/环境决定
+          if (isSpecial) {
+            newIsActivated = shouldActivate
+          }
+          // 2. 普通渠道 (后端下发了明确指令)：覆盖本地
+          else if ((cfg as any).isActivated !== undefined) {
+            newIsActivated = (cfg as any).isActivated
+          }
+          // 3. 普通渠道 (后端无指令)：保持本地状态 (isActivated 持久化生效)
+
+          const newState: Partial<SettingsState> = {
+            remoteConfig: cfg,
+
+            isSpecialChannel: isSpecial,
+
+            isExpired: isExpired,
+
+            isActivated: newIsActivated,
+          }
+
+          return newState
+        })
+      },
+
       dismissAnnouncement: (id: string) => set({ dismissedAnnouncementId: id }),
+
       addDomainRule: content => {
         Analytics.track('domain_rule_added', { scope: 'global' })
         set(state => ({
@@ -222,13 +273,17 @@ export const useSettingsStore = create<SettingsState>()(
         }),
       addRecentProject: path =>
         set(state => {
-          const filtered = (state.recentProjectPaths || []).filter(p => p !== path)
+          const filtered = (state.recentProjectPaths || []).filter(
+            p => p !== path
+          )
           const newList = [path, ...filtered].slice(0, 10)
           return { recentProjectPaths: newList }
         }),
       removeRecentProject: path =>
         set(state => ({
-          recentProjectPaths: (state.recentProjectPaths || []).filter(p => p !== path),
+          recentProjectPaths: (state.recentProjectPaths || []).filter(
+            p => p !== path
+          ),
         })),
       updateSettings: patch =>
         set(state => {
@@ -297,7 +352,16 @@ export const useSettingsStore = create<SettingsState>()(
       storage: createBigIntStorage(),
       version: 3,
       partialize: state => {
-        const { apiKey, ...rest } = state
+        // 从持久化存储中排除以下敏感或瞬时字段
+        // 注意：isActivated 现在允许持久化（公测阶段便利性）
+        const {
+          apiKey,
+          remoteConfig,
+          isSpecialChannel,
+          isExpired,
+          validBetaCodes, // 由后端下发，无需本地保存
+          ...rest
+        } = state
         return rest
       },
       migrate: persistedState => {
@@ -306,14 +370,20 @@ export const useSettingsStore = create<SettingsState>()(
 
         const provider = (state.provider ?? 'openai') as AIProviderKey
         const defaults = getProviderDefaults(provider)
+        const remoteConfig = state.remoteConfig ?? {}
+        const { isSpecial, isExpired, shouldActivate } =
+          checkExpiry(remoteConfig)
+
         return {
           ...initialSettingsState,
           ...state,
           provider,
           baseUrl: state.baseUrl ?? defaults.baseUrl,
           model: state.model ?? defaults.model,
-          isActivated: state.isActivated ?? false,
-          remoteConfig: state.remoteConfig ?? {},
+          isActivated: shouldActivate || (state.isActivated ?? false),
+          remoteConfig,
+          isSpecialChannel: isSpecial,
+          isExpired: isExpired,
           dismissedAnnouncementId: state.dismissedAnnouncementId ?? null,
         } as any
       },

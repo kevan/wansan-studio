@@ -36,7 +36,9 @@
     "verify_connected_to_openai_title": "连接成功",
     "verify_connected_to_openai_desc": "API 密钥和 Base URL 可用。",
     "verify_failed_title": "连接失败",
-    "verify_failed_no_key_desc": "请先输入 API 密钥。"
+    "verify_failed_no_key_desc": "请先输入 API 密钥。",
+    "managed_mode": "企业托管模式",
+    "managed_placeholder": "由组织统一管理"
   },
   "general": {
     "language_label": "语言",

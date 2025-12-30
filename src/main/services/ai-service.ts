@@ -2,6 +2,7 @@ import Store from 'electron-store'
 import { OpenAI } from 'openai'
 import type { ClientOptions } from 'openai'
 import { generateAnalysis, analyzeContext } from '../engine/ai-bridge'
+import crypto from 'crypto'
 import type {
   TableSchema,
   AIAnalysisResult,
@@ -10,6 +11,40 @@ import type {
   AIConfig,
   DomainRule,
 } from '@shared/types.ts'
+
+// --- Security Config (Must match obfuscate-tool.js) ---
+const MASTER_SALT = 'wansan-studio-2025-special-security-salt'
+
+function decryptBuiltinKey(obfuscated: string): string {
+  try {
+    const parts = obfuscated.split(':')
+    if (parts.length !== 3) return '' // Invalid format
+
+    const [ivBase64, authTagBase64, encryptedBase64] = parts
+    const iv = Buffer.from(ivBase64, 'base64')
+    const authTag = Buffer.from(authTagBase64, 'base64')
+
+    // Derive same key
+    const key = crypto.pbkdf2Sync(
+      MASTER_SALT,
+      'salt-pepper',
+      100000,
+      32,
+      'sha256'
+    )
+
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
+    decipher.setAuthTag(authTag)
+
+    let decrypted = decipher.update(encryptedBase64, 'base64', 'utf8')
+    decrypted += decipher.final('utf8')
+
+    return decrypted
+  } catch (e) {
+    console.error('[AI Service] Decryption failed:', e)
+    return ''
+  }
+}
 
 // Define schema for electron-store
 const schema = {
@@ -30,31 +65,83 @@ export class AIService {
   private openai: OpenAI | null = null
   private model = 'gpt-4-turbo-preview'
 
+  // Internal cache for sensitive builtin config
+  private builtinConfig: AIConfig | null = null
+
   constructor() {
+    this.initBuiltinConfig()
     this.loadConfig()
   }
 
-  private loadConfig() {
-    // 从 store 加载配置，但不要使用 store 的默认值，而是让 process.env 优先
-    const storedConfig = store.get('aiConfig') as AIConfig
-    console.log('[AI Service] loadConfig', { storedConfig })
+  private initBuiltinConfig() {
+    try {
+      const provider = process.env.VITE_BUILTIN_PROVIDER
+      const baseUrl = process.env.VITE_BUILTIN_BASE_URL
+      const rawKey = process.env.VITE_BUILTIN_API_KEY
+      const models = process.env.VITE_BUILTIN_MODELS
 
-    // 构造实际生效的配置，优先使用存储的，然后是环境变量，最后是硬编码默认值
-    const effectiveApiKey = storedConfig.apiKey || process.env.OPENAI_API_KEY
-    const effectiveBaseURL = storedConfig.baseURL || process.env.OPENAI_BASE_URL
-    const effectiveModel =
-      storedConfig.model || process.env.OPENAI_MODEL || 'gpt-4-turbo-preview'
+      if (rawKey && provider) {
+        // 1. Try decrypting with AES-GCM (for production/CI)
+        let apiKey = decryptBuiltinKey(rawKey)
 
-    this.model = effectiveModel
+        // 2. Fallback: If decryption fails (returns empty string), try Base64 (for simpler dev setups)
+        // Check if rawKey looks like Base64 but not like our encrypted format (no colons)
+        if (!apiKey && !rawKey.includes(':')) {
+          try {
+            const decoded = Buffer.from(rawKey, 'base64').toString('utf-8')
+            // Basic heuristic: check for common key prefixes or non-binary chars
+            if (/^[a-zA-Z0-9_\-\.]+$/.test(decoded)) {
+              apiKey = decoded
+            }
+          } catch (e) {
+            // Ignore
+          }
+        }
 
-    if (effectiveApiKey) {
-      const options: ClientOptions = {
-        apiKey: effectiveApiKey,
-        baseURL: effectiveBaseURL,
+        // 3. Fallback: Use raw key if all else fails (e.g. local .env plain text)
+        if (!apiKey) {
+          apiKey = rawKey
+        }
+
+        this.builtinConfig = {
+          apiKey,
+          baseURL: baseUrl || '',
+          model: models?.split(',')[0] || 'gpt-4-turbo-preview',
+          isManaged: true,
+        }
+        console.log(`[AI Service] Managed config detected: ${provider}`)
       }
-      // if (isDev()) {
-      //   options.logLevel = 'debug'
-      // }
+    } catch (e) {
+      console.error('[AI Service] Failed to parse builtin config:', e)
+    }
+  }
+
+  private loadConfig() {
+    const storedConfig = store.get('aiConfig') as AIConfig
+
+    // Determine priority: Builtin (Managed) > Stored > Runtime Env > Default
+    let effectiveConfig: AIConfig = {}
+
+    if (this.builtinConfig) {
+      effectiveConfig = { ...this.builtinConfig }
+    } else {
+      effectiveConfig = {
+        apiKey: storedConfig.apiKey || process.env.OPENAI_API_KEY,
+        baseURL: storedConfig.baseURL || process.env.OPENAI_BASE_URL,
+        model:
+          storedConfig.model ||
+          process.env.OPENAI_MODEL ||
+          'gpt-4-turbo-preview',
+      }
+    }
+
+    this.model = effectiveConfig.model || 'gpt-4-turbo-preview'
+
+    if (effectiveConfig.apiKey) {
+      const options: ClientOptions = {
+        apiKey: effectiveConfig.apiKey,
+        baseURL: effectiveConfig.baseURL,
+      }
       this.openai = new OpenAI(options)
     } else {
       this.openai = null
@@ -124,12 +211,8 @@ export class AIService {
     schemas: TableSchema[],
     domainRules: DomainRule[] = []
   ): Promise<{ sql: string; reasoning: string }> {
-    // Import dynamically to avoid circular dependencies if any, or just use the imported function
-    // We already imported generateAnalysis, so let's import fixSQL too
-    // Note: Need to update imports at the top of the file
     const { fixSQL } = await import('../engine/ai-bridge')
     const client = this.requireOpenAI()
-
     return fixSQL(client, originalSql, error, schemas, this.model, domainRules)
   }
 
@@ -141,7 +224,6 @@ export class AIService {
     language: 'en' | 'zh' = 'en'
   ): Promise<ContextAnalysisResult> {
     const client = this.requireOpenAI()
-
     return analyzeContext(client, schemas, this.model, language)
   }
 
@@ -150,7 +232,6 @@ export class AIService {
    */
   async generateText(prompt: string, systemPrompt?: string): Promise<string> {
     const client = this.requireOpenAI()
-
     const response = await client.chat.completions.create({
       model: this.model,
       messages: [
@@ -162,7 +243,6 @@ export class AIService {
       ],
       temperature: 0.7,
     })
-
     return response.choices[0]?.message?.content || ''
   }
 
@@ -170,29 +250,39 @@ export class AIService {
    * Sets and persists AI configuration.
    */
   setConfig(config: AIConfig) {
+    // Prevent overriding if builtin config exists
+    if (this.builtinConfig) {
+      console.warn(
+        '[AI Service] Attempted to override Managed Config. Action ignored.'
+      )
+      return
+    }
+
     const current = store.get('aiConfig') as AIConfig
     const newConfig = { ...current, ...config }
-    console.log('[AI Service] setConfig', { current, newConfig })
     store.set('aiConfig', newConfig)
-
-    // Reload to apply
     this.loadConfig()
   }
 
   /**
    * Gets current effective configuration.
-   * This method now constructs the config by prioritizing stored values,
-   * then environment variables, then hardcoded defaults.
+   * Sensitize sensitive data if it's managed.
    */
   getConfig(): AIConfig {
+    if (this.builtinConfig) {
+      return {
+        ...this.builtinConfig,
+        apiKey: '********************', // Mask real key
+      }
+    }
+
     const storedConfig = store.get('aiConfig') as AIConfig
-
-    const apiKey = storedConfig.apiKey || process.env.OPENAI_API_KEY
-    const baseURL = storedConfig.baseURL || process.env.OPENAI_BASE_URL
-    const model =
-      storedConfig.model || process.env.OPENAI_MODEL || 'gpt-4-turbo-preview'
-
-    return { apiKey, baseURL, model }
+    return {
+      apiKey: storedConfig.apiKey || process.env.OPENAI_API_KEY,
+      baseURL: storedConfig.baseURL || process.env.OPENAI_BASE_URL,
+      model:
+        storedConfig.model || process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
+    }
   }
 
   hasApiKey(): boolean {
@@ -211,52 +301,20 @@ export class AIService {
     const client = this.requireOpenAI()
 
     const columnList = columns.map(c => `- ${c.name} (${c.type})`).join('\n')
-
     const quotingRule = `
 CRITICAL SYNTAX RULES:
-1. **ALWAYS** wrap column names in DOUBLE QUOTES ("). 
-   - Example: "Sales", "Total Cost", "毛利率".
-   - NEVER output raw identifiers like sales or cost.
-2. Return **ONLY** the SQL expression, DO NOT use "SELECT", "FROM", or "AS".                                                                                  │
-3. Use the EXACT column names provided above.                                                                             │
-4. Handle NULLs if appropriate (e.g. COALESCE).                                                                           │
+1. **ALWAYS** wrap column names in DOUBLE QUOTES ( "). 
+2. Return **ONLY** the SQL expression, DO NOT use "SELECT", "FROM", or "AS".
+3. Use the EXACT column names provided above.
+4. Handle NULLs if appropriate (e.g. COALESCE).
 5. If division is involved, use "NULLIF(col, 0)" to prevent errors.
-6. Handle NULLs and Division by Zero safely (e.g. NULLIF(col, 0)).
-7. NO Markdown, NO explanations.
+6. NO Markdown, NO explanations.
 `
-
     let systemPrompt = ''
-
     if (mode === 'generate') {
-      systemPrompt = `
-You are a DuckDB SQL Formula Generator.
-Task: Create a SQL expression based on the user's intended metric name.
-
-### AVAILABLE COLUMNS:
-${columnList}
-
-${quotingRule}
-
-### EXAMPLE:
-Input: "Gross Profit"
-Columns: [sales, cost]
-Output: "sales" - "cost"
-`
+      systemPrompt = `You are a DuckDB SQL Formula Generator.\nTask: Create a SQL expression based on the user's intended metric name.\n\n### AVAILABLE COLUMNS:\n${columnList}\n\n${quotingRule}`
     } else {
-      systemPrompt = `
-You are a SQL Refinement Agent.
-The user input contains existing SQL mixed with natural language instructions.
-Task: Update or complete the SQL logic based on the text.
-
-### AVAILABLE COLUMNS:
-${columnList}
-
-${quotingRule}
-
-### EXAMPLE:
-Input: "\\"price\\" * \\"qty\\" minus tax"
-Output: "price" * "qty" - "tax"
-`
+      systemPrompt = `You are a SQL Refinement Agent.\nThe user input contains existing SQL mixed with natural language instructions.\nTask: Update or complete the SQL logic based on the text.\n\n### AVAILABLE COLUMNS:\n${columnList}\n\n${quotingRule}`
     }
 
     const response = await client.chat.completions.create({
@@ -269,23 +327,22 @@ Output: "price" * "qty" - "tax"
     })
 
     let result = response.choices[0]?.message?.content || ''
-
-    // Cleanup: Remove any potential markdown backticks
     result = result
       .replace(/^```sql/, '')
       .replace(/^```/, '')
       .replace(/```$/, '')
       .trim()
-
     return result
   }
 
-  /**
-   * Clears all AI configuration from the persistent store.
-   */
   clearConfig() {
+    if (this.builtinConfig) {
+      console.warn(
+        '[AI Service] Attempted to clear Managed Config. Action ignored.'
+      )
+      return
+    }
     store.clear()
-    this.loadConfig() // Reload to apply environment defaults after clearing
-    console.log('AI Service: Configuration cleared from store.')
+    this.loadConfig()
   }
 }

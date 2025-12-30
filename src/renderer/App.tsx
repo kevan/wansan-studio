@@ -272,8 +272,19 @@ function App() {
     const unsubClose = window.electronAPI.onCommandCloseProject?.(() => {
       useProjectStore.getState().closeProject()
     })
+
+    // Listen for Remote Config
+    let unsubRemote: (() => void) | undefined
+    if (window.electronAPI.onRemoteConfig) {
+      unsubRemote = window.electronAPI.onRemoteConfig(config => {
+        console.log('[App] Received remote config:', config)
+        useSettingsStore.getState().setRemoteConfig(config)
+      })
+    }
+
     return () => {
       unsubClose?.()
+      unsubRemote?.()
     }
   }, [])
 
