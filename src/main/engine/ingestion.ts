@@ -178,7 +178,7 @@ export async function ingestExcelFile(
             // Logic to determine table name
             if (targetTableName && data.length === 1) {
               tableName = targetTableName
-              await databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`) 
+              await databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
             } else {
               tableName = await getUniqueTableName(
                 databaseService,

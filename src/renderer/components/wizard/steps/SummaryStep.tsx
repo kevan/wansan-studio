@@ -16,10 +16,17 @@ export function SummaryStep() {
   const { files } = useProjectStore()
   const { t } = useTranslation('common')
 
-  const title = mode === 'replace' ? t('wizard.summary_replace_title', 'Confirm Replacement') : t('wizard.summary_title')
-  const subtitle = mode === 'replace' 
-    ? t('wizard.summary_replace_desc', 'This action will overwrite the existing data.')
-    : t('wizard.summary_count', { count: tasks.length })
+  const title =
+    mode === 'replace'
+      ? t('wizard.summary_replace_title', 'Confirm Replacement')
+      : t('wizard.summary_title')
+  const subtitle =
+    mode === 'replace'
+      ? t(
+          'wizard.summary_replace_desc',
+          'This action will overwrite the existing data.'
+        )
+      : t('wizard.summary_count', { count: tasks.length })
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-8 overflow-y-auto">
@@ -31,18 +38,18 @@ export function SummaryStep() {
           <h3 className="text-2xl font-black text-black uppercase tracking-tight">
             {title}
           </h3>
-          <p className="text-zinc-500 text-sm">
-            {subtitle}
-          </p>
+          <p className="text-zinc-500 text-sm">{subtitle}</p>
         </div>
 
         <div className="space-y-3">
           {tasks.map(task => {
             const pkColumn = task.columns.find(c => c.isPrimaryKey)
             let targetFile = null
-            
+
             if (mode === 'append' || mode === 'replace') {
-                targetFile = files.find(f => f.id === (targetTableId || task.targetTableId))
+              targetFile = files.find(
+                f => f.id === (targetTableId || task.targetTableId)
+              )
             }
 
             const displayTargetName =

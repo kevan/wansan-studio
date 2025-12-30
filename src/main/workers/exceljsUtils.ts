@@ -361,67 +361,67 @@ export async function processExcelBufferExcelJS(
 
       worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
         const filledRowData: any[] = []
-        
+
         if (!hasMerges && Array.isArray(row.values)) {
-           // FAST PATH: No merges, use values directly
-           const values = row.values as any[]
-           // ExcelJS values are 1-based (index 0 is undefined)
-           for (let i = 1; i < values.length; i++) {
-             let val = values[i]
-             
-             // Handle Complex Types (Rich Text, Hyperlink, Formula Error)
-             if (val && typeof val === 'object' && !(val instanceof Date)) {
-                // If it's an object, we might need to inspect it or use getCell to be safe
-                // But getCell is slow. Let's try to extract common patterns first.
-                if ('richText' in val) {
-                   val = (val as any).richText.map((t: any) => t.text).join('')
-                } else if ('text' in val && 'hyperlink' in val) {
-                   val = (val as any).text
-                } else if ('result' in val) {
-                   val = (val as any).result
-                   if (val && typeof val === 'object' && !(val instanceof Date)) {
-                      val = (val as any).error || JSON.stringify(val)
-                   }
-                } else {
-                   // Fallback to getCell for unknown objects
-                   const cell = row.getCell(i)
-                   val = cell.value
+          // FAST PATH: No merges, use values directly
+          const values = row.values as any[]
+          // ExcelJS values are 1-based (index 0 is undefined)
+          for (let i = 1; i < values.length; i++) {
+            let val = values[i]
+
+            // Handle Complex Types (Rich Text, Hyperlink, Formula Error)
+            if (val && typeof val === 'object' && !(val instanceof Date)) {
+              // If it's an object, we might need to inspect it or use getCell to be safe
+              // But getCell is slow. Let's try to extract common patterns first.
+              if ('richText' in val) {
+                val = (val as any).richText.map((t: any) => t.text).join('')
+              } else if ('text' in val && 'hyperlink' in val) {
+                val = (val as any).text
+              } else if ('result' in val) {
+                val = (val as any).result
+                if (val && typeof val === 'object' && !(val instanceof Date)) {
+                  val = (val as any).error || JSON.stringify(val)
                 }
-             }
-             filledRowData[i - 1] = val
-           }
+              } else {
+                // Fallback to getCell for unknown objects
+                const cell = row.getCell(i)
+                val = cell.value
+              }
+            }
+            filledRowData[i - 1] = val
+          }
         } else {
-           // SLOW PATH: Merges exist or row.values is weird
-           // Fallback to cell iteration
-           for (let colNumber = 1; colNumber <= row.cellCount; colNumber++) {
-              const cell = row.getCell(colNumber)
-              let val = cell.value
-              if (cell.isMerged && cell.master && cell !== cell.master) {
-                val = cell.master.value
-              }
-              
-              // Handle Rich Text / Hyperlinks
-              if (val && typeof val === 'object' && !(val instanceof Date)) {
-                if ('richText' in val && Array.isArray((val as any).richText)) {
-                  val = (val as any).richText.map((t: any) => t.text).join('')
-                } else if ('text' in val && 'hyperlink' in val) {
-                  val = (val as any).text
-                } else if ('result' in val) {
-                  val = (val as any).result
-                  if (val && typeof val === 'object' && !(val instanceof Date)) {
-                    if ('error' in val) val = (val as any).error
-                    else val = JSON.stringify(val)
-                  }
-                } else {
-                  try {
-                    val = JSON.stringify(val)
-                  } catch {
-                    val = String(val)
-                  }
+          // SLOW PATH: Merges exist or row.values is weird
+          // Fallback to cell iteration
+          for (let colNumber = 1; colNumber <= row.cellCount; colNumber++) {
+            const cell = row.getCell(colNumber)
+            let val = cell.value
+            if (cell.isMerged && cell.master && cell !== cell.master) {
+              val = cell.master.value
+            }
+
+            // Handle Rich Text / Hyperlinks
+            if (val && typeof val === 'object' && !(val instanceof Date)) {
+              if ('richText' in val && Array.isArray((val as any).richText)) {
+                val = (val as any).richText.map((t: any) => t.text).join('')
+              } else if ('text' in val && 'hyperlink' in val) {
+                val = (val as any).text
+              } else if ('result' in val) {
+                val = (val as any).result
+                if (val && typeof val === 'object' && !(val instanceof Date)) {
+                  if ('error' in val) val = (val as any).error
+                  else val = JSON.stringify(val)
+                }
+              } else {
+                try {
+                  val = JSON.stringify(val)
+                } catch {
+                  val = String(val)
                 }
               }
-              filledRowData[colNumber - 1] = val
-           }
+            }
+            filledRowData[colNumber - 1] = val
+          }
         }
 
         data.push(filledRowData)

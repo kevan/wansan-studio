@@ -216,7 +216,9 @@ export function SchemaEditor() {
                         {currentFile.sheetName && (
                           <div>
                             <div className="text-zinc-400">Sheet</div>
-                            <div className="font-mono">{currentFile.sheetName}</div>
+                            <div className="font-mono">
+                              {currentFile.sheetName}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -232,7 +234,9 @@ export function SchemaEditor() {
                     {/* Group: Build */}
                     <div className="flex items-center gap-1 pr-1 border-r border-zinc-100">
                       <ExpandableAction
-                        icon={<Calculator className="w-4 h-4 text-purple-600" />}
+                        icon={
+                          <Calculator className="w-4 h-4 text-purple-600" />
+                        }
                         label={tAnalysis('smart_metric.add_button')}
                         onClick={handleAddMetric}
                         className="hover:bg-purple-50 hover:border-purple-200"
@@ -579,9 +583,7 @@ function RelationRow({
           <div className="p-1 bg-indigo-100 rounded text-indigo-600">
             <Link2 className="w-3 h-3" />
           </div>
-          <span className="text-sm text-zinc-600 truncate">
-            {targetName}
-          </span>
+          <span className="text-sm text-zinc-600 truncate">{targetName}</span>
         </div>
       </td>
       <td colSpan={2} className="px-4 py-3">

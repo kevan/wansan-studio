@@ -105,7 +105,7 @@ export function TargetSelectionStep() {
   // --- REPLACE MODE DIFF LOGIC ---
   const schemaDiff = useMemo(() => {
     if (mode !== 'replace' || !targetFile || !currentTask) return null
-    
+
     const originalColumns = targetFile.columns
     const newColumns = currentTask.columns
 
@@ -115,8 +115,8 @@ export function TargetSelectionStep() {
     const added = newColumns.filter(
       n => !originalColumns.some(old => old.name === n.name)
     )
-    const kept = originalColumns.filter(
-      old => newColumns.some(n => n.name === old.name)
+    const kept = originalColumns.filter(old =>
+      newColumns.some(n => n.name === old.name)
     )
 
     return { missing, added, kept }
@@ -141,12 +141,16 @@ export function TargetSelectionStep() {
         <div className="flex items-center gap-4">
           <div className="flex flex-col text-left">
             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">
-              {mode === 'append' ? t('wizard.target_decision') : mode === 'replace' ? t('wizard.schema_comparison') : t('wizard.target_configurations')}
+              {mode === 'append'
+                ? t('wizard.target_decision')
+                : mode === 'replace'
+                  ? t('wizard.schema_comparison')
+                  : t('wizard.target_configurations')}
             </span>
             <span className="text-sm font-bold text-zinc-900 mt-1">
               {mode === 'append'
                 ? t('wizard.appending_to', { name: targetFile?.name })
-                : mode === 'replace' 
+                : mode === 'replace'
                   ? t('wizard.replacing', { name: targetFile?.name })
                   : t('wizard.assets_pending', { count: tasks.length })}
             </span>
@@ -214,8 +218,10 @@ export function TargetSelectionStep() {
                     <div
                       key={task.id}
                       className={cn(
-                        "group flex items-center gap-4 bg-white border p-4 rounded-2xl shadow-sm transition-all relative overflow-hidden",
-                        isTruncated ? "border-amber-200 ring-2 ring-amber-50" : "border-zinc-200 hover:border-indigo-200"
+                        'group flex items-center gap-4 bg-white border p-4 rounded-2xl shadow-sm transition-all relative overflow-hidden',
+                        isTruncated
+                          ? 'border-amber-200 ring-2 ring-amber-50'
+                          : 'border-zinc-200 hover:border-indigo-200'
                       )}
                     >
                       <div className="flex-1 flex items-center gap-3 min-w-0">
@@ -246,10 +252,14 @@ export function TargetSelectionStep() {
                       <ArrowRight className="w-4 h-4 text-zinc-200 shrink-0" />
                       <div className="flex-1">
                         <Input
-                           value={task.finalDisplayName || ''}
-                           onChange={e => updateTask(idx, { finalDisplayName: e.target.value })}
-                           className="h-9 text-sm font-medium p-2 border-zinc-200 focus-visible:ring-1 focus-visible:ring-indigo-300"
-                         />
+                          value={task.finalDisplayName || ''}
+                          onChange={e =>
+                            updateTask(idx, {
+                              finalDisplayName: e.target.value,
+                            })
+                          }
+                          className="h-9 text-sm font-medium p-2 border-zinc-200 focus-visible:ring-1 focus-visible:ring-indigo-300"
+                        />
                       </div>
                       <ArrowRight className="w-4 h-4 text-zinc-200 shrink-0" />
                       <div className="flex-1 flex items-center gap-3 min-w-0">
@@ -287,81 +297,115 @@ export function TargetSelectionStep() {
               </div>
             </div>
           ) : mode === 'replace' ? (
-             /* --- REPLACE MODE: Schema Diff --- */
-             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
-                {schemaDiff && schemaDiff.missing.length > 0 && (
-                  <div className="bg-rose-50 border-2 border-rose-100 rounded-2xl p-6 flex items-start gap-4">
-                    <div className="p-2 bg-rose-100 rounded-lg text-rose-600 shrink-0">
-                      <AlertTriangle className="w-6 h-6" />
+            /* --- REPLACE MODE: Schema Diff --- */
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
+              {schemaDiff && schemaDiff.missing.length > 0 && (
+                <div className="bg-rose-50 border-2 border-rose-100 rounded-2xl p-6 flex items-start gap-4">
+                  <div className="p-2 bg-rose-100 rounded-lg text-rose-600 shrink-0">
+                    <AlertTriangle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-rose-900">
+                      {t('wizard.breaking_changes_title')}
+                    </h4>
+                    <p className="text-sm text-rose-700 mt-1">
+                      {t('wizard.breaking_changes_desc')}
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {schemaDiff.missing.map(col => (
+                        <span
+                          key={col.name}
+                          className="px-2 py-1 bg-white border border-rose-200 rounded text-xs font-mono font-bold text-rose-700 flex items-center gap-1.5"
+                        >
+                          <MinusCircle className="w-3 h-3" />
+                          {col.name}
+                        </span>
+                      ))}
                     </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-rose-900">{t('wizard.breaking_changes_title')}</h4>
-                      <p className="text-sm text-rose-700 mt-1">
-                        {t('wizard.breaking_changes_desc')}
-                      </p>
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {schemaDiff.missing.map(col => (
-                          <span key={col.name} className="px-2 py-1 bg-white border border-rose-200 rounded text-xs font-mono font-bold text-rose-700 flex items-center gap-1.5">
-                            <MinusCircle className="w-3 h-3" />
-                            {col.name}
-                          </span>
-                        ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-8">
+                {/* LEFT: Original */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                    {t('wizard.original_schema')}
+                  </h4>
+                  <div className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm space-y-2 opacity-60 pointer-events-none grayscale">
+                    {targetFile?.columns.map(col => (
+                      <div
+                        key={col.name}
+                        className="flex items-center justify-between text-sm py-1 border-b border-zinc-50 last:border-0"
+                      >
+                        <span className="font-mono text-zinc-600">
+                          {col.name}
+                        </span>
+                        <span className="text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-500">
+                          {col.type}
+                        </span>
                       </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-8">
-                  {/* LEFT: Original */}
-                  <div className="space-y-4">
-                     <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{t('wizard.original_schema')}</h4>
-                     <div className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm space-y-2 opacity-60 pointer-events-none grayscale">
-                        {targetFile?.columns.map(col => (
-                          <div key={col.name} className="flex items-center justify-between text-sm py-1 border-b border-zinc-50 last:border-0">
-                             <span className="font-mono text-zinc-600">{col.name}</span>
-                             <span className="text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-500">{col.type}</span>
-                          </div>
-                        ))}
-                     </div>
-                  </div>
-
-                  {/* RIGHT: New */}
-                  <div className="space-y-4">
-                     <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{t('wizard.new_schema')}</h4>
-                     <div className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm space-y-2">
-                        {/* Added */}
-                        {schemaDiff?.added.map(col => (
-                          <div key={col.name} className="flex items-center justify-between text-sm py-2 px-3 bg-emerald-50 border border-emerald-100 rounded-lg">
-                             <div className="flex items-center gap-2">
-                               <PlusCircle className="w-3.5 h-3.5 text-emerald-600" />
-                               <span className="font-mono font-bold text-emerald-900">{col.name}</span>
-                             </div>
-                             <span className="text-[10px] bg-white border border-emerald-200 px-1.5 py-0.5 rounded text-emerald-700">{col.type}</span>
-                          </div>
-                        ))}
-
-                        {/* Kept */}
-                        {schemaDiff?.kept.map(col => (
-                           <div key={col.name} className="flex items-center justify-between text-sm py-1 border-b border-zinc-50 last:border-0 px-2">
-                             <div className="flex items-center gap-2">
-                               <Equal className="w-3 h-3 text-zinc-300" />
-                               <span className="font-mono text-zinc-700">{col.name}</span>
-                             </div>
-                             <span className="text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-500">{col.type}</span>
-                          </div>
-                        ))}
-                     </div>
+                    ))}
                   </div>
                 </div>
 
-                {(!schemaDiff?.missing.length && !schemaDiff?.added.length) && (
-                   <div className="text-center p-8 bg-zinc-50 rounded-2xl border border-dashed border-zinc-200">
-                      <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-                      <p className="font-bold text-zinc-700">{t('wizard.perfect_match_title')}</p>
-                      <p className="text-sm text-zinc-500">{t('wizard.perfect_match_desc')}</p>
-                   </div>
-                )}
-             </div>
+                {/* RIGHT: New */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                    {t('wizard.new_schema')}
+                  </h4>
+                  <div className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm space-y-2">
+                    {/* Added */}
+                    {schemaDiff?.added.map(col => (
+                      <div
+                        key={col.name}
+                        className="flex items-center justify-between text-sm py-2 px-3 bg-emerald-50 border border-emerald-100 rounded-lg"
+                      >
+                        <div className="flex items-center gap-2">
+                          <PlusCircle className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="font-mono font-bold text-emerald-900">
+                            {col.name}
+                          </span>
+                        </div>
+                        <span className="text-[10px] bg-white border border-emerald-200 px-1.5 py-0.5 rounded text-emerald-700">
+                          {col.type}
+                        </span>
+                      </div>
+                    ))}
+
+                    {/* Kept */}
+                    {schemaDiff?.kept.map(col => (
+                      <div
+                        key={col.name}
+                        className="flex items-center justify-between text-sm py-1 border-b border-zinc-50 last:border-0 px-2"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Equal className="w-3 h-3 text-zinc-300" />
+                          <span className="font-mono text-zinc-700">
+                            {col.name}
+                          </span>
+                        </div>
+                        <span className="text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-500">
+                          {col.type}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {!schemaDiff?.missing.length && !schemaDiff?.added.length && (
+                <div className="text-center p-8 bg-zinc-50 rounded-2xl border border-dashed border-zinc-200">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+                  <p className="font-bold text-zinc-700">
+                    {t('wizard.perfect_match_title')}
+                  </p>
+                  <p className="text-sm text-zinc-500">
+                    {t('wizard.perfect_match_desc')}
+                  </p>
+                </div>
+              )}
+            </div>
           ) : (
             /* --- APPEND MODE: High Density UI --- */
             <div className="max-w-2xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-2">

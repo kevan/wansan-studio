@@ -183,20 +183,29 @@ export function ProjectLauncher() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {recentProjectPaths.map(path => {
-                    const name = path.split(/[\\/]/).pop()?.replace('.wansan', '') || 'Untitled'
+                    const name =
+                      path.split(/[\\/]/).pop()?.replace('.wansan', '') ||
+                      'Untitled'
                     return (
-                      <div key={path} className="group relative flex items-center gap-2">
+                      <div
+                        key={path}
+                        className="group relative flex items-center gap-2"
+                      >
                         <button
                           onClick={() => openProject(path)}
                           className="flex-1 flex items-center justify-between p-4 border border-zinc-100 rounded-xl hover:border-black hover:bg-zinc-50 transition-all text-left min-w-0"
                         >
                           <div className="min-w-0 pr-4">
-                            <div className="text-sm font-bold text-black truncate">{name}</div>
-                            <div className="text-[10px] text-zinc-400 truncate mt-0.5">{path}</div>
+                            <div className="text-sm font-bold text-black truncate">
+                              {name}
+                            </div>
+                            <div className="text-[10px] text-zinc-400 truncate mt-0.5">
+                              {path}
+                            </div>
                           </div>
                         </button>
                         <button
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation()
                             removeRecentProject(path)
                           }}

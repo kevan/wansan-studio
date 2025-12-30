@@ -92,7 +92,9 @@ export function ChatInterface({
   }
 
   return (
-    <div className={`flex flex-col h-full min-h-0 relative bg-gradient-to-b from-indigo-50/20 via-white/50 to-white ${className}`}>
+    <div
+      className={`flex flex-col h-full min-h-0 relative bg-gradient-to-b from-indigo-50/20 via-white/50 to-white ${className}`}
+    >
       {/* 聊天消息区域 */}
       <div className="flex-1 overflow-y-auto p-4 pb-0 space-y-6 scroll-smooth">
         {messages.length === 0 ? (
@@ -214,8 +216,10 @@ export function ChatInterface({
                     {/* Display message content (Analysis Summary) */}
                     {(message.content || message.reportData?.summary) && (
                       <div className="mb-4 text-zinc-600 text-[14px] leading-7 tracking-wide">
-                        <VizSummary 
-                          content={message.content || message.reportData?.summary} 
+                        <VizSummary
+                          content={
+                            message.content || message.reportData?.summary
+                          }
                         />
                       </div>
                     )}
@@ -231,7 +235,9 @@ export function ChatInterface({
                         {(() => {
                           const report = message.reportData!
                           const isTemplate = !!report.is_template
-                          const hasData = !!(report.tableData && report.tableData.length > 0)
+                          const hasData = !!(
+                            report.tableData && report.tableData.length > 0
+                          )
 
                           // Case 1: Template waiting for configuration
                           if (isTemplate && !hasData && onConfigureTemplate) {
@@ -272,15 +278,16 @@ export function ChatInterface({
                                 }
                               />
 
-                              {report.suggestions && report.suggestions.length > 0 && (
-                                <MessageSuggestions
-                                  suggestions={report.suggestions}
-                                  isLast={messageIdx === messages.length - 1}
-                                  onSelect={handleQuerySubmit}
-                                  isChatLoading={isChatLoading}
-                                  isRestoring={isRestoring}
-                                />
-                              )}
+                              {report.suggestions &&
+                                report.suggestions.length > 0 && (
+                                  <MessageSuggestions
+                                    suggestions={report.suggestions}
+                                    isLast={messageIdx === messages.length - 1}
+                                    onSelect={handleQuerySubmit}
+                                    isChatLoading={isChatLoading}
+                                    isRestoring={isRestoring}
+                                  />
+                                )}
                             </>
                           )
                         })()}

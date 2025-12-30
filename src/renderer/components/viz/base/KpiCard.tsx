@@ -8,11 +8,7 @@ interface KpiCardProps {
   variant?: 'chat' | 'dashboard'
 }
 
-export function KpiCard({
-  value,
-  label,
-  variant = 'chat',
-}: KpiCardProps) {
+export function KpiCard({ value, label, variant = 'chat' }: KpiCardProps) {
   const isDashboard = variant === 'dashboard'
   const formattedValue = formatForDisplay(value)
 

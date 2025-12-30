@@ -181,15 +181,20 @@ export function ChartFullView() {
   }
 
   const displayMode = getDisplayMode(effectiveType, data, localConfig)
-  
+
   const showAxisControls =
     displayMode === 'chart' && availableColumns.length > 0
-  
+
   const modalMaxWidth = displayMode === 'table' ? 'max-w-[95vw]' : 'max-w-6xl'
 
   const content = (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
-      <div className={cn("relative flex h-[80vh] w-[80vw] rounded-xl border border-zinc-200 bg-white shadow-2xl overflow-hidden transition-all duration-300", modalMaxWidth)}>
+      <div
+        className={cn(
+          'relative flex h-[80vh] w-[80vw] rounded-xl border border-zinc-200 bg-white shadow-2xl overflow-hidden transition-all duration-300',
+          modalMaxWidth
+        )}
+      >
         <div className="flex flex-1 flex-col min-w-0">
           <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3">
             <input
@@ -220,28 +225,34 @@ export function ChartFullView() {
               <div className="h-full w-full rounded-lg border border-zinc-200 bg-zinc-50/60 p-4">
                 {displayMode === 'bignumber' && data.length > 0 && (
                   <BigNumberDisplay
-                    value={(() => {
-                      const yCol = Array.isArray(localConfig?.y_axis) ? localConfig.y_axis[0] : localConfig?.y_axis;
-                      const targetCol = yCol || Object.keys(data[0])[0];
-                      return data[0][targetCol];
-                    })() as any}
+                    value={
+                      (() => {
+                        const yCol = Array.isArray(localConfig?.y_axis)
+                          ? localConfig.y_axis[0]
+                          : localConfig?.y_axis
+                        const targetCol = yCol || Object.keys(data[0])[0]
+                        return data[0][targetCol]
+                      })() as any
+                    }
                     label={(() => {
-                      const yCol = Array.isArray(localConfig?.y_axis) ? localConfig.y_axis[0] : localConfig?.y_axis;
-                      return yCol || Object.keys(data[0])[0];
+                      const yCol = Array.isArray(localConfig?.y_axis)
+                        ? localConfig.y_axis[0]
+                        : localConfig?.y_axis
+                      return yCol || Object.keys(data[0])[0]
                     })()}
                     variant="dashboard"
                   />
                 )}
 
                 {displayMode === 'chart' && (
-                    <A4Chart
-                      type={effectiveType}
-                      title={localTitle}
-                      data={data}
-                      config={localConfig}
-                      className="h-full w-full"
-                    />
-                  )}
+                  <A4Chart
+                    type={effectiveType}
+                    title={localTitle}
+                    data={data}
+                    config={localConfig}
+                    className="h-full w-full"
+                  />
+                )}
 
                 {displayMode === 'table' && (
                   <div className="h-full w-full overflow-auto">
@@ -310,8 +321,8 @@ export function ChartFullView() {
                     </div>
                     <select
                       value={(() => {
-                        const yVal = localConfig?.y_axis;
-                        return Array.isArray(yVal) ? yVal[0] : (yVal || '');
+                        const yVal = localConfig?.y_axis
+                        return Array.isArray(yVal) ? yVal[0] : yVal || ''
                       })()}
                       onChange={e => {
                         const val = e.target.value

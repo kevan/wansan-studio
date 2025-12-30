@@ -26,7 +26,10 @@ interface DashboardReportCardProps {
   onTouchEnd?: React.TouchEventHandler
 }
 
-export const DashboardReportCard = forwardRef<HTMLDivElement, DashboardReportCardProps>(
+export const DashboardReportCard = forwardRef<
+  HTMLDivElement,
+  DashboardReportCardProps
+>(
   (
     {
       report,

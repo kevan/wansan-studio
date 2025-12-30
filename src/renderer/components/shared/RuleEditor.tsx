@@ -197,8 +197,8 @@ export function RuleEditor({
             placeholder={placeholder || t('domain.placeholder')}
             className="flex-1 border-none bg-transparent focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-4 py-6 text-sm font-medium placeholder:text-zinc-400"
           />
-          <Button 
-            onClick={handleAdd} 
+          <Button
+            onClick={handleAdd}
             disabled={!newRule.trim()}
             variant="ghost"
             size="icon"

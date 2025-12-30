@@ -56,10 +56,10 @@ export function MagicInput({
     state.sessions.find(s => s.id === state.activeSessionId)
   )
   const setInputDraft = useProjectStore(state => state.setInputDraft)
-  
+
   // 1. Local state for all typing interaction (prevents global re-renders)
   const [value, setValue] = useState(activeSession?.inputDraft ?? '')
-  
+
   // 2. Ref to track the latest value for the unmount sync logic
   const valueRef = useRef(value)
   useEffect(() => {
@@ -304,7 +304,7 @@ export function MagicInput({
     setInputDraft,
     tCommon,
     refreshSessionWidgets,
-    setRefreshing
+    setRefreshing,
   ])
 
   const filteredCommandPrompts = useMemo(() => {

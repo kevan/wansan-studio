@@ -8,7 +8,10 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { VizRenderer } from '../core/VizRenderer'
-import { ReportData, useWorkbenchStore } from '../../../stores/useWorkbenchStore'
+import {
+  ReportData,
+  useWorkbenchStore,
+} from '../../../stores/useWorkbenchStore'
 import { useChatStore } from '@/stores/useChatStore.ts'
 import { useSqlLabStore } from '@/stores/useSqlLabStore.ts'
 import { useToastStore } from '@/stores/useToastStore.ts'

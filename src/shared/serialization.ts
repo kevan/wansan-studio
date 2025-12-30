@@ -230,7 +230,11 @@ export function formatForDisplay(value: any, typeHint?: string): string {
 
   if (typeof value === 'number' || typeof value === 'bigint') {
     const numValue = typeof value === 'bigint' ? Number(value) : value
-    const isSafe = typeof value === 'bigint' ? value <= BigInt(Number.MAX_SAFE_INTEGER) && value >= BigInt(Number.MIN_SAFE_INTEGER) : true
+    const isSafe =
+      typeof value === 'bigint'
+        ? value <= BigInt(Number.MAX_SAFE_INTEGER) &&
+          value >= BigInt(Number.MIN_SAFE_INTEGER)
+        : true
 
     // For UI display, we keep a mild heuristic for dates but prioritize number formatting
     const minTimestamp = 946684800000 // 2000-01-01

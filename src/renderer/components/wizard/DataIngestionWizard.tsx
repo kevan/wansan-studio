@@ -92,7 +92,8 @@ export function DataIngestionWizard() {
         } else if (mode === 'replace' && targetTableId) {
           // --- REPLACE MODE ---
           const targetFile = files.find(f => f.id === targetTableId)
-          if (!targetFile) throw new Error('Target file not found for replacement')
+          if (!targetFile)
+            throw new Error('Target file not found for replacement')
 
           // Reuse table name to overwrite
           const finalTableName = targetFile.tableName
@@ -114,16 +115,16 @@ export function DataIngestionWizard() {
           finalizedTempTables.add(task.tableName)
 
           const columns = result.data.columns.map(c => {
-             // Try to preserve key status if column name matches
-             const oldCol = targetFile.columns.find(old => old.name === c.name)
-             return {
+            // Try to preserve key status if column name matches
+            const oldCol = targetFile.columns.find(old => old.name === c.name)
+            return {
               name: c.name,
               safeName: c.name,
               type: c.type,
               sampleValues: c.sampleValues || [],
               isKey: oldCol ? oldCol.isKey : false,
               isPrimaryKey: oldCol ? oldCol.isPrimaryKey : false,
-             }
+            }
           })
 
           const displayName =
@@ -133,20 +134,20 @@ export function DataIngestionWizard() {
 
           // Use reloadFile to safely update schema and validate relations
           useProjectStore.getState().reloadFile(targetFile.id, {
-             lastModified: Date.now(),
-             newColumns: columns as any
+            lastModified: Date.now(),
+            newColumns: columns as any,
           })
 
           // Update other metadata that reloadFile doesn't handle
           updateFile(targetFile.id, {
-             path: task.filePath,
-             name: task.finalDisplayName || displayName,
-             sheetName: task.sourceName === task.fileName ? undefined : task.sourceName,
-             rowCount: result.data.rowCount,
+            path: task.filePath,
+            name: task.finalDisplayName || displayName,
+            sheetName:
+              task.sourceName === task.fileName ? undefined : task.sourceName,
+            rowCount: result.data.rowCount,
           })
 
           addedFileIds.push(targetFile.id)
-
         } else {
           // --- IMPORT MODE ---
           const finalTableName =
@@ -225,7 +226,7 @@ export function DataIngestionWizard() {
 
       Analytics.track('ingest_wizard_completed', {
         mode,
-        file_count: tasks.length
+        file_count: tasks.length,
       })
 
       toast.addToast({
@@ -303,8 +304,8 @@ export function DataIngestionWizard() {
     <Dialog open={isOpen} onOpenChange={open => !open && handleCancel()}>
       <DialogContent
         className="max-w-6xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl border-none"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
+        onPointerDownOutside={e => e.preventDefault()}
+        onEscapeKeyDown={e => e.preventDefault()}
       >
         <div className="pl-8 pr-12 py-6 border-b border-zinc-100 bg-white flex justify-between items-center shrink-0">
           <h2 className="text-xl font-bold tracking-tight uppercase text-zinc-900">
@@ -346,18 +347,24 @@ export function DataIngestionWizard() {
             >
               {t('wizard.back')}
             </Button>
-                        <Button
-                          onClick={handleNext}
-                          disabled={isNextDisabled}
-                          className="bg-black hover:bg-zinc-800 text-white px-8 font-bold"
-                        >
-                          {step === 'summary'
-                            ? (mode === 'append' ? t('wizard.append_now') : mode === 'replace' ? t('wizard.replace_now', 'Replace Now') : t('wizard.import_now'))
-                            : tasks.length > 1 && (step === 'preview' || step === 'target') && currentTaskIndex < tasks.length - 1 && mode !== 'replace'
-                              ? t('wizard.next_task')
-                              : t('wizard.next')}
-                        </Button>
-
+            <Button
+              onClick={handleNext}
+              disabled={isNextDisabled}
+              className="bg-black hover:bg-zinc-800 text-white px-8 font-bold"
+            >
+              {step === 'summary'
+                ? mode === 'append'
+                  ? t('wizard.append_now')
+                  : mode === 'replace'
+                    ? t('wizard.replace_now', 'Replace Now')
+                    : t('wizard.import_now')
+                : tasks.length > 1 &&
+                    (step === 'preview' || step === 'target') &&
+                    currentTaskIndex < tasks.length - 1 &&
+                    mode !== 'replace'
+                  ? t('wizard.next_task')
+                  : t('wizard.next')}
+            </Button>
           </div>
         </div>
       </DialogContent>

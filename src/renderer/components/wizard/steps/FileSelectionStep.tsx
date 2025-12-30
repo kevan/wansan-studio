@@ -152,12 +152,16 @@ export function FileSelectionStep() {
           // Default to first, but allow switching
           if (newTasks.length > 0) {
             let defaultTask = newTasks[0]
-            
+
             // For replace mode, try to match the original sheet name
             if (mode === 'replace' && targetTableId) {
-              const originalFile = projectFiles.find(f => f.id === targetTableId)
+              const originalFile = projectFiles.find(
+                f => f.id === targetTableId
+              )
               if (originalFile?.sheetName) {
-                const match = newTasks.find(t => t.sourceName === originalFile.sheetName)
+                const match = newTasks.find(
+                  t => t.sourceName === originalFile.sheetName
+                )
                 if (match) defaultTask = match
               }
             }
@@ -190,7 +194,9 @@ export function FileSelectionStep() {
         if (mode === 'append') {
           const targetFile = projectFiles.find(f => f.id === targetTableId)
           const updatedColumns = task.columns.map(col => {
-            const targetCol = targetFile?.columns.find(tc => tc.name === col.name)
+            const targetCol = targetFile?.columns.find(
+              tc => tc.name === col.name
+            )
             return {
               ...col,
               isPrimaryKey: targetCol
@@ -284,8 +290,12 @@ export function FileSelectionStep() {
                 {parseProgress && (
                   <span className="text-xs text-zinc-400 font-mono">
                     {parseProgress.isPercentage
-                      ? t('wizard.processing_percent', { progress: parseProgress.progress?.toFixed(0) })
-                      : t('wizard.reading_rows', { count: parseProgress.count || 0 })}
+                      ? t('wizard.processing_percent', {
+                          progress: parseProgress.progress?.toFixed(0),
+                        })
+                      : t('wizard.reading_rows', {
+                          count: parseProgress.count || 0,
+                        })}
                   </span>
                 )}
               </div>

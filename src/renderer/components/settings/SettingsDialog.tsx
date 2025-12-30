@@ -212,10 +212,22 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
             <div className="flex flex-col gap-8">
               {/* SECTION 1: AI ENGINE */}
               <section>
-                <h4 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <Bot className="h-5 w-5" />
-                  {t('settings.section_ai')}
-                </h4>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <Bot className="h-5 w-5" />
+                    {t('settings.section_ai')}
+                  </h4>
+                  {settings.remoteConfig.isActivated &&
+                    settings.isSpecialChannel && (
+                      <div className="px-2 py-1 rounded bg-zinc-900 text-white dark:bg-white dark:text-black text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                        <Sparkles className="w-3 h-3 fill-current" />
+                        <span>
+                          {t('ai.managed_mode', 'Enterprise Managed')}
+                        </span>
+                      </div>
+                    )}
+                </div>
+
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">
@@ -227,7 +239,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                         settings.setProvider(value as AIProviderKey)
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger disabled={settings.isSpecialChannel}>
                         <span className="text-sm text-zinc-700 truncate">
                           {providerLabel || t('ai.select_provider_placeholder')}
                         </span>
@@ -251,18 +263,31 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                     <div className="relative">
                       <Input
                         type="password"
+                        disabled={settings.isSpecialChannel}
                         className={cn(
                           'px-3 font-mono transition-colors',
                           'focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-zinc-900',
                           !settings.apiKey &&
+                            !settings.isSpecialChannel &&
                             'border-destructive focus-visible:border-destructive'
                         )}
-                        value={settings.apiKey}
+                        value={
+                          settings.isSpecialChannel
+                            ? '********************'
+                            : settings.apiKey
+                        }
                         onChange={e =>
                           settings.updateSettings({ apiKey: e.target.value })
                         }
                         onBlur={() => void verifyConnection()}
-                        placeholder="sk-..."
+                        placeholder={
+                          settings.isSpecialChannel
+                            ? t(
+                                'ai.managed_placeholder',
+                                'Managed by Organization'
+                              )
+                            : 'sk-...'
+                        }
                       />
                     </div>
                     {/* Helper Link */}
@@ -317,7 +342,8 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                     <label className="text-sm font-medium">
                       {t('ai.model_label')}
                     </label>
-                    {settings.provider === 'custom' ? (
+                    {settings.provider === 'custom' &&
+                    !settings.isSpecialChannel ? (
                       <Input
                         value={settings.model}
                         onChange={e =>
@@ -332,7 +358,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                           settings.updateSettings({ model: value })
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger disabled={settings.isSpecialChannel}>
                           <SelectValue
                             placeholder={t('ai.select_model_placeholder')}
                           />
@@ -354,13 +380,18 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                     </label>
                     <Input
                       value={settings.baseUrl}
+                      disabled={settings.isSpecialChannel}
                       onChange={e =>
                         settings.updateSettings({ baseUrl: e.target.value })
                       }
                       placeholder="https://api.openai.com/v1"
-                      readOnly={settings.provider !== 'custom'}
-                      className={cn(
+                      readOnly={
                         settings.provider !== 'custom' &&
+                        !settings.isSpecialChannel
+                      }
+                      className={cn(
+                        (settings.provider !== 'custom' ||
+                          settings.isSpecialChannel) &&
                           'bg-muted text-muted-foreground'
                       )}
                     />

@@ -11,16 +11,16 @@ import { mapFileToSchema } from '../utils/schema-mapper'
 
 export function ChatStream() {
   const { t } = useTranslation('chat')
-  
+
   // Select only needed state to minimize re-renders
   const files = useProjectStore(s => s.files)
   const activeFileId = useProjectStore(s => s.activeFileId)
   const smartFilterRequest = useProjectStore(s => s.smartFilterRequest)
-  
+
   const messages = useChatStore(state => state.messages)
   const sendMessage = useChatStore(state => state.sendMessage)
   const runTemplateSQL = useChatStore(state => state.runTemplateSQL)
-  
+
   const { addToast } = useToastStore()
   const [activeTemplate, setActiveTemplate] = useState<{
     messageId: string
@@ -30,15 +30,21 @@ export function ChatStream() {
   } | null>(null)
 
   // Memoize ready files to avoid downstream calculation on every progress update
-  const readyFiles = useMemo(() => files.filter(f => f.status === 'ready'), [files])
-  
-  const currentFile = useMemo(() => 
-    readyFiles.find(f => f.id === activeFileId) || readyFiles[0],
+  const readyFiles = useMemo(
+    () => files.filter(f => f.status === 'ready'),
+    [files]
+  )
+
+  const currentFile = useMemo(
+    () => readyFiles.find(f => f.id === activeFileId) || readyFiles[0],
     [readyFiles, activeFileId]
   )
 
   // Map store files to TableSchema for AI - Memoized
-  const schemas: TableSchema[] = useMemo(() => readyFiles.map(mapFileToSchema), [readyFiles])
+  const schemas: TableSchema[] = useMemo(
+    () => readyFiles.map(mapFileToSchema),
+    [readyFiles]
+  )
 
   // Convert internal relations to API expected format - Memoized
   const apiRelations: RelationSuggestion[] = useMemo(() => {
@@ -83,7 +89,10 @@ export function ChatStream() {
   }
 
   // Get current columns for autocomplete - Memoized
-  const currentColumns = useMemo(() => currentFile?.columns.map(c => c.name) || [], [currentFile])
+  const currentColumns = useMemo(
+    () => currentFile?.columns.map(c => c.name) || [],
+    [currentFile]
+  )
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-zinc-50 min-h-0">

@@ -60,7 +60,7 @@ const VizRendererBase = ({
 }: VizRendererProps) => {
   const [showSummary, setShowSummary] = useState(false)
   const { t } = useTranslation('common')
-  
+
   const displayMode = getDisplayMode(chartType, tableData || [], vizConfig)
 
   if (variant === 'dashboard') {
@@ -130,13 +130,17 @@ const VizRendererBase = ({
             <div className="h-full w-full flex items-center justify-center">
               <KpiCard
                 value={(() => {
-                  const yCol = Array.isArray(vizConfig?.y_axis) ? vizConfig.y_axis[0] : vizConfig?.y_axis;
-                  const targetCol = yCol || Object.keys(tableData[0])[0];
-                  return tableData[0][targetCol];
+                  const yCol = Array.isArray(vizConfig?.y_axis)
+                    ? vizConfig.y_axis[0]
+                    : vizConfig?.y_axis
+                  const targetCol = yCol || Object.keys(tableData[0])[0]
+                  return tableData[0][targetCol]
                 })()}
                 label={(() => {
-                   const yCol = Array.isArray(vizConfig?.y_axis) ? vizConfig.y_axis[0] : vizConfig?.y_axis;
-                   return yCol || Object.keys(tableData[0])[0];
+                  const yCol = Array.isArray(vizConfig?.y_axis)
+                    ? vizConfig.y_axis[0]
+                    : vizConfig?.y_axis
+                  return yCol || Object.keys(tableData[0])[0]
                 })()}
                 variant={variant}
               />
@@ -193,13 +197,17 @@ const VizRendererBase = ({
           <div className="h-full w-full flex items-center justify-center">
             <KpiCard
               value={(() => {
-                  const yCol = Array.isArray(vizConfig?.y_axis) ? vizConfig.y_axis[0] : vizConfig?.y_axis;
-                  const targetCol = yCol || Object.keys(tableData[0])[0];
-                  return tableData[0][targetCol];
+                const yCol = Array.isArray(vizConfig?.y_axis)
+                  ? vizConfig.y_axis[0]
+                  : vizConfig?.y_axis
+                const targetCol = yCol || Object.keys(tableData[0])[0]
+                return tableData[0][targetCol]
               })()}
               label={(() => {
-                   const yCol = Array.isArray(vizConfig?.y_axis) ? vizConfig.y_axis[0] : vizConfig?.y_axis;
-                   return yCol || Object.keys(tableData[0])[0];
+                const yCol = Array.isArray(vizConfig?.y_axis)
+                  ? vizConfig.y_axis[0]
+                  : vizConfig?.y_axis
+                return yCol || Object.keys(tableData[0])[0]
               })()}
               variant={variant}
             />
