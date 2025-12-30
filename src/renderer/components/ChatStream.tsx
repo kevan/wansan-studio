@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { ChatInterface } from './ChatInterface'
 import { TableSchema, RelationSuggestion } from '../../shared/types'
 import { useChatStore } from '../stores/useChatStore'
@@ -11,22 +11,16 @@ import { mapFileToSchema } from '../utils/schema-mapper'
 
 export function ChatStream() {
   const { t } = useTranslation('chat')
+  
+  // Select only needed state to minimize re-renders
   const files = useProjectStore(s => s.files)
-  const relations = files.flatMap(f =>
-    (f.relations || []).map(r => ({
-      id: r.id,
-      fileAId: f.id,
-      columnA: r.sourceColumn,
-      fileBId: r.targetFileId,
-      columnB: r.targetColumn,
-      autoDetected: r.autoDetected,
-    }))
-  )
   const activeFileId = useProjectStore(s => s.activeFileId)
+  const smartFilterRequest = useProjectStore(s => s.smartFilterRequest)
+  
   const messages = useChatStore(state => state.messages)
   const sendMessage = useChatStore(state => state.sendMessage)
   const runTemplateSQL = useChatStore(state => state.runTemplateSQL)
-  const smartFilterRequest = useProjectStore(s => s.smartFilterRequest)
+  
   const { addToast } = useToastStore()
   const [activeTemplate, setActiveTemplate] = useState<{
     messageId: string
@@ -35,44 +29,61 @@ export function ChatStream() {
     initialValues?: Record<string, string[]>
   } | null>(null)
 
-  const readyFiles = files.filter(f => f.status === 'ready')
-  const currentFile =
-    readyFiles.find(f => f.id === activeFileId) || readyFiles[0]
+  // Memoize ready files to avoid downstream calculation on every progress update
+  const readyFiles = useMemo(() => files.filter(f => f.status === 'ready'), [files])
+  
+  const currentFile = useMemo(() => 
+    readyFiles.find(f => f.id === activeFileId) || readyFiles[0],
+    [readyFiles, activeFileId]
+  )
 
-  // Map store files to TableSchema for AI
-  const schemas: TableSchema[] = readyFiles.map(mapFileToSchema)
+  // Map store files to TableSchema for AI - Memoized
+  const schemas: TableSchema[] = useMemo(() => readyFiles.map(mapFileToSchema), [readyFiles])
 
-  // Convert internal relations to API expected format
-  const apiRelations: RelationSuggestion[] = relations
-    .map(r => {
-      const fileA = files.find(f => f.id === r.fileAId)
-      const fileB = files.find(f => f.id === r.fileBId)
+  // Convert internal relations to API expected format - Memoized
+  const apiRelations: RelationSuggestion[] = useMemo(() => {
+    const relations = files.flatMap(f =>
+      (f.relations || []).map(r => ({
+        id: r.id,
+        fileAId: f.id,
+        columnA: r.sourceColumn,
+        fileBId: r.targetFileId,
+        columnB: r.targetColumn,
+        autoDetected: r.autoDetected,
+      }))
+    )
 
-      if (
-        !fileA ||
-        !fileB ||
-        fileA.status !== 'ready' ||
-        fileB.status !== 'ready'
-      )
-        return null
+    return relations
+      .map(r => {
+        const fileA = files.find(f => f.id === r.fileAId)
+        const fileB = files.find(f => f.id === r.fileBId)
 
-      return {
-        sourceTable: fileA.tableName,
-        sourceColumn: r.columnA,
-        targetTable: fileB.tableName,
-        targetColumn: r.columnB,
-        confidence: 1.0, // Existing confirmed relations are treated as 100% confidence
-        reason: 'User confirmed or auto-detected in session',
-      }
-    })
-    .filter((r): r is RelationSuggestion => r !== null)
+        if (
+          !fileA ||
+          !fileB ||
+          fileA.status !== 'ready' ||
+          fileB.status !== 'ready'
+        )
+          return null
+
+        return {
+          sourceTable: fileA.tableName,
+          sourceColumn: r.columnA,
+          targetTable: fileB.tableName,
+          targetColumn: r.columnB,
+          confidence: 1.0,
+          reason: 'User confirmed or auto-detected in session',
+        }
+      })
+      .filter((r): r is RelationSuggestion => r !== null)
+  }, [files])
 
   const onQuerySubmit = (query: string) => {
     sendMessage(query, undefined, schemas, apiRelations)
   }
 
-  // Get current columns for autocomplete
-  const currentColumns = currentFile?.columns.map(c => c.name) || []
+  // Get current columns for autocomplete - Memoized
+  const currentColumns = useMemo(() => currentFile?.columns.map(c => c.name) || [], [currentFile])
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-zinc-50 min-h-0">

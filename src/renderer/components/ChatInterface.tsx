@@ -23,7 +23,6 @@ import { format } from 'sql-formatter'
 
 import { AnalysisTemplateCard } from './chat/analysis-template-card'
 import { FilterParam } from '@shared/schemas/analysis'
-import { ReportData } from '../../shared/types/dashboard'
 
 export interface ChatMessage {
   id: string
@@ -46,7 +45,7 @@ export interface ChatMessage {
     latency?: number
   }
   widgetId?: string
-  reportData?: ReportData
+  reportData?: any
 }
 
 interface ChatInterfaceProps {
@@ -104,9 +103,9 @@ export function ChatInterface({
             />
           </div>
         ) : (
-          messages.map(message => (
+          messages.map((message, idx) => (
             <div
-              key={message.id}
+              key={message.id || `msg-${idx}`}
               className="flex gap-4 w-full max-w-5xl mx-auto group animate-in fade-in slide-in-from-bottom-2 relative"
             >
               {/* Avatar */}
@@ -209,13 +208,12 @@ export function ChatInterface({
                       </div>
                     )}
 
-                    {/* Show content if it exists and is different from the summary */}
-                    {message.content &&
-                      message.content !== message.reportData?.summary && (
-                        <div className="mb-3 text-zinc-500 text-[14px] leading-relaxed">
-                          {message.content}
-                        </div>
-                      )}
+                    {/* Display message content (Analysis Summary) */}
+                    {(message.content || message.reportData?.summary) && (
+                      <div className="mb-3 text-zinc-600 text-[14px] leading-relaxed">
+                        {message.content || message.reportData?.summary}
+                      </div>
+                    )}
 
                     {message.status === 'error' && (
                       <div className="mb-4">
@@ -227,72 +225,57 @@ export function ChatInterface({
                       <div className="w-full mt-2 space-y-2">
                         {(() => {
                           const report = message.reportData!
-                          const isTemplate = report.is_template
-                          const isExecuted = !!(
-                            report.tableData && report.tableData.length > 0
-                          )
+                          const isTemplate = !!report.is_template
+                          const hasData = !!(report.tableData && report.tableData.length > 0)
 
+                          // Case 1: Template waiting for configuration
+                          if (isTemplate && !hasData && onConfigureTemplate) {
+                            return (
+                              <AnalysisTemplateCard
+                                result={report as any}
+                                onOpenModal={() =>
+                                  onConfigureTemplate(
+                                    message.id,
+                                    report.sql!,
+                                    report.missing_params || [],
+                                    report.selected_params
+                                  )
+                                }
+                                isExecuted={false}
+                              />
+                            )
+                          }
+
+                          // Case 2: Standard Report or Configured Template
                           return (
                             <>
-                              {/* CASE 1: Pending Template -> Show Big Card */}
-                              {isTemplate &&
-                                !isExecuted &&
-                                onConfigureTemplate && (
-                                  <AnalysisTemplateCard
-                                    result={report as any}
-                                    onOpenModal={() =>
-                                      onConfigureTemplate(
-                                        message.id,
-                                        report.sql!,
-                                        report.missing_params || [],
-                                        report.selected_params
-                                      )
-                                    }
-                                    isExecuted={false}
-                                  />
-                                )}
+                              <ReportCard
+                                messageId={message.id}
+                                message={message}
+                                reportData={report}
+                                className="w-full shadow-sm hover:shadow-md transition-shadow"
+                                onConfigure={
+                                  isTemplate && onConfigureTemplate
+                                    ? () =>
+                                        onConfigureTemplate(
+                                          message.id,
+                                          report.sql!,
+                                          report.missing_params || [],
+                                          report.selected_params
+                                        )
+                                    : undefined
+                                }
+                              />
 
-                              {/* CASE 2: Executed -> Show Chart + Mini Modify Trigger */}
-                              {isExecuted && (
-                                <>
-                                  {/* Minimal Modify Trigger (Only if it was a template) */}
-
-                                  {/* The Actual Chart/Table */}
-                                  <ReportCard
-                                    messageId={message.id}
-                                    message={message}
-                                    reportData={report}
-                                    className="w-full shadow-sm hover:shadow-md transition-shadow"
-                                    onConfigure={
-                                      isTemplate && onConfigureTemplate
-                                        ? () =>
-                                            onConfigureTemplate(
-                                              message.id,
-                                              report.sql!,
-                                              report.missing_params || [],
-                                              report.selected_params
-                                            )
-                                        : undefined
-                                    }
-                                  />
-                                </>
+                              {report.suggestions && report.suggestions.length > 0 && (
+                                <MessageSuggestions
+                                  suggestions={report.suggestions}
+                                  isLast={idx === messages.length - 1}
+                                  onSelect={handleQuerySubmit}
+                                  isChatLoading={isChatLoading}
+                                  isRestoring={isRestoring}
+                                />
                               )}
-
-                              {/* SUGGESTIONS: Only show if NOT a pending template */}
-                              {(!isTemplate || isExecuted) &&
-                                report.suggestions &&
-                                report.suggestions.length > 0 && (
-                                  <MessageSuggestions
-                                    suggestions={report.suggestions}
-                                    isLast={
-                                      messages.indexOf(message) ===
-                                      messages.length - 1
-                                    }
-                                    onSelect={handleQuerySubmit}
-                                    isChatLoading={isChatLoading}
-                                    isRestoring={isRestoring}
-                                  />
-                                )}
                             </>
                           )
                         })()}
@@ -325,7 +308,6 @@ export function ChatInterface({
 
 /**
  * Collapsible suggestions component.
- * Automatically expands if it's the latest message.
  */
 function MessageSuggestions({
   suggestions,
@@ -343,7 +325,6 @@ function MessageSuggestions({
   const { t } = useTranslation('chat')
   const [isExpanded, setIsExpanded] = useState(isLast)
 
-  // Auto-expand when it becomes the last message (though usually it starts as last)
   useEffect(() => {
     if (isLast) setIsExpanded(true)
   }, [isLast])
@@ -392,7 +373,6 @@ function MessageSuggestions({
               onClick={() => {
                 if (!isChatLoading && !isRestoring) {
                   onSelect(suggestion)
-                  // Optionally collapse after selection
                   setIsExpanded(false)
                 }
               }}

@@ -12,6 +12,7 @@ import { toPng } from 'html-to-image'
 import { useToastStore } from '../../stores/useToastStore'
 import { cn } from '@/utils/cn'
 import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
+import { useTranslation } from 'react-i18next'
 
 interface ReportCardProps {
   report: any
@@ -40,6 +41,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
   ) => {
     const cardRef = useRef<HTMLDivElement>(null)
     const [showMenu, setShowMenu] = useState(false)
+    const { t } = useTranslation('common')
     const addToast = useToastStore(state => state.addToast)
     const setEditingReportId = useWorkbenchStore(
       state => state.setEditingReportId
@@ -74,8 +76,8 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
 
         if (result.success) {
           addToast({
-            title: 'Image Saved',
-            description: 'Report exported successfully',
+            title: t('image_saved', 'Image Saved'),
+            description: t('image_saved_desc', 'Report exported successfully'),
             type: 'success',
           })
         } else if (result.error !== 'Cancelled') {
@@ -84,8 +86,8 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
       } catch (error) {
         console.error('Export failed', error)
         addToast({
-          title: 'Export Failed',
-          description: 'Could not save image',
+          title: t('export_failed_title'),
+          description: String(error),
           type: 'error',
         })
       }
@@ -116,7 +118,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
             <button
               type="button"
               className="drag-handle flex h-8 w-8 items-center justify-center rounded-md border border-dashed border-zinc-200 bg-white/90 text-zinc-400 shadow-sm transition hover:text-zinc-600 cursor-grab active:cursor-grabbing"
-              title="Drag to rearrange"
+              title={t('drag_rearrange')}
             >
               <GripHorizontal className="w-4 h-4" />
             </button>
@@ -130,7 +132,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
               }}
               onMouseDown={e => e.stopPropagation()}
               className="p-1.5 bg-white text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 rounded-md border border-zinc-200 shadow-sm transition-colors cursor-pointer"
-              title="Expand to edit"
+              title={t('expand_edit')}
             >
               <Maximize2 className="w-4 h-4" />
             </button>
@@ -144,7 +146,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
                 }}
                 onMouseDown={e => e.stopPropagation()}
                 className="p-1.5 bg-white text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 rounded-md border border-zinc-200 shadow-sm transition-colors cursor-pointer"
-                title="Options"
+                title={t('more_options')}
               >
                 <MoreVertical className="w-4 h-4" />
               </button>
@@ -167,7 +169,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
                       className="w-full text-left px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2"
                     >
                       <FileImage className="w-4 h-4" />
-                      Export PNG
+                      {t('export_png')}
                     </button>
                   </div>
                 </>
@@ -183,7 +185,7 @@ export const ReportCard = forwardRef<HTMLDivElement, ReportCardProps>(
             }}
             onMouseDown={e => e.stopPropagation()}
             className="p-1.5 bg-white text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md border border-zinc-200 shadow-sm transition-colors cursor-pointer"
-            title="Remove from Dashboard"
+            title={t('remove_from_dashboard')}
           >
             <X className="w-4 h-4" />
           </button>

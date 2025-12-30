@@ -38,7 +38,7 @@ interface DashboardWidgetProps {
   messageId?: string
 }
 
-export function DashboardWidget({
+const DashboardWidgetBase = ({
   title,
   subtitle,
   summary,
@@ -55,7 +55,7 @@ export function DashboardWidget({
   onTitleChange,
   timestamp,
   messageId,
-}: DashboardWidgetProps) {
+}: DashboardWidgetProps) => {
   const [showSummary, setShowSummary] = useState(false)
   const { t } = useTranslation('common')
   
@@ -230,3 +230,5 @@ export function DashboardWidget({
     </div>
   )
 }
+
+export const DashboardWidget = React.memo(DashboardWidgetBase)

@@ -25,7 +25,7 @@ interface ReportCardProps {
   onConfigure?: () => void
 }
 
-export function ReportCard({
+export const ReportCard = React.memo(function ReportCard({
   messageId,
   message,
   reportData,
@@ -39,7 +39,6 @@ export function ReportCard({
     state => state.setEditingReportId
   )
   const setReplyTo = useChatStore(state => state.setReplyTo)
-  const updateReportConfig = useChatStore(state => state.updateReportConfig)
   const updateMessageData = useChatStore(state => state.updateMessageData)
   const addToast = useToastStore(state => state.addToast)
   const openSqlLab = useSqlLabStore(state => state.open)
@@ -60,7 +59,7 @@ export function ReportCard({
         updateMessageData(messageId, reportData.sql, data, columnFields)
         addToast({
           type: 'success',
-          title: t('refresh_success', 'Data refreshed'),
+          title: t('common:refresh_success'),
         })
       } else {
         throw new Error(result.error || 'Execution failed')
@@ -69,11 +68,8 @@ export function ReportCard({
       console.error(e)
       addToast({
         type: 'error',
-        title: t('execution_failed', 'Execution Failed'),
-        description: t(
-          'refresh_failed_desc',
-          'Unable to refresh data. Please check your data source or SQL.'
-        ),
+        title: t('chat:error_analysis_failed'),
+        description: t('common:refresh_failed_desc'),
       })
     } finally {
       setIsRerunning(false)
@@ -95,7 +91,6 @@ export function ReportCard({
   }
 
   const handleEditViz = () => {
-    // Determine which ID to use for editing
     let editId = message.widgetId
 
     if (isPinned) {
@@ -158,14 +153,12 @@ export function ReportCard({
       {/* Toolbar */}
       <div className="flex items-center justify-end px-3 py-2 border-t border-zinc-50 bg-white">
         <div className="flex items-center gap-1">
-          {/* Edit Viz Button (Replaces inline VizControls) */}
           <ExpandableAction
             icon={<Settings2 className="h-3.5 w-3.5" />}
             label={t('common:edit_viz')}
             onClick={handleEditViz}
           />
 
-          {/* Modify Parameters Button */}
           {reportData?.is_template && onConfigure && (
             <ExpandableAction
               icon={<SlidersHorizontal className="h-3.5 w-3.5" />}
@@ -174,14 +167,12 @@ export function ReportCard({
             />
           )}
 
-          {/* Inspect Code & Logic Button */}
           <ExpandableAction
             icon={<Code className="h-3.5 w-3.5" />}
-            label="Code"
+            label={t('common:inspect_code')}
             onClick={handleOpenSqlLab}
           />
 
-          {/* Rerun Button */}
           <ExpandableAction
             icon={
               <RefreshCw
@@ -193,14 +184,12 @@ export function ReportCard({
             disabled={isRerunning}
           />
 
-          {/* Refine Button */}
           <ExpandableAction
             icon={<Sparkles className="h-3.5 w-3.5" />}
             label={t('chat:refine')}
             onClick={() => setReplyTo(messageId)}
           />
 
-          {/* Pin Button */}
           <ExpandableAction
             icon={
               <Pin
@@ -246,4 +235,4 @@ export function ReportCard({
       </div>
     </div>
   )
-}
+})
