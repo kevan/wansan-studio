@@ -121,7 +121,7 @@
   "format": "Format",
   "preview": "Preview",
   "format_number": "Number",
-  "format_decimal": "Decimal",
+  "format_decimal": "Number",
   "format_integer": "Integer",
   "format_text": "Text",
   "format_date": "Date",

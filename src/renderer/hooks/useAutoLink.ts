@@ -72,9 +72,8 @@ export function useAutoLink() {
       try {
         // 4. Notify User
         addToast({
-          title: 'Analyzing Data Context',
-          description:
-            'AI is analyzing your data structure and relationships...',
+          title: t('auto_link_analyzing_title'),
+          description: t('auto_link_analyzing_desc'),
           type: 'info',
           duration: 3000,
         })
@@ -141,24 +140,26 @@ export function useAutoLink() {
 
         // 6. Final Result Toast
         const promptMsg = suggestedPrompts?.length
-          ? 'Generated starter prompts.'
+          ? t('auto_link_complete_prompts')
           : ''
         const relationMsg =
           addedCount > 0
-            ? `Linked ${addedCount} table pair${addedCount > 1 ? 's' : ''}.`
+            ? t('auto_link_complete_relations', { count: addedCount })
             : ''
 
         addToast({
-          title: 'Analysis Complete',
-          description:
-            `${promptMsg} ${relationMsg}`.trim() || 'Analysis finished.',
+          title: t('auto_link_complete_title'),
+          description: t('auto_link_complete_desc', {
+            prompts: promptMsg,
+            relations: relationMsg,
+          }),
           type: 'success',
         })
       } catch (error) {
         console.error('Auto-link failed:', error)
         addToast({
-          title: 'Analysis Failed',
-          description: 'Could not analyze data context.',
+          title: t('auto_link_error_title'),
+          description: t('auto_link_error_desc'),
           type: 'error',
         })
       }

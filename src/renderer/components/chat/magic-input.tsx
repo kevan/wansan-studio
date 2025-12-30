@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
 import {
   ArrowUp,
@@ -19,7 +19,6 @@ import {
 import { cn } from '../../utils/cn'
 import { useProjectStore } from '../../stores/useProjectStore'
 import { useChatStore } from '../../stores/useChatStore'
-import { useUIStore } from '../../stores/useUIStore'
 import { useToastStore } from '../../stores/useToastStore'
 import { useSettingsStore } from '../../stores/useSettingsStore'
 
@@ -52,12 +51,36 @@ export function MagicInput({
   messages,
   className,
 }: MagicInputProps) {
+  const activeSessionId = useProjectStore(state => state.activeSessionId)
   const activeSession = useProjectStore(state =>
     state.sessions.find(s => s.id === state.activeSessionId)
   )
-  const value = activeSession?.inputDraft ?? ''
   const setInputDraft = useProjectStore(state => state.setInputDraft)
   
+  // 1. Local state for all typing interaction (prevents global re-renders)
+  const [value, setValue] = useState(activeSession?.inputDraft ?? '')
+  
+  // 2. Ref to track the latest value for the unmount sync logic
+  const valueRef = useRef(value)
+  useEffect(() => {
+    valueRef.current = value
+  }, [value])
+
+  // 3. Sync to store ONLY on unmount or session switch
+  useEffect(() => {
+    return () => {
+      // Save draft when switching sessions or unmounting the component
+      if (valueRef.current !== undefined) {
+        useProjectStore.getState().setInputDraft(valueRef.current)
+      }
+    }
+  }, [activeSessionId])
+
+  // 4. Initialize local state when session changes
+  useEffect(() => {
+    setValue(activeSession?.inputDraft ?? '')
+  }, [activeSessionId])
+
   const [cursorPosition, setCursorPosition] = useState(0)
   const [mention, setMention] = useState<MentionState>({ active: false })
   const [mentionIndex, setMentionIndex] = useState(0)
@@ -70,7 +93,6 @@ export function MagicInput({
 
   const replyToId = useChatStore(state => state.replyToId)
   const setReplyTo = useChatStore(state => state.setReplyTo)
-  const rerunAnalysis = useChatStore(state => state.rerunAnalysis)
   const resetChat = useChatStore(state => state.reset)
   const removeMessage = useChatStore(state => state.removeMessage)
   const stopGeneration = useChatStore(state => state.stopGeneration)
@@ -85,14 +107,11 @@ export function MagicInput({
     state => state.refreshSessionWidgets
   )
   const setRefreshing = useProjectStore(state => state.setRefreshing)
-  const addMessage = useProjectStore(state => state.addMessage)
-  const updateMessage = useProjectStore(state => state.updateMessage)
   const { checkGate, gateNode } = useProGate()
 
   const handleStop = () => {
     stopGeneration()
 
-    // Find last user message to restore
     const lastUserMsgIndex = [...messages]
       .reverse()
       .findIndex(m => m.type === 'user')
@@ -101,13 +120,12 @@ export function MagicInput({
       const actualIndex = messages.length - 1 - lastUserMsgIndex
       const userMsg = messages[actualIndex]
 
+      setValue(userMsg.content)
+      valueRef.current = userMsg.content
       setInputDraft(userMsg.content)
 
-      // Remove user message
       removeMessage(userMsg.id)
 
-      // Remove potential assistant message (usually the one being generated or failed)
-      // It should be immediately after the user message
       if (actualIndex + 1 < messages.length) {
         const nextMsg = messages[actualIndex + 1]
         if (nextMsg.type === 'assistant') {
@@ -172,21 +190,18 @@ export function MagicInput({
     replyMessage?.reportData?.summary ||
     (replyMessage ? t('reply_fallback') : '')
 
-  // 1. Context Prompts from recent messages
   const contextPrompts = useMemo(() => {
     const raw = messages
       .filter(m => m.type === 'assistant' && m.reportData?.suggestions)
-      .slice(-5) // Look at last 5 assistant messages
+      .slice(-5)
       .flatMap(m => m.reportData?.suggestions || [])
     return Array.from(new Set(raw))
   }, [messages])
 
-  // 2. All Prompts (Global + Context), unique
   const allPrompts = useMemo(() => {
     return Array.from(new Set([...suggestedPrompts, ...contextPrompts]))
   }, [suggestedPrompts, contextPrompts])
 
-  // 3. Filtered Tables
   const filteredTables = useMemo(() => {
     if (!mention.active) return []
     const q = mention.query.toLowerCase()
@@ -197,10 +212,8 @@ export function MagicInput({
       )
   }, [mention, readyTables])
 
-  // 4. Command Query (content after /)
   const commandQuery = value.startsWith('/') ? value.slice(1).toLowerCase() : ''
 
-  // 5. Filtered Commands
   const filteredCommands = useMemo(() => {
     if (!value.startsWith('/')) return []
 
@@ -213,7 +226,9 @@ export function MagicInput({
           resetChat()
           addToast({ title: t('chat_cleared'), type: 'info', duration: 2500 })
           setPopoverOpen(false)
+          setValue('')
           setInputDraft('')
+          valueRef.current = ''
         },
       },
       {
@@ -222,7 +237,9 @@ export function MagicInput({
         icon: RefreshCw,
         action: async () => {
           setPopoverOpen(false)
+          setValue('')
           setInputDraft('')
+          valueRef.current = ''
 
           try {
             setRefreshing(true)
@@ -250,7 +267,9 @@ export function MagicInput({
         action: () => {
           handleExportMarkdown()
           setPopoverOpen(false)
+          setValue('')
           setInputDraft('')
+          valueRef.current = ''
         },
         className: !isActivated ? 'text-zinc-400' : '',
       },
@@ -260,7 +279,9 @@ export function MagicInput({
         icon: Bug,
         action: async () => {
           setPopoverOpen(false)
+          setValue('')
           setInputDraft('')
+          valueRef.current = ''
           await exportDebugLog()
           addToast({ title: t('debug_export_success_toast'), type: 'success' })
         },
@@ -280,9 +301,12 @@ export function MagicInput({
     messages,
     handleExportMarkdown,
     isActivated,
+    setInputDraft,
+    tCommon,
+    refreshSessionWidgets,
+    setRefreshing
   ])
 
-  // 6. Filtered Prompts for Command Mode
   const filteredCommandPrompts = useMemo(() => {
     if (!value.startsWith('/')) return []
     return allPrompts
@@ -290,7 +314,6 @@ export function MagicInput({
       .slice(0, 10)
   }, [value, allPrompts, commandQuery])
 
-  // Combined list for navigation in command mode
   const commandListItems = useMemo(() => {
     return [...filteredCommands, ...filteredCommandPrompts]
   }, [filteredCommands, filteredCommandPrompts])
@@ -302,7 +325,7 @@ export function MagicInput({
     const insertion = `@${tableName} `
     const nextValue = `${before}${insertion}${after}`
     const newCursor = before.length + insertion.length
-    setInputDraft(nextValue)
+    setValue(nextValue)
     setMention({ active: false })
     setTimeout(() => {
       textareaRef.current?.focus()
@@ -312,7 +335,7 @@ export function MagicInput({
   }
 
   const insertPrompt = (prompt: string) => {
-    setInputDraft(prompt)
+    setValue(prompt)
     setTriggerType(null)
     setPopoverOpen(false)
     textareaRef.current?.focus()
@@ -355,13 +378,17 @@ export function MagicInput({
           await exportDebugLog()
           addToast({ title: t('debug_export_success_toast'), type: 'success' })
         }
+        setValue('')
         setInputDraft('')
+        valueRef.current = ''
         return
       }
     }
 
     onSubmit(trimmed)
+    setValue('')
     setInputDraft('')
+    valueRef.current = ''
   }
 
   const detectMention = (text: string, caret: number): MentionState => {
@@ -375,10 +402,8 @@ export function MagicInput({
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // 1. Fix IME composition: do not trigger submit during CJK input
     if (e.nativeEvent.isComposing) return
 
-    // TABLE TRIGGER
     if (triggerType === 'table' && filteredTables.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
@@ -404,7 +429,6 @@ export function MagicInput({
       }
     }
 
-    // COMMAND TRIGGER (Commands + Prompts)
     if (triggerType === 'command' && commandListItems.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
@@ -435,12 +459,10 @@ export function MagicInput({
       }
     }
 
-    // Handle Submit vs New Line
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSubmit()
     }
-    // Shift + Enter falls through to default browser behavior (new line)
   }
 
   useEffect(() => {
@@ -450,21 +472,18 @@ export function MagicInput({
 
     const lastChar = value[value.length - 1]
 
-    // Priority 1: Table Mention (@)
     if (lastChar === '@' || nextMention.active) {
       setTriggerType('table')
       setPopoverOpen(true)
       return
     }
 
-    // Priority 2: Commands (/) - Now includes prompts
     if (value.startsWith('/')) {
       setTriggerType('command')
       setPopoverOpen(true)
       return
     }
 
-    // Default: Close popover
     setTriggerType(null)
     setPopoverOpen(false)
   }, [value, cursorPosition])
@@ -567,7 +586,6 @@ export function MagicInput({
                     )}
 
                   {filteredCommandPrompts.map((prompt, idx) => {
-                    // Adjust index based on commands length
                     const realIdx = idx + filteredCommands.length
                     return (
                       <button
@@ -607,14 +625,13 @@ export function MagicInput({
               className="w-full resize-none bg-transparent border-none shadow-none outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 pr-12 text-base text-zinc-900 placeholder:text-zinc-400 leading-relaxed"
               value={value}
               onChange={e => {
-                setInputDraft(e.target.value)
+                setValue(e.target.value)
                 setCursorPosition(e.target.selectionStart)
               }}
               onSelect={e => setCursorPosition(e.currentTarget.selectionStart)}
               onKeyDown={handleKeyDown}
               disabled={loading || isRestoring}
             />
-            {/* Enter to send hint */}
             <div className="absolute bottom-0 right-0 text-[10px] text-zinc-400 font-medium opacity-0 focus-within:opacity-50 transition-opacity select-none pointer-events-none mb-1">
               ⏎ Enter
             </div>

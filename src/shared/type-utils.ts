@@ -43,9 +43,9 @@ export function normalizeDuckDBType(duckType: string): ColumnType {
   }
 
   // 2. Integers (Handle BIGINT carefully)
-  // HUGEINT and BIGINT are too large for standard JS number, treat as string to preserve precision
+  // map to DOUBLE for metadata so AI knows it's numeric and can perform aggregations
   if (type === 'HUGEINT' || type === 'BIGINT' || type === 'UBIGINT') {
-    return 'VARCHAR'
+    return 'DOUBLE'
   }
   if (
     type === 'INTEGER' ||
