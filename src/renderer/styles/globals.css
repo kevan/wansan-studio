@@ -492,3 +492,47 @@ body.printing .shadow {
     page-break-inside: avoid;
   }
 }
+
+/* ================================
+   Minimalist Scrollbar (Airy Style)
+   ================================ */
+
+/* Hide scrollbar by default for a cleaner look */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+/* Only show scrollbar thumb when hovering over the scrollable area or the thumb itself */
+*:hover::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+*:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Dark mode adjustments */
+.dark ::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.dark *:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Specific class for ultra-thin scrollbar if needed */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 3px;
+}
+
