@@ -94,7 +94,7 @@ export function ProjectLauncher() {
   }
 
   return (
-    <div className="fixed inset-0 z-40 bg-white flex items-center justify-center p-6 sm:p-12 font-sans selection:bg-black selection:text-white">
+    <div className="fixed inset-0 z-40 bg-white flex items-center justify-center p-6 sm:p-12 font-sans selection:bg-black selection:text-white draggable">
       {/* Swiss Style Grid Background */}
       <div
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
@@ -105,7 +105,7 @@ export function ProjectLauncher() {
         }}
       />
 
-      <div className="w-full max-w-3xl relative">
+      <div className="w-full max-w-3xl relative non-draggable">
         {/* MODE: MENU */}
         {mode === 'menu' && (
           <div className="space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-500">

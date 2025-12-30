@@ -49,11 +49,11 @@ export function MigrationWizard() {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-zinc-50 flex items-center justify-center p-6 sm:p-12 font-sans selection:bg-black selection:text-white">
+    <div className="fixed inset-0 z-[100] bg-zinc-50 flex items-center justify-center p-6 sm:p-12 font-sans selection:bg-black selection:text-white draggable">
       {/* Subtle background gradient instead of grid */}
       <div className="absolute inset-0 bg-gradient-to-b from-white to-zinc-100 opacity-50 pointer-events-none" />
 
-      <div className="w-full max-w-2xl relative">
+      <div className="w-full max-w-2xl relative non-draggable">
         {/* Content Wrapper - Soft Shadow, Large Rounding, No Borders */}
         <div className="bg-white p-10 sm:p-16 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] rounded-[2.5rem] relative overflow-hidden">
           {/* STEP 1: INTRO */}
