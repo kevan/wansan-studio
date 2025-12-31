@@ -61,7 +61,8 @@ const schema = {
 
 const store = new Store({
   schema,
-  encryptionKey: 'wansan-studio-secure-config-key', // 开启加密
+  name: 'wansan-ai-config', // 独立文件 wansan-ai-config.json
+  encryptionKey: 'wansan-studio-secure-config-key',
 })
 
 export class AIService {

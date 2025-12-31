@@ -28,9 +28,9 @@ class AuthService {
 
   constructor() {
     this.store = new Store({
-      encryptionKey: 'wansan-studio-secure-config-key', // 开启加密
+      name: 'wansan-auth', // 独立文件 wansan-auth.json
+      encryptionKey: 'wansan-studio-secure-config-key',
     })
-
     // Read build-time injected env or runtime env
 
     this.channelEnv =
