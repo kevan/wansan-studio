@@ -16,12 +16,14 @@ import {
   FileText,
   ArrowRight,
   Link2,
+  Key,
   Check,
   AlertTriangle,
   MinusCircle,
   PlusCircle,
   Equal,
   Sparkles,
+  Wand2,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { RadioGroup, RadioGroupItem } from '../../ui/radio-group'
@@ -51,7 +53,10 @@ export function TargetSelectionStep() {
 
   // Use PKs from TARGET file for Append Mode, or from Task config for Import Mode
   const pkNames = useMemo(() => {
-    if (mode === 'append' && targetFile) {
+    if ((mode === 'append' || mode === 'merge') && targetFile) {
+      if (mode === 'merge' && currentTask?.mergeKeys) {
+        return currentTask.mergeKeys
+      }
       return targetFile.columns
         .filter(c => c.isPrimaryKey || c.isKey)
         .map(c => c.name)
@@ -59,13 +64,13 @@ export function TargetSelectionStep() {
     return (
       currentTask?.columns.filter(c => c.isPrimaryKey).map(c => c.name) || []
     )
-  }, [mode, targetFile, currentTask?.columns])
+  }, [mode, targetFile, currentTask?.columns, currentTask?.mergeKeys])
 
   const preCheck = currentTask?.preCheckResult
 
-  // Trigger Pre-check (for Append Mode)
+  // Trigger Pre-check (for Append/Merge Mode)
   useEffect(() => {
-    if (!currentTask || !targetFile || mode !== 'append') return
+    if (!currentTask || !targetFile || (mode !== 'append' && mode !== 'merge')) return
     if (pkNames.length === 0) return
 
     const runPreCheck = async () => {
@@ -145,14 +150,18 @@ export function TargetSelectionStep() {
                 ? t('wizard.target_decision')
                 : mode === 'replace'
                   ? t('wizard.schema_comparison')
-                  : t('wizard.target_configurations')}
+                  : mode === 'merge'
+                    ? t('wizard.merge_summary_header', 'Correction Summary')
+                    : t('wizard.target_configurations')}
             </span>
             <span className="text-sm font-bold text-zinc-900 mt-1">
               {mode === 'append'
                 ? t('wizard.appending_to', { name: targetFile?.name })
                 : mode === 'replace'
                   ? t('wizard.replacing', { name: targetFile?.name })
-                  : t('wizard.assets_pending', { count: tasks.length })}
+                  : mode === 'merge'
+                    ? t('wizard.correcting', { name: targetFile?.name, defaultValue: `Correcting ${targetFile?.name}` })
+                    : t('wizard.assets_pending', { count: tasks.length })}
             </span>
           </div>
         </div>
@@ -196,7 +205,121 @@ export function TargetSelectionStep() {
             </div>
           )}
 
-          {mode === 'import' ? (
+          {mode === 'merge' ? (
+            /* --- MERGE MODE: Summary of Matching & Updating --- */
+            <div className="max-w-2xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-2">
+              <div
+                className={cn(
+                  'p-8 rounded-[2rem] border-2 transition-all duration-500 text-center relative overflow-hidden',
+                  isPreChecking
+                    ? 'bg-zinc-50 border-zinc-100'
+                    : (preCheck?.duplicateRows || 0) > 0
+                      ? 'bg-indigo-50 border-indigo-100'
+                      : 'bg-amber-50 border-amber-100'
+                )}
+              >
+                <div className="flex flex-col items-center gap-4 relative z-10">
+                  <div
+                    className={cn(
+                      'w-16 h-16 rounded-full flex items-center justify-center shadow-sm',
+                      isPreChecking
+                        ? 'bg-zinc-200 text-zinc-400'
+                        : (preCheck?.duplicateRows || 0) > 0
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-amber-500 text-white'
+                    )}
+                  >
+                                          {isPreChecking ? (
+                                          <Loader2 className="w-8 h-8 animate-spin" />
+                                        ) : (preCheck?.duplicateRows || 0) > 0 ? (
+                                          <Wand2 className="w-8 h-8" />
+                                        ) : (
+                                          <AlertCircle className="w-8 h-8" />
+                                        )}                  </div>
+                  <div>
+                    <h4 className="text-2xl font-black uppercase tracking-tight text-zinc-900">
+                      {isPreChecking
+                        ? 'Analyzing Data...'
+                        : (preCheck?.duplicateRows || 0) > 0
+                          ? t('wizard.merge_match_found', {
+                              count: preCheck?.duplicateRows,
+                              defaultValue: `${preCheck?.duplicateRows} Records to Correct`,
+                            })
+                          : t('wizard.merge_no_match', 'No Matches Found')}
+                    </h4>
+                    <p className="text-sm text-zinc-500 font-medium mt-1">
+                      {t('wizard.merge_summary_desc', 'Existing records will be updated based on your match keys.')}
+                    </p>
+                  </div>
+                  {!isPreChecking && preCheck && (
+                    <div className="mt-2 flex items-center gap-4 text-zinc-400 text-[10px] font-black uppercase tracking-widest">
+                      <span>
+                        {preCheck.totalRows.toLocaleString()} Rows in file
+                      </span>
+                      <div className="w-1 h-1 rounded-full bg-zinc-200" />
+                      <span>
+                        {preCheck.duplicateRows.toLocaleString()} matches
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest text-center">
+                    {t('wizard.match_by', 'Match By')}
+                  </h4>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {(currentTask.mergeKeys || []).map(keyName => (
+                      <span
+                        key={keyName}
+                        className="px-3 py-1.5 bg-indigo-50 border border-indigo-100 rounded-xl text-xs font-bold text-indigo-700 flex items-center gap-2"
+                      >
+                        <Key className="w-3 h-3" /> {keyName}
+                      </span>
+                    ))}
+                    {(currentTask.mergeKeys || []).length === 0 && (
+                      <span className="text-xs text-rose-500 font-bold italic">
+                        {t('wizard.no_keys_selected', 'No keys selected!')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest text-center">
+                    {t('wizard.update_columns', 'Update Columns')}
+                  </h4>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {Object.entries(currentTask.columnMapping || {})
+                      .filter(
+                        ([target, source]) =>
+                          source &&
+                          !(currentTask.mergeKeys || []).includes(target)
+                      )
+                      .map(([target]) => (
+                        <span
+                          key={target}
+                          className="px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-xl text-xs font-bold text-emerald-700 flex items-center gap-2"
+                        >
+                          <Edit3 className="w-3 h-3" /> {target}
+                        </span>
+                      ))}
+                    {Object.entries(currentTask.columnMapping || {}).filter(
+                      ([target, source]) =>
+                        source &&
+                        !(currentTask.mergeKeys || []).includes(target)
+                    ).length === 0 && (
+                      <span className="text-xs text-zinc-400 italic">
+                        {t('wizard.no_columns_to_update', 'Nothing to update')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : mode === 'import' ? (
             /* --- IMPORT MODE: Multi-Task List --- */
             <div className="space-y-4">
               <div className="grid grid-cols-[1fr_20px_1fr_20px_1fr] px-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">

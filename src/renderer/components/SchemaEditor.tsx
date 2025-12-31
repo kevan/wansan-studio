@@ -28,6 +28,7 @@ import {
   Trash2,
   Type,
   Info,
+  Wand2,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from './ui/button'
@@ -97,6 +98,12 @@ export function SchemaEditor() {
   const handleAppend = () => {
     checkGate(t('append_data', 'Append'), () => {
       openWizard('append', currentFile.id)
+    })
+  }
+
+  const handleMerge = () => {
+    checkGate(t('merge_data', 'Correct Data'), () => {
+      openWizard('merge', currentFile.id)
     })
   }
 
@@ -235,7 +242,7 @@ export function SchemaEditor() {
                     <div className="flex items-center gap-1 pr-1 border-r border-zinc-100">
                       <ExpandableAction
                         icon={
-                          <Calculator className="w-4 h-4 text-purple-600" />
+                          <Calculator className="w-3.5 h-3.5 text-purple-600" />
                         }
                         label={tAnalysis('smart_metric.add_button')}
                         onClick={handleAddMetric}
@@ -259,6 +266,12 @@ export function SchemaEditor() {
                         label={t('append_data', 'Append')}
                         onClick={handleAppend}
                         className="hover:bg-emerald-50 hover:border-emerald-200"
+                      />
+                      <ExpandableAction
+                        icon={<Wand2 className="w-3.5 h-3.5 text-indigo-600" />}
+                        label={t('merge_data', 'Correct Data')}
+                        onClick={handleMerge}
+                        className="hover:bg-indigo-50 hover:border-indigo-200"
                       />
                       <ExpandableAction
                         icon={<FileInput className="w-4 h-4 text-amber-600" />}

@@ -30,7 +30,7 @@ export interface AppendDataParams {
   targetTableName: string
   sheetName?: string
   uniqueKeys?: string[]
-  strategy: 'ignore' | 'replace'
+  strategy: 'ignore' | 'replace' | 'update'
   columnMapping: Record<string, string | null>
   tempFilePath?: string // Cached CSV path
   limitRows?: number // Max rows allowed

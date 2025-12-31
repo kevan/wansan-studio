@@ -63,13 +63,14 @@ export function DataIngestionWizard() {
       const finalizedTempTables = new Set<string>()
 
       for (const task of tasks) {
-        if (mode === 'append' && targetTableId) {
+        if ((mode === 'append' || mode === 'merge') && targetTableId) {
           const targetFile = files.find(f => f.id === targetTableId)
           if (!targetFile) continue
 
-          const pkNames = task.columns
-            .filter(c => c.isPrimaryKey)
-            .map(c => c.name)
+          const pkNames =
+            mode === 'merge'
+              ? task.mergeKeys || []
+              : task.columns.filter(c => c.isPrimaryKey).map(c => c.name)
 
           const result = await window.electronAPI.appendData({
             filePath: task.filePath,
@@ -77,7 +78,7 @@ export function DataIngestionWizard() {
             sheetName:
               task.sourceName === task.fileName ? undefined : task.sourceName,
             uniqueKeys: pkNames,
-            strategy: task.conflictStrategy || 'ignore',
+            strategy: mode === 'merge' ? 'update' : task.conflictStrategy || 'ignore',
             columnMapping: task.columnMapping || {},
             tempFilePath: task.tempFilePath, // Pass cached CSV path
             limitRows,
@@ -86,7 +87,7 @@ export function DataIngestionWizard() {
           if (result.success && result.data) {
             updateFile(targetFile.id, { rowCount: result.data.rowCount })
           } else {
-            throw new Error(result.error || 'Append failed')
+            throw new Error(result.error || 'Operation failed')
           }
           finalizedTempTables.add(task.tableName)
         } else if (mode === 'replace' && targetTableId) {
@@ -233,7 +234,9 @@ export function DataIngestionWizard() {
         title:
           mode === 'append'
             ? t('wizard.append_success')
-            : t('wizard.import_success'),
+            : mode === 'merge'
+              ? t('wizard.merge_success', 'Data corrected successfully')
+              : t('wizard.import_success'),
         type: 'success',
         duration: 3000,
       })
@@ -357,7 +360,9 @@ export function DataIngestionWizard() {
                   ? t('wizard.append_now')
                   : mode === 'replace'
                     ? t('wizard.replace_now', 'Replace Now')
-                    : t('wizard.import_now')
+                    : mode === 'merge'
+                      ? t('wizard.merge_now', 'Correct Now')
+                      : t('wizard.import_now')
                 : tasks.length > 1 &&
                     (step === 'preview' || step === 'target') &&
                     currentTaskIndex < tasks.length - 1 &&

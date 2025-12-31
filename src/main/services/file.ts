@@ -794,6 +794,27 @@ export class FileService {
               INSERT INTO "${targetTableName}" (${colList})
               SELECT ${selectClause} FROM ${sourceSql}
             `)
+        } else if (strategy === 'update') {
+          // UPDATE EXISTING RECORDS (Merge Mode)
+          const updateSetClause = targetCols
+            .filter(col => !uniqueKeys.includes(col))
+            .map(col => `"${col}" = src."${columnMapping[col]}"`)
+            .join(' , ')
+
+          const updateWhereConditions = pkTargetSourceMap
+            .map(m => `"${targetTableName}"."${m.target}" = src."${m.source}"`)
+            .join(' AND ')
+
+          if (updateSetClause.length === 0) {
+            throw new Error('No columns to update (all mapped columns are match keys).')
+          }
+
+          await this.databaseService.exec(`
+            UPDATE "${targetTableName}"
+            SET ${updateSetClause}
+            FROM ${sourceSql} AS src
+            WHERE ${updateWhereConditions}
+          `)
         } else {
           // ignore
           // INSERT WHERE NOT EXISTS

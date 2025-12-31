@@ -7,6 +7,7 @@ import {
   FileText,
   ArrowRight,
   Database,
+  Wand2,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
@@ -19,21 +20,29 @@ export function SummaryStep() {
   const title =
     mode === 'replace'
       ? t('wizard.summary_replace_title', 'Confirm Replacement')
-      : t('wizard.summary_title')
+      : mode === 'merge'
+        ? t('wizard.summary_merge_title', 'Confirm Correction')
+        : t('wizard.summary_title')
   const subtitle =
     mode === 'replace'
       ? t(
           'wizard.summary_replace_desc',
           'This action will overwrite the existing data.'
         )
-      : t('wizard.summary_count', { count: tasks.length })
+      : mode === 'merge'
+        ? t('wizard.summary_merge_desc', 'This action will update existing records matching your criteria.')
+        : t('wizard.summary_count', { count: tasks.length })
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-8 overflow-y-auto">
       <div className="w-full max-w-2xl space-y-8 animate-in fade-in zoom-in-95 duration-500">
         <div className="text-center space-y-2">
           <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-8 h-8 text-indigo-600" />
+            {mode === 'merge' ? (
+              <Wand2 className="w-8 h-8 text-indigo-600" />
+            ) : (
+              <CheckCircle2 className="w-8 h-8 text-indigo-600" />
+            )}
           </div>
           <h3 className="text-2xl font-black text-black uppercase tracking-tight">
             {title}
@@ -46,7 +55,7 @@ export function SummaryStep() {
             const pkColumn = task.columns.find(c => c.isPrimaryKey)
             let targetFile = null
 
-            if (mode === 'append' || mode === 'replace') {
+            if (mode === 'append' || mode === 'replace' || mode === 'merge') {
               targetFile = files.find(
                 f => f.id === (targetTableId || task.targetTableId)
               )
@@ -57,7 +66,9 @@ export function SummaryStep() {
                 ? `Appending to ${targetFile?.name || 'Target'}`
                 : mode === 'replace'
                   ? `Replacing ${targetFile?.name || 'Target'}`
-                  : task.finalTableName || task.tableName
+                  : mode === 'merge'
+                    ? `Correcting ${targetFile?.name || 'Target'}`
+                    : task.finalTableName || task.tableName
 
             return (
               <div

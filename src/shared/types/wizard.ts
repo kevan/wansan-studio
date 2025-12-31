@@ -1,7 +1,7 @@
 import { ColumnType } from '../types'
 
 export type WizardStep = 'select' | 'preview' | 'target' | 'summary'
-export type WizardMode = 'import' | 'append' | 'replace'
+export type WizardMode = 'import' | 'append' | 'replace' | 'merge'
 
 export interface ColumnConfig {
   name: string
@@ -29,6 +29,7 @@ export interface IngestionTask {
   targetTableId?: string // For append mode;
   conflictStrategy?: 'ignore' | 'replace'
   columnMapping?: Record<string, string | null> // { targetCol: sourceCol }
+  mergeKeys?: string[] // Target column names to use as match keys (WHERE clause) for Merge Mode
   preCheckResult?: {
     totalRows: number
     duplicateRows: number

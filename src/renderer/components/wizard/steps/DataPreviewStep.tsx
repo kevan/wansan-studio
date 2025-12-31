@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../ui/select'
-import { Key, ChevronLeft, ChevronRight, Link2 } from 'lucide-react'
+import { Key, ChevronLeft, ChevronRight, Link2, Edit2, Info } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { ColumnSchema, ColumnType } from '@shared/types'
 import { useTranslation } from 'react-i18next'
@@ -37,20 +37,21 @@ export function DataPreviewStep() {
     prevTask,
     mode,
     targetTableId,
+    toggleMergeKey,
   } = useWizardStore()
   const { files } = useProjectStore()
   const { t } = useTranslation('common')
 
   const currentTask = tasks[currentTaskIndex]
   const targetFile = useMemo(() => {
-    if (mode !== 'append') return null
+    if (mode !== 'append' && mode !== 'merge') return null
     return files.find(f => f.id === targetTableId)
   }, [files, targetTableId, mode])
 
-  // Initialize Mapping for Append Mode (Configuration only)
+  // Initialize Mapping for Append/Merge Mode (Configuration only)
   useEffect(() => {
     if (
-      mode === 'append' &&
+      (mode === 'append' || mode === 'merge') &&
       currentTask &&
       targetFile &&
       !currentTask.columnMapping
@@ -63,7 +64,17 @@ export function DataPreviewStep() {
           ? targetCol.name
           : null
       })
-      updateTask(currentTaskIndex, { columnMapping: initialMapping })
+
+      const updates: Partial<IngestionTask> = { columnMapping: initialMapping }
+
+      // In Merge mode, default mergeKeys to PKs
+      if (mode === 'merge' && !currentTask.mergeKeys) {
+        updates.mergeKeys = targetFile.columns
+          .filter(c => c.isPrimaryKey || c.isKey)
+          .map(c => c.name)
+      }
+
+      updateTask(currentTaskIndex, updates)
     }
   }, [currentTask?.id, targetFile?.id, mode, updateTask, currentTaskIndex])
 
@@ -99,7 +110,9 @@ export function DataPreviewStep() {
             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">
               {mode === 'append'
                 ? t('wizard.mapping_fields', { name: targetFile?.name })
-                : t('wizard.configuring_asset')}
+                : mode === 'merge'
+                  ? t('wizard.mapping_fields_merge', 'Mapping Fields (Merge Mode)')
+                  : t('wizard.configuring_asset')}
             </span>
             <span className="text-sm font-bold text-zinc-900 mt-1">
               {currentTask.sourceName}
@@ -139,13 +152,44 @@ export function DataPreviewStep() {
         )}
       </div>
 
+      {mode === 'merge' && (
+        <div className="px-8 py-3 bg-blue-50/50 border-b border-blue-100 flex items-center gap-3">
+          <Info className="w-4 h-4 text-blue-500 shrink-0" />
+          <div className="flex items-center gap-6 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold border border-indigo-200">
+                <Key className="w-3 h-3" /> MATCH
+              </span>
+              <span className="text-blue-900">
+                {t(
+                  'wizard.merge_hint_match',
+                  'Select columns to match records (WHERE clause)'
+                )}
+              </span>
+            </div>
+            <div className="w-px h-3 bg-blue-200" />
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold border border-emerald-200">
+                <Edit2 className="w-3 h-3" /> UPDATE
+              </span>
+              <span className="text-blue-900">
+                {t(
+                  'wizard.merge_hint_update',
+                  'Map columns to update values (SET clause)'
+                )}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto bg-white">
         <div className="overflow-x-auto">
           <Table className="min-w-full border-collapse">
             <TableHeader className="sticky top-0 z-20 bg-zinc-50 shadow-sm border-b">
               <TableRow>
-                {mode === 'append' && targetFile
+                {(mode === 'append' || mode === 'merge') && targetFile
                   ? targetFile.columns.map(targetCol => (
                       <ColumnMappingHead
                         key={targetCol.name}
@@ -153,6 +197,13 @@ export function DataPreviewStep() {
                         sourceColumns={currentTask.columns}
                         currentMapping={currentTask.columnMapping}
                         onMappingChange={handleMappingChange}
+                        isMergeMode={mode === 'merge'}
+                        isMergeKey={(currentTask.mergeKeys || []).includes(
+                          targetCol.name
+                        )}
+                        onToggleMergeKey={() =>
+                          toggleMergeKey(currentTaskIndex, targetCol.name)
+                        }
                       />
                     ))
                   : currentTask.columns.map(col => (
@@ -172,12 +223,12 @@ export function DataPreviewStep() {
             <TableBody>
               {currentTask.previewData.map((row, rowIdx) => (
                 <TableRow key={rowIdx} className="hover:bg-zinc-50/50">
-                  {(mode === 'append' && targetFile
+                  {((mode === 'append' || mode === 'merge') && targetFile
                     ? targetFile.columns
                     : currentTask.columns
                   ).map(col => {
                     const sourceColName =
-                      mode === 'append'
+                      mode === 'append' || mode === 'merge'
                         ? currentTask.columnMapping?.[col.name]
                         : col.name
                     const cellValue = sourceColName ? row[sourceColName] : null
@@ -264,11 +315,17 @@ const ColumnMappingHead = ({
   sourceColumns,
   currentMapping,
   onMappingChange,
+  isMergeMode,
+  isMergeKey,
+  onToggleMergeKey,
 }: {
   targetColumn: ColumnSchema
   sourceColumns: ColumnConfig[]
   currentMapping: Record<string, string | null> | undefined
   onMappingChange: (source: string | null, target: string) => void
+  isMergeMode?: boolean
+  isMergeKey?: boolean
+  onToggleMergeKey?: () => void
 }) => {
   const { t } = useTranslation('common')
   const unmappedSourceCols = useMemo(() => {
@@ -285,30 +342,87 @@ const ColumnMappingHead = ({
 
   const currentSourceMapping = currentMapping?.[targetColumn.name]
 
+  // Merge Mode Visual Logic
+  const isUpdateColumn = isMergeMode && !isMergeKey && currentSourceMapping
+
   return (
-    <TableHead className="px-4 py-3 border-b border-r border-zinc-200 min-w-[240px] max-w-[300px]">
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center gap-2">
-          {targetColumn.isPrimaryKey && (
-            <div title={t('wizard.set_unique_key')}>
-              <Key className="w-3.5 h-3.5 text-indigo-400" />
-            </div>
+    <TableHead
+      className={cn(
+        'px-4 py-3 border-b border-r min-w-[240px] max-w-[300px] transition-colors relative group',
+        isMergeKey
+          ? 'bg-indigo-50/50 border-indigo-100'
+          : isUpdateColumn
+            ? 'bg-emerald-50/30 border-emerald-100'
+            : 'border-zinc-200'
+      )}
+    >
+      {/* Absolute Match Key Toggle */}
+      {isMergeMode && (
+        <button
+          onClick={onToggleMergeKey}
+          className={cn(
+            'absolute top-2 right-2 p-1.5 rounded-lg border transition-all z-30',
+            isMergeKey
+              ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
+              : 'bg-white border-zinc-200 text-zinc-300 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-sm'
           )}
-          <span
-            className="text-xs font-bold text-zinc-900 truncate"
-            title={targetColumn.name}
-          >
-            {targetColumn.name}
-          </span>
-          <span className="text-[10px] bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded font-bold border border-zinc-200">
-            {t('wizard.target_label')}
-          </span>
+          title={isMergeKey ? t('wizard.unset_match_key', 'Unset Match Key') : t('wizard.set_match_key', 'Set as Match Key')}
+        >
+          <Key className={cn('w-3.5 h-3.5', isMergeKey && 'fill-current')} />
+        </button>
+      )}
+
+      <div className="flex flex-col gap-2">
+        {/* Header Row: Type Badge + Column Name */}
+        <div className="flex items-start justify-between gap-2 pr-8">
+          <div className="flex flex-col min-w-0 gap-1">
+            {isMergeMode ? (
+              <div className="flex items-center gap-2">
+                {isMergeKey ? (
+                  <span className="flex items-center gap-1 text-[10px] font-black bg-indigo-600 text-white px-1.5 py-0.5 rounded shadow-sm">
+                    MATCH
+                  </span>
+                ) : isUpdateColumn ? (
+                  <span className="flex items-center gap-1 text-[10px] font-black bg-emerald-500 text-white px-1.5 py-0.5 rounded shadow-sm">
+                    UPDATE
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-wider">
+                    Ignore
+                  </span>
+                )}
+              </div>
+            ) : (
+              targetColumn.isPrimaryKey && (
+                <div title={t('wizard.set_unique_key')}>
+                  <Key className="w-3.5 h-3.5 text-indigo-400" />
+                </div>
+              )
+            )}
+            <span
+              className={cn(
+                'text-xs font-bold truncate',
+                isMergeKey
+                  ? 'text-indigo-900'
+                  : isUpdateColumn
+                    ? 'text-emerald-900'
+                    : 'text-zinc-500'
+              )}
+              title={targetColumn.name}
+            >
+              {targetColumn.name}
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center justify-center h-5">
-          <Link2 className="w-4 h-4 text-indigo-300" />
+        {/* Visual Label */}
+        <div className="flex items-center gap-2 my-1">
+          <div className="flex-1 h-px bg-zinc-100" />
+          <span className="text-[9px] font-mono text-zinc-300 tracking-tighter shrink-0 uppercase">Target Mapping</span>
+          <div className="flex-1 h-px bg-zinc-100" />
         </div>
 
+        {/* Source Selector */}
         <Select
           value={currentSourceMapping || ''}
           onValueChange={val =>
@@ -317,8 +431,10 @@ const ColumnMappingHead = ({
         >
           <SelectTrigger
             className={cn(
-              'h-8 text-xs bg-white',
-              !currentSourceMapping && 'text-zinc-400'
+              'h-8 text-xs shadow-sm border-zinc-200 transition-all',
+              !currentSourceMapping && 'text-zinc-400 bg-zinc-50 italic',
+              isMergeKey && 'border-indigo-200 bg-white text-indigo-900 ring-2 ring-indigo-50',
+              isUpdateColumn && 'border-emerald-200 bg-white text-emerald-900 ring-2 ring-emerald-50'
             )}
           >
             <SelectValue placeholder={t('wizard.map_to_target')} />

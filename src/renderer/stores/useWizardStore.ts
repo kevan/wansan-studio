@@ -31,6 +31,8 @@ export interface WizardActions {
     updates: Partial<ColumnConfig>
   ) => void
 
+  toggleMergeKey: (taskIndex: number, targetColName: string) => void
+
   setProcessing: (val: boolean) => void
   reset: () => void
 }
@@ -118,6 +120,21 @@ export const useWizardStore = create<WizardState & WizardActions>(
         )
 
         newTasks[taskIndex] = { ...task, columns: newColumns }
+        return { tasks: newTasks }
+      }),
+
+    toggleMergeKey: (taskIndex, targetColName) =>
+      set(state => {
+        const newTasks = [...state.tasks]
+        const task = newTasks[taskIndex]
+        if (!task) return state
+
+        const currentKeys = task.mergeKeys || []
+        const newKeys = currentKeys.includes(targetColName)
+          ? currentKeys.filter(k => k !== targetColName)
+          : [...currentKeys, targetColName]
+
+        newTasks[taskIndex] = { ...task, mergeKeys: newKeys }
         return { tasks: newTasks }
       }),
 
