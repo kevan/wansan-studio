@@ -3,6 +3,7 @@ import { OpenAI } from 'openai'
 import type { ClientOptions } from 'openai'
 import { generateAnalysis, analyzeContext } from '../engine/ai-bridge'
 import crypto from 'crypto'
+import { secureGet, secureSet } from './secure-storage'
 import type {
   TableSchema,
   AIAnalysisResult,
@@ -46,12 +47,11 @@ function decryptBuiltinKey(obfuscated: string): string {
   }
 }
 
-// Define schema for electron-store
+// Define schema for electron-store (Exclude apiKey from file storage)
 const schema = {
   aiConfig: {
     type: 'object',
     properties: {
-      apiKey: { type: 'string' },
       baseURL: { type: 'string' },
       model: { type: 'string' },
     },
@@ -89,20 +89,18 @@ export class AIService {
         let apiKey = decryptBuiltinKey(rawKey)
 
         // 2. Fallback: If decryption fails (returns empty string), try Base64 (for simpler dev setups)
-        // Check if rawKey looks like Base64 but not like our encrypted format (no colons)
         if (!apiKey && !rawKey.includes(':')) {
           try {
             const decoded = Buffer.from(rawKey, 'base64').toString('utf-8')
-            // Basic heuristic: check for common key prefixes or non-binary chars
             if (/^[a-zA-Z0-9_\-\.]+$/.test(decoded)) {
               apiKey = decoded
             }
-          } catch (e) {
-            // Ignore
+          } catch {
+            /* ignore */
           }
         }
 
-        // 3. Fallback: Use raw key if all else fails (e.g. local .env plain text)
+        // 3. Fallback: Use raw key if all else fails
         if (!apiKey) {
           apiKey = rawKey
         }
@@ -121,7 +119,7 @@ export class AIService {
   }
 
   private loadConfig() {
-    const storedConfig = store.get('aiConfig') as AIConfig
+    const storedConfig = (store.get('aiConfig') as AIConfig) || {}
 
     // Determine priority: Builtin (Managed) > Stored > Runtime Env > Default
     let effectiveConfig: AIConfig = {}
@@ -129,8 +127,11 @@ export class AIService {
     if (this.builtinConfig) {
       effectiveConfig = { ...this.builtinConfig }
     } else {
+      // Securely retrieve API Key from system keychain
+      const secureKey = secureGet('apiKey') || ''
+
       effectiveConfig = {
-        apiKey: storedConfig.apiKey || process.env.OPENAI_API_KEY,
+        apiKey: secureKey || process.env.OPENAI_API_KEY,
         baseURL: storedConfig.baseURL || process.env.OPENAI_BASE_URL,
         model:
           storedConfig.model ||
@@ -160,9 +161,6 @@ export class AIService {
     return this.openai
   }
 
-  /**
-   * Generates an analysis plan (SQL + viz config) without executing it.
-   */
   async generatePlan(
     userQuery: string,
     schemas: TableSchema[],
@@ -172,7 +170,6 @@ export class AIService {
     domainRules: DomainRule[] = []
   ): Promise<AIAnalysisResult> {
     const client = this.requireOpenAI()
-
     const aiResult = await generateAnalysis(
       client,
       userQuery,
@@ -206,9 +203,6 @@ export class AIService {
     }
   }
 
-  /**
-   * Fixes a broken SQL query.
-   */
   async fixQuery(
     originalSql: string,
     error: string,
@@ -220,9 +214,6 @@ export class AIService {
     return fixSQL(client, originalSql, error, schemas, this.model, domainRules)
   }
 
-  /**
-   * Analyzes multiple table schemas for relationships and starter prompts.
-   */
   async getContextAnalysis(
     schemas: TableSchema[],
     language: 'en' | 'zh' = 'en'
@@ -231,9 +222,6 @@ export class AIService {
     return analyzeContext(client, schemas, this.model, language)
   }
 
-  /**
-   * Generates raw text response from AI.
-   */
   async generateText(prompt: string, systemPrompt?: string): Promise<string> {
     const client = this.requireOpenAI()
     const response = await client.chat.completions.create({
@@ -252,9 +240,9 @@ export class AIService {
 
   /**
    * Sets and persists AI configuration.
+   * API Key is saved to Secure Storage; others to Electron Store.
    */
   setConfig(config: AIConfig) {
-    // Prevent overriding if builtin config exists
     if (this.builtinConfig) {
       console.warn(
         '[AI Service] Attempted to override Managed Config. Action ignored.'
@@ -262,30 +250,36 @@ export class AIService {
       return
     }
 
-    const current = store.get('aiConfig') as AIConfig
-    const newConfig = { ...current, ...config }
+    const current = (store.get('aiConfig') as AIConfig) || {}
+    const { apiKey, ...otherConfig } = config
+
+    // 1. Save Key to Secure Storage
+    if (apiKey !== undefined) {
+      secureSet('apiKey', apiKey)
+    }
+
+    // 2. Save other config to Electron Store
+    const newConfig = { ...current, ...otherConfig }
     store.set('aiConfig', newConfig)
+
     this.loadConfig()
   }
 
-  /**
-   * Gets current effective configuration.
-   * Sensitize sensitive data if it's managed.
-   */
   getConfig(): AIConfig {
     if (this.builtinConfig) {
       return {
         ...this.builtinConfig,
-        apiKey: '********************', // Mask real key
+        apiKey: '********************',
       }
     }
 
-    const storedConfig = store.get('aiConfig') as AIConfig
+    const storedConfig = (store.get('aiConfig') as AIConfig) || {}
+    const secureKey = secureGet('apiKey') || ''
+
     return {
-      apiKey: storedConfig.apiKey || process.env.OPENAI_API_KEY,
-      baseURL: storedConfig.baseURL || process.env.OPENAI_BASE_URL,
-      model:
-        storedConfig.model || process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
+      apiKey: secureKey,
+      baseURL: storedConfig.baseURL || '',
+      model: storedConfig.model || 'gpt-4-turbo-preview',
     }
   }
 
@@ -293,9 +287,6 @@ export class AIService {
     return !!this.openai
   }
 
-  /**
-   * Generates a SQL expression for a smart metric based on a natural language description.
-   */
   async generateMetricExpression(options: {
     input: string
     columns: { name: string; type: string }[]
@@ -303,17 +294,9 @@ export class AIService {
   }): Promise<string> {
     const { input, columns, mode } = options
     const client = this.requireOpenAI()
-
     const columnList = columns.map(c => `- ${c.name} (${c.type})`).join('\n')
-    const quotingRule = `
-CRITICAL SYNTAX RULES:
-1. **ALWAYS** wrap column names in DOUBLE QUOTES ( "). 
-2. Return **ONLY** the SQL expression, DO NOT use "SELECT", "FROM", or "AS".
-3. Use the EXACT column names provided above.
-4. Handle NULLs if appropriate (e.g. COALESCE).
-5. If division is involved, use "NULLIF(col, 0)" to prevent errors.
-6. NO Markdown, NO explanations.
-`
+    const quotingRule = `CRITICAL SYNTAX RULES:\n1. **ALWAYS** wrap column names in DOUBLE QUOTES (\" ).\n2. Return **ONLY** the SQL expression, DO NOT use \"SELECT\", \"FROM\", or \"AS\".\n3. Use the EXACT column names provided above.\n4. Handle NULLs if appropriate (e.g. COALESCE).\n5. If division is involved, use \"NULLIF(col, 0)\" to prevent errors.\n6. NO Markdown, NO explanations.`
+
     let systemPrompt = ''
     if (mode === 'generate') {
       systemPrompt = `You are a DuckDB SQL Formula Generator.\nTask: Create a SQL expression based on the user's intended metric name.\n\n### AVAILABLE COLUMNS:\n${columnList}\n\n${quotingRule}`
@@ -340,13 +323,9 @@ CRITICAL SYNTAX RULES:
   }
 
   clearConfig() {
-    if (this.builtinConfig) {
-      console.warn(
-        '[AI Service] Attempted to clear Managed Config. Action ignored.'
-      )
-      return
-    }
+    if (this.builtinConfig) return
     store.clear()
+    secureSet('apiKey', '')
     this.loadConfig()
   }
 }

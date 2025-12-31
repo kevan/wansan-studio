@@ -135,14 +135,8 @@ export const useSettingsStore = create<SettingsState>()(
         try {
           const res = await window.electronAPI.secureGet('apiKey')
           if (res.success && res.data) {
+            // 仅更新前端内存状态，用于 UI 显示掩码
             set({ apiKey: res.data })
-            const current = get()
-            const aiConfig: AIConfig = {
-              apiKey: res.data,
-              baseURL: current.baseUrl,
-              model: current.model,
-            }
-            void window.electronAPI.setAIConfig(aiConfig)
           }
         } catch (e) {
           console.error('Failed to load sensitive data', e)
@@ -275,13 +269,6 @@ export const useSettingsStore = create<SettingsState>()(
             }
           }
 
-          if ((patch as Partial<SettingsState>).apiKey !== undefined) {
-            const newKey = (patch as Partial<SettingsState>).apiKey
-            if (newKey !== undefined) {
-              void window.electronAPI.secureSet('apiKey', newKey)
-            }
-          }
-
           const aiSettingsChanged =
             (patch as Partial<SettingsState>).apiKey !== undefined ||
             (patch as Partial<SettingsState>).baseUrl !== undefined ||
@@ -294,6 +281,7 @@ export const useSettingsStore = create<SettingsState>()(
               baseURL: nextState.baseUrl,
               model: nextState.model,
             }
+            // 后端 AIService.setConfig 会负责写入 secure-storage
             void window.electronAPI.setAIConfig(aiConfig)
           }
 
