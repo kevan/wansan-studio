@@ -13,6 +13,7 @@ import { ProjectManager } from './services/project-manager'
 import { registerProjectHandlers } from './ipc/project-ipc'
 import { createApplicationMenu } from './config/menu'
 import { authService } from './services/auth-service'
+import type { AppConfig } from '../shared/types'
 
 class WansanApp {
   private mainWindow: BrowserWindow | null = null
@@ -265,10 +266,10 @@ class WansanApp {
       const remoteData = await authService.fetchRemoteConfig()
 
       // 2. Calculate final Auth State (Merging Local + Remote)
-      const authState = await authService.getAuthState(remoteData)
+      const authState = await authService.getAuthState(remoteData || undefined)
 
       // 3. Prepare Config Payload
-      const config = {
+      const config: AppConfig = {
         ...(remoteData || {}),
         ...authState, // isActivated, channel, specialExpiry, etc.
         // Fallback for offline mode if remoteData is null
@@ -284,7 +285,7 @@ class WansanApp {
     }
   }
 
-  private sendConfigToRenderer(config: any) {
+  private sendConfigToRenderer(config: AppConfig | { isOffline: boolean }) {
     if (this.mainWindow) {
       if (this.mainWindow.webContents.isLoading()) {
         this.mainWindow.webContents.once('did-finish-load', () => {

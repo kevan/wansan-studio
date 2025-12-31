@@ -45,7 +45,6 @@ export interface SettingsState {
   hasCompletedOnboarding: boolean
   isActivated: boolean
   deviceId?: string
-  validBetaCodes: string[]
   remoteConfig: RemoteConfig
   dismissedAnnouncementId: string | null
   domainRules: DomainRule[]
@@ -140,7 +139,6 @@ const initialSettingsState: Omit<
   language: detectDefaultLanguage(),
   hasCompletedOnboarding: false,
   isActivated: false,
-  validBetaCodes: [],
   remoteConfig: {},
   dismissedAnnouncementId: null,
   domainRules: [],
@@ -187,13 +185,16 @@ export const useSettingsStore = create<SettingsState>()(
         }
       },
       activateLicense: (code: string) => {
-        const { validBetaCodes } = get()
+        const { remoteConfig } = get()
         const normalizedCode = code.trim().toUpperCase()
         if (!normalizedCode) return false
 
-        // 公测阶段：纯前端验证，无需存储 Key 到安全存储
-        // 只要匹配 BetaCode，直接标记为激活并持久化
-        if (validBetaCodes.includes(normalizedCode)) {
+        const rawCodes = remoteConfig.beta_code
+        const validCodes = Array.isArray(rawCodes)
+          ? rawCodes.map(c => c.toUpperCase())
+          : [rawCodes?.toUpperCase() || '']
+
+        if (validCodes.includes(normalizedCode)) {
           set({ isActivated: true })
           Analytics.track('beta_activated', {
             code_prefix: normalizedCode.substring(0, 6),
@@ -341,7 +342,6 @@ export const useSettingsStore = create<SettingsState>()(
           // So I should preserve them.
           baseUrl: state.baseUrl,
           model: state.model,
-          validBetaCodes: state.validBetaCodes,
           dismissedAnnouncementId: state.dismissedAnnouncementId,
         }))
         // Do NOT clear secure storage apiKey
@@ -354,14 +354,8 @@ export const useSettingsStore = create<SettingsState>()(
       partialize: state => {
         // 从持久化存储中排除以下敏感或瞬时字段
         // 注意：isActivated 现在允许持久化（公测阶段便利性）
-        const {
-          apiKey,
-          remoteConfig,
-          isSpecialChannel,
-          isExpired,
-          validBetaCodes, // 由后端下发，无需本地保存
-          ...rest
-        } = state
+        const { apiKey, remoteConfig, isSpecialChannel, isExpired, ...rest } =
+          state
         return rest
       },
       migrate: persistedState => {

@@ -2,6 +2,7 @@ import { app } from 'electron'
 import Store from 'electron-store'
 import { secureGet, secureSet } from './secure-storage'
 import { getDeviceId } from './device'
+import type { RemoteConfig, AppConfig } from '@shared/types'
 
 export interface AuthState {
   isActivated?: boolean
@@ -9,16 +10,16 @@ export interface AuthState {
   isExpired: boolean
   channel: string
   expiryDate: string | null
-  validBetaCodes: string[] // Cached from remote
+  betaCodes: string[] // In-memory only
 }
 
 const STORE_KEY_ACTIVATED = 'isActivated'
-const STORE_KEY_BETA_CODES = 'cachedBetaCodes'
 const DEFAULT_EXPIRY = '2026-12-31'
 
 class AuthService {
   private store: Store
   private channelEnv: string
+  private currentBetaCodes: string[] = []
 
   constructor() {
     this.store = new Store()
@@ -31,20 +32,18 @@ class AuthService {
    * Main entry point to get the current authentication status.
    * Merges Local state, Environment variables, and Remote config.
    */
-  async getAuthState(remoteData?: any): Promise<AuthState> {
+  async getAuthState(remoteData?: RemoteConfig): Promise<AuthState> {
     const licenseKey = (await secureGet('licenseKey')) || ''
     const localActivated = this.store.get(STORE_KEY_ACTIVATED, false) as boolean
-    const cachedBetaCodes =
-      (this.store.get(STORE_KEY_BETA_CODES, []) as string[]) || []
 
-    // 1. Update cached beta codes if remote provided them
-    let currentBetaCodes = cachedBetaCodes
-    if (remoteData && Array.isArray(remoteData.valid_beta_codes)) {
-      currentBetaCodes = remoteData.valid_beta_codes
-      this.store.set(STORE_KEY_BETA_CODES, currentBetaCodes)
+    // 1. Update in-memory beta codes from remoteData.beta_code
+    if (remoteData?.beta_code) {
+      const rawCode = remoteData.beta_code
+      this.currentBetaCodes = Array.isArray(rawCode) ? rawCode : [rawCode]
     }
 
     // 2. Determine Channel & Special Status
+
     // Remote channel takes precedence over local env (if we want to rename it remotely)
     const channel = remoteData?.channel || this.channelEnv
     const isSpecial = !!channel
@@ -57,7 +56,6 @@ class AuthService {
         remoteData?.special_expiry ||
         DEFAULT_EXPIRY
     }
-
     // 4. Determine Activated Status
     let isActivated: boolean | undefined = undefined // Default to undefined for standard users (let renderer decide)
     let isExpired = false
@@ -74,16 +72,12 @@ class AuthService {
       // Only set isActivated if we have a POSITIVE reason (Remote valid OR Local Key match)
       // Otherwise leave it undefined so Renderer's localStorage persists.
 
-      if (remoteData?.auth?.is_valid) {
+      if (remoteData?.isActivated) {
         isActivated = true
         this.store.set(STORE_KEY_ACTIVATED, true)
-      } else if (remoteData?.auth?.is_valid === false) {
-        // Explicit revocation
-        isActivated = false
-        this.store.set(STORE_KEY_ACTIVATED, false)
       } else if (
         licenseKey &&
-        currentBetaCodes.includes(licenseKey.trim().toUpperCase())
+        this.currentBetaCodes.includes(licenseKey.trim().toUpperCase())
       ) {
         isActivated = true
         this.store.set(STORE_KEY_ACTIVATED, true)
@@ -100,22 +94,21 @@ class AuthService {
       isExpired,
       channel,
       expiryDate,
-      validBetaCodes: currentBetaCodes,
+      betaCodes: this.currentBetaCodes,
     }
   }
 
   async validateKeyLocally(key: string): Promise<boolean> {
     const normalized = key.trim().toUpperCase()
-    const codes = (this.store.get(STORE_KEY_BETA_CODES, []) as string[]) || []
 
-    if (codes.includes(normalized)) {
+    if (this.currentBetaCodes.includes(normalized)) {
       this.store.set(STORE_KEY_ACTIVATED, true)
       return true
     }
     return false
   }
 
-  async fetchRemoteConfig(): Promise<any> {
+  async fetchRemoteConfig(): Promise<RemoteConfig | null> {
     const appVersion = app.getVersion()
     const deviceId = await getDeviceId()
     const licenseKey = (await secureGet('licenseKey')) || ''

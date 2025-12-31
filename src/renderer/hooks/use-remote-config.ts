@@ -34,11 +34,8 @@ export function useRemoteConfig() {
 
       setRemoteConfig(config)
 
-      if (Array.isArray(config.valid_beta_codes)) {
-        updateSettings({ validBetaCodes: config.valid_beta_codes })
-      }
+      // 1. Force Update Check
 
-      // 1. 强制更新检查
       if (config.min_version && semver.lt(appVersion, config.min_version)) {
         const event = new CustomEvent('force-update', {
           detail: {
