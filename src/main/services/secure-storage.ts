@@ -38,3 +38,7 @@ export function secureGet(key: string): string | null {
     return null
   }
 }
+
+export function secureClear() {
+  store.clear()
+}

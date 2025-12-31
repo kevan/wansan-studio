@@ -3,13 +3,14 @@ import { NativeDatabaseService } from './native-db-service'
 import { FileService } from './file'
 import { AIService } from './ai-service'
 import { getDeviceId } from './device'
-import { secureSet, secureGet } from './secure-storage'
+import { secureSet, secureGet, secureClear } from './secure-storage'
 import { executeSQL } from '../engine/executor'
 import { checkFilesConsistency } from '../engine/file-watcher'
 import { ingestJsonData, getUniqueTableName } from '../engine/ingestion'
 import { exportWebReport } from './web-export'
 import fs from 'fs-extra'
 import os from 'os'
+import Store from 'electron-store'
 import { authService } from './auth-service'
 import type {
   TableSchema,
@@ -537,6 +538,14 @@ export function setupIPC(
       await databaseService.dropAllTables()
       // 2. Clear AI Config
       aiService.clearConfig()
+      // 3. Clear Auth Config
+      authService.reset()
+      // 4. Clear Default Store (Window bounds, etc.)
+      const defaultStore = new Store()
+      defaultStore.clear()
+      // 5. Clear Secure Storage
+      secureClear()
+
       return { success: true }
     } catch (error) {
       console.error('Reset App error:', error)

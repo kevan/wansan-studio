@@ -101,7 +101,7 @@ class AuthService {
       }
     }
 
-    return {
+    const res = {
       isActivated: isActivated,
       isSpecialChannel: isSpecial,
       isExpired,
@@ -109,6 +109,11 @@ class AuthService {
       expiryDate,
       betaCodes: this.currentBetaCodes,
     }
+    console.log('[AuthService] getAuthState', {
+      remoteData,
+      res,
+    })
+    return res
   }
 
   async validateKeyLocally(key: string): Promise<boolean> {
@@ -149,6 +154,10 @@ class AuthService {
       console.warn('[AuthService] Remote fetch failed:', e)
     }
     return null // Return null to indicate failure/offline
+  }
+
+  reset() {
+    this.store.clear()
   }
 }
 

@@ -111,7 +111,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
 
     try {
       if (window.electronAPI) {
-        console.log('🧹 Clearing Backend State (DuckDB & Config)...')
+        console.log('🧹 Clearing Backend State (DuckDB, Config, Stores)...')
         await window.electronAPI.resetApp()
       }
     } catch (e) {
