@@ -138,16 +138,12 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     // Explicitly reset everything in settings for DevConsole reset
     const settingsStore = useSettingsStore.getState()
     settingsStore.updateSettings({
+      isActivated: false,
+      recentProjectPaths:[],
       hasCompletedOnboarding: false,
       apiKey: '',
     })
     settingsStore.resetPreferences()
-
-    if (window.electronAPI) {
-      await window.electronAPI.secureSet('apiKey', '')
-    }
-
-    useProjectStore.getState().reset()
     window.location.reload()
   }, [t])
 

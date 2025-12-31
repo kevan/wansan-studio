@@ -37,5 +37,8 @@
   "status_saving": "Saving",
   "status_error": "Error",
   "create_error": "Creation Failed",
-  "project_exists_error": "A project with this name already exists in the selected directory."
+  "project_exists_error": "A project with this name already exists in the selected directory.",
+  "open_error": "Failed to open project",
+  "project_not_found": "Project Not Found",
+  "project_missing_msg": "The project file might have been moved or deleted. It has been removed from the recent list."
 }

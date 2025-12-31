@@ -58,8 +58,44 @@ export function ProjectLauncher() {
   const handleOpenExisting = async () => {
     try {
       await openProject() // Triggers system dialog via useProjectIO -> projectService
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to open project', e)
+      if (e.message !== 'Cancelled') {
+        useToastStore.getState().addToast({
+          title: t('open_error', 'Failed to open project'),
+          description: e.message,
+          type: 'error',
+        })
+      }
+    }
+  }
+
+  const handleRecentOpen = async (path: string) => {
+    try {
+      await openProject(path)
+    } catch (e: any) {
+      console.error('Failed to open recent project', e)
+
+      // If project directory or wansan.json is missing
+      const isMissing =
+        e.message.includes('not found') ||
+        e.message.includes('ENOENT') ||
+        e.message.includes('Invalid project bundle')
+
+      if (isMissing) {
+        useToastStore.getState().addToast({
+          title: t('project_not_found', 'Project Not Found'),
+          description: t('project_missing_msg', 'The project file might have been moved or deleted. Removed from recent list.'),
+          type: 'error',
+        })
+        removeRecentProject(path)
+      } else {
+        useToastStore.getState().addToast({
+          title: t('open_error', 'Failed to open project'),
+          description: e.message,
+          type: 'error',
+        })
+      }
     }
   }
 
@@ -192,7 +228,7 @@ export function ProjectLauncher() {
                         className="group relative flex items-center gap-2"
                       >
                         <button
-                          onClick={() => openProject(path)}
+                          onClick={() => handleRecentOpen(path)}
                           className="flex-1 flex items-center justify-between p-4 border border-zinc-100 rounded-xl hover:border-black hover:bg-zinc-50 transition-all text-left min-w-0"
                         >
                           <div className="min-w-0 pr-4">

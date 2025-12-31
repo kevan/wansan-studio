@@ -549,7 +549,7 @@ export function setupIPC(
   ipcMain.handle('reset-app', async () => {
     try {
       // 1. Reset Database
-      await databaseService.dropAllTables()
+      // await databaseService.dropAllTables()
       // 2. Clear AI Config
       aiService.clearConfig()
       // 3. Clear Auth Config

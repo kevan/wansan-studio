@@ -33,7 +33,7 @@ export interface ProjectData {
   meta: {
     id: string
     name: string
-    version: '1.1.0'
+    version: string
     created: number
   }
   files: FileNode[] // Shared Data Assets (Now includes relations)

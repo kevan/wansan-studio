@@ -37,5 +37,8 @@
   "status_saving": "正在保存",
   "status_error": "错误",
   "create_error": "创建失败",
-  "project_exists_error": "所选目录下已存在同名项目。"
+  "project_exists_error": "所选目录下已存在同名项目。",
+  "open_error": "打开项目失败",
+  "project_not_found": "未找到项目",
+  "project_missing_msg": "项目文件可能已被移动或删除，已从最近列表中移除。"
 }

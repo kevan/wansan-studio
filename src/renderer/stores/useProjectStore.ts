@@ -159,8 +159,8 @@ const initialProjectState: ProjectData & {
 } = {
   meta: {
     id: crypto.randomUUID(),
-    name: 'Untitled Project',
-    version: '1.1.0',
+    name: 'My Workspace',
+    version: __APP_VERSION__,
     created: Date.now(),
   },
   files: [],
