@@ -15,7 +15,7 @@ interface ProjectRulesModalProps {
 }
 
 export function ProjectRulesModal({ isOpen, onClose }: ProjectRulesModalProps) {
-  const { t } = useTranslation('common')
+  const { t } = useTranslation(['common'])
   const {
     domainRules,
     addDomainRule,

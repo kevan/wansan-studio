@@ -4,7 +4,7 @@ export interface ProjectManifest {
   meta: {
     id: string
     name: string
-    version: '1.3.0'
+    version: '0.5.0'
     createdAt: number
     updatedAt: number
     engine: 'native'

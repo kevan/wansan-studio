@@ -33,7 +33,7 @@ export class ProjectManager {
       meta: {
         id: projectId,
         name: name,
-        version: '1.3.0',
+        version: '0.5.0',
         createdAt: Date.now(),
         updatedAt: Date.now(),
         engine: 'native',
@@ -132,7 +132,7 @@ export class ProjectManager {
         meta: {
           id: uuidv4(),
           name: path.basename(projectPath).replace('.wansan', ''),
-          version: '1.3.0',
+          version: '0.5.0',
           createdAt: Date.now(),
           updatedAt: Date.now(),
           engine: 'native',

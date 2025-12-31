@@ -144,7 +144,7 @@ export function RuleEditor({
   addButtonLabel,
   scope = 'project',
 }: RuleEditorProps) {
-  const { t } = useTranslation('settings')
+  const { t } = useTranslation('common')
   const { isActivated } = useSettingsStore()
   const { checkGate, gateNode } = useProGate()
   const [newRule, setNewRule] = useState('')
