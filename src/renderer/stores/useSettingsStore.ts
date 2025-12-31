@@ -6,35 +6,15 @@ import {
   DEFAULT_SPECIAL_EXPIRY,
 } from '@/src/lib/constants'
 import { createBigIntStorage } from '@shared/serialization.ts'
-import type { AIConfig, DomainRule } from '@shared/types'
+import type {
+  AIConfig,
+  DomainRule,
+  RemoteConfig,
+  AppConfig,
+} from '@shared/types'
 import { Analytics } from '../services/analytics'
 
 export type SettingsLanguage = 'en' | 'zh'
-
-export interface AIProviderConfig {
-  name: string
-  baseUrl: string
-  models: string[]
-  getKeyUrl?: string
-}
-
-export interface RemoteConfig {
-  min_version?: string
-  latest_version?: string
-  download_url?: string
-  beta_code?: string
-  specialExpiry?: string
-  channel?: string
-  isActivated?: boolean
-  announcement?: {
-    id: string
-    text: string | { [lang: string]: string }
-    link?: string
-    level?: 'info' | 'warning'
-  } | null
-  features?: Record<string, boolean>
-  providers?: Record<string, AIProviderConfig>
-}
 
 export interface SettingsState {
   provider: AIProviderKey
@@ -54,7 +34,7 @@ export interface SettingsState {
   setProvider: (provider: AIProviderKey) => void
   activateLicense: (code: string) => boolean
   loadSensitiveData: () => Promise<void>
-  setRemoteConfig: (cfg: RemoteConfig) => void
+  setRemoteConfig: (cfg: AppConfig) => void
   dismissAnnouncement: (id: string) => void
   addDomainRule: (content: string) => void
   toggleDomainRule: (id: string) => void
@@ -85,14 +65,13 @@ export interface SettingsState {
 const checkExpiry = (
   remoteConfig: RemoteConfig
 ): { isSpecial: boolean; isExpired: boolean; shouldActivate: boolean } => {
-  // 核心变更：完全依赖后端下发的 channel 字段
   const channel = remoteConfig.channel
   const isSpecial = typeof channel === 'string' && channel.length > 0
 
   if (!isSpecial)
     return { isSpecial: false, isExpired: false, shouldActivate: false }
 
-  const expiryDateStr = remoteConfig.specialExpiry || DEFAULT_SPECIAL_EXPIRY
+  const expiryDateStr = remoteConfig.special_expiry || DEFAULT_SPECIAL_EXPIRY
   const expiryDate = new Date(expiryDateStr)
   const isExpired = new Date() > expiryDate
 
@@ -111,7 +90,6 @@ const getProviderDefaults = (provider: AIProviderKey) => {
 
 const detectDefaultLanguage = (): 'en' | 'zh' => {
   const lang = navigator.language || 'en'
-  // Match 'zh', 'zh-CN', 'zh-TW' -> 'zh'
   return lang.toLowerCase().startsWith('zh') ? 'zh' : 'en'
 }
 
@@ -158,7 +136,6 @@ export const useSettingsStore = create<SettingsState>()(
           const res = await window.electronAPI.secureGet('apiKey')
           if (res.success && res.data) {
             set({ apiKey: res.data })
-            // Also update main process config
             const current = get()
             const aiConfig: AIConfig = {
               apiKey: res.data,
@@ -203,38 +180,35 @@ export const useSettingsStore = create<SettingsState>()(
         }
         return false
       },
-      setRemoteConfig: (cfg: RemoteConfig) => {
+      setRemoteConfig: (cfg: AppConfig) => {
         const { isSpecial, isExpired, shouldActivate } = checkExpiry(cfg)
         set(state => {
-          // 基础状态
           let newIsActivated = state.isActivated
 
-          // 1. 特殊渠道：完全由后端/环境决定
           if (isSpecial) {
             newIsActivated = shouldActivate
+          } else if (cfg.isActivated !== undefined) {
+            newIsActivated = cfg.isActivated
           }
-          // 2. 普通渠道 (后端下发了明确指令)：覆盖本地
-          else if ((cfg as any).isActivated !== undefined) {
-            newIsActivated = (cfg as any).isActivated
-          }
-          // 3. 普通渠道 (后端无指令)：保持本地状态 (isActivated 持久化生效)
 
-          const newState: Partial<SettingsState> = {
-            remoteConfig: cfg,
+          // Clean the payload to store only RemoteConfig part in state.remoteConfig
+          const {
+            isSpecialChannel,
+            isExpired: _e,
+            isOffline,
+            betaCodes,
+            ...rawRemote
+          } = cfg
 
+          return {
+            remoteConfig: rawRemote,
             isSpecialChannel: isSpecial,
-
             isExpired: isExpired,
-
             isActivated: newIsActivated,
           }
-
-          return newState
         })
       },
-
       dismissAnnouncement: (id: string) => set({ dismissedAnnouncementId: id }),
-
       addDomainRule: content => {
         Analytics.track('domain_rule_added', { scope: 'global' })
         set(state => ({
@@ -328,23 +302,16 @@ export const useSettingsStore = create<SettingsState>()(
       completeOnboarding: () => set({ hasCompletedOnboarding: true }),
       resetPreferences: () => {
         set(state => ({
-          // Reset Preferences
           language: detectDefaultLanguage(),
-          // Preserve License & Config
           isActivated: state.isActivated,
           apiKey: state.apiKey,
           deviceId: state.deviceId,
           remoteConfig: state.remoteConfig,
-          provider: state.provider, // Preserve AI Provider choice too? Usually yes for "Preferences".
-          // If user wants to reset AI, they can clear manually or we might need separate action.
-          // The prompt said "Only clears UI preferences (Theme, Language), preserving License and Config"
-          // AI Config (provider, baseurl, model) is technically config.
-          // So I should preserve them.
+          provider: state.provider,
           baseUrl: state.baseUrl,
           model: state.model,
           dismissedAnnouncementId: state.dismissedAnnouncementId,
         }))
-        // Do NOT clear secure storage apiKey
       },
     }),
     {
@@ -352,10 +319,7 @@ export const useSettingsStore = create<SettingsState>()(
       storage: createBigIntStorage(),
       version: 3,
       partialize: state => {
-        // 从持久化存储中排除以下敏感或瞬时字段
-        // 注意：isActivated 现在允许持久化（公测阶段便利性）
-        const { apiKey, remoteConfig, isSpecialChannel, isExpired, ...rest } =
-          state
+        const { apiKey, isSpecialChannel, isExpired, ...rest } = state
         return rest
       },
       migrate: persistedState => {

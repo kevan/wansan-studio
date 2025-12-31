@@ -33,7 +33,6 @@ class AuthService {
    * Merges Local state, Environment variables, and Remote config.
    */
   async getAuthState(remoteData?: RemoteConfig): Promise<AuthState> {
-    const licenseKey = (await secureGet('licenseKey')) || ''
     const localActivated = this.store.get(STORE_KEY_ACTIVATED, false) as boolean
 
     // 1. Update in-memory beta codes from remoteData.beta_code
@@ -43,47 +42,27 @@ class AuthService {
     }
 
     // 2. Determine Channel & Special Status
-
-    // Remote channel takes precedence over local env (if we want to rename it remotely)
     const channel = remoteData?.channel || this.channelEnv
     const isSpecial = !!channel
 
     // 3. Determine Expiry
     let expiryDate: string | null = null
     if (isSpecial) {
-      expiryDate =
-        remoteData?.specialExpiry ||
-        remoteData?.special_expiry ||
-        DEFAULT_EXPIRY
+      expiryDate = remoteData?.special_expiry || DEFAULT_EXPIRY
     }
+
     // 4. Determine Activated Status
-    let isActivated: boolean | undefined = undefined // Default to undefined for standard users (let renderer decide)
+    let isActivated: boolean | undefined = undefined
     let isExpired = false
 
     if (isSpecial) {
-      // Special Channel Logic
       if (expiryDate) {
         isExpired = new Date() > new Date(expiryDate)
       }
-      // Special channels are activated by default unless expired
       isActivated = !isExpired
     } else {
-      // Standard User Logic (Local-First Beta Code System)
-      // Only set isActivated if we have a POSITIVE reason (Remote valid OR Local Key match)
-      // Otherwise leave it undefined so Renderer's localStorage persists.
-
-      if (remoteData?.isActivated) {
-        isActivated = true
-        this.store.set(STORE_KEY_ACTIVATED, true)
-      } else if (
-        licenseKey &&
-        this.currentBetaCodes.includes(licenseKey.trim().toUpperCase())
-      ) {
-        isActivated = true
-        this.store.set(STORE_KEY_ACTIVATED, true)
-      }
-      // If we used to be activated locally in Main, keep it.
-      else if (localActivated) {
+      // Standard User: Trust local storage first during beta
+      if (localActivated) {
         isActivated = true
       }
     }
@@ -100,7 +79,6 @@ class AuthService {
 
   async validateKeyLocally(key: string): Promise<boolean> {
     const normalized = key.trim().toUpperCase()
-
     if (this.currentBetaCodes.includes(normalized)) {
       this.store.set(STORE_KEY_ACTIVATED, true)
       return true
@@ -111,7 +89,6 @@ class AuthService {
   async fetchRemoteConfig(): Promise<RemoteConfig | null> {
     const appVersion = app.getVersion()
     const deviceId = await getDeviceId()
-    const licenseKey = (await secureGet('licenseKey')) || ''
 
     const url = new URL('https://api.wansan.app/v1/config')
     url.searchParams.append('channel', this.channelEnv)
@@ -122,10 +99,8 @@ class AuthService {
         headers: {
           'X-App-Version': appVersion,
           'X-Special-Channel': this.channelEnv,
-          'X-License-Key': licenseKey, // 仅在 Header 中传输
           'X-Device-Id': deviceId,
         },
-        // Short timeout to prevent blocking startup too long
         signal: AbortSignal.timeout(5000),
       })
 

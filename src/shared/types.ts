@@ -160,23 +160,22 @@ export interface RemoteConfig {
   latest_version?: string
   download_url?: string
   beta_code?: string | string[]
-  specialExpiry?: string // snake_case from server mapped to camelCase
-  special_expiry?: string // raw from server
+  special_expiry?: string // 企业版有效期
   channel?: string
-  isActivated?: boolean // From backend auth check
   announcement?: {
     id: string
     text: string | { [lang: string]: string }
     link?: string
     level?: 'info' | 'warning'
   } | null
-  features?: Record<string, boolean>
   providers?: Record<string, any> // AIProviderConfig
 }
 
 // 组合类型：发送给前端的最终配置
 export interface AppConfig extends RemoteConfig {
+  isActivated?: boolean
   isSpecialChannel?: boolean
   isExpired?: boolean
   isOffline?: boolean
+  betaCodes?: string[]
 }

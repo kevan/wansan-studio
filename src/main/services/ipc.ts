@@ -339,19 +339,8 @@ export function setupIPC(
   // 安全存储
   ipcMain.handle('secure-set', async (_event, key: string, value: string) => {
     const success = secureSet(key, value)
-
-    // 如果设置的是 licenseKey，触发本地快速验证
-    if (success && key === 'licenseKey' && !!value) {
-      // 这里的验证会更新 Store 中的 isActivated 状态
-      await authService.validateKeyLocally(value)
-
-      // 也可以选择立即触发一次远程同步（可选）
-      // wansanApp.fetchRemoteConfig() // 需要访问 app 实例，这里解耦比较好，让前端去触发刷新
-    }
-
     return { success }
   })
-
   ipcMain.handle('secure-get', async (_event, key: string) => {
     const value = secureGet(key)
     return { success: true, data: value }

@@ -217,15 +217,13 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                     <Bot className="h-5 w-5" />
                     {t('settings.section_ai')}
                   </h4>
-                  {settings.remoteConfig.isActivated &&
-                    settings.isSpecialChannel && (
-                      <div className="px-2 py-1 rounded bg-zinc-900 text-white dark:bg-white dark:text-black text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
-                        <Sparkles className="w-3 h-3 fill-current" />
-                        <span>
-                          {t('ai.managed_mode', 'Enterprise Managed')}
-                        </span>
-                      </div>
-                    )}
+                  {settings.isActivated && settings.isSpecialChannel && (
+                    <div className="px-2 py-1 rounded bg-zinc-900 text-white dark:bg-white dark:text-black text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                      <Sparkles className="w-3 h-3 fill-current" />
+
+                      <span>{t('ai.managed_mode', 'Enterprise Managed')}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-6">
