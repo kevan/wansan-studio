@@ -14,42 +14,96 @@ export interface AuthState {
 }
 
 const STORE_KEY_ACTIVATED = 'isActivated'
+
+const STORE_KEY_EXPIRY = 'cachedSpecialExpiry' // [NEW] Persistence key
+
 const DEFAULT_EXPIRY = '2026-12-31'
 
+
+
 class AuthService {
+
   private store: Store
+
   private channelEnv: string
+
   private currentBetaCodes: string[] = []
 
+
+
   constructor() {
+
     this.store = new Store()
+
     // Read build-time injected env or runtime env
-    this.channelEnv =
-      process.env.SPECIAL_CHANNEL || process.env.VITE_SPECIAL_CHANNEL || ''
+
+    this.channelEnv = process.env.SPECIAL_CHANNEL || process.env.VITE_SPECIAL_CHANNEL || ''
+
   }
 
+
+
   /**
+
    * Main entry point to get the current authentication status.
+
    * Merges Local state, Environment variables, and Remote config.
+
    */
+
   async getAuthState(remoteData?: RemoteConfig): Promise<AuthState> {
+
     const localActivated = this.store.get(STORE_KEY_ACTIVATED, false) as boolean
 
+    const cachedExpiry = this.store.get(STORE_KEY_EXPIRY, DEFAULT_EXPIRY) as string
+
+    
+
     // 1. Update in-memory beta codes from remoteData.beta_code
+
     if (remoteData?.beta_code) {
+
       const rawCode = remoteData.beta_code
+
       this.currentBetaCodes = Array.isArray(rawCode) ? rawCode : [rawCode]
+
     }
+
+
 
     // 2. Determine Channel & Special Status
+
     const channel = remoteData?.channel || this.channelEnv
+
     const isSpecial = !!channel
 
-    // 3. Determine Expiry
+
+
+    // 3. Determine Expiry (Remote > Cached > Default)
+
     let expiryDate: string | null = null
+
     if (isSpecial) {
-      expiryDate = remoteData?.special_expiry || DEFAULT_EXPIRY
+
+      if (remoteData?.special_expiry) {
+
+        expiryDate = remoteData.special_expiry
+
+        // Persist new expiry from server
+
+        this.store.set(STORE_KEY_EXPIRY, expiryDate)
+
+      } else {
+
+        // Fallback to cached expiry (Offline support)
+
+        expiryDate = cachedExpiry
+
+      }
+
     }
+
+
 
     // 4. Determine Activated Status
     let isActivated: boolean | undefined = undefined
