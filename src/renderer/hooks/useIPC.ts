@@ -87,6 +87,9 @@ const mockIPC: ElectronAPI = {
   secureGet: async (_key: string): Promise<IPCResponse<string | null>> => {
     return { success: true, data: null }
   },
+  validateLicense: async (_key: string): Promise<IPCResponse<boolean>> => {
+    return { success: true, data: true }
+  },
   exportPDF: async (_data: any): Promise<IPCResponse> => {
     return { success: true }
   },

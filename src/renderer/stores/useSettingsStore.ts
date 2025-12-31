@@ -32,7 +32,7 @@ export interface SettingsState {
   isSpecialChannel: boolean
   isExpired: boolean
   setProvider: (provider: AIProviderKey) => void
-  activateLicense: (code: string) => boolean
+  activateLicense: (code: string) => Promise<boolean>
   loadSensitiveData: () => Promise<void>
   setRemoteConfig: (cfg: AppConfig) => void
   dismissAnnouncement: (id: string) => void
@@ -163,22 +163,22 @@ export const useSettingsStore = create<SettingsState>()(
           void window.electronAPI.setAIConfig(aiConfig)
         }
       },
-      activateLicense: (code: string) => {
-        const { remoteConfig } = get()
+      activateLicense: async (code: string) => {
         const normalizedCode = code.trim().toUpperCase()
         if (!normalizedCode) return false
 
-        const rawCodes = remoteConfig.beta_code
-        const validCodes = Array.isArray(rawCodes)
-          ? rawCodes.map(c => c.toUpperCase())
-          : [rawCodes?.toUpperCase() || '']
-
-        if (validCodes.includes(normalizedCode)) {
-          set({ isActivated: true })
-          Analytics.track('beta_activated', {
-            code_prefix: normalizedCode.substring(0, 6),
-          })
-          return true
+        try {
+          // Use Main process Auth Service to validate
+          const res = await window.electronAPI.validateLicense(normalizedCode)
+          if (res.success && res.data) {
+            set({ isActivated: true })
+            Analytics.track('beta_activated', {
+              code_prefix: normalizedCode.substring(0, 6),
+            })
+            return true
+          }
+        } catch (e) {
+          console.error('License validation failed:', e)
         }
         return false
       },

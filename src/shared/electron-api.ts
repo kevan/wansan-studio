@@ -138,6 +138,7 @@ export interface ElectronAPI {
   getAppVersion: () => Promise<IPCResponse<string>>
   secureSet: (key: string, value: string) => Promise<IPCResponse<boolean>>
   secureGet: (key: string) => Promise<IPCResponse<string | null>>
+  validateLicense: (key: string) => Promise<IPCResponse<boolean>>
   openExternal: (url: string) => Promise<IPCResponse>
   setLanguage: (lang: 'en' | 'zh') => Promise<IPCResponse>
 

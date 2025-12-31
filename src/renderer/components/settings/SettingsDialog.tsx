@@ -445,8 +445,10 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                       className="bg-white"
                     />
                     <Button
-                      onClick={() => {
-                        if (settings.activateLicense(licenseCode)) {
+                      onClick={async () => {
+                        const success =
+                          await settings.activateLicense(licenseCode)
+                        if (success) {
                           addToast({
                             title: t('license.activated_success_title'),
                             type: 'success',

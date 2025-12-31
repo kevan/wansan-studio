@@ -110,6 +110,7 @@ const electronAPI: ElectronAPI = {
   secureSet: (key: string, value: string) =>
     ipcRenderer.invoke('secure-set', key, value),
   secureGet: (key: string) => ipcRenderer.invoke('secure-get', key),
+  validateLicense: (key: string) => ipcRenderer.invoke('validate-license', key),
   platform: process.platform,
   version: process.versions,
   windowControl: (

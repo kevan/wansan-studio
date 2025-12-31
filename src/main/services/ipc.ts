@@ -347,6 +347,20 @@ export function setupIPC(
     return { success: true, data: value }
   })
 
+  // 验证 Beta Code / License
+  ipcMain.handle('validate-license', async (_event, key: string) => {
+    try {
+      const isValid = await authService.validateKeyLocally(key)
+      return { success: true, data: isValid }
+    } catch (error) {
+      console.error('Validate license error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  })
+
   // 获取用户信息 (OS username)
   ipcMain.handle('get-user-info', async () => {
     try {
