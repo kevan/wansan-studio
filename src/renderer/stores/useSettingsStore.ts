@@ -339,12 +339,26 @@ export const useSettingsStore = create<SettingsState>()(
         const { isSpecial, isExpired, shouldActivate } =
           checkExpiry(remoteConfig)
 
+        const baseUrl = state.baseUrl ?? defaults.baseUrl
+        const model = state.model ?? defaults.model
+
+        // [MIGRATION V1.2 -> V1.3]
+        // If we are upgrading, sync the legacy frontend config to the new backend store
+        // This ensures users don't lose their custom model/baseUrl settings
+        if (baseUrl || model) {
+          console.log('[Migration] Syncing legacy AI config to backend...')
+          void window.electronAPI.setAIConfig({
+            baseURL: baseUrl,
+            model: model,
+          })
+        }
+
         return {
           ...initialSettingsState,
           ...state,
           provider,
-          baseUrl: state.baseUrl ?? defaults.baseUrl,
-          model: state.model ?? defaults.model,
+          baseUrl,
+          model,
           isActivated: shouldActivate || (state.isActivated ?? false),
           remoteConfig,
           isSpecialChannel: isSpecial,
