@@ -119,7 +119,36 @@ export class ProjectManager {
     await this.nativeDB.initialize(dbPath)
 
     // 2. Read Meta Data
-    const manifest: ProjectManifest = await fs.readJSON(manifestPath)
+    let manifest: ProjectManifest
+    try {
+      manifest = await fs.readJSON(manifestPath)
+    } catch (e) {
+      console.warn(
+        `[ProjectManager] wansan.json is corrupted or empty. Attempting repair...`,
+        e
+      )
+      // Repair strategy: Reconstruct minimal manifest
+      manifest = {
+        meta: {
+          id: uuidv4(),
+          name: path.basename(projectPath).replace('.wansan', ''),
+          version: '1.3.0',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          engine: 'native',
+        },
+        assets: [],
+        settings: {
+          theme: 'light',
+        },
+      }
+      // Write it back immediately to fix the file
+      try {
+        await fs.writeJSON(manifestPath, manifest, { spaces: 2 })
+      } catch (writeErr) {
+        console.error('Failed to write repaired wansan.json', writeErr)
+      }
+    }
 
     let semantic: SemanticLayer
     try {
