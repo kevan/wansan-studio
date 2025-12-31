@@ -192,6 +192,36 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     window.location.reload()
   }, [])
 
+  const simulateEnterpriseMode = useCallback(() => {
+    console.log('🏢 Simulating Enterprise Mode...')
+    useSettingsStore.getState().setRemoteConfig({
+      channel: 'DeepSeek Corp',
+      special_expiry: '2026-12-31',
+      isActivated: true,
+      isSpecialChannel: true,
+    })
+  }, [])
+
+  const simulateExpiredMode = useCallback(() => {
+    console.log('⏰ Simulating Expired Mode...')
+    useSettingsStore.getState().setRemoteConfig({
+      channel: 'DeepSeek Corp',
+      special_expiry: '2020-01-01',
+      isActivated: false,
+      isSpecialChannel: true,
+      isExpired: true,
+    })
+  }, [])
+
+  const injectMockBetaCode = useCallback(() => {
+    console.log('🔑 Injecting Mock Beta Code (TEST-123)...')
+    const currentConfig = useSettingsStore.getState().remoteConfig
+    useSettingsStore.getState().setRemoteConfig({
+      ...currentConfig,
+      beta_code: ['TEST-123', 'WANSAN-BETA'],
+    })
+  }, [])
+
   const printAllTables = useCallback(async () => {
     try {
       const result = await window.electronAPI.invoke('get-schema')
@@ -391,6 +421,24 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
                 className="px-3 py-2 bg-orange-700 hover:bg-orange-600 rounded text-sm"
               >
                 💉 Inject Legacy Data
+              </button>
+              <button
+                onClick={simulateEnterpriseMode}
+                className="px-3 py-2 bg-indigo-700 hover:bg-indigo-600 rounded text-sm"
+              >
+                🏢 Sim Enterprise
+              </button>
+              <button
+                onClick={simulateExpiredMode}
+                className="px-3 py-2 bg-pink-700 hover:bg-pink-600 rounded text-sm"
+              >
+                ⏰ Sim Expired
+              </button>
+              <button
+                onClick={injectMockBetaCode}
+                className="px-3 py-2 bg-teal-700 hover:bg-teal-600 rounded text-sm"
+              >
+                🔑 Inject BetaCode
               </button>
               <div className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm">
                 <span className="text-gray-400">Language</span>
