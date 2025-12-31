@@ -110,23 +110,11 @@ function App() {
   // Sync AI config to main process on startup
   useEffect(() => {
     const syncAIConfig = async () => {
-      // First load sensitive data (API Key) from secure storage
+      // First load sensitive data (API Key) from secure storage to frontend state
+      // This is purely for UI display (masked key) and local state consistency.
+      // The Main process AIService already loads the key directly from secure storage.
       await useSettingsStore.getState().loadSensitiveData()
-
-      const settings = useSettingsStore.getState()
-      if (settings.apiKey) {
-        const config: AIConfig = {
-          apiKey: settings.apiKey,
-          baseURL: settings.baseUrl,
-          model: settings.model,
-        }
-        try {
-          await window.electronAPI.setAIConfig(config)
-          console.log('[App] Synced AI config to main process')
-        } catch (error) {
-          console.error('[App] Failed to sync AI config:', error)
-        }
-      }
+      console.log('[App] Synced sensitive data to UI state')
     }
     syncAIConfig()
   }, [])

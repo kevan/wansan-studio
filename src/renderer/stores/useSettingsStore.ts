@@ -133,13 +133,21 @@ export const useSettingsStore = create<SettingsState>()(
       ...initialSettingsState,
       loadSensitiveData: async () => {
         try {
-          const res = await window.electronAPI.secureGet('apiKey')
+          // Sync full AI config from backend (Single Source of Truth)
+          // Backend handles secure storage reading and masking if needed
+          const res = await window.electronAPI.getAIConfig()
           if (res.success && res.data) {
-            // 仅更新前端内存状态，用于 UI 显示掩码
-            set({ apiKey: res.data })
+            const { apiKey, baseURL, model } = res.data
+
+            // Update store only if values exist
+            set(state => ({
+              apiKey: apiKey || state.apiKey,
+              baseUrl: baseURL || state.baseUrl,
+              model: model || state.model,
+            }))
           }
         } catch (e) {
-          console.error('Failed to load sensitive data', e)
+          console.error('Failed to sync AI config from backend', e)
         }
       },
       setProvider: provider => {

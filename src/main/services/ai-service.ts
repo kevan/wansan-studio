@@ -295,7 +295,15 @@ export class AIService {
     const { input, columns, mode } = options
     const client = this.requireOpenAI()
     const columnList = columns.map(c => `- ${c.name} (${c.type})`).join('\n')
-    const quotingRule = `CRITICAL SYNTAX RULES:\n1. **ALWAYS** wrap column names in DOUBLE QUOTES (\" ).\n2. Return **ONLY** the SQL expression, DO NOT use \"SELECT\", \"FROM\", or \"AS\".\n3. Use the EXACT column names provided above.\n4. Handle NULLs if appropriate (e.g. COALESCE).\n5. If division is involved, use \"NULLIF(col, 0)\" to prevent errors.\n6. NO Markdown, NO explanations.`
+    const quotingRule = `
+CRITICAL SYNTAX RULES:
+1. **ALWAYS** wrap column names in DOUBLE QUOTES ("). 
+2. Return **ONLY** the SQL expression, DO NOT use "SELECT", "FROM", or "AS".
+3. Use the EXACT column names provided above.
+4. Handle NULLs if appropriate (e.g. COALESCE).
+5. If division is involved, use "NULLIF(col, 0)" to prevent errors.
+6. NO Markdown, NO explanations.
+`
 
     let systemPrompt = ''
     if (mode === 'generate') {
