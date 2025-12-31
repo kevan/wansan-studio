@@ -318,30 +318,21 @@ export const useSettingsStore = create<SettingsState>()(
       name: SETTINGS_STORAGE_KEY,
       storage: createBigIntStorage(),
       version: 3,
-            partialize: state => {
-              const {
-                apiKey,
-                isSpecialChannel,
-                isExpired,
-                remoteConfig,
-                ...rest
-              } = state
-      
-              // Deep clean remoteConfig to remove sensitive security fields from localStorage
-              // but keep providers and announcements for offline UX
-              const { 
-                special_expiry, 
-                channel, 
-                beta_code, 
-                ...safeRemoteConfig 
-              } = remoteConfig || {}
-      
-              return {
-                ...rest,
-                remoteConfig: safeRemoteConfig as RemoteConfig // Persist safe parts only
-              }
-            },
-      
+      partialize: state => {
+        const { apiKey, isSpecialChannel, isExpired, remoteConfig, ...rest } =
+          state
+
+        // Deep clean remoteConfig to remove sensitive security fields from localStorage
+        // but keep providers and announcements for offline UX
+        const { special_expiry, channel, beta_code, ...safeRemoteConfig } =
+          remoteConfig || {}
+
+        return {
+          ...rest,
+          remoteConfig: safeRemoteConfig as RemoteConfig, // Persist safe parts only
+        }
+      },
+
       migrate: persistedState => {
         const state = persistedState as Partial<SettingsState> | undefined
         if (!state) return initialSettingsState as any

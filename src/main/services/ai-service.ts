@@ -59,7 +59,10 @@ const schema = {
   },
 } as const
 
-const store = new Store({ schema })
+const store = new Store({
+  schema,
+  encryptionKey: 'wansan-studio-secure-config-key', // 开启加密
+})
 
 export class AIService {
   private openai: OpenAI | null = null

@@ -339,6 +339,12 @@ export function setupIPC(
   // 安全存储
   ipcMain.handle('secure-set', async (_event, key: string, value: string) => {
     const success = secureSet(key, value)
+
+    // 如果设置的是 licenseKey，同步更新本地激活状态
+    if (success && key === 'licenseKey' && !!value) {
+      authService.activateLocally()
+    }
+
     return { success }
   })
   ipcMain.handle('secure-get', async (_event, key: string) => {
