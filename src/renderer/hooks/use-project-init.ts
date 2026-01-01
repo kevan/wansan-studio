@@ -2,11 +2,15 @@ import { useEffect, useRef } from 'react'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useProjectIO } from './useProjectIO'
 
+import { useSettingsStore } from '../stores/useSettingsStore'
+
 export function useProjectInit() {
   const sessions = useProjectStore(state => state.sessions)
   const currentProjectPath = useProjectStore(state => state.currentProjectPath)
+  const setProjectPath = useProjectStore(state => state.setProjectPath)
   const isProjectLoaded = useProjectStore(state => state.isProjectLoaded)
   const createSession = useProjectStore(state => state.createSession)
+  const removeRecentProject = useSettingsStore(state => state.removeRecentProject)
   const { openProject } = useProjectIO()
 
   const initializedRef = useRef(false)
@@ -23,9 +27,21 @@ export function useProjectInit() {
       openProject(currentProjectPath).catch(err => {
         console.error('[ProjectInit] Failed to auto-open project:', err)
         bootRef.current = false
+
+        // Handle deleted/moved projects on reload
+        const isMissing =
+          err.message.includes('not found') ||
+          err.message.includes('ENOENT') ||
+          err.message.includes('Invalid project bundle')
+
+        if (isMissing) {
+          console.warn('[ProjectInit] Project invalid, clearing state.')
+          setProjectPath(null)
+          removeRecentProject(currentProjectPath)
+        }
       })
     }
-  }, [currentProjectPath, isProjectLoaded, openProject])
+  }, [currentProjectPath, isProjectLoaded, openProject, setProjectPath, removeRecentProject])
 
   // 2. Initialize default session
   useEffect(() => {
