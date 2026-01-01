@@ -388,17 +388,17 @@ export function FinalizeStep() {
                               finalDisplayName: e.target.value,
                             })
                           }
-                          className="h-9 text-sm font-medium p-2 border-zinc-200 focus-visible:ring-1 focus-visible:ring-indigo-300"
+                          className="h-9 text-sm font-medium border-zinc-200 bg-zinc-50 focus-visible:ring-0 focus-visible:border-indigo-300 transition-all"
                         />
                       </div>
                       <ArrowRight className="w-4 h-4 text-zinc-200 shrink-0" />
                       <div className="flex-1 flex items-center gap-3 min-w-0">
                         <div
                           className={cn(
-                            'flex-1 flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all',
+                            'flex-1 flex items-center gap-2 px-3 py-1.5 rounded-md border-2 transition-all',
                             isTaken
                               ? 'bg-rose-50 border-rose-200'
-                              : 'bg-zinc-50 border-transparent group-hover:bg-white group-hover:border-indigo-100'
+                              : 'bg-zinc-50 border-zinc-200 group-hover:border-indigo-300'
                           )}
                         >
                           <Database
@@ -591,13 +591,13 @@ export function FinalizeStep() {
                       <div className="mt-2 flex items-center gap-4 text-zinc-400 text-[10px] font-black uppercase tracking-widest">
                         <span>
                           {t('wizard.rows_in_file', {
-                            count: preCheck.totalRows.toLocaleString(),
+                            count: preCheck.totalRows,
                           })}
                         </span>
                         <div className="w-1 h-1 rounded-full bg-zinc-200" />
                         <span>
                           {t('wizard.existing_rows', {
-                            count: preCheck.duplicateRows.toLocaleString(),
+                            count: preCheck.duplicateRows,
                           })}
                         </span>
                       </div>
