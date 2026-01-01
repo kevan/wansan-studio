@@ -11,7 +11,8 @@ export const Analytics = {
     }
 
     try {
-      const { deviceId, isActivated } = useSettingsStore.getState()
+      const { deviceId, isActivated, remoteConfig } = useSettingsStore.getState()
+      const channel = remoteConfig?.channel || ''
 
       // Fire and forget - don't await response
       fetch(API_ENDPOINT, {
@@ -21,6 +22,7 @@ export const Analytics = {
           event,
           deviceId,
           isActivated,
+          channel,
           timestamp: Date.now(),
           version: __APP_VERSION__,
           platform: window.electronAPI.platform,

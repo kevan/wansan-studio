@@ -149,7 +149,7 @@ class AuthService {
           'X-Special-Channel': this.channelEnv,
           'X-Device-Id': deviceId,
         },
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(10000),
       })
 
       if (res.ok) {
