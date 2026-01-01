@@ -43,6 +43,7 @@ const mockIPC: ElectronAPI = {
   clearAIConfig: async (): Promise<IPCResponse> => {
     return { success: true }
   },
+  verifyAIConnection: async () => ({ success: true, data: true }),
   checkFilesConsistency: async (files: any[]): Promise<IPCResponse> => {
     console.log('Mock checkFilesConsistency', files)
     return { success: true }

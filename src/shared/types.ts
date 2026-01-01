@@ -133,7 +133,9 @@ export interface AIConfig {
   apiKey?: string
   baseURL?: string
   model?: string
+  provider?: string // [NEW] AI Provider name (e.g. "DeepSeek", "OpenAI", "Custom")
   isManaged?: boolean // [NEW] Indicates build-time injected config
+  models?: string[] // [NEW] Supported models for the provider
 }
 
 export interface DomainRule {

@@ -78,7 +78,8 @@ export function DataIngestionWizard() {
             sheetName:
               task.sourceName === task.fileName ? undefined : task.sourceName,
             uniqueKeys: pkNames,
-            strategy: mode === 'merge' ? 'update' : task.conflictStrategy || 'ignore',
+            strategy:
+              mode === 'merge' ? 'update' : task.conflictStrategy || 'ignore',
             columnMapping: task.columnMapping || {},
             tempFilePath: task.tempFilePath, // Pass cached CSV path
             limitRows,

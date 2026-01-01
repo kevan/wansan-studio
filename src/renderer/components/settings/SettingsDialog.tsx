@@ -96,10 +96,13 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
 
   const providerConfig =
     activeProviders[settings.provider] || activeProviders['openai']
-  const modelOptions = useMemo(
-    () => providerConfig?.models || [],
-    [providerConfig]
-  )
+  const modelOptions = useMemo(() => {
+    // If managed by Enterprise (Special Channel), use the models provided by the backend
+    if (settings.isSpecialChannel && settings.models?.length > 0) {
+      return settings.models
+    }
+    return providerConfig?.models || []
+  }, [providerConfig, settings.isSpecialChannel, settings.models])
 
   const providerLabel = useMemo(() => {
     const config = activeProviders[settings.provider]
@@ -107,54 +110,55 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
   }, [settings.provider, activeProviders])
 
   const verifyConnection = useCallback(async () => {
-    if (!settings.apiKey.trim()) {
-      setVerifyStatus('error')
-      setVerifyMessage(t('ai.verify_api_key_required'))
-      addToast({
-        title: t('ai.verify_failed_title'),
-        description: t('ai.verify_failed_no_key_desc'),
-        type: 'error',
-        duration: 3500,
-      })
-      return
-    }
-    if (!settings.baseUrl.trim()) {
-      setVerifyStatus('error')
-      setVerifyMessage(t('ai.verify_base_url_required'))
-      addToast({
-        title: t('ai.verify_failed_title'),
-        description: t('ai.verify_base_url_required'),
-        type: 'error',
-        duration: 3500,
-      })
-      return
+    if (!settings.isSpecialChannel) {
+      if (!settings.apiKey.trim()) {
+        setVerifyStatus('error')
+        setVerifyMessage(t('ai.verify_api_key_required'))
+        addToast({
+          title: t('ai.verify_failed_title'),
+          description: t('ai.verify_failed_no_key_desc'),
+          type: 'error',
+          duration: 3500,
+        })
+        return
+      }
+      if (!settings.baseUrl.trim()) {
+        setVerifyStatus('error')
+        setVerifyMessage(t('ai.verify_base_url_required'))
+        addToast({
+          title: t('ai.verify_failed_title'),
+          description: t('ai.verify_base_url_required'),
+          type: 'error',
+          duration: 3500,
+        })
+        return
+      }
     }
 
     setVerifyStatus('loading')
     setVerifyMessage(null)
     try {
-      const response = await fetch(
-        `${settings.baseUrl.replace(/\/$/, '')}/models`,
-        {
-          headers: {
-            Authorization: `Bearer ${settings.apiKey.trim()}`,
-          },
-        }
-      )
-      if (!response.ok) {
-        const message = t('ai.verify_http_error', {
-          status: response.status,
-        })
+      const config = settings.isSpecialChannel
+        ? undefined // Use existing backend config
+        : {
+            apiKey: settings.apiKey.trim(),
+            baseURL: settings.baseUrl.trim(),
+          }
+
+      const res = await window.electronAPI.verifyAIConnection(config)
+
+      if (!res.success) {
         setVerifyStatus('error')
-        setVerifyMessage(message)
+        setVerifyMessage(res.error || 'Verification failed')
         addToast({
           title: t('ai.verify_failed_title'),
-          description: message,
+          description: res.error || 'Verification failed',
           type: 'error',
           duration: 4000,
         })
         return
       }
+
       setVerifyStatus('success')
       setVerifyMessage(t('ai.verify_connected'))
       addToast({
@@ -175,7 +179,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
         duration: 4000,
       })
     }
-  }, [addToast, settings.apiKey, settings.baseUrl, t])
+  }, [addToast, settings, t])
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>

@@ -1,4 +1,9 @@
-import { TableSchema, RelationSuggestion, ReloadResult } from './types'
+import {
+  TableSchema,
+  RelationSuggestion,
+  ReloadResult,
+  AIConfig,
+} from './types'
 
 export interface IPCResponse<T = any> {
   success: boolean
@@ -21,10 +26,6 @@ export type ParseFileResponse = IPCResponse<
   }>
 >
 
-export type AIConfigResponse = IPCResponse<{
-  apiKey?: string
-  baseURL?: string
-  model?: string
-}>
+export type AIConfigResponse = IPCResponse<AIConfig>
 
 // ... add other specific response types as needed

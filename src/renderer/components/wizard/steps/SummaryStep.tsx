@@ -30,7 +30,10 @@ export function SummaryStep() {
           'This action will overwrite the existing data.'
         )
       : mode === 'merge'
-        ? t('wizard.summary_merge_desc', 'This action will update existing records matching your criteria.')
+        ? t(
+            'wizard.summary_merge_desc',
+            'This action will update existing records matching your criteria.'
+          )
         : t('wizard.summary_count', { count: tasks.length })
 
   return (

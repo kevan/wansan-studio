@@ -21,6 +21,7 @@ export interface SettingsState {
   apiKey: string
   baseUrl: string
   model: string
+  models: string[]
   language: SettingsLanguage
   hasCompletedOnboarding: boolean
   isActivated: boolean
@@ -114,6 +115,7 @@ const initialSettingsState: Omit<
   provider: 'deepseek',
   apiKey: '',
   ...getProviderDefaults('deepseek'),
+  models: [],
   language: detectDefaultLanguage(),
   hasCompletedOnboarding: false,
   isActivated: false,
@@ -137,13 +139,15 @@ export const useSettingsStore = create<SettingsState>()(
           // Backend handles secure storage reading and masking if needed
           const res = await window.electronAPI.getAIConfig()
           if (res.success && res.data) {
-            const { apiKey, baseURL, model } = res.data
+            const { apiKey, baseURL, model, models, provider } = res.data
 
             // Update store only if values exist
             set(state => ({
               apiKey: apiKey || state.apiKey,
               baseUrl: baseURL || state.baseUrl,
               model: model || state.model,
+              models: models || state.models,
+              provider: (provider as AIProviderKey) || state.provider,
             }))
           }
         } catch (e) {

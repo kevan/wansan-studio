@@ -306,6 +306,15 @@ export function setupIPC(
     }
   })
 
+  ipcMain.handle('verify-ai-connection', async (_event, config?: any) => {
+    try {
+      const result = await aiService.verifyConnection(config)
+      return { success: true, data: result }
+    } catch (error: any) {
+      return { success: false, error: error.message }
+    }
+  })
+
   // AI Web Export
   ipcMain.handle(
     'export-web-report',

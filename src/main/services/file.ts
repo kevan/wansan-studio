@@ -806,7 +806,9 @@ export class FileService {
             .join(' AND ')
 
           if (updateSetClause.length === 0) {
-            throw new Error('No columns to update (all mapped columns are match keys).')
+            throw new Error(
+              'No columns to update (all mapped columns are match keys).'
+            )
           }
 
           await this.databaseService.exec(`

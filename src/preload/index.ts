@@ -61,6 +61,8 @@ const electronAPI: ElectronAPI = {
   getAIConfig: () => ipcRenderer.invoke('get-ai-config'),
   setAIConfig: (config: any) => ipcRenderer.invoke('set-ai-config', config),
   clearAIConfig: () => ipcRenderer.invoke('clear-ai-config'),
+  verifyAIConnection: (config?: any) =>
+    ipcRenderer.invoke('verify-ai-connection', config),
 
   // 文件同步
   checkFilesConsistency: (files: any[]) =>

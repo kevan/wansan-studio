@@ -16,7 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../ui/select'
-import { Key, ChevronLeft, ChevronRight, Link2, Edit2, Info } from 'lucide-react'
+import {
+  Key,
+  ChevronLeft,
+  ChevronRight,
+  Link2,
+  Edit2,
+  Info,
+} from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { ColumnSchema, ColumnType } from '@shared/types'
 import { useTranslation } from 'react-i18next'
@@ -111,7 +118,10 @@ export function DataPreviewStep() {
               {mode === 'append'
                 ? t('wizard.mapping_fields', { name: targetFile?.name })
                 : mode === 'merge'
-                  ? t('wizard.mapping_fields_merge', 'Mapping Fields (Merge Mode)')
+                  ? t(
+                      'wizard.mapping_fields_merge',
+                      'Mapping Fields (Merge Mode)'
+                    )
                   : t('wizard.configuring_asset')}
             </span>
             <span className="text-sm font-bold text-zinc-900 mt-1">
@@ -366,7 +376,11 @@ const ColumnMappingHead = ({
               ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
               : 'bg-white border-zinc-200 text-zinc-300 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-sm'
           )}
-          title={isMergeKey ? t('wizard.unset_match_key', 'Unset Match Key') : t('wizard.set_match_key', 'Set as Match Key')}
+          title={
+            isMergeKey
+              ? t('wizard.unset_match_key', 'Unset Match Key')
+              : t('wizard.set_match_key', 'Set as Match Key')
+          }
         >
           <Key className={cn('w-3.5 h-3.5', isMergeKey && 'fill-current')} />
         </button>
@@ -418,7 +432,9 @@ const ColumnMappingHead = ({
         {/* Visual Label */}
         <div className="flex items-center gap-2 my-1">
           <div className="flex-1 h-px bg-zinc-100" />
-          <span className="text-[9px] font-mono text-zinc-300 tracking-tighter shrink-0 uppercase">Target Mapping</span>
+          <span className="text-[9px] font-mono text-zinc-300 tracking-tighter shrink-0 uppercase">
+            Target Mapping
+          </span>
           <div className="flex-1 h-px bg-zinc-100" />
         </div>
 
@@ -433,8 +449,10 @@ const ColumnMappingHead = ({
             className={cn(
               'h-8 text-xs shadow-sm border-zinc-200 transition-all',
               !currentSourceMapping && 'text-zinc-400 bg-zinc-50 italic',
-              isMergeKey && 'border-indigo-200 bg-white text-indigo-900 ring-2 ring-indigo-50',
-              isUpdateColumn && 'border-emerald-200 bg-white text-emerald-900 ring-2 ring-emerald-50'
+              isMergeKey &&
+                'border-indigo-200 bg-white text-indigo-900 ring-2 ring-indigo-50',
+              isUpdateColumn &&
+                'border-emerald-200 bg-white text-emerald-900 ring-2 ring-emerald-50'
             )}
           >
             <SelectValue placeholder={t('wizard.map_to_target')} />

@@ -139,7 +139,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     const settingsStore = useSettingsStore.getState()
     settingsStore.updateSettings({
       isActivated: false,
-      recentProjectPaths:[],
+      recentProjectPaths: [],
       hasCompletedOnboarding: false,
       apiKey: '',
     })
@@ -191,7 +191,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
   const simulateEnterpriseMode = useCallback(() => {
     console.log('🏢 Simulating Enterprise Mode...')
     useSettingsStore.getState().setRemoteConfig({
-      channel: 'DeepSeek Corp',
+      channel: 'EXE',
       special_expiry: '2026-12-31',
       isActivated: true,
       isSpecialChannel: true,
@@ -201,7 +201,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
   const simulateExpiredMode = useCallback(() => {
     console.log('⏰ Simulating Expired Mode...')
     useSettingsStore.getState().setRemoteConfig({
-      channel: 'DeepSeek Corp',
+      channel: 'EXE',
       special_expiry: '2020-01-01',
       isActivated: false,
       isSpecialChannel: true,

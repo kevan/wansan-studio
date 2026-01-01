@@ -85,7 +85,10 @@ export function ProjectLauncher() {
       if (isMissing) {
         useToastStore.getState().addToast({
           title: t('project_not_found', 'Project Not Found'),
-          description: t('project_missing_msg', 'The project file might have been moved or deleted. Removed from recent list.'),
+          description: t(
+            'project_missing_msg',
+            'The project file might have been moved or deleted. Removed from recent list.'
+          ),
           type: 'error',
         })
         removeRecentProject(path)

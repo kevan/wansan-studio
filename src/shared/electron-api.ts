@@ -125,6 +125,7 @@ export interface ElectronAPI {
   getAIConfig: () => Promise<AIConfigResponse>
   setAIConfig: (config: any) => Promise<IPCResponse>
   clearAIConfig: () => Promise<IPCResponse>
+  verifyAIConnection: (config?: any) => Promise<IPCResponse>
 
   // Export
   exportPDF: (data: any) => Promise<IPCResponse>

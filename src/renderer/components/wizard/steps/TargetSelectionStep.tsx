@@ -70,7 +70,8 @@ export function TargetSelectionStep() {
 
   // Trigger Pre-check (for Append/Merge Mode)
   useEffect(() => {
-    if (!currentTask || !targetFile || (mode !== 'append' && mode !== 'merge')) return
+    if (!currentTask || !targetFile || (mode !== 'append' && mode !== 'merge'))
+      return
     if (pkNames.length === 0) return
 
     const runPreCheck = async () => {
@@ -160,7 +161,10 @@ export function TargetSelectionStep() {
                 : mode === 'replace'
                   ? t('wizard.replacing', { name: targetFile?.name })
                   : mode === 'merge'
-                    ? t('wizard.correcting', { name: targetFile?.name, defaultValue: `Correcting ${targetFile?.name}` })
+                    ? t('wizard.correcting', {
+                        name: targetFile?.name,
+                        defaultValue: `Correcting ${targetFile?.name}`,
+                      })
                     : t('wizard.assets_pending', { count: tasks.length })}
             </span>
           </div>
@@ -229,13 +233,14 @@ export function TargetSelectionStep() {
                           : 'bg-amber-500 text-white'
                     )}
                   >
-                                          {isPreChecking ? (
-                                          <Loader2 className="w-8 h-8 animate-spin" />
-                                        ) : (preCheck?.duplicateRows || 0) > 0 ? (
-                                          <Wand2 className="w-8 h-8" />
-                                        ) : (
-                                          <AlertCircle className="w-8 h-8" />
-                                        )}                  </div>
+                    {isPreChecking ? (
+                      <Loader2 className="w-8 h-8 animate-spin" />
+                    ) : (preCheck?.duplicateRows || 0) > 0 ? (
+                      <Wand2 className="w-8 h-8" />
+                    ) : (
+                      <AlertCircle className="w-8 h-8" />
+                    )}{' '}
+                  </div>
                   <div>
                     <h4 className="text-2xl font-black uppercase tracking-tight text-zinc-900">
                       {isPreChecking
@@ -248,7 +253,10 @@ export function TargetSelectionStep() {
                           : t('wizard.merge_no_match', 'No Matches Found')}
                     </h4>
                     <p className="text-sm text-zinc-500 font-medium mt-1">
-                      {t('wizard.merge_summary_desc', 'Existing records will be updated based on your match keys.')}
+                      {t(
+                        'wizard.merge_summary_desc',
+                        'Existing records will be updated based on your match keys.'
+                      )}
                     </p>
                   </div>
                   {!isPreChecking && preCheck && (

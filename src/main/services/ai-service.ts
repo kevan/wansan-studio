@@ -1,7 +1,7 @@
 import Store from 'electron-store'
 import { OpenAI } from 'openai'
 import type { ClientOptions } from 'openai'
-import { generateAnalysis, analyzeContext } from '../engine/ai-bridge'
+import { generateAnalysis, analyzeContext, fixSQL } from '../engine/ai-bridge'
 import crypto from 'crypto'
 import { secureGet, secureSet } from './secure-storage'
 import type {
@@ -20,11 +20,9 @@ function decryptBuiltinKey(obfuscated: string): string {
   try {
     const parts = obfuscated.split(':')
     if (parts.length !== 3) return '' // Invalid format
-
     const [ivBase64, authTagBase64, encryptedBase64] = parts
     const iv = Buffer.from(ivBase64, 'base64')
     const authTag = Buffer.from(authTagBase64, 'base64')
-
     // Derive same key
     const key = crypto.pbkdf2Sync(
       MASTER_SALT,
@@ -33,13 +31,10 @@ function decryptBuiltinKey(obfuscated: string): string {
       32,
       'sha256'
     )
-
     const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
     decipher.setAuthTag(authTag)
-
     let decrypted = decipher.update(encryptedBase64, 'base64', 'utf8')
     decrypted += decipher.final('utf8')
-
     return decrypted
   } catch (e) {
     console.error('[AI Service] Decryption failed:', e)
@@ -68,7 +63,6 @@ const store = new Store({
 export class AIService {
   private openai: OpenAI | null = null
   private model = 'gpt-4-turbo-preview'
-
   // Internal cache for sensitive builtin config
   private builtinConfig: AIConfig | null = null
 
@@ -87,7 +81,6 @@ export class AIService {
       if (rawKey && provider) {
         // 1. Try decrypting with AES-GCM (for production/CI)
         let apiKey = decryptBuiltinKey(rawKey)
-
         // 2. Fallback: If decryption fails (returns empty string), try Base64 (for simpler dev setups)
         if (!apiKey && !rawKey.includes(':')) {
           try {
@@ -99,16 +92,16 @@ export class AIService {
             /* ignore */
           }
         }
-
         // 3. Fallback: Use raw key if all else fails
         if (!apiKey) {
           apiKey = rawKey
         }
-
         this.builtinConfig = {
           apiKey,
           baseURL: baseUrl || '',
           model: models?.split(',')[0] || 'gpt-4-turbo-preview',
+          models: models?.split(',') || [],
+          provider: provider || 'custom',
           isManaged: true,
         }
         console.log(`[AI Service] Managed config detected: ${provider}`)
@@ -120,16 +113,13 @@ export class AIService {
 
   private loadConfig() {
     const storedConfig = (store.get('aiConfig') as AIConfig) || {}
-
     // Determine priority: Builtin (Managed) > Stored > Runtime Env > Default
     let effectiveConfig: AIConfig = {}
-
     if (this.builtinConfig) {
       effectiveConfig = { ...this.builtinConfig }
     } else {
       // Securely retrieve API Key from system keychain
       const secureKey = secureGet('apiKey') || ''
-
       effectiveConfig = {
         apiKey: secureKey || process.env.OPENAI_API_KEY,
         baseURL: storedConfig.baseURL || process.env.OPENAI_BASE_URL,
@@ -139,9 +129,7 @@ export class AIService {
           'gpt-4-turbo-preview',
       }
     }
-
     this.model = effectiveConfig.model || 'gpt-4-turbo-preview'
-
     if (effectiveConfig.apiKey) {
       const options: ClientOptions = {
         apiKey: effectiveConfig.apiKey,
@@ -159,6 +147,30 @@ export class AIService {
       throw new Error('AI not configured')
     }
     return this.openai
+  }
+
+  async verifyConnection(config?: AIConfig): Promise<boolean> {
+    let client: OpenAI
+    if (config && config.apiKey) {
+      // Use temporary client for verification if config provided
+      client = new OpenAI({
+        apiKey: config.apiKey,
+        baseURL: config.baseURL,
+      })
+    } else {
+      client = this.requireOpenAI()
+    }
+    try {
+      const response = await client.models.list()
+      console.log(
+        '[AI Service] Connection verified. Available models:',
+        response.data.map(m => m.id)
+      )
+      return true
+    } catch (e) {
+      console.error('[AI Service] Connection verification failed:', e)
+      throw e
+    }
   }
 
   async generatePlan(
@@ -180,46 +192,10 @@ export class AIService {
       language,
       domainRules
     )
-
-    if (aiResult.error) {
-      return { status: 'error', error: aiResult.error }
-    }
-
     return {
       status: 'success',
-      sql: aiResult.sql,
-      title: aiResult.title,
-      summary: aiResult.summary,
-      reasoning: aiResult.reasoning,
-      suggestions: aiResult.suggestions,
-      visualization: aiResult.viz_type
-        ? {
-            type: aiResult.viz_type as any,
-            config: aiResult.viz_config as any,
-          }
-        : undefined,
-      is_template: aiResult.is_template,
-      missing_params: aiResult.missing_params,
+      ...aiResult,
     }
-  }
-
-  async fixQuery(
-    originalSql: string,
-    error: string,
-    schemas: TableSchema[],
-    domainRules: DomainRule[] = []
-  ): Promise<{ sql: string; reasoning: string }> {
-    const { fixSQL } = await import('../engine/ai-bridge')
-    const client = this.requireOpenAI()
-    return fixSQL(client, originalSql, error, schemas, this.model, domainRules)
-  }
-
-  async getContextAnalysis(
-    schemas: TableSchema[],
-    language: 'en' | 'zh' = 'en'
-  ): Promise<ContextAnalysisResult> {
-    const client = this.requireOpenAI()
-    return analyzeContext(client, schemas, this.model, language)
   }
 
   async generateText(prompt: string, systemPrompt?: string): Promise<string> {
@@ -233,35 +209,51 @@ export class AIService {
         },
         { role: 'user', content: prompt },
       ],
-      temperature: 0.7,
     })
-    return response.choices[0]?.message?.content || ''
+    return response.choices[0].message.content || ''
   }
 
-  /**
-   * Sets and persists AI configuration.
-   * API Key is saved to Secure Storage; others to Electron Store.
-   */
+  async fixQuery(
+    originalSql: string,
+    error: string,
+    schemas: TableSchema[],
+    domainRules: DomainRule[] = []
+  ): Promise<{ sql: string; reasoning: string }> {
+    const client = this.requireOpenAI()
+    return await fixSQL(
+      client,
+      originalSql,
+      error,
+      schemas,
+      this.model,
+      domainRules
+    )
+  }
+
+  async getContextAnalysis(
+    schemas: TableSchema[],
+    language: 'en' | 'zh' = 'en'
+  ): Promise<ContextAnalysisResult> {
+    const client = this.requireOpenAI()
+    return await analyzeContext(client, schemas, this.model, language)
+  }
+
   setConfig(config: AIConfig) {
     if (this.builtinConfig) {
       console.warn(
-        '[AI Service] Attempted to override Managed Config. Action ignored.'
+        '[AI Service] Attempted to set config in managed mode. Ignored.'
       )
       return
     }
-
     const current = (store.get('aiConfig') as AIConfig) || {}
     const { apiKey, ...otherConfig } = config
-
     // 1. Save Key to Secure Storage
     if (apiKey !== undefined) {
       secureSet('apiKey', apiKey)
     }
-
     // 2. Save other config to Electron Store
     const newConfig = { ...current, ...otherConfig }
     store.set('aiConfig', newConfig)
-
     this.loadConfig()
   }
 
@@ -272,10 +264,8 @@ export class AIService {
         apiKey: '********************',
       }
     }
-
     const storedConfig = (store.get('aiConfig') as AIConfig) || {}
     const secureKey = secureGet('apiKey') || ''
-
     return {
       apiKey: secureKey,
       baseURL: storedConfig.baseURL || '',
@@ -297,37 +287,33 @@ export class AIService {
     const columnList = columns.map(c => `- ${c.name} (${c.type})`).join('\n')
     const quotingRule = `
 CRITICAL SYNTAX RULES:
-1. **ALWAYS** wrap column names in DOUBLE QUOTES ("). 
-2. Return **ONLY** the SQL expression, DO NOT use "SELECT", "FROM", or "AS".
-3. Use the EXACT column names provided above.
-4. Handle NULLs if appropriate (e.g. COALESCE).
-5. If division is involved, use "NULLIF(col, 0)" to prevent errors.
-6. NO Markdown, NO explanations.
+1. **ALWAYS** wrap column names in DOUBLE QUOTES ( ").
+2. For SQLite/DuckDB compatibility, use standard SQL operators.
 `
 
-    let systemPrompt = ''
-    if (mode === 'generate') {
-      systemPrompt = `You are a DuckDB SQL Formula Generator.\nTask: Create a SQL expression based on the user's intended metric name.\n\n### AVAILABLE COLUMNS:\n${columnList}\n\n${quotingRule}`
-    } else {
-      systemPrompt = `You are a SQL Refinement Agent.\nThe user input contains existing SQL mixed with natural language instructions.\nTask: Update or complete the SQL logic based on the text.\n\n### AVAILABLE COLUMNS:\n${columnList}\n\n${quotingRule}`
-    }
+    const systemPrompt = `You are a DuckDB expert. Convert user natural language into a valid SQL expression fragment for a SELECT clause.
+    Available columns in the current context:
+    ${columnList}
+    
+    ${quotingRule}
+    
+    Return ONLY the SQL expression, no commentary, no 'SELECT', no 'AS'.`
+
+    const userPrompt =
+      mode === 'generate'
+        ? `Create an expression for: ${input}`
+        : `Refine this expression: ${input}`
 
     const response = await client.chat.completions.create({
       model: this.model,
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: input },
+        { role: 'user', content: userPrompt },
       ],
-      temperature: 0.1,
+      temperature: 0,
     })
 
-    let result = response.choices[0]?.message?.content || ''
-    result = result
-      .replace(/^```sql/, '')
-      .replace(/^```/, '')
-      .replace(/```$/, '')
-      .trim()
-    return result
+    return response.choices[0].message.content?.trim() || ''
   }
 
   clearConfig() {
