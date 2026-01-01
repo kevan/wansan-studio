@@ -167,7 +167,7 @@ export class AIService {
       const response = await client.models.list()
       console.log(
         '[AI Service] Connection verified. Available models:',
-        response.data
+        response.data.map(model => model.id).join(', ')
       )
       return true
     } catch (e) {

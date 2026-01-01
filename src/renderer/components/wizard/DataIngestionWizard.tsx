@@ -293,9 +293,23 @@ export function DataIngestionWizard() {
   }
 
   const isNextDisabled = useMemo(() => {
+    const currentTask = tasks[currentTaskIndex]
+    if (!currentTask) return true
+
     if (step === 'select') return tasks.length === 0
+
+    if (step === 'preview' && mode === 'merge') {
+      const hasMergeKeys = (currentTask.mergeKeys || []).length > 0
+      const hasUpdateColumns = Object.entries(
+        currentTask.columnMapping || {}
+      ).some(
+        ([targetCol, sourceCol]) =>
+          sourceCol !== null && !(currentTask.mergeKeys || []).includes(targetCol)
+      )
+      return !hasMergeKeys || !hasUpdateColumns
+    }
+
     if (step === 'target' && mode === 'import') {
-      const currentTask = tasks[currentTaskIndex]
       return (
         !currentTask?.finalTableName ||
         files.some(f => f.tableName === currentTask.finalTableName)
@@ -360,9 +374,9 @@ export function DataIngestionWizard() {
                 ? mode === 'append'
                   ? t('wizard.append_now')
                   : mode === 'replace'
-                    ? t('wizard.replace_now', 'Replace Now')
+                    ? t('wizard.replace_now')
                     : mode === 'merge'
-                      ? t('wizard.merge_now', 'Correct Now')
+                      ? t('wizard.merge_now')
                       : t('wizard.import_now')
                 : tasks.length > 1 &&
                     (step === 'preview' || step === 'target') &&

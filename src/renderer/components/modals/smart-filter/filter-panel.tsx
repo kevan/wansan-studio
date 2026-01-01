@@ -75,14 +75,26 @@ export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
     }
   })
 
-  // Sort: Selected items first
-  displayOptions.sort((a, b) => {
-    const aSelected = value.includes(String(a.value))
-    const bSelected = value.includes(String(b.value))
-    if (aSelected && !bSelected) return -1
-    if (!aSelected && bSelected) return 1
-    return 0
-  })
+  // Sort: Selected items first ONLY on initialization to avoid jumping
+  // If the user is searching, we trust the search result order + local append
+  const shouldSort = useRef(true)
+  useEffect(() => {
+    // Disable sorting after first render or if user searches
+    const timer = setTimeout(() => {
+      shouldSort.current = false
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (shouldSort.current && searchTerm === initialSearch) {
+    displayOptions.sort((a, b) => {
+      const aSelected = value.includes(String(a.value))
+      const bSelected = value.includes(String(b.value))
+      if (aSelected && !bSelected) return -1
+      if (!aSelected && bSelected) return 1
+      return 0
+    })
+  }
 
   return (
     <div className="flex flex-col h-full w-full">

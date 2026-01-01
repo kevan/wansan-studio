@@ -152,7 +152,7 @@ export function TargetSelectionStep() {
                 : mode === 'replace'
                   ? t('wizard.schema_comparison')
                   : mode === 'merge'
-                    ? t('wizard.merge_summary_header', 'Correction Summary')
+                    ? t('wizard.merge_summary_header')
                     : t('wizard.target_configurations')}
             </span>
             <span className="text-sm font-bold text-zinc-900 mt-1">
@@ -163,7 +163,6 @@ export function TargetSelectionStep() {
                   : mode === 'merge'
                     ? t('wizard.correcting', {
                         name: targetFile?.name,
-                        defaultValue: `Correcting ${targetFile?.name}`,
                       })
                     : t('wizard.assets_pending', { count: tasks.length })}
             </span>
@@ -244,29 +243,29 @@ export function TargetSelectionStep() {
                   <div>
                     <h4 className="text-2xl font-black uppercase tracking-tight text-zinc-900">
                       {isPreChecking
-                        ? 'Analyzing Data...'
+                        ? t('wizard.analyzing_structure')
                         : (preCheck?.duplicateRows || 0) > 0
                           ? t('wizard.merge_match_found', {
                               count: preCheck?.duplicateRows,
-                              defaultValue: `${preCheck?.duplicateRows} Records to Correct`,
                             })
-                          : t('wizard.merge_no_match', 'No Matches Found')}
+                          : t('wizard.merge_no_match')}
                     </h4>
                     <p className="text-sm text-zinc-500 font-medium mt-1">
-                      {t(
-                        'wizard.merge_summary_desc',
-                        'Existing records will be updated based on your match keys.'
-                      )}
+                      {t('wizard.merge_summary_desc')}
                     </p>
                   </div>
                   {!isPreChecking && preCheck && (
                     <div className="mt-2 flex items-center gap-4 text-zinc-400 text-[10px] font-black uppercase tracking-widest">
                       <span>
-                        {preCheck.totalRows.toLocaleString()} Rows in file
+                        {t('wizard.rows_in_file', {
+                          count: preCheck.totalRows,
+                        })}
                       </span>
                       <div className="w-1 h-1 rounded-full bg-zinc-200" />
                       <span>
-                        {preCheck.duplicateRows.toLocaleString()} matches
+                        {t('wizard.match_count', {
+                          count: preCheck.duplicateRows,
+                        })}
                       </span>
                     </div>
                   )}
@@ -289,7 +288,7 @@ export function TargetSelectionStep() {
                     ))}
                     {(currentTask.mergeKeys || []).length === 0 && (
                       <span className="text-xs text-rose-500 font-bold italic">
-                        {t('wizard.no_keys_selected', 'No keys selected!')}
+                        {t('wizard.no_keys_selected')}
                       </span>
                     )}
                   </div>
@@ -297,7 +296,7 @@ export function TargetSelectionStep() {
 
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest text-center">
-                    {t('wizard.update_columns', 'Update Columns')}
+                    {t('wizard.update_columns')}
                   </h4>
                   <div className="flex flex-wrap justify-center gap-2">
                     {Object.entries(currentTask.columnMapping || {})
@@ -319,8 +318,8 @@ export function TargetSelectionStep() {
                         source &&
                         !(currentTask.mergeKeys || []).includes(target)
                     ).length === 0 && (
-                      <span className="text-xs text-zinc-400 italic">
-                        {t('wizard.no_columns_to_update', 'Nothing to update')}
+                      <span className="text-xs text-rose-500 font-bold italic">
+                        {t('wizard.no_columns_to_update')}
                       </span>
                     )}
                   </div>

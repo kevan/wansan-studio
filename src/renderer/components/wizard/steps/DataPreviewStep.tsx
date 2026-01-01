@@ -108,6 +108,14 @@ export function DataPreviewStep() {
     updateColumnConfig(currentTaskIndex, columnName, { isPrimaryKey })
   }
 
+  const hasMergeKeys = (currentTask.mergeKeys || []).length > 0
+  const hasUpdateColumns = Object.entries(
+    currentTask.columnMapping || {}
+  ).some(
+    ([targetCol, sourceCol]) =>
+      sourceCol !== null && !(currentTask.mergeKeys || []).includes(targetCol)
+  )
+
   return (
     <div className="h-full flex flex-col overflow-hidden bg-white">
       {/* Header Info */}
@@ -118,10 +126,7 @@ export function DataPreviewStep() {
               {mode === 'append'
                 ? t('wizard.mapping_fields', { name: targetFile?.name })
                 : mode === 'merge'
-                  ? t(
-                      'wizard.mapping_fields_merge',
-                      'Mapping Fields (Merge Mode)'
-                    )
+                  ? t('wizard.mapping_fields_merge')
                   : t('wizard.configuring_asset')}
             </span>
             <span className="text-sm font-bold text-zinc-900 mt-1">
@@ -165,29 +170,39 @@ export function DataPreviewStep() {
       {mode === 'merge' && (
         <div className="px-8 py-3 bg-blue-50/50 border-b border-blue-100 flex items-center gap-3">
           <Info className="w-4 h-4 text-blue-500 shrink-0" />
-          <div className="flex items-center gap-6 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold border border-indigo-200">
-                <Key className="w-3 h-3" /> MATCH
-              </span>
-              <span className="text-blue-900">
-                {t(
-                  'wizard.merge_hint_match',
-                  'Select columns to match records (WHERE clause)'
-                )}
-              </span>
-            </div>
-            <div className="w-px h-3 bg-blue-200" />
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold border border-emerald-200">
-                <Edit2 className="w-3 h-3" /> UPDATE
-              </span>
-              <span className="text-blue-900">
-                {t(
-                  'wizard.merge_hint_update',
-                  'Map columns to update values (SET clause)'
-                )}
-              </span>
+          <div className="flex flex-1 items-center justify-between">
+            <div className="flex items-center gap-6 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold border border-indigo-200">
+                  <Key className="w-3 h-3" /> {t('wizard.match_label')}
+                </span>
+                <span
+                  className={cn(
+                    'text-blue-900',
+                    !hasMergeKeys && 'text-red-600 font-bold'
+                  )}
+                >
+                  {hasMergeKeys
+                    ? t('wizard.merge_hint_match')
+                    : t('wizard.no_keys_selected')}
+                </span>
+              </div>
+              <div className="w-px h-3 bg-blue-200" />
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold border border-emerald-200">
+                  <Edit2 className="w-3 h-3" /> {t('wizard.update_label')}
+                </span>
+                <span
+                  className={cn(
+                    'text-blue-900',
+                    !hasUpdateColumns && 'text-red-600 font-bold'
+                  )}
+                >
+                  {hasUpdateColumns
+                    ? t('wizard.merge_hint_update')
+                    : t('wizard.no_columns_to_update')}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -378,8 +393,8 @@ const ColumnMappingHead = ({
           )}
           title={
             isMergeKey
-              ? t('wizard.unset_match_key', 'Unset Match Key')
-              : t('wizard.set_match_key', 'Set as Match Key')
+              ? t('wizard.unset_match_key')
+              : t('wizard.set_match_key')
           }
         >
           <Key className={cn('w-3.5 h-3.5', isMergeKey && 'fill-current')} />
@@ -394,15 +409,15 @@ const ColumnMappingHead = ({
               <div className="flex items-center gap-2">
                 {isMergeKey ? (
                   <span className="flex items-center gap-1 text-[10px] font-black bg-indigo-600 text-white px-1.5 py-0.5 rounded shadow-sm">
-                    MATCH
+                    {t('wizard.match_label')}
                   </span>
                 ) : isUpdateColumn ? (
                   <span className="flex items-center gap-1 text-[10px] font-black bg-emerald-500 text-white px-1.5 py-0.5 rounded shadow-sm">
-                    UPDATE
+                    {t('wizard.update_label')}
                   </span>
                 ) : (
                   <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-wider">
-                    Ignore
+                    {t('wizard.ignore')}
                   </span>
                 )}
               </div>
@@ -433,7 +448,7 @@ const ColumnMappingHead = ({
         <div className="flex items-center gap-2 my-1">
           <div className="flex-1 h-px bg-zinc-100" />
           <span className="text-[9px] font-mono text-zinc-300 tracking-tighter shrink-0 uppercase">
-            Target Mapping
+            {t('wizard.target_mapping')}
           </span>
           <div className="flex-1 h-px bg-zinc-100" />
         </div>
