@@ -31,6 +31,8 @@
     "mapping_fields_merge": "配置数据修正规则",
     "merge_hint_match": "匹配键：选择用于唯一定位记录的列（如 ID、编码）",
     "merge_hint_update": "更新项：映射需要被修正数值的列",
+    "import_hint_preview": "请检查字段类型。点击🔑图标设置主键（可选）。",
+    "append_hint_mapping": "请确认字段映射。未映射的源字段将被忽略。",
     "merge_summary_header": "修正摘要",
     "merge_summary_title": "修正摘要",
     "merge_summary_desc": "现有记录将根据匹配键进行更新。",

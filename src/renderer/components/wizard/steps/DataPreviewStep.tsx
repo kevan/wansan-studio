@@ -23,6 +23,8 @@ import {
   Link2,
   Edit2,
   Info,
+  FileSearch,
+  ArrowDownToLine,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { ColumnSchema, ColumnType } from '@shared/types'
@@ -166,6 +168,25 @@ export function DataPreviewStep() {
           </div>
         )}
       </div>
+
+      {/* Mode-Specific Hints */}
+      {mode === 'import' && (
+        <div className="px-8 py-3 bg-zinc-50 border-b border-zinc-200 flex items-center gap-3">
+          <FileSearch className="w-4 h-4 text-zinc-500 shrink-0" />
+          <span className="text-xs text-zinc-600 font-medium">
+            {t('wizard.import_hint_preview')}
+          </span>
+        </div>
+      )}
+
+      {(mode === 'append' || mode === 'replace') && (
+        <div className="px-8 py-3 bg-emerald-50/50 border-b border-emerald-100 flex items-center gap-3">
+          <ArrowDownToLine className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span className="text-xs text-emerald-800 font-medium">
+            {t('wizard.append_hint_mapping')}
+          </span>
+        </div>
+      )}
 
       {mode === 'merge' && (
         <div className="px-8 py-3 bg-blue-50/50 border-b border-blue-100 flex items-center gap-3">

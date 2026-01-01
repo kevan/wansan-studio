@@ -31,6 +31,8 @@
     "mapping_fields_merge": "Configure Correction Rules",
     "merge_hint_match": "Match Keys: Columns to uniquely identify records (e.g. ID, SKU)",
     "merge_hint_update": "Update Items: Map columns that need to be corrected",
+    "import_hint_preview": "Review types. Click the key icon to set Primary Keys (Optional).",
+    "append_hint_mapping": "Verify column mapping. Unmapped source columns will be ignored.",
     "merge_summary_header": "Correction Summary",
     "merge_summary_title": "Correction Summary",
     "merge_summary_desc": "Existing records will be updated based on your match keys.",
