@@ -207,7 +207,7 @@ export function A4Chart({
 
     const displayMsg = `📄 ${t('view_raw_data', { name: menuState.name })}`
     const hiddenMsg = `Show the first 100 raw data rows for '${menuState.name}'.
-    Constraint: Switch visualization type to 'table'.`
+    Constraint: Switch viz_type to 'table'.`
 
     // Lock context to the specific message this chart belongs to
     if (messageId) {

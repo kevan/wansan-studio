@@ -73,7 +73,7 @@ export function VizChart({
     if (!menuState) return
     const displayMsg = `📄 ${t('view_raw_data', { name: menuState.name })}`
     const hiddenMsg = `Show the first 100 raw data rows for '${menuState.name}'.
-    Constraint: Switch visualization type to 'table'.`
+    Constraint: Switch viz_type to 'table'.`
 
     if (messageId) {
       useChatStore.getState().setReplyTo(messageId)
