@@ -23,10 +23,6 @@ interface ChatStore {
     id: string,
     updater: (message: ChatMessage) => ChatMessage
   ) => void
-  setVizConfig: (
-    messageId: string,
-    updates: Partial<AIAnalysisResult['viz_config']>
-  ) => void
   updateMessageData: (
     messageId: string,
     newSql: string,
@@ -145,25 +141,6 @@ const updateReportConfig = (
         ...msg.reportData,
         chartType: updates.viz_type ?? msg.reportData.chartType,
         vizConfig: nextVizConfig,
-      },
-    }
-  })
-}
-
-const setVizConfig = (
-  messageId: string,
-  updates: Partial<AIAnalysisResult['viz_config']>
-) => {
-  updateMessage(messageId, msg => {
-    if (!msg.aiAnalysis) return msg
-    return {
-      ...msg,
-      aiAnalysis: {
-        ...msg.aiAnalysis,
-        viz_config: {
-          ...(msg.aiAnalysis.viz_config || {}),
-          ...updates,
-        } as any,
       },
     }
   })
@@ -956,7 +933,6 @@ export const useChatStore = <T = ChatStore>(
     setReplyTo: id => useProjectStore.getState().setReplyTo(id),
     updateMessage,
     updateReportConfig,
-    setVizConfig,
     updateMessageData,
     sendMessage,
     retryMessage,
@@ -983,7 +959,6 @@ useChatStore.getState = (): ChatStore => {
     setReplyTo: id => useProjectStore.getState().setReplyTo(id),
     updateMessage,
     updateReportConfig,
-    setVizConfig,
     updateMessageData,
     sendMessage,
     retryMessage,
