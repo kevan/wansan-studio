@@ -25,7 +25,7 @@ describe('useSettingsStore', () => {
   it('initializes with defaults', async () => {
     const { useSettingsStore } = await import('./useSettingsStore')
     const state = useSettingsStore.getState()
-    expect(state.provider).toBe('openai')
+    expect(state.provider).toBe('deepseek')
     expect(state.apiKey).toBe('')
     expect(state.baseUrl).toBe('https://api.openai.com/v1')
     expect(state.model).toBeTruthy()

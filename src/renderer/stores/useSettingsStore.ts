@@ -21,12 +21,11 @@ export interface SettingsState {
   apiKey: string
   baseUrl: string
   model: string
-  models: string[]
   language: SettingsLanguage
   hasCompletedOnboarding: boolean
   isActivated: boolean
   deviceId?: string
-  remoteConfig: RemoteConfig
+  remoteConfig: AppConfig
   dismissedAnnouncementId: string | null
   domainRules: DomainRule[]
   recentProjectPaths: string[]
@@ -115,7 +114,6 @@ const initialSettingsState: Omit<
   provider: 'deepseek',
   apiKey: '',
   ...getProviderDefaults('deepseek'),
-  models: [],
   language: detectDefaultLanguage(),
   hasCompletedOnboarding: false,
   isActivated: false,
@@ -139,14 +137,13 @@ export const useSettingsStore = create<SettingsState>()(
           // Backend handles secure storage reading and masking if needed
           const res = await window.electronAPI.getAIConfig()
           if (res.success && res.data) {
-            const { apiKey, baseURL, model, models, provider } = res.data
+            const { apiKey, baseURL, model, provider } = res.data
 
             // Update store only if values exist
             set(state => ({
               apiKey: apiKey || state.apiKey,
               baseUrl: baseURL || state.baseUrl,
               model: model || state.model,
-              models: models || state.models,
               provider: (provider as AIProviderKey) || state.provider,
             }))
           }
@@ -329,7 +326,7 @@ export const useSettingsStore = create<SettingsState>()(
 
         return {
           ...rest,
-          remoteConfig: safeRemoteConfig as RemoteConfig, // Persist safe parts only
+          remoteConfig: safeRemoteConfig as AppConfig, // Persist safe parts only
         }
       },
 
@@ -337,7 +334,7 @@ export const useSettingsStore = create<SettingsState>()(
         const state = persistedState as Partial<SettingsState> | undefined
         if (!state) return initialSettingsState as any
 
-        const provider = (state.provider ?? 'openai') as AIProviderKey
+        const provider = (state.provider ?? 'deepseek') as AIProviderKey
         const defaults = getProviderDefaults(provider)
         const remoteConfig = state.remoteConfig ?? {}
         const { isSpecial, isExpired, shouldActivate } =

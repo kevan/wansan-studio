@@ -98,11 +98,18 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
     activeProviders[settings.provider] || activeProviders['openai']
   const modelOptions = useMemo(() => {
     // If managed by Enterprise (Special Channel), use the models provided by the backend
-    if (settings.isSpecialChannel && settings.models?.length > 0) {
-      return settings.models
+    if (
+      settings.isSpecialChannel &&
+      settings.remoteConfig?.managedAI?.models?.length
+    ) {
+      return settings.remoteConfig.managedAI.models
     }
     return providerConfig?.models || []
-  }, [providerConfig, settings.isSpecialChannel, settings.models])
+  }, [
+    providerConfig,
+    settings.isSpecialChannel,
+    settings.remoteConfig?.managedAI,
+  ])
 
   useEffect(() => {
     const options = modelOptions as string[]

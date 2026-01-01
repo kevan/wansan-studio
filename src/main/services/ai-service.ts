@@ -282,6 +282,14 @@ export class AIService {
     }
   }
 
+  getManagedConfig() {
+    if (!this.builtinConfig) return null
+    return {
+      provider: this.builtinConfig.provider || 'custom',
+      models: this.builtinConfig.models || [],
+    }
+  }
+
   hasApiKey(): boolean {
     return !!this.openai
   }

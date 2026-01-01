@@ -277,6 +277,7 @@ class WansanApp {
         ...authState, // isActivated, channel, specialExpiry, etc.
         // Fallback for offline mode if remoteData is null
         isOffline: !remoteData,
+        managedAI: this.aiService?.getManagedConfig() || undefined,
       }
 
       // 4. Send to Renderer

@@ -186,4 +186,8 @@ export interface AppConfig extends RemoteConfig {
   isExpired?: boolean
   isOffline?: boolean
   betaCodes?: string[]
+  managedAI?: {
+    provider: string
+    models: string[]
+  }
 }
