@@ -35,19 +35,19 @@ on:
 jobs:
   build:
     runs-on: ${{ inputs.os }}
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          
+
       - name: Install Dependencies
         run: npm ci
-        
+
       # Build Renderer & Main with Injected Variables
       # Note: VITE_ prefixed variables are automatically picked up by Vite (Renderer)
       # For Main process (tsup), we need to ensure they are available or use define
@@ -57,12 +57,11 @@ jobs:
           # Inject Channel info
           VITE_SPECIAL_CHANNEL: ${{ inputs.channel_name }}
           VITE_DEFAULT_EXPIRY: ${{ inputs.expiry_date }}
-          
+
           # Inject Managed AI Config
-          VITE_BUILTIN_PROVIDER: ${{ inputs.ai_provider }}
           VITE_BUILTIN_BASE_URL: ${{ inputs.ai_base_url }}
           VITE_BUILTIN_MODELS: ${{ inputs.ai_models }}
-          
+
           # Inject Encrypted Key (From Secrets)
           # You must populate this secret in GitHub Repo Settings
           VITE_BUILTIN_API_KEY: ${{ secrets.SPECIAL_CHANNEL_OBFUSCATED_KEY }}
@@ -71,7 +70,7 @@ jobs:
         run: npm run dist
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:

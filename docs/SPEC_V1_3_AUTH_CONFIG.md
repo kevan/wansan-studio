@@ -54,7 +54,6 @@ For Special Channels, we inject a full AI configuration suite.
 ### 3.1 Injection Strategy (Build Time)
 
 Env variables (Base64 encoded where sensitive):
-*   `VITE_BUILTIN_PROVIDER`
 *   `VITE_BUILTIN_BASE_URL`
 *   `VITE_BUILTIN_MODELS`
 *   `VITE_BUILTIN_API_KEY` (AES-GCM Encrypted recommended, Base64 supported)

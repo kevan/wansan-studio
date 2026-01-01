@@ -47,6 +47,8 @@ export interface ChatMessage {
   }
   widgetId?: string
   reportData?: any
+  // Temp field for ai bridge response
+  aiAnalysis?: any
 }
 
 interface ChatInterfaceProps {

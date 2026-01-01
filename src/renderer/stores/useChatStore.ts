@@ -23,9 +23,9 @@ interface ChatStore {
     id: string,
     updater: (message: ChatMessage) => ChatMessage
   ) => void
-  updateReportConfig: (
-    id: string,
-    updates: Partial<AIAnalysisResult['visualization']>
+  setVizConfig: (
+    messageId: string,
+    updates: Partial<AIAnalysisResult['viz_config']>
   ) => void
   updateMessageData: (
     messageId: string,
@@ -48,15 +48,23 @@ interface ChatStore {
     originalQuery?: string,
     originalSql?: string
   ) => Promise<void>
+  updateReportConfig: (
+    id: string,
+    updates: {
+      viz_type?: AIAnalysisResult['viz_type']
+      viz_config?: AIAnalysisResult['viz_config']
+    }
+  ) => void
+  reset: () => void
+  // Methods for UI state control
+  resetLoading: () => void
+  removeMessage: (id: string) => void
+  stopGeneration: () => void
   runTemplateSQL: (
     messageId: string,
     sql: string,
     selectedParams?: Record<string, string[]>
   ) => Promise<void>
-  resetLoading: () => void
-  stopGeneration: () => void
-  removeMessage: (id: string) => void
-  reset: () => void
 }
 
 const generateId = () => crypto.randomUUID()
@@ -119,21 +127,43 @@ const updateMessage = (
 
 const updateReportConfig = (
   id: string,
-  updates: Partial<AIAnalysisResult['visualization']>
+  updates: {
+    viz_type?: AIAnalysisResult['viz_type']
+    viz_config?: AIAnalysisResult['viz_config']
+  }
 ) => {
   updateMessage(id, msg => {
     if (!msg.reportData) return msg
     const nextVizConfig =
-      updates.config !== undefined
-        ? { ...msg.reportData.vizConfig, ...updates.config }
+      updates.viz_config !== undefined
+        ? { ...msg.reportData.vizConfig, ...updates.viz_config }
         : msg.reportData.vizConfig
 
     return {
       ...msg,
       reportData: {
         ...msg.reportData,
-        chartType: updates.type ?? msg.reportData.chartType,
+        chartType: updates.viz_type ?? msg.reportData.chartType,
         vizConfig: nextVizConfig,
+      },
+    }
+  })
+}
+
+const setVizConfig = (
+  messageId: string,
+  updates: Partial<AIAnalysisResult['viz_config']>
+) => {
+  updateMessage(messageId, msg => {
+    if (!msg.aiAnalysis) return msg
+    return {
+      ...msg,
+      aiAnalysis: {
+        ...msg.aiAnalysis,
+        viz_config: {
+          ...(msg.aiAnalysis.viz_config || {}),
+          ...updates,
+        } as any,
       },
     }
   })
@@ -926,6 +956,7 @@ export const useChatStore = <T = ChatStore>(
     setReplyTo: id => useProjectStore.getState().setReplyTo(id),
     updateMessage,
     updateReportConfig,
+    setVizConfig,
     updateMessageData,
     sendMessage,
     retryMessage,
@@ -952,6 +983,7 @@ useChatStore.getState = (): ChatStore => {
     setReplyTo: id => useProjectStore.getState().setReplyTo(id),
     updateMessage,
     updateReportConfig,
+    setVizConfig,
     updateMessageData,
     sendMessage,
     retryMessage,

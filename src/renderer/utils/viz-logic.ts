@@ -3,10 +3,10 @@ import type { AIAnalysisResult } from '@shared/types'
 export type DisplayMode = 'chart' | 'table' | 'bignumber' | 'empty'
 
 export function getDisplayMode(
-  chartType: AIAnalysisResult['visualization']['type'],
+  chartType: AIAnalysisResult['viz_type'],
   data: any[],
   vizConfig?: any
-): DisplayMode {
+): 'chart' | 'table' | 'bignumber' | 'empty' {
   const hasData = data && data.length > 0
   if (!hasData) return 'empty'
 

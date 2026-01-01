@@ -45,8 +45,11 @@ interface WorkbenchState {
   removeReport: (reportId: string) => void
   updateReportTitle: (reportId: string, newTitle: string) => void
   updateReportConfig: (
-    id: string,
-    updates: Partial<AIAnalysisResult['visualization']>
+    reportId: string,
+    updates: {
+      type?: AIAnalysisResult['viz_type']
+      config?: AIAnalysisResult['viz_config']
+    }
   ) => void
   updateLayout: (layouts: Layout[]) => void
   updateGlobalLayout: (layouts: Layout[]) => void

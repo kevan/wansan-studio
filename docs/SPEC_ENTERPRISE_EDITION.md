@@ -40,7 +40,6 @@
 
 ### 3.1 注入参数
 在 CI/CD 构建阶段注入以下变量：
-*   `VITE_BUILTIN_PROVIDER`: AI 服务商 (deepseek/openai/custom)。
 *   `VITE_BUILTIN_BASE_URL`: API 代理地址或官方地址。
 *   `VITE_BUILTIN_MODELS`: 允许使用的模型列表。
 *   `VITE_BUILTIN_API_KEY`: **加密混淆后的 API Key** (AES-256-GCM)。

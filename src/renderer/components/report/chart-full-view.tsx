@@ -26,7 +26,7 @@ import { adaptChartConfig } from '@/lib/viz-adapter'
 import type { AIAnalysisResult } from '@shared/types'
 import { getDisplayMode } from '@/utils/viz-logic'
 
-type VizType = NonNullable<AIAnalysisResult['visualization']>['type']
+type VizType = NonNullable<AIAnalysisResult['viz_type']>
 
 const chartTypeOptions: Array<{
   value: VizType
@@ -185,14 +185,11 @@ export function ChartFullView() {
   const showAxisControls =
     displayMode === 'chart' && availableColumns.length > 0
 
-  const modalMaxWidth = displayMode === 'table' ? 'max-w-[95vw]' : 'max-w-6xl'
-
   const content = (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
       <div
         className={cn(
-          'relative flex h-[80vh] w-[80vw] rounded-xl border border-zinc-200 bg-white shadow-2xl overflow-hidden transition-all duration-300',
-          modalMaxWidth
+          'relative flex h-[80vh] w-[80vw] max-w-[95vw] rounded-xl border border-zinc-200 bg-white shadow-2xl overflow-hidden transition-all duration-300'
         )}
       >
         <div className="flex flex-1 flex-col min-w-0">

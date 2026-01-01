@@ -26,7 +26,7 @@ import { adaptChartConfig } from '@/lib/viz-adapter'
 import type { AIAnalysisResult } from '@shared/types'
 import { getDisplayMode } from '@/utils/viz-logic'
 
-type VizType = NonNullable<AIAnalysisResult['visualization']>['type']
+type VizType = NonNullable<AIAnalysisResult['viz_type']>
 
 const chartTypeOptions: Array<{
   value: VizType

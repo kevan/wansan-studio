@@ -40,14 +40,20 @@ export interface AIAnalysisResult {
   suggestions?: string[]
   error?: string
 
-  // Visualization
-  visualization?: {
-    type: 'bar' | 'line' | 'pie' | 'scatter' | 'table' | 'kpi' | 'area' | 'text'
-    config: {
-      x_axis?: string | null
-      y_axis?: string | string[] | null
-      series_name?: string
-    }
+  // Visualization (Matching Prompt Structure)
+  viz_type?:
+    | 'bar'
+    | 'line'
+    | 'pie'
+    | 'scatter'
+    | 'table'
+    | 'kpi'
+    | 'area'
+    | 'text'
+  viz_config?: {
+    x_axis?: string | null
+    y_axis?: string | string[] | null
+    series_name?: string
   }
 
   // v1.2 Smart Filters
