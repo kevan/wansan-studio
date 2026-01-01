@@ -6,8 +6,7 @@ import { useTranslation } from 'react-i18next'
 const STEPS: { id: WizardStep; labelKey: string }[] = [
   { id: 'select', labelKey: 'wizard.steps.select' },
   { id: 'preview', labelKey: 'wizard.steps.preview' },
-  { id: 'target', labelKey: 'wizard.steps.target' },
-  { id: 'summary', labelKey: 'wizard.steps.summary' },
+  { id: 'finalize', labelKey: 'wizard.steps.target' },
 ]
 
 export function Steps({ currentStep }: { currentStep: WizardStep }) {

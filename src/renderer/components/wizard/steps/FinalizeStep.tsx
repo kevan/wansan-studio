@@ -33,7 +33,7 @@ import { sanitizeTableName } from '@shared/naming-utils'
 import { useTranslation } from 'react-i18next'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 
-export function TargetSelectionStep() {
+export function FinalizeStep() {
   const {
     tasks,
     currentTaskIndex,

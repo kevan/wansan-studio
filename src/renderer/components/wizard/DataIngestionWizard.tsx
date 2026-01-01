@@ -6,8 +6,7 @@ import { Button } from '../ui/button'
 import { useTranslation } from 'react-i18next'
 import { FileSelectionStep } from './steps/FileSelectionStep'
 import { DataPreviewStep } from './steps/DataPreviewStep'
-import { TargetSelectionStep } from './steps/TargetSelectionStep'
-import { SummaryStep } from './steps/SummaryStep'
+import { FinalizeStep } from './steps/FinalizeStep'
 import { Loader2 } from 'lucide-react'
 import { useAutoLink } from '@/hooks/useAutoLink.ts'
 import { useMemo } from 'react'
@@ -269,10 +268,8 @@ export function DataIngestionWizard() {
     if (step === 'select') {
       if (tasks.length > 0) setStep('preview')
     } else if (step === 'preview') {
-      setStep('target')
-    } else if (step === 'target') {
-      setStep('summary')
-    } else if (step === 'summary') {
+      setStep('finalize')
+    } else if (step === 'finalize') {
       handleFinish()
     }
   }
@@ -288,8 +285,7 @@ export function DataIngestionWizard() {
 
     // Step transitions
     if (step === 'preview') setStep('select')
-    else if (step === 'target') setStep('preview')
-    else if (step === 'summary') setStep('target')
+    else if (step === 'finalize') setStep('preview')
   }
 
   const isNextDisabled = useMemo(() => {
@@ -318,7 +314,7 @@ export function DataIngestionWizard() {
       return !hasMappings
     }
 
-    if (step === 'target' && mode === 'import') {
+    if (step === 'finalize' && mode === 'import') {
       // Check collision with existing files
       const collisionWithFiles = files.some(
         f => f.tableName === currentTask.finalTableName
@@ -354,8 +350,7 @@ export function DataIngestionWizard() {
         <div className="flex-1 overflow-hidden bg-zinc-50/50 relative">
           {step === 'select' && <FileSelectionStep />}
           {step === 'preview' && <DataPreviewStep />}
-          {step === 'target' && <TargetSelectionStep />}
-          {step === 'summary' && <SummaryStep />}
+          {step === 'finalize' && <FinalizeStep />}
 
           {isProcessing && (
             <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4 animate-in fade-in">
@@ -389,7 +384,7 @@ export function DataIngestionWizard() {
               disabled={isNextDisabled}
               className="bg-black hover:bg-zinc-800 text-white px-8 font-bold"
             >
-              {step === 'summary'
+              {step === 'finalize'
                 ? mode === 'append'
                   ? t('wizard.append_now')
                   : mode === 'replace'
@@ -398,9 +393,8 @@ export function DataIngestionWizard() {
                       ? t('wizard.merge_now')
                       : t('wizard.import_now')
                 : tasks.length > 1 &&
-                    (step === 'preview' || step === 'target') &&
-                    currentTaskIndex < tasks.length - 1 &&
-                    mode !== 'replace'
+                    step === 'preview' &&
+                    currentTaskIndex < tasks.length - 1
                   ? t('wizard.next_task')
                   : t('wizard.next')}
             </Button>

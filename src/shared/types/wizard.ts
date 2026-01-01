@@ -1,6 +1,6 @@
 import { ColumnType } from '../types'
 
-export type WizardStep = 'select' | 'preview' | 'target' | 'summary'
+export type WizardStep = 'select' | 'preview' | 'finalize'
 export type WizardMode = 'import' | 'append' | 'replace' | 'merge'
 
 export interface ColumnConfig {
