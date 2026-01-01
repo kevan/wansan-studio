@@ -73,12 +73,11 @@ export class AIService {
 
   private initBuiltinConfig() {
     try {
-      const provider = process.env.VITE_BUILTIN_PROVIDER
       const baseUrl = process.env.VITE_BUILTIN_BASE_URL
       const rawKey = process.env.VITE_BUILTIN_API_KEY
       const models = process.env.VITE_BUILTIN_MODELS
 
-      if (rawKey && provider) {
+      if (rawKey) {
         // 1. Try decrypting with AES-GCM (for production/CI)
         let apiKey = decryptBuiltinKey(rawKey)
         // 2. Fallback: If decryption fails (returns empty string), try Base64 (for simpler dev setups)
@@ -101,10 +100,10 @@ export class AIService {
           baseURL: baseUrl || '',
           model: models?.split(',')[0] || 'gpt-4-turbo-preview',
           models: models?.split(',') || [],
-          provider: provider || 'custom',
+          provider: 'custom',
           isManaged: true,
         }
-        console.log(`[AI Service] Managed config detected: ${provider}`)
+        console.log(`[AI Service] Managed config loaded.`)
       }
     } catch (e) {
       console.error('[AI Service] Failed to parse builtin config:', e)
@@ -117,6 +116,10 @@ export class AIService {
     let effectiveConfig: AIConfig = {}
     if (this.builtinConfig) {
       effectiveConfig = { ...this.builtinConfig }
+      // Allow overriding model from store if it exists
+      if (storedConfig.model) {
+        effectiveConfig.model = storedConfig.model
+      }
     } else {
       // Securely retrieve API Key from system keychain
       const secureKey = secureGet('apiKey') || ''
@@ -164,7 +167,7 @@ export class AIService {
       const response = await client.models.list()
       console.log(
         '[AI Service] Connection verified. Available models:',
-        response.data.map(m => m.id)
+        response.data
       )
       return true
     } catch (e) {
@@ -239,14 +242,19 @@ export class AIService {
   }
 
   setConfig(config: AIConfig) {
-    if (this.builtinConfig) {
-      console.warn(
-        '[AI Service] Attempted to set config in managed mode. Ignored.'
-      )
-      return
-    }
     const current = (store.get('aiConfig') as AIConfig) || {}
     const { apiKey, ...otherConfig } = config
+
+    if (this.builtinConfig) {
+      // In managed mode, only allow updating the model
+      const { model } = otherConfig
+      if (model) {
+        store.set('aiConfig', { ...current, model })
+        this.loadConfig()
+      }
+      return
+    }
+
     // 1. Save Key to Secure Storage
     if (apiKey !== undefined) {
       secureSet('apiKey', apiKey)
@@ -261,6 +269,7 @@ export class AIService {
     if (this.builtinConfig) {
       return {
         ...this.builtinConfig,
+        model: this.model, // Ensure we return the active model
         apiKey: '********************',
       }
     }

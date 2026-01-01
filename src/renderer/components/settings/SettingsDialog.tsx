@@ -104,6 +104,17 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
     return providerConfig?.models || []
   }, [providerConfig, settings.isSpecialChannel, settings.models])
 
+  useEffect(() => {
+    const options = modelOptions as string[]
+    if (
+      settings.isSpecialChannel &&
+      options.length > 0 &&
+      !options.includes(settings.model)
+    ) {
+      settings.updateSettings({ model: options[0] })
+    }
+  }, [settings.isSpecialChannel, modelOptions, settings.model, settings])
+
   const providerLabel = useMemo(() => {
     const config = activeProviders[settings.provider]
     return config ? config.name : settings.provider
@@ -231,32 +242,35 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                 </div>
 
                 <div className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      {t('ai.provider_label')}
-                    </label>
-                    <Select
-                      value={settings.provider}
-                      onValueChange={value =>
-                        settings.setProvider(value as AIProviderKey)
-                      }
-                    >
-                      <SelectTrigger disabled={settings.isSpecialChannel}>
-                        <span className="text-sm text-zinc-700 truncate">
-                          {providerLabel || t('ai.select_provider_placeholder')}
-                        </span>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(activeProviders).map(
-                          ([key, config]) => (
-                            <SelectItem key={key} value={key}>
-                              {config.name}
-                            </SelectItem>
-                          )
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {!settings.isSpecialChannel && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        {t('ai.provider_label')}
+                      </label>
+                      <Select
+                        value={settings.provider}
+                        onValueChange={value =>
+                          settings.setProvider(value as AIProviderKey)
+                        }
+                      >
+                        <SelectTrigger>
+                          <span className="text-sm text-zinc-700 truncate">
+                            {providerLabel ||
+                              t('ai.select_provider_placeholder')}
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(activeProviders).map(
+                            ([key, config]) => (
+                              <SelectItem key={key} value={key}>
+                                {config.name}
+                              </SelectItem>
+                            )
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   <div className="grid gap-2">
                     <label className="font-medium">
@@ -293,7 +307,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                       />
                     </div>
                     {/* Helper Link */}
-                    {providerConfig.getKeyUrl ? (
+                    {providerConfig.getKeyUrl && !settings.isSpecialChannel ? (
                       <div className="text-xs text-muted-foreground">
                         {t('ai.get_key_hint_new')}{' '}
                         <a
@@ -376,28 +390,30 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      {t('ai.base_url_label')}
-                    </label>
-                    <Input
-                      value={settings.baseUrl}
-                      disabled={settings.isSpecialChannel}
-                      onChange={e =>
-                        settings.updateSettings({ baseUrl: e.target.value })
-                      }
-                      placeholder="https://api.openai.com/v1"
-                      readOnly={
-                        settings.provider !== 'custom' &&
-                        !settings.isSpecialChannel
-                      }
-                      className={cn(
-                        (settings.provider !== 'custom' ||
-                          settings.isSpecialChannel) &&
-                          'bg-muted text-muted-foreground'
-                      )}
-                    />
-                  </div>
+                  {!settings.isSpecialChannel && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        {t('ai.base_url_label')}
+                      </label>
+                      <Input
+                        value={settings.baseUrl}
+                        disabled={settings.isSpecialChannel}
+                        onChange={e =>
+                          settings.updateSettings({ baseUrl: e.target.value })
+                        }
+                        placeholder="https://api.openai.com/v1"
+                        readOnly={
+                          settings.provider !== 'custom' &&
+                          !settings.isSpecialChannel
+                        }
+                        className={cn(
+                          (settings.provider !== 'custom' ||
+                            settings.isSpecialChannel) &&
+                            'bg-muted text-muted-foreground'
+                        )}
+                      />
+                    </div>
+                  )}
                 </div>
               </section>
               <div className="h-10" />
