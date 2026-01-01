@@ -304,15 +304,34 @@ export function DataIngestionWizard() {
         currentTask.columnMapping || {}
       ).some(
         ([targetCol, sourceCol]) =>
-          sourceCol !== null && !(currentTask.mergeKeys || []).includes(targetCol)
+          sourceCol !== null &&
+          !(currentTask.mergeKeys || []).includes(targetCol)
       )
       return !hasMergeKeys || !hasUpdateColumns
     }
 
+    // Append Mode: Ensure at least one column is mapped
+    if (step === 'preview' && mode === 'append') {
+      const hasMappings = Object.values(currentTask.columnMapping || {}).some(
+        source => source !== null
+      )
+      return !hasMappings
+    }
+
     if (step === 'target' && mode === 'import') {
+      // Check collision with existing files
+      const collisionWithFiles = files.some(
+        f => f.tableName === currentTask.finalTableName
+      )
+      // Check collision with other tasks in the wizard
+      const collisionWithTasks = tasks.some(
+        (t, idx) =>
+          idx !== currentTaskIndex &&
+          t.finalTableName === currentTask.finalTableName
+      )
+
       return (
-        !currentTask?.finalTableName ||
-        files.some(f => f.tableName === currentTask.finalTableName)
+        !currentTask?.finalTableName || collisionWithFiles || collisionWithTasks
       )
     }
     return false
