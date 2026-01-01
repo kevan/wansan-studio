@@ -171,9 +171,9 @@ export function DataPreviewStep() {
 
       {/* Mode-Specific Hints */}
       {mode === 'import' && (
-        <div className="px-8 py-3 bg-zinc-50 border-b border-zinc-200 flex items-center gap-3">
-          <FileSearch className="w-4 h-4 text-zinc-500 shrink-0" />
-          <span className="text-xs text-zinc-600 font-medium">
+        <div className="px-8 py-3 bg-indigo-50/50 border-b border-indigo-100 flex items-center gap-3">
+          <FileSearch className="w-4 h-4 text-indigo-600 shrink-0" />
+          <span className="text-xs text-indigo-900 font-medium">
             {t('wizard.import_hint_preview')}
           </span>
         </div>
