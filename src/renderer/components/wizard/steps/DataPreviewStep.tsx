@@ -327,14 +327,14 @@ const ColumnPreviewHead = ({
           <button
             onClick={onTogglePK}
             className={cn(
-              'p-1 rounded transition-colors',
+              'p-1.5 rounded-lg border transition-all',
               column.isPrimaryKey
-                ? 'text-indigo-600 bg-indigo-50'
-                : 'text-zinc-300 hover:text-zinc-500 hover:bg-zinc-100'
+                ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+                : 'bg-white border-zinc-200 text-zinc-300 hover:text-indigo-600 hover:border-indigo-200'
             )}
             title={t('wizard.set_unique_key')}
           >
-            <Key className="w-3.5 h-3.5" />
+            <Key className={cn('w-3.5 h-3.5', column.isPrimaryKey && 'fill-current')} />
           </button>
         </div>
         <Select value={column.type} onValueChange={onTypeChange}>
@@ -444,25 +444,28 @@ const ColumnMappingHead = ({
               </div>
             ) : (
               targetColumn.isPrimaryKey && (
-                <div title={t('wizard.set_unique_key')}>
-                  <Key className="w-3.5 h-3.5 text-indigo-400" />
+                <div
+                  title={t('wizard.set_unique_key')}
+                  className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg border border-indigo-200 shrink-0"
+                >
+                  <Key className="w-3.5 h-3.5 fill-current" />
                 </div>
               )
             )}
-            <span
-              className={cn(
-                'text-xs font-bold truncate',
-                isMergeKey
-                  ? 'text-indigo-900'
-                  : isUpdateColumn
-                    ? 'text-emerald-900'
-                    : 'text-zinc-500'
-              )}
-              title={targetColumn.name}
-            >
-              {targetColumn.name}
-            </span>
           </div>
+          <span
+            className={cn(
+              'text-xs font-bold truncate',
+              isMergeKey
+                ? 'text-indigo-900'
+                : isUpdateColumn
+                  ? 'text-emerald-900'
+                  : 'text-zinc-500'
+            )}
+            title={targetColumn.name}
+          >
+            {targetColumn.name}
+          </span>
         </div>
 
         {/* Visual Label */}
