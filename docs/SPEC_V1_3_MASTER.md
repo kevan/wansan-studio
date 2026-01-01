@@ -37,7 +37,7 @@ We pushed our "Swiss Minimalist" design language further, focusing on grid align
     *   **Consolidated Dock**: Merged "Data Assets", "User Profile", and "System Actions" into a unified, space-efficient footer.
 *   **Native Menu**: Integrated a native OS menu bar (File, Edit, View) with multi-language support, feeling right at home on macOS.
 
-## 4. 🧙‍♂️ Data Ingestion Wizard (数据接入向导)
+## 4. 🧙‍♂️ Data Integration Wizard (数据集成向导)
 
 We introduced a powerful, multi-step wizard to unify the "Import New" and "Append Data" workflows, replacing the simple file selector.
 

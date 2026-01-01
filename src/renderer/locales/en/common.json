@@ -3,7 +3,7 @@
   "import_data_desc": "Select Excel or CSV files to start",
   "importing": "Importing...",
   "wizard": {
-    "title": "Data Ingestion",
+    "title": "Data Integration",
     "steps": {
       "select": "Select Files",
       "preview": "Review Data",

@@ -6,9 +6,9 @@
 
 ---
 
-## 1. Data Ingestion Wizard (数据接入向导)
+## 1. Data Integration Wizard (数据集成向导)
 
-Wansan 采用一个统一的向导来处理所有数据接入需求。
+Wansan 采用一个统一的向导来处理所有数据集成需求。
 
 ### 1.1 Flow
 *   **Step 1: Select**: 支持多文件/多 Sheet 选择。

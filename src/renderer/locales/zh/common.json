@@ -3,7 +3,7 @@
   "import_data_desc": "选择 Excel 或 CSV 文件开始",
   "importing": "导入中...",
   "wizard": {
-    "title": "数据接入",
+    "title": "数据集成",
     "steps": {
       "select": "选择文件",
       "preview": "数据预览",
