@@ -42,6 +42,9 @@ class WansanApp {
           result.error
         )
         console.log('[Main] OPENAI_MODEL from env:', process.env.OPENAI_MODEL)
+
+        // [Fix] Refresh Auth Service env after loading .env
+        authService.loadEnv()
       } catch (error) {
         console.error('Failed to load .env file:', error)
       }

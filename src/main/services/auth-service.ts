@@ -1,8 +1,7 @@
 import { app } from 'electron'
 import Store from 'electron-store'
-import { secureGet, secureSet } from './secure-storage'
 import { getDeviceId } from './device'
-import type { RemoteConfig, AppConfig } from '@shared/types'
+import type { RemoteConfig } from '@shared/types'
 
 export interface AuthState {
   isActivated?: boolean
@@ -33,8 +32,13 @@ class AuthService {
     })
     // Read build-time injected env or runtime env
 
-    this.channelEnv =
-      process.env.SPECIAL_CHANNEL || process.env.VITE_SPECIAL_CHANNEL || ''
+    this.channelEnv = process.env.VITE_SPECIAL_CHANNEL || ''
+  }
+
+  // Allow refreshing env after dotenv load
+  loadEnv() {
+    this.channelEnv = process.env.VITE_SPECIAL_CHANNEL || ''
+    console.log('[AuthService] Loaded Channel Env:', this.channelEnv)
   }
 
   /**
@@ -110,6 +114,7 @@ class AuthService {
       betaCodes: this.currentBetaCodes,
     }
     console.log('[AuthService] getAuthState', {
+      channel: this.channelEnv,
       remoteData,
       res,
     })
