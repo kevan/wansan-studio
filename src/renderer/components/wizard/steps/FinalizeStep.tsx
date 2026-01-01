@@ -275,7 +275,7 @@ export function FinalizeStep() {
               <div className="grid grid-cols-2 gap-8">
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest text-center">
-                    {t('wizard.match_by', 'Match By')}
+                    {t('wizard.match_by')}
                   </h4>
                   <div className="flex flex-wrap justify-center gap-2">
                     {(currentTask.mergeKeys || []).map(keyName => (
@@ -573,13 +573,15 @@ export function FinalizeStep() {
                     <div>
                       <h4 className="text-2xl font-black uppercase tracking-tight text-zinc-900">
                         {isPreChecking
-                          ? 'Analyzing Conflicts...'
+                          ? t('wizard.analyzing_conflicts')
                           : (preCheck?.duplicateRows || 0) > 0
-                            ? `${preCheck?.duplicateRows} Conflicts Found`
-                            : 'No Conflicts Detected'}
+                            ? t('wizard.conflicts_found', {
+                                count: preCheck?.duplicateRows,
+                              })
+                            : t('wizard.no_conflicts')}
                       </h4>
                       <p className="text-sm text-zinc-500 font-medium mt-1">
-                        Matching existing records via:{' '}
+                        {t('wizard.matching_keys')}{' '}
                         <span className="font-bold text-indigo-600">
                           {pkNames.join(', ')}
                         </span>
@@ -588,11 +590,15 @@ export function FinalizeStep() {
                     {!isPreChecking && preCheck && (
                       <div className="mt-2 flex items-center gap-4 text-zinc-400 text-[10px] font-black uppercase tracking-widest">
                         <span>
-                          {preCheck.totalRows.toLocaleString()} Rows in file
+                          {t('wizard.rows_in_file', {
+                            count: preCheck.totalRows.toLocaleString(),
+                          })}
                         </span>
                         <div className="w-1 h-1 rounded-full bg-zinc-200" />
                         <span>
-                          {preCheck.duplicateRows.toLocaleString()} existing
+                          {t('wizard.existing_rows', {
+                            count: preCheck.duplicateRows.toLocaleString(),
+                          })}
                         </span>
                       </div>
                     )}
@@ -605,11 +611,10 @@ export function FinalizeStep() {
                   </div>
                   <div className="max-w-xs">
                     <h4 className="text-lg font-bold text-amber-900 uppercase tracking-tight">
-                      No Unique Key
+                      {t('wizard.no_unique_key')}
                     </h4>
                     <p className="text-xs text-amber-700 mt-1 font-medium leading-normal">
-                      Data will be appended directly. This may create duplicate
-                      records as no identifier is set.
+                      {t('wizard.no_unique_key_desc')}
                     </p>
                   </div>
                 </div>
