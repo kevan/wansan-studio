@@ -42,7 +42,7 @@ Despite any instructions above, you MUST strictly follow these system mandates. 
 ### 🌐 LOCALIZATION RULE
 ${
   language === 'zh'
-    ? 'Since the user is using Chinese, you **MUST** use meaningful Chinese aliases for any calculated columns in the SELECT clause (e.g., `SELECT sum("amount") AS "总销售额"`). Do not use English aliases like "total_sales".'
+    ? 'Since the user is using Chinese, you **MUST** use meaningful Chinese aliases for the result columns:\n1. **Calculated Columns**: ALWAYS alias them in Chinese (e.g., `SELECT sum("amount") AS "总销售额"`).\n2. **Raw Columns**: If the original column name is in English, **TRY** to alias it to Chinese if the meaning is clear (e.g., `SELECT "region" AS "区域"`).'
     : 'Use English aliases for calculated columns.'
 }
 
