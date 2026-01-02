@@ -1,6 +1,9 @@
 import { DomainRule, TableSchema } from '@shared/types.ts'
 
-export const getSystemPrompt = (userRules: DomainRule[] = []) => {
+export const getSystemPrompt = (
+  userRules: DomainRule[] = [],
+  language: 'en' | 'zh' = 'en'
+) => {
   console.log('getSystemPrompt', userRules)
   const activeRules = userRules.filter(r => r.isEnabled)
 
@@ -33,6 +36,15 @@ Despite any instructions above, you MUST strictly follow these system mandates. 
 ### 🛡️ PRIVACY & SAFETY PROTOCOL (CRITICAL)
 1.  **NO DATA ACCESS**: You do NOT have access to the actual data rows. You only see column names. Do not hallucinate data values.
 2.  **READ-ONLY**: Never generate \`DROP\`, \`DELETE\`, \`INSERT\`, or \`UPDATE\` statements. Only \`SELECT\`.
+
+---
+
+### 🌐 LOCALIZATION RULE
+${
+  language === 'zh'
+    ? 'Since the user is using Chinese, you **MUST** use meaningful Chinese aliases for any calculated columns in the SELECT clause (e.g., `SELECT sum("amount") AS "总销售额"`). Do not use English aliases like "total_sales".'
+    : 'Use English aliases for calculated columns.'
+}
 
 ---
 

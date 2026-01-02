@@ -97,7 +97,7 @@ ${relationsContext}${contextSection}
     messages: [
       {
         role: 'system',
-        content: `${getSystemPrompt(domainRules)}
+        content: `${getSystemPrompt(domainRules, language)}
 
 OUTPUT RULE: The "summary", "title", "reasoning", and "suggestions" fields MUST be in ${languageNote}.`,
       },

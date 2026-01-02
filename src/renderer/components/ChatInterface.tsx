@@ -24,6 +24,7 @@ import { format } from 'sql-formatter'
 import { AnalysisTemplateCard } from './chat/analysis-template-card'
 import { FilterParam } from '@shared/schemas/analysis'
 import { VizSummary } from './viz/core/VizSummary'
+import type { ReportData } from '@shared/types/dashboard'
 
 export interface ChatMessage {
   id: string
@@ -46,7 +47,7 @@ export interface ChatMessage {
     latency?: number
   }
   widgetId?: string
-  reportData?: any
+  reportData?: ReportData
   // Temp field for ai bridge response
   aiAnalysis?: any
 }

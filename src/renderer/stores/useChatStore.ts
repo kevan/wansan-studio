@@ -788,34 +788,24 @@ const autoFixMessage = async (
 
     updateMessage(messageId, msg => ({
       ...msg,
-      type: 'assistant',
       status: undefined,
+      error: undefined,
       reportData: {
-        title: i18n.t('autofix_fixed_title', {
-          ns: 'chat',
-          query:
-            msg.originalQuery ||
-            i18n.t('autofix_fixed_query_fallback', { ns: 'chat' }),
-        }),
-        summary: i18n.t('autofix_summary', { ns: 'chat', error, reasoning }),
+        title: msg.reportData?.title || 'Auto-fix Result', // Fallback title
+        ...(msg.reportData || {}),
         sql: fixedSql,
         reasoning:
           (msg.planReasoning ? msg.planReasoning + '\n\n' : '') +
           i18n.t('autofix_reasoning', { ns: 'chat', reasoning }),
-        suggestions: [],
-        chartType: 'table',
-        chartTitle: i18n.t('autofix_chart_title', { ns: 'chat' }),
         tableData: data,
         columnFields,
-        vizConfig: {},
-        insights: [],
+        chartType: msg.reportData?.chartType || 'table',
       },
     }))
     useToastStore.getState().addToast({
       type: 'success',
       title: i18n.t('autofix_success_toast_title', { ns: 'chat' }),
-      description: i18n.t('autofix_success_toast_desc', { ns: 'chat' }),
-      duration: 4000,
+      duration: 3000,
     })
   } catch (error: any) {
     updateMessage(messageId, msg => ({
