@@ -2,16 +2,18 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 interface UIState {
-  mainPanelLayout: number[] // [sidebar, chat, dashboard]
-  lastSplitLayout: number[] // Remember split ratios [sidebar, chat, dashboard]
+  sidebarLayout: number[] // [sidebar, main_content]
+  contentLayout: number[] // [chat, dashboard]
+  lastContentSplit: number[] // Remember split ratios [chat, dashboard]
   migrationState: {
     isMigrating: boolean
     progress: number
     total: number
     message: string
   }
-  setMainPanelLayout: (layout: number[]) => void
-  setLastSplitLayout: (layout: number[]) => void
+  setSidebarLayout: (layout: number[]) => void
+  setContentLayout: (layout: number[]) => void
+  setLastContentSplit: (layout: number[]) => void
   setMigrationState: (state: Partial<UIState['migrationState']>) => void
   resetLayout: () => void
 }
@@ -19,22 +21,25 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   persist(
     set => ({
-      mainPanelLayout: [20, 35, 45], // Default layout percentages
-      lastSplitLayout: [20, 35, 45], // Default split memory
+      sidebarLayout: [20, 80],
+      contentLayout: [40, 60],
+      lastContentSplit: [40, 60],
       migrationState: {
         isMigrating: false,
         progress: 0,
         total: 0,
         message: '',
       },
-      setMainPanelLayout: layout => set({ mainPanelLayout: layout }),
-      setLastSplitLayout: layout => set({ lastSplitLayout: layout }),
+      setSidebarLayout: layout => set({ sidebarLayout: layout }),
+      setContentLayout: layout => set({ contentLayout: layout }),
+      setLastContentSplit: layout => set({ lastContentSplit: layout }),
       setMigrationState: state =>
         set(prev => ({ migrationState: { ...prev.migrationState, ...state } })),
       resetLayout: () =>
         set({
-          mainPanelLayout: [20, 35, 45],
-          lastSplitLayout: [20, 35, 45],
+          sidebarLayout: [20, 80],
+          contentLayout: [40, 60],
+          lastContentSplit: [40, 60],
         }),
     }),
     {

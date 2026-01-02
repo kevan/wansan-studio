@@ -486,18 +486,16 @@ export function MagicInput({
     setPopoverOpen(false)
   }, [value, cursorPosition])
 
+  // Force re-calculation of textarea height when container resizes
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setMention({ active: false })
-        setPopoverOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    if (!containerRef.current) return
+    const observer = new ResizeObserver(() => {
+      // TextareaAutosize listens to window resize, but not container resize.
+      // We manually trigger a window resize event to force it to recalculate height.
+      window.dispatchEvent(new Event('resize'))
+    })
+    observer.observe(containerRef.current)
+    return () => observer.disconnect()
   }, [])
 
   const hasContent = value.trim().length > 0

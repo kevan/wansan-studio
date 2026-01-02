@@ -72,10 +72,12 @@ function App() {
   const [isChatCollapsed, setIsChatCollapsed] = useState(false)
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
 
-  const mainPanelLayout = useUIStore(s => s.mainPanelLayout)
-  const lastSplitLayout = useUIStore(s => s.lastSplitLayout)
-  const setMainPanelLayout = useUIStore(s => s.setMainPanelLayout)
-  const setLastSplitLayout = useUIStore(s => s.setLastSplitLayout)
+  const sidebarLayout = useUIStore(s => s.sidebarLayout)
+  const contentLayout = useUIStore(s => s.contentLayout)
+  const lastContentSplit = useUIStore(s => s.lastContentSplit)
+  const setSidebarLayout = useUIStore(s => s.setSidebarLayout)
+  const setContentLayout = useUIStore(s => s.setContentLayout)
+  const setLastContentSplit = useUIStore(s => s.setLastContentSplit)
 
   const [isRightCollapsed, setIsRightCollapsed] = useState(true)
   const [isPresentationMode, setIsPresentationMode] = useState(false)
@@ -149,8 +151,7 @@ function App() {
   const handleLayoutModeChange = (mode: LayoutMode) => {
     if (mode === 'chat') {
       middlePanelRef.current?.expand?.()
-      // Force resize to ensure it takes up space (Left ~20, Middle ~80)
-      middlePanelRef.current?.resize?.(80)
+      middlePanelRef.current?.resize?.(100) // Full width in content group
       setIsChatCollapsed(false)
       rightPanelRef.current?.collapse?.()
       setIsRightCollapsed(true)
@@ -158,11 +159,10 @@ function App() {
       middlePanelRef.current?.expand?.()
       setIsChatCollapsed(false)
 
-      // Restore user preference for split layout
-      const targetMiddle = lastSplitLayout[1] || 35
-      const targetRight = lastSplitLayout[2] || 45
+      // Restore user preference relative to CONTENT GROUP
+      const targetMiddle = lastContentSplit[0] || 40
+      const targetRight = lastContentSplit[1] || 60
 
-      // Apply resize (middle first, then right to balance)
       middlePanelRef.current?.resize?.(targetMiddle)
 
       rightPanelRef.current?.expand?.()
@@ -172,7 +172,6 @@ function App() {
       middlePanelRef.current?.collapse?.()
       setIsChatCollapsed(true)
       rightPanelRef.current?.expand?.()
-      // Give full width to dashboard
       rightPanelRef.current?.resize?.(100)
       setIsRightCollapsed(false)
     }
@@ -187,16 +186,6 @@ function App() {
     } else {
       leftPanelRef.current.collapse?.()
       setIsLeftCollapsed(true)
-
-      // [FIX] When closing sidebar in Board mode, ensure the released space goes to Dashboard (Right),
-      // not Chat (Middle), to prevent accidental switch to Split mode.
-      if (currentLayoutMode === 'board') {
-        // Force Right to take all space
-        requestAnimationFrame(() => {
-          rightPanelRef.current?.resize?.(100)
-          middlePanelRef.current?.collapse?.()
-        })
-      }
     }
   }
 
@@ -227,14 +216,15 @@ function App() {
       const right = rightPanelRef.current
       if (right) {
         right.expand?.()
-        right.resize?.(mainPanelLayout[2] || 45)
+        const targetSize = useUIStore.getState().lastContentSplit[1] || 60
+        right.resize?.(targetSize)
       }
       setIsRightCollapsed(false)
     }
     window.addEventListener('wansan:open-dashboard', handleOpenDashboard)
     return () =>
       window.removeEventListener('wansan:open-dashboard', handleOpenDashboard)
-  }, [mainPanelLayout])
+  }, [])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -277,7 +267,7 @@ function App() {
       unsubWindow?.()
       unsubProgress?.()
     }
-  }, [isPresentationMode, mainPanelLayout])
+  }, [isPresentationMode])
 
   useEffect(() => {
     if (!window.electronAPI) return
@@ -506,19 +496,12 @@ function App() {
           <PanelGroup
             direction="horizontal"
             className="flex-1"
-            onLayout={layout => {
-              setMainPanelLayout(layout)
-              // Only save as "split preference" if both chat and dashboard are visible and have significant width
-              // layout: [sidebar, chat, dashboard]
-              if (layout[1] > 10 && layout[2] > 10) {
-                setLastSplitLayout(layout)
-              }
-            }}
+            onLayout={setSidebarLayout}
           >
             {/* 左侧 Sidebar */}
             <Panel
               ref={leftPanelRef}
-              defaultSize={mainPanelLayout[0]}
+              defaultSize={sidebarLayout[0]}
               minSize={15}
               maxSize={20}
               collapsible
@@ -536,44 +519,60 @@ function App() {
 
             <PanelResizeHandle className="w-1 bg-zinc-100 hover:bg-zinc-300 transition-colors" />
 
-            {/* 主画布区域 - Chat/Workspace */}
-            <Panel
-              ref={middlePanelRef}
-              defaultSize={mainPanelLayout[1]}
-              minSize={25}
-              collapsible
-              collapsedSize={0}
-              onCollapse={() => setIsChatCollapsed(true)}
-              onExpand={() => setIsChatCollapsed(false)}
-              className={`bg-white dark:bg-zinc-950 transition-all duration-500 ${isPresentationMode ? 'min-w-0 border-none' : ''}`}
-            >
-              <main className="wansan-canvas h-full flex flex-col relative bg-white dark:bg-zinc-950 transition-colors">
-                <MainContent />
-              </main>
-            </Panel>
+            {/* Main Content Wrapper (Chat + Dashboard) */}
+            <Panel minSize={30}>
+              <PanelGroup
+                direction="horizontal"
+                onLayout={layout => {
+                  setContentLayout(layout)
+                  // Save split preference only if both are visible
+                  if (layout[0] > 10 && layout[1] > 10) {
+                    setLastContentSplit(layout)
+                  }
+                }}
+              >
+                {/* 主画布区域 - Chat/Workspace */}
+                <Panel
+                  ref={middlePanelRef}
+                  defaultSize={contentLayout[0]}
+                  minSize={25}
+                  collapsible
+                  collapsedSize={0}
+                  onCollapse={() => setIsChatCollapsed(true)}
+                  onExpand={() => setIsChatCollapsed(false)}
+                  className={`bg-white dark:bg-zinc-950 transition-all duration-500 ${isPresentationMode ? 'min-w-0 border-none' : ''}`}
+                >
+                  <main className="wansan-canvas h-full flex flex-col relative bg-white dark:bg-zinc-950 transition-colors">
+                    <MainContent />
+                  </main>
+                </Panel>
 
-            <PanelResizeHandle className="w-1 bg-zinc-100 hover:bg-zinc-300 transition-colors" />
+                <PanelResizeHandle className="w-1 bg-zinc-100 hover:bg-zinc-300 transition-colors" />
 
-            {/* 右侧 Report Canvas */}
-            <Panel
-              defaultSize={mainPanelLayout[2]}
-              minSize={25}
-              ref={rightPanelRef}
-              collapsible
-              collapsedSize={0}
-              onCollapse={() => setIsRightCollapsed(true)}
-              onExpand={() => setIsRightCollapsed(false)}
-              className={`bg-zinc-100/60 dark:bg-zinc-900 transition-all duration-300 ${isRightCollapsed ? 'min-w-0' : ''}`}
-            >
-              {activeView === 'chat' ? (
-                <DashboardCanvasV3 isPresentationMode={isPresentationMode} />
-              ) : activeView === 'schema' ? (
-                <div className="h-full w-full">
-                  <div className="h-full w-full bg-white dark:bg-black border border-zinc-200 shadow-sm overflow-hidden">
-                    <DataPreviewPanel />
-                  </div>
-                </div>
-              ) : null}
+                {/* 右侧 Report Canvas */}
+                <Panel
+                  defaultSize={contentLayout[1]}
+                  minSize={25}
+                  ref={rightPanelRef}
+                  collapsible
+                  collapsedSize={0}
+                  onCollapse={() => setIsRightCollapsed(true)}
+                  onExpand={() => setIsRightCollapsed(false)}
+                  className={`bg-zinc-100/60 dark:bg-zinc-900 transition-all duration-300 ${isRightCollapsed ? 'min-w-0' : ''}`}
+                >
+                  {activeView === 'chat' ? (
+                    <DashboardCanvasV3
+                      isPresentationMode={isPresentationMode}
+                    />
+                  ) : activeView === 'schema' ? (
+                    <div className="h-full w-full">
+                      <div className="h-full w-full bg-white dark:bg-black border border-zinc-200 shadow-sm overflow-hidden">
+                        <DataPreviewPanel />
+                      </div>
+                    </div>
+                  ) : null}
+                </Panel>
+              </PanelGroup>
             </Panel>
           </PanelGroup>
 
