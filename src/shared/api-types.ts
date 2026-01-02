@@ -1,13 +1,18 @@
-import { AIConfig, TableSchema } from './types'
+import {
+  AIConfig,
+  TableSchema,
+  AIAnalysisResult,
+  ContextAnalysisResult,
+} from './types'
 
-export interface IPCResponse<T = any> {
+export interface IPCResponse<T = unknown> {
   success: boolean
   data?: T
   error?: string
 }
 
 export type RunSQLResponse = IPCResponse<{
-  data: any[]
+  data: Record<string, unknown>[]
   columnFields: Array<{ name: string; type: string }>
 }>
 
@@ -16,11 +21,18 @@ export type ParseFileResponse = IPCResponse<
     tableName: string
     schema: TableSchema
     rowCount: number
-    preview?: any[]
+    preview?: Record<string, unknown>[]
     sheetName?: string
   }>
 >
 
 export type AIConfigResponse = IPCResponse<AIConfig>
 
-// ... add other specific response types as needed
+export type GetSchemaResponse = IPCResponse<{
+  tables: TableSchema[]
+}>
+
+export type AskAIResponse = IPCResponse<AIAnalysisResult>
+
+export type AnalyzeContextResponse = IPCResponse<ContextAnalysisResult>
+

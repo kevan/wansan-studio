@@ -1,9 +1,21 @@
-import { ReloadResult, DomainRule, ColumnSchema } from './types'
+import {
+  ReloadResult,
+  DomainRule,
+  ColumnSchema,
+  TableSchema,
+  RelationSuggestion,
+  AppConfig,
+  AIConfig,
+  FileNode,
+} from './types'
 import {
   IPCResponse,
   RunSQLResponse,
   ParseFileResponse,
   AIConfigResponse,
+  GetSchemaResponse,
+  AskAIResponse,
+  AnalyzeContextResponse,
 } from './api-types'
 
 export interface IngestPreCheckParams {
@@ -47,14 +59,14 @@ export interface CreateTableParams {
 
 export interface ElectronAPI {
   // Generic invoke (keep for flexibility, but usage should be minimized)
-  invoke: (channel: string, ...args: any[]) => Promise<IPCResponse>
+  invoke: (channel: string, ...args: unknown[]) => Promise<IPCResponse>
 
   // File Operations
   selectFile: () => Promise<IPCResponse<string>>
   selectFiles: () => Promise<IPCResponse<{ path: string; size: number }[]>>
   selectDirectory: () => Promise<IPCResponse<string>>
   parseFile: (filePath: string) => Promise<ParseFileResponse>
-  checkFilesConsistency: (files: any[]) => Promise<IPCResponse>
+  checkFilesConsistency: (files: FileNode[]) => Promise<IPCResponse>
   reIngestFile: (
     fileId: string,
     filePath: string,
@@ -90,31 +102,34 @@ export interface ElectronAPI {
     name: string,
     sheetName?: string
   ) => Promise<IPCResponse<string>>
-  getSchema: (tableName?: string) => Promise<IPCResponse>
+  getSchema: (tableName?: string) => Promise<GetSchemaResponse>
   deleteTable: (tableName?: string) => Promise<IPCResponse>
   resetDB: () => Promise<IPCResponse>
   resetApp: () => Promise<IPCResponse>
 
   // AI & Analysis
-  generateSQL: (prompt: string, schema: any) => Promise<IPCResponse>
+  generateSQL: (
+    prompt: string,
+    schema: TableSchema[]
+  ) => Promise<IPCResponse<string>>
   askAI: (
     query: string,
-    schemas: any[],
-    relations: any[],
+    schemas: TableSchema[],
+    relations: RelationSuggestion[],
     context?: { lastSql: string; lastQuery: string },
     language?: 'en' | 'zh',
     domainRules?: DomainRule[]
-  ) => Promise<IPCResponse>
+  ) => Promise<AskAIResponse>
   fixSQL: (
     originalSql: string,
     error: string,
-    schemas: any[],
+    schemas: TableSchema[],
     domainRules?: DomainRule[]
-  ) => Promise<IPCResponse>
+  ) => Promise<IPCResponse<{ sql: string; reasoning: string }>>
   analyzeContext: (
-    schemas: any[],
+    schemas: TableSchema[],
     language?: 'en' | 'zh'
-  ) => Promise<IPCResponse>
+  ) => Promise<AnalyzeContextResponse>
   generateMetricExpression: (options: {
     input: string
     columns: Array<{ name: string; type: string }>
@@ -123,14 +138,14 @@ export interface ElectronAPI {
 
   // AI Config
   getAIConfig: () => Promise<AIConfigResponse>
-  setAIConfig: (config: any) => Promise<IPCResponse>
+  setAIConfig: (config: AIConfig) => Promise<IPCResponse>
   clearAIConfig: () => Promise<IPCResponse>
-  verifyAIConnection: (config?: any) => Promise<IPCResponse>
+  verifyAIConnection: (config?: AIConfig) => Promise<IPCResponse>
 
   // Export
-  exportPDF: (data: any) => Promise<IPCResponse>
-  exportReport: (payload: any) => Promise<IPCResponse>
-  exportWebReport: (widgets: any[], config: any) => Promise<IPCResponse>
+  exportPDF: (data: unknown) => Promise<IPCResponse>
+  exportReport: (payload: unknown) => Promise<IPCResponse>
+  exportWebReport: (widgets: unknown[], config: unknown) => Promise<IPCResponse>
 
   // System / Misc
   getDeviceId: () => Promise<IPCResponse<string>>
@@ -166,5 +181,5 @@ export interface ElectronAPI {
     }) => void
   ) => () => void
   onCommandCloseProject: (callback: () => void) => () => void
-  onRemoteConfig: (callback: (config: any) => void) => () => void
+  onRemoteConfig: (callback: (config: AppConfig) => void) => () => void
 }

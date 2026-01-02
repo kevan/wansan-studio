@@ -64,6 +64,7 @@ export function useAutoLink() {
         description: f.name,
         columns: f.columns.map(c => ({
           name: c.name,
+          safeName: c.safeName,
           type: c.type,
           sampleValues: c.sampleValues,
         })),

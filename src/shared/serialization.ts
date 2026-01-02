@@ -27,7 +27,7 @@ export function jsonReviver(key: string, value: any): any {
 /**
  * Stringify an object with BigInt support
  */
-export function stringify(data: any, space?: string | number): string {
+export function stringify(data: unknown, space?: string | number): string {
   return JSON.stringify(data, jsonReplacer, space)
 }
 
@@ -35,7 +35,7 @@ export function stringify(data: any, space?: string | number): string {
  * Parse a JSON string with BigInt support
  */
 export function parse<T = any>(json: string): T {
-  return JSON.parse(json, jsonReviver)
+  return JSON.parse(json, jsonReviver) as T
 }
 
 /**
@@ -54,7 +54,7 @@ export function createBigIntStorage(storage: Storage = localStorage) {
         return null
       }
     },
-    setItem: (name: string, value: any) => {
+    setItem: (name: string, value: unknown) => {
       try {
         const str = stringify(value)
         storage.setItem(name, str)
@@ -70,12 +70,12 @@ export function createBigIntStorage(storage: Storage = localStorage) {
  * Safely stringify for display/logging purposes
  * Handles circular references and BigInt
  */
-export function safeStringify(data: any, space?: string | number): string {
+export function safeStringify(data: unknown, space?: string | number): string {
   const seen = new WeakSet()
 
   return JSON.stringify(
     data,
-    (key, value) => {
+    (_key, value) => {
       // Handle BigInt
       if (typeof value === 'bigint') {
         return value.toString() + 'n'
@@ -102,7 +102,7 @@ export function safeStringify(data: any, space?: string | number): string {
  * - Limits object keys
  * - Truncates long strings
  */
-export function summarizeJson(value: any, depth = 0): any {
+export function summarizeJson(value: unknown, depth = 0): unknown {
   if (value === null || value === undefined) return value
 
   // Limit recursion depth to save tokens on deep nesting
@@ -119,12 +119,15 @@ export function summarizeJson(value: any, depth = 0): any {
   }
 
   if (typeof value === 'object') {
-    const keys = Object.keys(value)
-    const summary: any = {}
+    const keys = Object.keys(value as Record<string, unknown>)
+    const summary: Record<string, unknown> = {}
     const MAX_KEYS = 8 // Limit number of keys shown
 
     keys.slice(0, MAX_KEYS).forEach(k => {
-      summary[k] = summarizeJson(value[k], depth + 1)
+      summary[k] = summarizeJson(
+        (value as Record<string, unknown>)[k],
+        depth + 1
+      )
     })
 
     if (keys.length > MAX_KEYS) {
@@ -150,7 +153,7 @@ export function summarizeJson(value: any, depth = 0): any {
  * Returns only the necessary parts based on type hints if possible.
  */
 export function formatDateValue(
-  val: any,
+  val: unknown,
   typeHint?: 'date' | 'time' | 'timestamp'
 ): string | null {
   if (val === null || val === undefined) return null
@@ -215,7 +218,7 @@ export function formatDateValue(
  * Format a value for display in UI (tables, big numbers, etc.)
  * Handles timestamps, floating point numbers (fixed precision), and generic strings.
  */
-export function formatForDisplay(value: any, typeHint?: string): string {
+export function formatForDisplay(value: unknown, typeHint?: string): string {
   if (value === null || value === undefined) return '—'
 
   if (typeHint) {
@@ -241,9 +244,9 @@ export function formatForDisplay(value: any, typeHint?: string): string {
     const maxTimestamp = 1893456000000 // 2030-01-01
 
     // Only format as date if it's clearly in ms timestamp range AND not a small integer
-    if (isSafe && numValue >= minTimestamp && numValue <= maxTimestamp) {
+    if (isSafe && (numValue as number) >= minTimestamp && (numValue as number) <= maxTimestamp) {
       try {
-        return new Date(numValue).toLocaleString()
+        return new Date(numValue as number).toLocaleString()
       } catch {
         /* fall through */
       }
@@ -255,7 +258,7 @@ export function formatForDisplay(value: any, typeHint?: string): string {
 
     return new Intl.NumberFormat('en-US', {
       maximumFractionDigits: 4,
-    }).format(numValue)
+    }).format(numValue as number)
   }
 
   return String(value)
@@ -265,7 +268,7 @@ export function formatForDisplay(value: any, typeHint?: string): string {
  * Process a single value for LLM context sampling
  * Handles: BigInt, Date (ISO), JSON summarization, and string truncation
  */
-export function processSampleValue(val: any, columnType?: ColumnType): any {
+export function processSampleValue(val: unknown, columnType?: ColumnType): unknown {
   // 1. Handle Date/Time Types if columnType is provided
   // We prioritize this over generic numeric checks because DuckDB often returns
   // timestamps as bigints (microseconds).
@@ -296,7 +299,7 @@ export function processSampleValue(val: any, columnType?: ColumnType): any {
       const summary = summarizeJson(val)
       return JSON.stringify(summary)
     } catch (e) {
-      val = String(val)
+      return String(val)
     }
   }
 
@@ -342,7 +345,7 @@ export function processSampleValue(val: any, columnType?: ColumnType): any {
  * - Converts Date to timestamp
  * - Recursively handles Arrays and Objects
  */
-export function sanitizeValue(value: any): any {
+export function sanitizeValue(value: unknown): unknown {
   if (typeof value === 'bigint') {
     const num = Number(value)
     return Number.isSafeInteger(num) ? num : value.toString()
@@ -362,9 +365,9 @@ export function sanitizeValue(value: any): any {
     return value.map(sanitizeValue)
   }
   if (value !== null && typeof value === 'object') {
-    const plain: any = {}
-    for (const key of Object.keys(value)) {
-      plain[key] = sanitizeValue(value[key])
+    const plain: Record<string, unknown> = {}
+    for (const key of Object.keys(value as Record<string, unknown>)) {
+      plain[key] = sanitizeValue((value as Record<string, unknown>)[key])
     }
     return plain
   }

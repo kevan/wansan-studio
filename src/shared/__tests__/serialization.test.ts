@@ -79,7 +79,7 @@ describe('Serialization - CSV/JSON Robustness', () => {
     // Raw CSV: "{ "details": ...}"
     // Read Value: '{"details": ...}'
     const jsonString = row.score_details
-    const processedJson = processSampleValue(jsonString)
+    const processedJson = processSampleValue(jsonString) as string
 
     // It should be a stringified JSON summary
     const summary = JSON.parse(processedJson)
@@ -114,7 +114,7 @@ describe('Serialization - CSV/JSON Robustness', () => {
     // When read as string: '{\"a\": 1}'
     const rawDirtyJson = '{"name": "test", "value": 123}'
 
-    const processed = processSampleValue(rawDirtyJson)
+    const processed = processSampleValue(rawDirtyJson) as string
     const summary = JSON.parse(processed)
 
     expect(summary).toHaveProperty('name', 'test')
@@ -123,17 +123,17 @@ describe('Serialization - CSV/JSON Robustness', () => {
 
   it('should handle standard JSON strings', () => {
     const cleanJson = '{"name": "test", "value": 123}'
-    const processed = processSampleValue(cleanJson)
+    const processed = processSampleValue(cleanJson) as string
     const summary = JSON.parse(processed)
 
     expect(summary).toHaveProperty('name', 'test')
     expect(summary).toHaveProperty('value', 123)
   })
 
-  it('should truncate long strings that are not JSON', () => {
-    const longString = 'A'.repeat(100)
-    const processed = processSampleValue(longString)
+  it('should truncate long strings', () => {
+    const longStr = 'a'.repeat(100)
+    const processed = processSampleValue(longStr) as string
     expect(processed.length).toBeLessThan(100)
-    expect(processed).toMatch(/\.\.\.$/)
+    expect(processed.endsWith('...')).toBe(true)
   })
 })

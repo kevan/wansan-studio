@@ -8,7 +8,7 @@ async function invoke<T>(channel: string, ...args: any[]): Promise<T> {
   if (!result.success) {
     throw new Error(result.error || 'Unknown IPC error')
   }
-  return result.data
+  return result.data as T
 }
 
 export const projectService = {

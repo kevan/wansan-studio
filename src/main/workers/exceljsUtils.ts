@@ -22,7 +22,7 @@ export function normalizeHeaders(headers: string[]): string[] {
   })
 }
 
-export function findHeaderRow(data: any[][]): {
+export function findHeaderRow(data: ExcelJS.CellValue[][]): {
   headerRowIndex: number
   headers: string[]
 } {
@@ -124,7 +124,7 @@ export async function processExcelFileStreaming(
 
       // Buffer for header detection
       const ROW_BUFFER_SIZE = 50
-      const rowBuffer: any[][] = []
+      const rowBuffer: ExcelJS.CellValue[][] = []
       let headersFound = false
       let headerRowIndex = 0
       let normalizedHeaders: string[] = []
@@ -132,7 +132,7 @@ export async function processExcelFileStreaming(
       let rowCount = 0
 
       // Helper to process a row into CSV line
-      const processRowToCSV = (rowValues: any[]) => {
+      const processRowToCSV = (rowValues: ExcelJS.CellValue[]) => {
         const rowData: string[] = []
         for (let i = 0; i < colCount; i++) {
           const cell = rowValues[i]
@@ -172,8 +172,8 @@ export async function processExcelFileStreaming(
       for await (const row of worksheetReader) {
         // In streaming mode, row.values is fast but row.getCell is needed for styles
         // We iterate manually to handle Date serial conversion if styles are available
-        const values: any[] = []
-        const rowValues = row.values as any[]
+        const values: ExcelJS.CellValue[] = []
+        const rowValues = row.values as ExcelJS.CellValue[]
         const maxCol = Array.isArray(rowValues) ? rowValues.length - 1 : 0
 
         for (let i = 1; i <= maxCol; i++) {

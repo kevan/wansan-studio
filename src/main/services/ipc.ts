@@ -18,6 +18,7 @@ import type {
   FileNode,
   RelationSuggestion,
   DomainRule,
+  AIConfig,
 } from '@shared/types.ts'
 
 export function setupIPC(
@@ -244,7 +245,14 @@ export function setupIPC(
   // AI 智能指标生成
   ipcMain.handle(
     'ai:generate-metric-expression',
-    async (_event, options: any) => {
+    async (
+      _event,
+      options: {
+        input: string
+        columns: Array<{ name: string; type: string }>
+        mode: 'generate' | 'refine'
+      }
+    ) => {
       try {
         const result = await aiService.generateMetricExpression(options)
         return { success: true, data: result }
@@ -286,7 +294,7 @@ export function setupIPC(
   })
 
   // 设置 AI 配置
-  ipcMain.handle('set-ai-config', async (_event, config: any) => {
+  ipcMain.handle('set-ai-config', async (_event, config: AIConfig) => {
     try {
       aiService.setConfig(config)
       return { success: true }
@@ -305,7 +313,7 @@ export function setupIPC(
     }
   })
 
-  ipcMain.handle('verify-ai-connection', async (_event, config?: any) => {
+  ipcMain.handle('verify-ai-connection', async (_event, config?: AIConfig) => {
     try {
       const result = await aiService.verifyConnection(config)
       return { success: true, data: result }
@@ -317,9 +325,9 @@ export function setupIPC(
   // AI Web Export
   ipcMain.handle(
     'export-web-report',
-    async (_event, widgets: any[], config: any) => {
+    async (_event, widgets: unknown[], config: unknown) => {
       try {
-        const result = await exportWebReport(aiService, widgets, config)
+        const result = await exportWebReport(aiService, widgets, config as any)
         return result
       } catch (error) {
         console.error('Export web report error:', error)

@@ -316,6 +316,7 @@ export const useSettingsStore = create<SettingsState>()(
       storage: createBigIntStorage(),
       version: 3,
       partialize: state => {
+        // [SECURITY] Explicitly exclude sensitive data and transient flags
         const {
           apiKey: _apiKey,
           isSpecialChannel: _isSpecialChannel,
@@ -335,8 +336,8 @@ export const useSettingsStore = create<SettingsState>()(
 
         return {
           ...rest,
-          remoteConfig: safeRemoteConfig as AppConfig, // Persist safe parts only
-        }
+          remoteConfig: safeRemoteConfig as AppConfig,
+        } as unknown as SettingsState
       },
 
       migrate: persistedState => {

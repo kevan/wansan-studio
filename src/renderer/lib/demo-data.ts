@@ -31,7 +31,7 @@ export async function loadDemoData(
       path: 'DEMO_MEMORY',
       status: 'ready',
       tableName: tableName,
-      columns: result.data?.columns || [],
+      columns: (result as any).data?.columns || [],
       lastModified: Date.now(),
       createdAt: Date.now(),
     }

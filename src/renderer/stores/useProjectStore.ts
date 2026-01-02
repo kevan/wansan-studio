@@ -67,8 +67,11 @@ export interface ProjectState extends ProjectData {
   deleteSession: (id: string) => void
   renameSession: (id: string, name: string) => void
   clearSessionMessages: (id: string) => void
-  addMessage: (message: Message | any) => void
-  updateMessage: (id: string, updates: Partial<Message>) => void
+  addMessage: (message: Message) => void
+  updateMessage: (
+    id: string,
+    updates: Partial<Message> & { reportData?: ReportData }
+  ) => void
   deleteMessage: (id: string) => void
   setReplyTo: (messageId: string | null) => void
   setInputDraft: (draft: string) => void
@@ -1406,25 +1409,24 @@ export const useProjectStore = create<ProjectState>()(
       // ... rest ...
       storage: createBigIntStorage(),
       partialize: state => {
+        // Exclude transient/runtime state from persistence
         const {
-          abortControllers: _abortControllers,
-          layoutScenario: _layoutScenario,
-          editingReportId: _editingReportId,
-          pendingReplace: _pendingReplace,
-          showRefreshConfirm: _showRefreshConfirm,
-          isRestoring: _isRestoring,
-          isRefreshing: _isRefreshing,
-          activeView: _activeView,
-          sidebarMode: _sidebarMode,
-          selectedNode: _selectedNode,
-          smartFilterRequest: _smartFilterRequest,
-          isProjectLoaded: _isProjectLoaded, // Exclude from persistence
+          abortControllers: _ac,
+          layoutScenario: _ls,
+          editingReportId: _er,
+          pendingReplace: _pr,
+          showRefreshConfirm: _src,
+          isRestoring: _ir,
+          isRefreshing: _iref,
+          activeView: _av,
+          sidebarMode: _sm,
+          selectedNode: _sn,
+          smartFilterRequest: _sfr,
+          isProjectLoaded: _ipl,
           ...rest
         } = state
 
-        // [PERSISTENCE FIX] We now persist the full widgetRegistry (including tableData)
-        // so that charts are not empty on reload. The user must explicitly refresh if they want new data.
-        return rest
+        return rest as unknown as ProjectState
       },
       onRehydrateStorage: () => state => {
         if (state) {

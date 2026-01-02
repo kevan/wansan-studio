@@ -80,7 +80,7 @@ export function useSmartOptions(
         const result = await window.electronAPI.runSQL(query)
         if (active) {
           if (result.success && result.data) {
-            setOptions(result.data.data)
+            setOptions(result.data.data as any)
           } else {
             setOptions([])
           }

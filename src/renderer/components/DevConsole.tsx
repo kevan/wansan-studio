@@ -217,7 +217,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
 
   const printAllTables = useCallback(async () => {
     try {
-      const result = await window.electronAPI.invoke('get-schema')
+      const result = (await window.electronAPI.getSchema()) as any
       console.log('📊 Fetching all tables from DuckDB...', result)
 
       if (result.success && result.data && Array.isArray(result.data.tables)) {

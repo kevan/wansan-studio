@@ -8,6 +8,7 @@ import type {
   RelationSuggestion,
   TableSchema,
 } from '@shared/types'
+import type { ReportData } from '@shared/types/dashboard'
 import { FilterParam } from '@shared/schemas/analysis'
 import i18n from '../i18n'
 import { mapFileToSchema } from '../utils/schema-mapper'
@@ -26,7 +27,7 @@ interface ChatStore {
   updateMessageData: (
     messageId: string,
     newSql: string,
-    newData: any[],
+    newData: Record<string, unknown>[],
     columnFields: Array<{ name: string; type: string }>
   ) => void
   sendMessage: (
@@ -149,22 +150,23 @@ const updateReportConfig = (
 const updateMessageData = (
   id: string,
   newSql: string,
-  newData: any[],
+  newData: Record<string, unknown>[],
   columnFields: Array<{ name: string; type: string }>
 ) => {
   updateMessage(id, msg => {
     // We update the data even if reportData is missing (might have been cleared)
-    const existingReportData = msg.reportData || ({} as any)
+    const existingReportData = (msg.reportData || {}) as Partial<ReportData>
     return {
       ...msg,
       status: undefined, // Clear error status
       error: undefined, // Clear error message
       reportData: {
         ...existingReportData,
+        title: existingReportData.title || '',
         sql: newSql,
         tableData: newData,
         columnFields,
-      },
+      } as ReportData,
     }
   })
 }
@@ -186,7 +188,7 @@ const resetLoading = () => {
       useProjectStore.getState().updateMessage(m.id, {
         status: 'error',
         error: i18n.t('interrupted_retry', { ns: 'chat' }),
-      } as any)
+      })
     }
   })
 }

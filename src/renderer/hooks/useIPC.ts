@@ -1,10 +1,13 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
-  IPCResponse,
   AIConfigResponse,
+  AnalyzeContextResponse,
+  AskAIResponse,
+  IPCResponse,
   RunSQLResponse,
 } from '@shared/api-types'
 import { ElectronAPI } from '@shared/electron-api'
+import { AIConfig, ColumnSchema, FileNode, TableSchema, } from '@shared/types'
 
 /**
  * Mock IPC implementation for development/testing when electronAPI is not available.
@@ -23,12 +26,15 @@ const mockIPC: ElectronAPI = {
   getSchema: async () => ({ success: true, data: { tables: [] } }),
   deleteTable: async () => ({ success: true }),
   generateSQL: async () => ({ success: true, data: '' }),
-  askAI: async () => ({ success: true, data: {} }),
+  askAI: async (): Promise<AskAIResponse> => ({
+    success: true,
+    data: { status: 'success' },
+  }),
   fixSQL: async () => ({
     success: true,
     data: { sql: '', reasoning: '' },
   }),
-  analyzeContext: async () => ({
+  analyzeContext: async (): Promise<AnalyzeContextResponse> => ({
     success: true,
     data: { relationships: [], suggestedPrompts: [] },
   }),
@@ -44,7 +50,7 @@ const mockIPC: ElectronAPI = {
     return { success: true }
   },
   verifyAIConnection: async () => ({ success: true, data: true }),
-  checkFilesConsistency: async (files: any[]): Promise<IPCResponse> => {
+  checkFilesConsistency: async (files: FileNode[]): Promise<IPCResponse> => {
     console.log('Mock checkFilesConsistency', files)
     return { success: true }
   },
@@ -53,7 +59,7 @@ const mockIPC: ElectronAPI = {
     _filePath: string,
     _tableName: string,
     _sheetName?: string,
-    _columns?: any[]
+    _columns?: ColumnSchema[]
   ): Promise<IPCResponse<any>> => {
     return {
       success: true,
@@ -91,15 +97,15 @@ const mockIPC: ElectronAPI = {
   validateLicense: async (_key: string): Promise<IPCResponse<boolean>> => {
     return { success: true, data: true }
   },
-  exportPDF: async (_data: any): Promise<IPCResponse> => {
+  exportPDF: async (_data: unknown): Promise<IPCResponse> => {
     return { success: true }
   },
-  exportReport: async (_payload: any): Promise<IPCResponse> => {
+  exportReport: async (_payload: unknown): Promise<IPCResponse> => {
     return { success: true }
   },
   exportWebReport: async (
-    _widgets: any[],
-    _config: any
+    _widgets: unknown[],
+    _config: unknown
   ): Promise<IPCResponse> => {
     return { success: true }
   },
@@ -197,7 +203,13 @@ export function useDeleteTable() {
 
 export function useGenerateSQL() {
   return useMutation({
-    mutationFn: async ({ prompt, schema }: { prompt: string; schema: any }) => {
+    mutationFn: async ({
+      prompt,
+      schema,
+    }: {
+      prompt: string
+      schema: TableSchema[]
+    }) => {
       const response = await getIpc().generateSQL(prompt, schema)
       if (!response.success) {
         throw new Error(response.error || 'Failed to generate SQL')
@@ -222,7 +234,7 @@ export function useAIConfig() {
 
 export function useSetAIConfig() {
   return useMutation({
-    mutationFn: async (config: any) => {
+    mutationFn: async (config: AIConfig) => {
       const response = await getIpc().setAIConfig(config)
       if (!response.success) {
         throw new Error(response.error || 'Failed to set AI config')
@@ -279,8 +291,8 @@ export function useExportWebReport() {
       widgets,
       config,
     }: {
-      widgets: any[]
-      config: any
+      widgets: unknown[]
+      config: unknown
     }) => {
       const response = await getIpc().exportWebReport(widgets, config)
       if (!response.success) {
@@ -304,7 +316,7 @@ export function useReIngestFile() {
       filePath: string
       tableName: string
       sheetName?: string
-      columns?: any[]
+      columns?: ColumnSchema[]
     }) => {
       const response = await getIpc().reIngestFile(
         fileId,
@@ -327,7 +339,7 @@ export function useContextAnalysis() {
       schemas,
       language,
     }: {
-      schemas: any[]
+      schemas: TableSchema[]
       language?: 'en' | 'zh'
     }) => {
       const response = await getIpc().analyzeContext(schemas, language)
@@ -341,7 +353,7 @@ export function useContextAnalysis() {
 
 export function useCheckFilesConsistency() {
   return useMutation({
-    mutationFn: async (files: any[]) => {
+    mutationFn: async (files: FileNode[]) => {
       const response = await getIpc().checkFilesConsistency(files)
       if (!response.success) {
         throw new Error(response.error || 'Failed to check consistency')
