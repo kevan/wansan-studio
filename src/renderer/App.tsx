@@ -13,14 +13,14 @@ import {
 import {
   CloudCheck,
   CloudOff,
+  Columns,
   Info,
+  LayoutDashboard,
   Loader2,
+  MessageSquare,
   MonitorPlay,
   PanelLeft,
-  PanelRightClose,
-  PanelRightOpen,
   RotateCcw,
-  Square,
 } from 'lucide-react'
 import { DashboardCanvasV3 } from './components/dashboard-v3'
 import { cn } from '@/utils/cn'
@@ -69,10 +69,13 @@ function App() {
     checkStatus()
   }, [checkStatus])
 
+  const [isChatCollapsed, setIsChatCollapsed] = useState(false)
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
 
   const mainPanelLayout = useUIStore(s => s.mainPanelLayout)
+  const lastSplitLayout = useUIStore(s => s.lastSplitLayout)
   const setMainPanelLayout = useUIStore(s => s.setMainPanelLayout)
+  const setLastSplitLayout = useUIStore(s => s.setLastSplitLayout)
 
   const [isRightCollapsed, setIsRightCollapsed] = useState(true)
   const [isPresentationMode, setIsPresentationMode] = useState(false)
@@ -134,6 +137,47 @@ function App() {
     }
   }, [])
 
+  // Layout Mode Logic
+  type LayoutMode = 'chat' | 'split' | 'board'
+
+  const currentLayoutMode: LayoutMode = (() => {
+    if (isChatCollapsed && !isRightCollapsed) return 'board'
+    if (!isChatCollapsed && isRightCollapsed) return 'chat'
+    return 'split'
+  })()
+
+  const handleLayoutModeChange = (mode: LayoutMode) => {
+    if (mode === 'chat') {
+      middlePanelRef.current?.expand?.()
+      // Force resize to ensure it takes up space (Left ~20, Middle ~80)
+      middlePanelRef.current?.resize?.(80)
+      setIsChatCollapsed(false)
+      rightPanelRef.current?.collapse?.()
+      setIsRightCollapsed(true)
+    } else if (mode === 'split') {
+      middlePanelRef.current?.expand?.()
+      setIsChatCollapsed(false)
+
+      // Restore user preference for split layout
+      const targetMiddle = lastSplitLayout[1] || 35
+      const targetRight = lastSplitLayout[2] || 45
+
+      // Apply resize (middle first, then right to balance)
+      middlePanelRef.current?.resize?.(targetMiddle)
+
+      rightPanelRef.current?.expand?.()
+      rightPanelRef.current?.resize?.(targetRight)
+      setIsRightCollapsed(false)
+    } else if (mode === 'board') {
+      middlePanelRef.current?.collapse?.()
+      setIsChatCollapsed(true)
+      rightPanelRef.current?.expand?.()
+      // Give full width to dashboard
+      rightPanelRef.current?.resize?.(100)
+      setIsRightCollapsed(false)
+    }
+  }
+
   const toggleLeft = () => {
     if (!leftPanelRef.current) return
     if (isLeftCollapsed) {
@@ -143,34 +187,16 @@ function App() {
     } else {
       leftPanelRef.current.collapse?.()
       setIsLeftCollapsed(true)
-    }
-  }
 
-  const toggleRight = () => {
-    if (!rightPanelRef.current) return
-    if (isRightCollapsed) {
-      rightPanelRef.current.expand?.()
-      const newSize = mainPanelLayout[2] > 0 ? mainPanelLayout[2] : 45
-      rightPanelRef.current.resize?.(newSize)
-      setIsRightCollapsed(false)
-    } else {
-      rightPanelRef.current.collapse?.()
-      setIsRightCollapsed(true)
-    }
-  }
-
-  const toggleFocusMode = () => {
-    if (isLeftCollapsed && isRightCollapsed) {
-      // Restore default: expand left
-      leftPanelRef.current?.expand?.()
-      leftPanelRef.current?.resize?.(20)
-      setIsLeftCollapsed(false)
-    } else {
-      // Collapse everything for Focus Mode
-      leftPanelRef.current?.collapse?.()
-      rightPanelRef.current?.collapse?.()
-      setIsLeftCollapsed(true)
-      setIsRightCollapsed(true)
+      // [FIX] When closing sidebar in Board mode, ensure the released space goes to Dashboard (Right),
+      // not Chat (Middle), to prevent accidental switch to Split mode.
+      if (currentLayoutMode === 'board') {
+        // Force Right to take all space
+        requestAnimationFrame(() => {
+          rightPanelRef.current?.resize?.(100)
+          middlePanelRef.current?.collapse?.()
+        })
+      }
     }
   }
 
@@ -397,11 +423,9 @@ function App() {
                     <button
                       className={cn(
                         'h-7 w-8 rounded-md flex items-center justify-center transition-all active:scale-95 group',
-                        !isLeftCollapsed && !isRightCollapsed
-                          ? 'text-zinc-900 bg-white shadow-sm border border-zinc-200/50 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600'
-                          : isLeftCollapsed
-                            ? 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50'
-                            : 'text-zinc-900 bg-white/50 dark:bg-zinc-800/50'
+                        isLeftCollapsed
+                          ? 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50'
+                          : 'text-zinc-900 bg-white shadow-sm border border-zinc-200/50 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600'
                       )}
                       onClick={toggleLeft}
                       title={t('toggle_data_tree')}
@@ -409,43 +433,49 @@ function App() {
                       <PanelLeft className="h-3.5 w-3.5" />
                     </button>
 
-                    {/* Focus Mode (Center Only) */}
-                    <button
-                      className={cn(
-                        'h-7 w-8 rounded-md flex items-center justify-center transition-all active:scale-95 border ml-0.5',
-                        isLeftCollapsed && isRightCollapsed
-                          ? 'bg-white text-zinc-900 border-zinc-200 shadow-sm dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600'
-                          : 'border-transparent text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50'
-                      )}
-                      onClick={toggleFocusMode}
-                      title={t('focus_mode', 'Focus Mode')}
-                    >
-                      <Square className="h-3 w-3" />
-                    </button>
+                    <div className="h-3 w-px bg-zinc-300 dark:bg-zinc-700 mx-1.5 opacity-50" />
 
-                    {/* Toggle Right Dashboard */}
-                    <button
-                      className={cn(
-                        'h-7 w-8 rounded-md flex items-center justify-center transition-all active:scale-95 border ml-0.5',
-                        isRightCollapsed
-                          ? 'border-transparent text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50'
-                          : 'bg-white text-zinc-900 border-zinc-200 shadow-sm dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600'
-                      )}
-                      onClick={toggleRight}
-                      title={
-                        isRightCollapsed
-                          ? t('show_dashboard')
-                          : t('hide_dashboard')
-                      }
-                    >
-                      {isRightCollapsed ? (
-                        <PanelRightOpen className="h-3.5 w-3.5" />
-                      ) : (
-                        <PanelRightClose className="h-3.5 w-3.5" />
-                      )}
-                    </button>
+                    {/* Layout Switcher: Chat | Split | Board */}
+                    <div className="flex items-center bg-zinc-200/50 rounded-md p-0.5 gap-0.5">
+                      <button
+                        onClick={() => handleLayoutModeChange('chat')}
+                        className={cn(
+                          'h-6 px-2 rounded-sm flex items-center justify-center transition-all text-[10px] font-medium gap-1.5',
+                          currentLayoutMode === 'chat'
+                            ? 'bg-white text-zinc-900 shadow-sm'
+                            : 'text-zinc-500 hover:text-zinc-700 hover:bg-zinc-200/50'
+                        )}
+                        title={t('focus_chat', 'Chat Only')}
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => handleLayoutModeChange('split')}
+                        className={cn(
+                          'h-6 px-2 rounded-sm flex items-center justify-center transition-all text-[10px] font-medium gap-1.5',
+                          currentLayoutMode === 'split'
+                            ? 'bg-white text-zinc-900 shadow-sm'
+                            : 'text-zinc-500 hover:text-zinc-700 hover:bg-zinc-200/50'
+                        )}
+                        title={t('layout_split', 'Split View')}
+                      >
+                        <Columns className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => handleLayoutModeChange('board')}
+                        className={cn(
+                          'h-6 px-2 rounded-sm flex items-center justify-center transition-all text-[10px] font-medium gap-1.5',
+                          currentLayoutMode === 'board'
+                            ? 'bg-white text-zinc-900 shadow-sm'
+                            : 'text-zinc-500 hover:text-zinc-700 hover:bg-zinc-200/50'
+                        )}
+                        title={t('dashboard_only', 'Dashboard')}
+                      >
+                        <LayoutDashboard className="h-3 w-3" />
+                      </button>
+                    </div>
 
-                    <div className="h-3 w-px bg-zinc-300 dark:bg-zinc-700 mx-1" />
+                    <div className="h-3 w-px bg-zinc-300 dark:bg-zinc-700 mx-1.5 opacity-50" />
                   </>
                 )}
 
@@ -476,7 +506,14 @@ function App() {
           <PanelGroup
             direction="horizontal"
             className="flex-1"
-            onLayout={setMainPanelLayout}
+            onLayout={layout => {
+              setMainPanelLayout(layout)
+              // Only save as "split preference" if both chat and dashboard are visible and have significant width
+              // layout: [sidebar, chat, dashboard]
+              if (layout[1] > 10 && layout[2] > 10) {
+                setLastSplitLayout(layout)
+              }
+            }}
           >
             {/* 左侧 Sidebar */}
             <Panel
@@ -503,9 +540,11 @@ function App() {
             <Panel
               ref={middlePanelRef}
               defaultSize={mainPanelLayout[1]}
-              minSize={0}
+              minSize={25}
               collapsible
               collapsedSize={0}
+              onCollapse={() => setIsChatCollapsed(true)}
+              onExpand={() => setIsChatCollapsed(false)}
               className={`bg-white dark:bg-zinc-950 transition-all duration-500 ${isPresentationMode ? 'min-w-0 border-none' : ''}`}
             >
               <main className="wansan-canvas h-full flex flex-col relative bg-white dark:bg-zinc-950 transition-colors">
@@ -518,7 +557,7 @@ function App() {
             {/* 右侧 Report Canvas */}
             <Panel
               defaultSize={mainPanelLayout[2]}
-              minSize={0}
+              minSize={25}
               ref={rightPanelRef}
               collapsible
               collapsedSize={0}

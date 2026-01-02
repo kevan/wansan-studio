@@ -507,19 +507,19 @@ export function MagicInput({
       {gateNode}
       <div ref={containerRef} className="relative w-full max-w-2xl">
         {replyToId && replyMessage && (
-          <div className="absolute -top-12 left-4 right-4 bg-zinc-50 border border-b-0 rounded-t-2xl px-3 py-2 text-xs flex items-center justify-between z-[55] shadow-sm">
+          <div className="absolute -top-10 left-4 right-4 bg-zinc-50 border border-b-0 rounded-t-xl px-3 py-1.5 text-xs flex items-center justify-between z-[55] shadow-sm">
             <div className="flex items-center gap-2 text-zinc-600 min-w-0">
               <CornerDownRight className="h-3 w-3" />
-              <span className="font-medium text-zinc-700">
-                Refining Analysis:
+              <span className="text-[10px] font-bold uppercase tracking-tight text-zinc-500">
+                Refining:
               </span>
-              <span className="truncate max-w-[240px] italic">
+              <span className="truncate max-w-[240px] italic text-zinc-600">
                 {replyPreview}
               </span>
             </div>
             <button
               onClick={() => setReplyTo(null)}
-              className="hover:bg-zinc-200 p-1 rounded transition-colors"
+              className="hover:bg-zinc-200 p-1 rounded transition-colors text-zinc-400 hover:text-zinc-600"
               aria-label="Cancel reply"
             >
               <X className="h-3 w-3" />
@@ -609,9 +609,8 @@ export function MagicInput({
 
         <div
           className={cn(
-            'w-full rounded-2xl border border-zinc-200 bg-white/80 backdrop-blur-xl flex items-end gap-3 px-4 py-3 transition-all duration-300 shadow-sm',
-            'focus-within:shadow-xl focus-within:border-indigo-200 focus-within:ring-1 focus-within:ring-indigo-100',
-            className
+            'w-full rounded-2xl border border-zinc-200 bg-white/80 backdrop-blur-xl flex items-center gap-3 px-4 py-3 shadow-sm transition-shadow duration-300',
+            'focus-within:shadow-xl focus-within:border-indigo-200 focus-within:ring-1 focus-within:ring-indigo-100'
           )}
         >
           <div className="flex-1 min-w-0 relative">
@@ -620,7 +619,7 @@ export function MagicInput({
               minRows={1}
               maxRows={6}
               placeholder={placeholder}
-              className="w-full resize-none bg-transparent border-none shadow-none outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 pr-12 text-base text-zinc-900 placeholder:text-zinc-400 leading-relaxed"
+              className="w-full resize-none bg-transparent border-none shadow-none outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 pr-12 text-base text-zinc-900 placeholder:text-zinc-400 placeholder:whitespace-nowrap leading-relaxed"
               value={value}
               onChange={e => {
                 setValue(e.target.value)
@@ -630,31 +629,31 @@ export function MagicInput({
               onKeyDown={handleKeyDown}
               disabled={loading || isRestoring}
             />
-            <div className="absolute bottom-0 right-0 text-[10px] text-zinc-400 font-medium opacity-0 focus-within:opacity-50 transition-opacity select-none pointer-events-none mb-1">
+            <div className="absolute top-0 right-0 text-[10px] text-zinc-400 font-medium opacity-0 focus-within:opacity-50 transition-opacity select-none pointer-events-none mt-1">
               ⏎ Enter
             </div>
-            <div className="flex items-center justify-between text-[11px] text-zinc-400 mt-1">
-              <span>
+            <div className="flex items-center justify-between text-[10px] text-zinc-400 mt-1.5 overflow-hidden border-t border-zinc-100/50 pt-1.5">
+              <span className="truncate mr-4 opacity-70 italic">
                 {isRestoring ? t('restoring_session') : t('input_hint')}
               </span>
-              <span className="font-mono text-[10px] bg-zinc-100 px-1.5 py-0.5 rounded">
+              <span className="font-bold uppercase tracking-wider text-[9px] bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded flex-shrink-0">
                 {t('table_count', { count: readyTables.length })}
               </span>
             </div>
           </div>
 
-          <div className="pb-1">
+          <div className="flex-shrink-0">
             {loading ? (
               <button
                 onClick={handleStop}
-                className="h-10 w-10 rounded-full flex items-center justify-center transition-all duration-200 bg-red-50 hover:bg-red-100 active:scale-95"
+                className="h-9 w-9 rounded-full flex items-center justify-center transition-all duration-200 bg-red-50 hover:bg-red-100 active:scale-95 shadow-sm"
                 aria-label="Stop generation"
                 title={t('stop_generation')}
               >
-                <Square className="w-4 h-4 fill-current text-red-500" />
+                <Square className="w-3.5 h-3.5 fill-current text-red-500" />
               </button>
             ) : isRestoring ? (
-              <div className="h-10 w-10 flex items-center justify-center">
+              <div className="h-9 w-9 flex items-center justify-center">
                 <Loader2 className="w-4 h-4 text-zinc-400 animate-spin" />
               </div>
             ) : (
@@ -662,10 +661,10 @@ export function MagicInput({
                 onClick={handleSubmit}
                 disabled={!hasContent}
                 className={cn(
-                  'h-10 w-10 rounded-full flex items-center justify-center transition-all duration-200',
+                  'h-9 w-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm',
                   hasContent
-                    ? 'bg-black text-white hover:bg-zinc-800 shadow-md active:scale-95'
-                    : 'bg-zinc-100 text-zinc-300 cursor-not-allowed'
+                    ? 'bg-zinc-900 text-white hover:bg-zinc-800 active:scale-95'
+                    : 'bg-zinc-50 text-zinc-300 cursor-not-allowed border border-zinc-100'
                 )}
                 aria-label="Send message"
               >
