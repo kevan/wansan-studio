@@ -31,7 +31,7 @@ export const AnalysisResultSchema = z.object({
         .union([z.string(), z.array(z.string())])
         .nullable()
         .optional(),
-      series_name: z.string().optional(),
+      series_name: z.union([z.string(), z.array(z.string())]).optional(),
     })
     .optional(),
   reasoning: z.string().optional(),
