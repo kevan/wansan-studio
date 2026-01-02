@@ -165,7 +165,7 @@ export function ChatInterface({
                 </div>
 
                 {message.type === 'user' ? (
-                  <div className="text-zinc-800 font-medium text-[15px] leading-7 bg-white border border-zinc-100 px-5 py-3 rounded-2xl rounded-tl-sm shadow-sm inline-block max-w-full break-words">
+                  <div className="text-zinc-800 font-medium text-[15px] leading-7 bg-white border border-zinc-100 px-5 py-3 rounded-[1.5rem] rounded-tl-sm shadow-sm inline-block max-w-full break-words">
                     {message.content}
                   </div>
                 ) : (
@@ -179,7 +179,7 @@ export function ChatInterface({
                       </div>
                     )}
                     {message.status && message.status !== 'error' && (
-                      <div className="mb-4 rounded-xl border border-indigo-100/60 bg-indigo-50/30 px-4 py-3 text-sm text-indigo-900/80 animate-pulse-slow">
+                      <div className="mb-4 rounded-[1.5rem] border border-indigo-100/60 bg-indigo-50/30 px-5 py-4 text-sm text-indigo-900/80 animate-pulse-slow">
                         <div className="flex items-center gap-2.5 font-bold text-xs uppercase tracking-wide opacity-80">
                           {message.status === 'planning' ||
                           message.status === 'thinking' ? (
@@ -196,7 +196,7 @@ export function ChatInterface({
                         </div>
                         {message.planSql && (
                           <div className="mt-3 relative group/code">
-                            <pre className="max-h-48 overflow-y-auto rounded-lg bg-white p-3 text-[11px] text-zinc-600 border border-indigo-100/50 font-mono leading-relaxed scrollbar-thin">
+                            <pre className="max-h-48 overflow-y-auto rounded-xl bg-white/80 p-3 text-[11px] text-zinc-600 border border-indigo-100/50 font-mono leading-relaxed scrollbar-thin">
                               <code className="whitespace-pre-wrap block">
                                 {(() => {
                                   try {
@@ -214,14 +214,10 @@ export function ChatInterface({
                       </div>
                     )}
 
-                    {/* Display message content (Analysis Summary) */}
-                    {(message.content || message.reportData?.summary) && (
+                    {/* Display message content (Analysis Summary) only if NOT in reportData */}
+                    {message.content && !message.reportData && (
                       <div className="mb-4 text-zinc-600 text-[14px] leading-7 tracking-wide">
-                        <VizSummary
-                          content={
-                            message.content || message.reportData?.summary
-                          }
-                        />
+                        <VizSummary content={message.content} />
                       </div>
                     )}
 

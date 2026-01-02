@@ -29,7 +29,7 @@ import { format } from 'sql-formatter'
 import { useProGate } from '@/hooks/use-pro-gate'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { Button } from '@/components/ui/button'
-import { ReportTable } from './report-table'
+import { DataTable as ReportTable } from '../viz/base/DataTable'
 
 export interface QueryPanelRef {
   runQuery: (bypassGate?: boolean) => Promise<boolean>

@@ -1,6 +1,6 @@
 import React, { forwardRef, useRef, useState } from 'react'
 import { VizRenderer } from '../core/VizRenderer'
-import { TitleWidget } from '../../report/widgets/TitleWidget'
+import { TitleWidget } from '../base/TitleWidget'
 import {
   X,
   GripHorizontal,
@@ -171,7 +171,7 @@ export const DashboardReportCard = forwardRef<
                       className="w-full text-left px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2"
                     >
                       <FileImage className="w-4 h-4" />
-                      Export PNG
+                      {t('export_png')}
                     </button>
                   </div>
                 </>

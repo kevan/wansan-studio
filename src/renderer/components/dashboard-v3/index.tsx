@@ -8,18 +8,16 @@ import {
   SCREEN_WIDTH_PX,
 } from './page-layer'
 import { GridLayer } from './grid-layer'
+import { ChartFullView } from '@/components/viz/containers/ChartFullView'
 import { LayoutScenario, useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { useUIStore } from '@/stores/useUIStore'
-import { ChartFullView } from '@/components/report/chart-full-view'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 
-interface DashboardCanvasV3Props {
-  isPresentationMode?: boolean
-}
-
 export function DashboardCanvasV3({
-  isPresentationMode = false,
-}: DashboardCanvasV3Props) {
+  isPresentationMode,
+}: {
+  isPresentationMode: boolean
+}) {
   // const { t } = useTranslation('common')
   const canvasConfig = useWorkbenchStore(state => state.canvasConfig)
   const setCanvasConfig = useWorkbenchStore(state => state.setCanvasConfig)

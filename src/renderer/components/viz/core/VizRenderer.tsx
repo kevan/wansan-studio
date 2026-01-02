@@ -73,6 +73,7 @@ const VizRendererBase = ({
           onTitleChange={onTitleChange}
           isEditable={true}
           showTimestamp={false}
+          size="sm"
           actions={
             summary ? (
               <div className="relative">
@@ -164,24 +165,24 @@ const VizRendererBase = ({
   }
 
   return (
-    <div className={cn('flex flex-col h-full p-4 bg-white', className)}>
+    <div className={cn('flex flex-col h-full p-5 bg-white', className)}>
       <VizHeader
         title={title}
         subtitle={subtitle}
-        className="mb-4 pb-2"
+        className="mb-5"
         timestamp={timestamp}
         showTimestamp={false}
       />
 
       <div className="flex-1 min-h-0 overflow-y-auto space-y-6 pr-2">
         {summary && (
-          <div className="text-sm text-zinc-600 leading-relaxed mb-4 px-4">
+          <div className="text-sm text-zinc-600 leading-relaxed mb-4">
             <VizSummary content={summary} insights={insights} />
           </div>
         )}
 
         {displayMode === 'chart' && (
-          <div className="h-[250px] w-full px-4 pb-4 pt-2">
+          <div className="h-[250px] w-full pb-4 pt-2">
             <VizChart
               type={chartType}
               title={chartTitle}

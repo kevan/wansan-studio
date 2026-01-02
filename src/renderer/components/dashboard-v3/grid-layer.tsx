@@ -6,7 +6,7 @@ import {
   WidthProvider,
 } from 'react-grid-layout'
 
-import { ReportCard } from '@/components/canvas/ReportCard'
+import { DashboardReportCard as ReportCard } from '@/components/viz/containers/DashboardReportCard'
 import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import {
   GRID_MARGIN_Y,

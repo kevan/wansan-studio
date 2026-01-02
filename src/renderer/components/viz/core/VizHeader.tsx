@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Edit2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { cn } from '@/utils/cn'
 
 interface VizHeaderProps {
   title: string
@@ -12,6 +13,8 @@ interface VizHeaderProps {
   isEditable?: boolean
   showTimestamp?: boolean
   actions?: React.ReactNode
+  size?: 'sm' | 'base'
+  showBorder?: boolean
 }
 
 export function VizHeader({
@@ -24,6 +27,8 @@ export function VizHeader({
   isEditable = false,
   showTimestamp = true,
   actions,
+  size = 'base',
+  showBorder = false,
 }: VizHeaderProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(title)
@@ -40,8 +45,15 @@ export function VizHeader({
     setIsEditing(false)
   }
 
+  const titleSizeClass = size === 'sm' ? 'text-sm' : 'text-base'
+
   return (
-    <header className={`border-b border-gray-200 pb-4 mb-4 ${className}`}>
+    <header
+      className={cn(
+        showBorder && 'border-b border-zinc-200 pb-4 mb-4',
+        className
+      )}
+    >
       <div className="flex items-start justify-between">
         <div className="flex-1">
           {isEditing ? (
@@ -52,30 +64,34 @@ export function VizHeader({
               onBlur={handleTitleSubmit}
               onKeyDown={e => e.key === 'Enter' && handleTitleSubmit()}
               autoFocus
-              className="text-2xl font-bold text-gray-900 mb-1 w-full border-b border-orange-500 focus:outline-none bg-transparent"
+              className={`${titleSizeClass} font-bold text-zinc-900 mb-1 w-full border-b border-indigo-500 focus:outline-none bg-transparent`}
             />
           ) : (
             <h1
-              className={`text-2xl font-bold text-gray-900 mb-1 group flex items-center gap-2 ${isEditable ? 'cursor-pointer hover:text-orange-600' : ''}`}
+              className={`${titleSizeClass} font-bold text-zinc-900 mb-0.5 group flex items-center gap-2 ${isEditable ? 'cursor-pointer hover:text-indigo-600' : ''}`}
               onClick={() => isEditable && setIsEditing(true)}
               title={isEditable ? t('edit_title_tooltip') : undefined}
             >
               {title}
               {isEditable && (
-                <Edit2 className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Edit2 className="w-3.5 h-3.5 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity" />
               )}
             </h1>
           )}
-          {subtitle && <p className="text-sm text-gray-600">{subtitle}</p>}
+          {subtitle && (
+            <p className={`${size === 'sm' ? 'text-[10px]' : 'text-xs'} text-zinc-500`}>
+              {subtitle}
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-4">
           {actions}
           {logo && (
-            <img src={logo} alt="Logo" className="h-12 w-auto object-contain" />
+            <img src={logo} alt="Logo" className="h-10 w-auto object-contain" />
           )}
           {showTimestamp && (
-            <div className="text-right text-sm text-gray-500">
+            <div className="text-right text-xs text-zinc-400">
               <div>{t('generated_time')}</div>
               <div className="font-mono">
                 {new Date(timestamp).toLocaleString()}
