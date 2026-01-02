@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { useProjectStore } from '@/stores/useProjectStore'
 import { projectService } from '@/services/project-service'
 import { useProjectIO } from '@/hooks/useProjectIO'
 import { useToastStore } from '@/stores/useToastStore'
@@ -8,17 +7,14 @@ import { Input } from '@/components/ui/input'
 import { useTranslation } from 'react-i18next'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import {
-  Plus,
-  FolderOpen,
   ArrowLeft,
-  Database,
-  Monitor,
   ChevronRight,
-  Sparkles,
+  FolderOpen,
   History,
+  Monitor,
+  Plus,
   Trash2,
 } from 'lucide-react'
-import { cn } from '@/utils/cn'
 import logo from '@/src/assets/logo.png'
 
 type LauncherMode = 'menu' | 'create'

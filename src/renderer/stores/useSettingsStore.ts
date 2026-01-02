@@ -196,10 +196,10 @@ export const useSettingsStore = create<SettingsState>()(
 
           // Clean the payload to store only RemoteConfig part in state.remoteConfig
           const {
-            isSpecialChannel,
+            isSpecialChannel: _isSpecialChannel,
             isExpired: _e,
-            isOffline,
-            betaCodes,
+            isOffline: _isOffline,
+            betaCodes: _betaCodes,
             ...rawRemote
           } = cfg
 
@@ -316,13 +316,22 @@ export const useSettingsStore = create<SettingsState>()(
       storage: createBigIntStorage(),
       version: 3,
       partialize: state => {
-        const { apiKey, isSpecialChannel, isExpired, remoteConfig, ...rest } =
-          state
+        const {
+          apiKey: _apiKey,
+          isSpecialChannel: _isSpecialChannel,
+          isExpired: _isExpired,
+          remoteConfig,
+          ...rest
+        } = state
 
         // Deep clean remoteConfig to remove sensitive security fields from localStorage
         // but keep providers and announcements for offline UX
-        const { special_expiry, channel, beta_code, ...safeRemoteConfig } =
-          remoteConfig || {}
+        const {
+          special_expiry: _special_expiry,
+          channel: _channel,
+          beta_code: _beta_code,
+          ...safeRemoteConfig
+        } = remoteConfig || {}
 
         return {
           ...rest,

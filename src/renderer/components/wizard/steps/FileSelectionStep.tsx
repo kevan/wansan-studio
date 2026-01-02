@@ -1,21 +1,19 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useWizardStore } from '@/stores/useWizardStore'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { Button } from '../../ui/button'
 import {
+  AlertCircle,
+  Check,
   FileSpreadsheet,
+  FileText,
   Loader2,
   Upload,
-  FileText,
-  Check,
-  AlertCircle,
-  Database,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
-import { IngestionTask, ColumnConfig } from '@shared/types/wizard'
+import { ColumnConfig, IngestionTask } from '@shared/types/wizard'
 import { ColumnSchema } from '@shared/types'
-import { sanitizeTableName } from '@shared/naming-utils'
 
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { useProGate } from '@/hooks/use-pro-gate'
@@ -23,7 +21,7 @@ import { useProGate } from '@/hooks/use-pro-gate'
 const TRIAL_FILE_LIMIT = 3
 
 export function FileSelectionStep() {
-  const { selectedFiles, setFiles, tasks, setTasks, mode, targetTableId } =
+  const { selectedFiles, setFiles, setTasks, mode, targetTableId } =
     useWizardStore()
   const { files: projectFiles } = useProjectStore()
   const { isActivated } = useSettingsStore()

@@ -1,22 +1,21 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import debounce from 'lodash.debounce'
 import {
-  Responsive,
-  WidthProvider,
   type Layout,
   type Layouts,
+  Responsive,
+  WidthProvider,
 } from 'react-grid-layout'
 
 import { ReportCard } from '@/components/canvas/ReportCard'
 import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import {
+  GRID_MARGIN_Y,
   GRID_ROW_HEIGHT,
   PAGE_GAP_PX,
   PAGE_HEIGHT_PX,
   PAGE_WIDTH_PX,
-  SCREEN_WIDTH_PX,
   ROWS_PER_PAGE,
-  GRID_MARGIN_Y,
+  SCREEN_WIDTH_PX,
 } from './page-layer'
 
 import 'react-grid-layout/css/styles.css'
@@ -47,7 +46,12 @@ interface PageGridProps {
 }
 
 // --- A4 Page Grid (Physics-based) ---
-function PageGrid({ pageIndex, width, scale, isA4 }: PageGridProps) {
+function PageGrid({
+  pageIndex,
+  width,
+  scale,
+  isA4: _isA4,
+}: PageGridProps) {
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const updateLayout = useWorkbenchStore(state => state.updateLayout)
   const removeReport = useWorkbenchStore(state => state.removeReport)
@@ -240,7 +244,12 @@ function ScreenGrid({ width, scale }: { width: number; scale: number }) {
   )
 }
 
-export function GridLayer({ width, height, isA4, scale }: GridLayerProps) {
+export function GridLayer({
+  width,
+  height: _height,
+  isA4,
+  scale,
+}: GridLayerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [gridWidth, setGridWidth] = useState(width)
   const pageCount = useWorkbenchStore(state => state.pageCount)

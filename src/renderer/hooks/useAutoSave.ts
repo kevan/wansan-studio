@@ -83,7 +83,7 @@ export function useAutoSave() {
 
   // Save on beforeunload
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    const handleBeforeUnload = (_e: BeforeUnloadEvent) => {
       if (isDirty.current) {
         // We can't await here reliably in all browsers,
         // but Electron utility processes / main process handling often keeps it alive.

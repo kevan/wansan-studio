@@ -1,31 +1,30 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
 import {
   ArrowUp,
+  Bug,
   CornerDownRight,
   Database,
   Download,
   Eraser,
   FileSpreadsheet,
-  Hash,
-  X,
-  Square,
-  Sparkles,
   Loader2,
-  Bug,
   Lock,
   RefreshCw,
+  Sparkles,
+  Square,
+  X,
 } from 'lucide-react'
-import { cn } from '../../utils/cn'
-import { useProjectStore } from '../../stores/useProjectStore'
-import { useChatStore } from '../../stores/useChatStore'
-import { useToastStore } from '../../stores/useToastStore'
-import { useSettingsStore } from '../../stores/useSettingsStore'
+import { cn } from '@/utils/cn.ts'
+import { useProjectStore } from '@/stores/useProjectStore.ts'
+import { useChatStore } from '@/stores/useChatStore.ts'
+import { useToastStore } from '@/stores/useToastStore.ts'
+import { useSettingsStore } from '@/stores/useSettingsStore.ts'
 
 import type { ChatMessage } from '../ChatInterface'
 import { useTranslation } from 'react-i18next'
-import { exportDebugLog } from '../../utils/debug-exporter'
-import { generateMarkdown } from '../../utils/markdown-exporter'
+import { exportDebugLog } from '@/utils/debug-exporter.ts'
+import { generateMarkdown } from '@/utils/markdown-exporter.ts'
 import { useProGate } from '@/hooks/use-pro-gate'
 
 interface MagicInputProps {
@@ -150,7 +149,6 @@ export function MagicInput({
         const content = generateMarkdown(messages)
         const fileName = `Chat_Export_${new Date().toISOString().slice(0, 10)}.md`
 
-        // @ts-ignore
         const result = await window.electronAPI.saveFile(
           content,
           'md',
@@ -160,7 +158,7 @@ export function MagicInput({
         if (result.success) {
           addToast({
             title: t('export_success_title'),
-            // @ts-ignore
+            // @ts-expect-error filePath exists on success result
             description: `Saved to ${result.filePath}`,
             type: 'success',
           })
@@ -393,7 +391,7 @@ export function MagicInput({
 
   const detectMention = (text: string, caret: number): MentionState => {
     const before = text.slice(0, caret)
-    const match = before.match(/(?:^|\s)@([\w\-]*)$/)
+    const match = before.match(/(?:^|\s)@([\w-]*)$/)
     if (!match) return { active: false }
     const query = match[1] || ''
     const start =

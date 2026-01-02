@@ -17,9 +17,8 @@ import type {
   ColumnSchema,
   FileNode,
   RelationSuggestion,
-  ContextAnalysisResult,
   DomainRule,
-} from '../../shared/types'
+} from '@shared/types.ts'
 
 export function setupIPC(
   databaseService: NativeDatabaseService,
@@ -666,7 +665,7 @@ export function setupIPC(
       const { type, title, layoutOptions } = payload || {}
       const safeTitle = title?.trim() || 'report'
       const isA4 = layoutOptions?.isA4 ?? true
-      const landscape = layoutOptions?.landscape ?? !isA4
+      const _landscape = layoutOptions?.landscape ?? !isA4
 
       try {
         if (type === 'pdf') {

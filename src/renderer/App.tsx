@@ -11,6 +11,9 @@ import {
   PanelResizeHandle,
 } from 'react-resizable-panels'
 import {
+  CloudCheck,
+  CloudOff,
+  Info,
   Loader2,
   MonitorPlay,
   PanelLeft,
@@ -29,7 +32,6 @@ import { useUIStore } from './stores/useUIStore'
 import { useProjectStore } from './stores/useProjectStore'
 import { useChatStore } from './stores/useChatStore'
 import logo from './src/assets/logo.png'
-import type { AIConfig } from '@shared/types'
 import { useBootSequence } from './hooks/use-boot-sequence'
 import { useRemoteConfig } from './hooks/use-remote-config'
 import { UpdateModal } from './components/update-modal'
@@ -45,8 +47,7 @@ import { DataPreviewPanel } from './components/report/data-preview-panel'
 import { useAutoCleanup } from './hooks/use-auto-cleanup'
 import { MigrationWizard } from './components/migration/MigrationWizard'
 import { useMigrationStore } from './stores/useMigrationStore'
-import { useAutoSave, AutoSaveStatus } from './hooks/useAutoSave'
-import { CloudCheck, CloudOff, Info } from 'lucide-react'
+import { AutoSaveStatus, useAutoSave } from './hooks/useAutoSave'
 import { ProjectLauncher } from './components/launcher/ProjectLauncher'
 import { DataIngestionWizard } from './components/wizard/DataIngestionWizard'
 
@@ -68,7 +69,6 @@ function App() {
     checkStatus()
   }, [checkStatus])
 
-  const [isChatCollapsed, setIsChatCollapsed] = useState(false)
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
 
   const mainPanelLayout = useUIStore(s => s.mainPanelLayout)
@@ -80,8 +80,6 @@ function App() {
   // const hasCompletedOnboarding = useSettingsStore(
   //   state => state.hasCompletedOnboarding,
   // )
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const chatPanelRef = useRef<ImperativePanelHandle>(null)
   const leftPanelRef = useRef<ImperativePanelHandle>(null)
   const middlePanelRef = useRef<ImperativePanelHandle>(null)
   const rightPanelRef = useRef<ImperativePanelHandle>(null)
@@ -89,7 +87,6 @@ function App() {
   const platform = usePlatform()
   const [isStoreReady, setIsStoreReady] = useState(false)
 
-  const activeFileId = useProjectStore(state => state.activeFileId)
   const activeView = useProjectStore(state => state.activeView)
   const isRestoring = useProjectStore(state => state.isRestoring)
   const isRefreshing = useProjectStore(state => state.isRefreshing)
@@ -509,8 +506,6 @@ function App() {
               minSize={0}
               collapsible
               collapsedSize={0}
-              onCollapse={() => setIsChatCollapsed(true)}
-              onResize={size => setIsChatCollapsed(size < 5)}
               className={`bg-white dark:bg-zinc-950 transition-all duration-500 ${isPresentationMode ? 'min-w-0 border-none' : ''}`}
             >
               <main className="wansan-canvas h-full flex flex-col relative bg-white dark:bg-zinc-950 transition-colors">

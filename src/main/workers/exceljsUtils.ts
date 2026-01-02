@@ -86,7 +86,6 @@ export async function processExcelFileStreaming(
     worksheets: 'emit' as const,
   }
 
-  // @ts-ignore
   const workbookReader = new ExcelJS.stream.xlsx.WorkbookReader(
     filePath,
     options
@@ -109,8 +108,9 @@ export async function processExcelFileStreaming(
     }
 
     if (!shouldProcess) {
-      for await (const _row of worksheetReader) {
-        /* consume */
+      for await (const row of worksheetReader) {
+        // consume and ignore
+        void row
       }
       continue
     }
@@ -130,7 +130,6 @@ export async function processExcelFileStreaming(
       let normalizedHeaders: string[] = []
       let colCount = 0
       let rowCount = 0
-      let rawRowIndex = -1
 
       // Helper to process a row into CSV line
       const processRowToCSV = (rowValues: any[]) => {
@@ -171,8 +170,6 @@ export async function processExcelFileStreaming(
 
       // Iterate rows in the sheet
       for await (const row of worksheetReader) {
-        rawRowIndex++
-
         // In streaming mode, row.values is fast but row.getCell is needed for styles
         // We iterate manually to handle Date serial conversion if styles are available
         const values: any[] = []
@@ -474,7 +471,6 @@ export async function processExcelBufferExcelJS(
             const hours = roundedDate.getUTCHours()
             const minutes = roundedDate.getUTCMinutes()
             const seconds = roundedDate.getUTCSeconds()
-            const ms = roundedDate.getUTCMilliseconds()
 
             // 3. Smart Formatting for DuckDB Inference
             if (hours === 0 && minutes === 0 && seconds === 0) {

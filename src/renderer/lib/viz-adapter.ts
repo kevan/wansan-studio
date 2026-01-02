@@ -338,17 +338,6 @@ export function buildEChartsOption(
 }
 
 /**
- * Checks if a value is a valid timestamp
- */
-function isValidTimestamp(value: any): boolean {
-  if (typeof value !== 'number') return false
-  const timestamp = value
-  const minTimestamp = 946684800000 // 2000-01-01
-  const maxTimestamp = 1893456000000 // 2030-01-01
-  return timestamp >= minTimestamp && timestamp <= maxTimestamp
-}
-
-/**
  * Extracts chart type from ECharts option
  */
 export function extractChartType(option: EChartsOption): VizType | undefined {

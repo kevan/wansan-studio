@@ -1,24 +1,22 @@
-import { useCallback, useMemo, useState, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  Loader2,
-  CheckCircle2,
-  XCircle,
-  Bot,
   AlertCircle,
+  Bot,
+  BrainCircuit,
+  Bug,
+  CheckCircle2,
   Key,
   Settings2,
   Sparkles,
-  Bug,
-  BrainCircuit,
 } from 'lucide-react'
 
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogDescription,
 } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
@@ -38,7 +36,7 @@ import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import { AI_PROVIDERS, type AIProviderKey } from '@/src/lib/constants'
 import { exportDebugLog } from '../../utils/debug-exporter'
-import { DISCLAIMER_TEXT_ZH, DISCLAIMER_TEXT_EN } from '../../lib/legal-text'
+import { DISCLAIMER_TEXT_EN, DISCLAIMER_TEXT_ZH } from '../../lib/legal-text'
 import { SimpleMarkdown } from '@/components/ui/simple-markdown'
 import { DomainKnowledgeTab } from './domain-knowledge-tab'
 

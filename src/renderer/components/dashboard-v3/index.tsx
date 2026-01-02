@@ -1,18 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Plus } from 'lucide-react'
 
 import {
   PAGE_GAP_PX,
   PAGE_HEIGHT_PX,
   PAGE_WIDTH_PX,
+  PageLayer,
   SCREEN_WIDTH_PX,
 } from './page-layer'
 import { GridLayer } from './grid-layer'
-import { PageLayer } from './page-layer'
 import { LayoutScenario, useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { useUIStore } from '@/stores/useUIStore'
 import { ChartFullView } from '@/components/report/chart-full-view'
-import { useTranslation } from 'react-i18next'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 
 interface DashboardCanvasV3Props {
@@ -22,13 +20,13 @@ interface DashboardCanvasV3Props {
 export function DashboardCanvasV3({
   isPresentationMode = false,
 }: DashboardCanvasV3Props) {
-  const { t } = useTranslation('common')
+  // const { t } = useTranslation('common')
   const canvasConfig = useWorkbenchStore(state => state.canvasConfig)
   const setCanvasConfig = useWorkbenchStore(state => state.setCanvasConfig)
   const layoutScenario = useWorkbenchStore(state => state.layoutScenario)
   const setLayoutScenario = useWorkbenchStore(state => state.setLayoutScenario)
   const pageCount = useWorkbenchStore(state => state.pageCount)
-  const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
+  // const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const mainPanelLayout = useUIStore(s => s.mainPanelLayout)
 
   const { zoom, layout } = canvasConfig

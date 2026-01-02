@@ -68,8 +68,8 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({
-  tableName,
-  columns = [],
+  tableName: _tableName,
+  columns: _columns = [],
   messages,
   onQuerySubmit,
   onConfigureTemplate,
@@ -176,7 +176,7 @@ export function ChatInterface({
                       <div className="flex items-center gap-1.5 mb-3 text-[10px] font-medium text-indigo-500 bg-indigo-50/50 w-fit px-2.5 py-1 rounded-full border border-indigo-100/50">
                         <GitBranch className="h-3 w-3" />
                         <span className="truncate max-w-[300px]">
-                          {t('based_on')} "{message.contextRef.query}"
+                          {t('based_on')} &quot;{message.contextRef.query}&quot;
                         </span>
                       </div>
                     )}

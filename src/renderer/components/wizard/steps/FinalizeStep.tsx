@@ -1,27 +1,26 @@
-import React, { useMemo, useEffect, useState } from 'react'
-import { useWizardStore } from '../../../stores/useWizardStore'
-import { useProjectStore } from '../../../stores/useProjectStore'
+import React, { useEffect, useMemo, useState } from 'react'
+import { useWizardStore } from '@/stores/useWizardStore.ts'
+import { useProjectStore } from '@/stores/useProjectStore.ts'
 import {
-  CheckCircle2,
   AlertCircle,
-  Database,
-  Copy,
-  History,
-  Info,
-  Loader2,
-  Edit3,
+  AlertTriangle,
+  ArrowRight,
+  Check,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Copy,
+  Database,
+  Edit3,
+  Equal,
   FileSpreadsheet,
   FileText,
-  ArrowRight,
-  Link2,
+  History,
+  Info,
   Key,
-  Check,
-  AlertTriangle,
+  Loader2,
   MinusCircle,
   PlusCircle,
-  Equal,
   Sparkles,
   Wand2,
 } from 'lucide-react'
@@ -136,9 +135,6 @@ export function FinalizeStep() {
   }
 
   const strategy = currentTask.conflictStrategy || 'ignore'
-  const mappedCount = Object.values(currentTask.columnMapping || {}).filter(
-    Boolean
-  ).length
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-zinc-50/30">

@@ -71,7 +71,6 @@ export const DashboardReportCard = forwardRef<
           },
         })
 
-        // @ts-ignore
         const result = await window.electronAPI.saveImage(
           dataUrl,
           `${report.reportData.title || 'report'}.png`

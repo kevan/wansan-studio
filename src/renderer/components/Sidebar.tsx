@@ -1,16 +1,13 @@
 import { useState } from 'react'
 import {
-  Plus,
   ArrowLeft,
-  Database,
-  Settings,
-  Crown,
-  Sparkles,
-  Settings2,
-  Bot,
-  ChevronRight,
-  LogOut,
   BrainCircuit,
+  ChevronRight,
+  Crown,
+  Database,
+  LogOut,
+  Plus,
+  Sparkles,
 } from 'lucide-react'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { Button } from './ui/button'
@@ -25,8 +22,6 @@ import { ProjectRulesModal } from './modals/ProjectRulesModal'
 interface SidebarProps {
   onImportData?: () => void
 }
-
-type ViewMode = 'sessions' | 'data'
 
 export function Sidebar(_props: SidebarProps) {
   const sidebarMode = useProjectStore(state => state.sidebarMode)

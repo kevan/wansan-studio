@@ -26,9 +26,6 @@ interface DevConsoleProps {
 
 // 生产环境不渲染
 export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
-  // 注意：如果是函数则需要调用 isDev()
-  if (!isDev) return null
-
   const [isOpen, setIsOpen] = useState(defaultOpen)
   const [isMinimized, setIsMinimized] = useState(false)
   const [logs, setLogs] = useState<LogEntry[]>([])
@@ -274,6 +271,9 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
         return 'text-gray-700'
     }
   }
+
+  // Moved check here to respect Rules of Hooks
+  if (!isDev) return null
 
   if (isMinimized) {
     return (

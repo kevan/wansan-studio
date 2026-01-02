@@ -22,7 +22,7 @@ interface VizChartProps {
 
 export function VizChart({
   type = 'bar',
-  title = '数据图表',
+  title: _title = '数据图表',
   data = [],
   config,
   className = '',

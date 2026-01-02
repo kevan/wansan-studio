@@ -4,19 +4,19 @@ import { useSettingsStore } from '../stores/useSettingsStore'
 import { useProGate } from '@/hooks/use-pro-gate'
 import { projectService } from '../services/project-service'
 import {
+  ProjectLoadResult,
   ProjectManifest,
   SemanticLayer,
-  ProjectLoadResult,
 } from '@shared/types/project-manifest'
 import { FileNode, SmartMetric, SyncStatus, TableRelation } from '@shared/types'
-import { Relation, Session, ProjectData } from '@shared/types/project'
+import { ProjectData, Session } from '@shared/types/project'
 import { ReportData } from '@shared/types/dashboard'
 import { Analytics } from '../services/analytics'
 
 const TRIAL_PROJECT_LIMIT = 2
 
 export function useProjectIO() {
-  const currentProjectPath = useProjectStore(state => state.currentProjectPath)
+  // const currentProjectPath = useProjectStore(state => state.currentProjectPath)
   const setProjectPath = useProjectStore(state => state.setProjectPath)
   const loadProjectToStore = useProjectStore(state => state.loadProject)
   const { addRecentProject, recentProjectPaths, isActivated } =

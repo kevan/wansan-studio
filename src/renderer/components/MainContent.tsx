@@ -3,19 +3,10 @@ import { ChatStream } from './ChatStream'
 import { SchemaEditor } from './SchemaEditor'
 import { useProjectStore } from '../stores/useProjectStore'
 import { DataWorkspaceLayout } from './DataWorkspaceLayout'
-import { useTranslation } from 'react-i18next'
 
-interface MainContentProps {
-  showShowcase?: boolean
-  showStyleTest?: boolean
-  onCloseShowcase?: () => void
-  onCloseStyleTest?: () => void
-}
-
-export function MainContent({}: MainContentProps) {
+export function MainContent() {
   const files = useProjectStore(s => s.files)
   const activeView = useProjectStore(s => s.activeView)
-  const { t } = useTranslation('common')
 
   const hasFiles = files.length > 0
   const currentView = activeView

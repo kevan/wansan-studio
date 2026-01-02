@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef } from 'react'
 import { useReIngestFile } from './useIPC'
 import { useProjectStore, selectAllRelations } from '@/stores/useProjectStore'
 import { useToastStore } from '@/stores/useToastStore'
@@ -16,14 +16,11 @@ export function useDataRehydrate() {
   const { mutateAsync: reIngestFile } = useReIngestFile()
   const isProjectLoaded = useProjectStore(s => s.isProjectLoaded)
 
-  const [hydrated, setHydrated] = useState(false)
   const hasRunRef = useRef(false)
 
-  // ... (persist hydration effect) ...
-
   useEffect(() => {
-    // Only run if store is hydrated AND project is fully loaded
-    if (!hydrated || hasRunRef.current || !isProjectLoaded) return
+    // Only run if project is fully loaded
+    if (hasRunRef.current || !isProjectLoaded) return
 
     // 1. Identify files that need physical verification
     const filesToRestore = useProjectStore
@@ -163,14 +160,12 @@ export function useDataRehydrate() {
       setRestoring(false)
     }
   }, [
-    hydrated,
     markAsStale,
     markFileMissing,
     reIngestFile,
     reloadFile,
     setRestoring,
     updateFile,
-    addToast,
-    t,
+    isProjectLoaded,
   ])
 }

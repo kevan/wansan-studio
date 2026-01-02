@@ -163,7 +163,7 @@ User: "统计各省份的销售额，按从高到低排"
 Schema: Table "data" ["省份", "销售额"]
 Output:
 {
-  "sql": "SELECT \"省份\", CAST(SUM(\"销售额\") AS DOUBLE) AS \"total_sales\" FROM \"data\" GROUP BY \"省份\" ORDER BY \"total_sales\" DESC LIMIT 100",
+  "sql": "SELECT \\"省份\\", CAST(SUM(\\"销售额\\") AS DOUBLE) AS \\"total_sales\\" FROM \\"data\\" GROUP BY \\"省份\\" ORDER BY \\"total_sales\\" DESC LIMIT 100",
   "viz_type": "bar",
   "viz_config": { "x_axis": "省份", "y_axis": "total_sales" },
   "reasoning": "Aggregated sales by province.",
@@ -175,7 +175,7 @@ User: "看下每月的订单趋势"
 Schema: Table "orders" ["下单时间" (VARCHAR), "id"]
 Output:
 {
-  "sql": "WITH clean AS (SELECT strptime(\"下单时间\", '%Y-%m-%d') AS dt, \"id\" FROM \"orders\") SELECT strftime(dt, '%Y-%m') AS \"month\", COUNT(\"id\") AS \"count\" FROM clean GROUP BY \"month\" ORDER BY \"month\" ASC",
+  "sql": "WITH clean AS (SELECT strptime(\\"下单时间\\", '%Y-%m-%d') AS dt, \\"id\\" FROM \\"orders\\") SELECT strftime(dt, '%Y-%m') AS \\"month\\", COUNT(\\"id\\") AS \\"count\\" FROM clean GROUP BY \\"month\\" ORDER BY \\"month\\" ASC",
   "viz_type": "line",
   "viz_config": { "x_axis": "month", "y_axis": "count" },
   "reasoning": "Extracted month from date and counted orders.",

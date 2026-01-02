@@ -1,14 +1,17 @@
-import { utilityProcess, UtilityProcess, app } from 'electron'
+import { app, UtilityProcess, utilityProcess } from 'electron'
 import { join } from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { DBRequest, DBResponse } from '../../../shared/types/ipc-db'
-import fs from 'fs'
 
 export class NativeDBClient {
   private child: UtilityProcess | null = null
   private pendingRequests = new Map<
     string,
-    { resolve: Function; reject: Function; returnFull?: boolean }
+    {
+      resolve: (value: any) => void
+      reject: (reason?: any) => void
+      returnFull?: boolean
+    }
   >()
   private initPromise: Promise<void> | null = null
   private isReady = false

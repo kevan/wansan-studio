@@ -79,7 +79,9 @@ export async function ingestJsonData(
     await fs.unlink(cleanupPath).catch(() => {})
 
     return fetchTableSchema(databaseService, tableName, 'Imported JSON Data')
-  } finally {
+  } catch (error) {
+    console.error('JSON ingestion failed', error)
+    throw error
   }
 }
 
@@ -158,7 +160,7 @@ export async function ingestExcelFile(
           '[Ingestion] Worker reported success. Processing results...'
         )
         const results: TableSchema[] = []
-        const { data, allSheetsCount } = message
+        const { data } = message
 
         try {
           for (const { sheetName, csvFilePath, error } of data) {
@@ -208,8 +210,7 @@ export async function ingestExcelFile(
             // The file path is returned in 'tempFilePath' and will be cleaned up by the caller (FileService)
             // after the entire wizard flow is complete or cancelled.
 
-            const description =
-              allSheetsCount > 1 ? `${fileName} - ${sheetName}` : fileName
+            // const description = allSheetsCount > 1 ? `${fileName} - ${sheetName}` : fileName
 
             // Fetch schema for the reloaded CSV to ensure columns are populated
             const columnsResult = await databaseService.query(
@@ -272,6 +273,7 @@ export async function getUniqueTableName(
   let currentName = safeName
   let counter = 1
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const exists = await databaseService.query(
       `SELECT table_name

@@ -33,7 +33,6 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
 
   // Theme Colors
   const textColor = isDark ? '#a1a1aa' : '#71717a' // zinc-400 / zinc-500
-  const axisColor = isDark ? '#3f3f46' : '#e4e4e7' // zinc-700 / zinc-200
   const splitLineColor = isDark ? '#27272a' : '#f4f4f5' // zinc-800 / zinc-100
   const tooltipBg = isDark
     ? 'rgba(24, 24, 27, 0.9)'

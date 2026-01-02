@@ -5,7 +5,6 @@ export function setupFetchLogger() {
 
   const originalFetch = global.fetch
 
-  // @ts-ignore
   global.fetch = async (...args: any[]) => {
     const [resource, config] = args
     const url = typeof resource === 'string' ? resource : resource.url
@@ -20,7 +19,6 @@ export function setupFetchLogger() {
     const startTime = Date.now()
 
     try {
-      // @ts-ignore
       const response = await originalFetch.apply(global, args)
       const duration = Date.now() - startTime
 

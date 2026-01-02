@@ -36,7 +36,6 @@ export function RelationEditorModal({
   onSave,
 }: RelationEditorModalProps) {
   const { t } = useTranslation('common')
-  const { t: tAnalysis } = useTranslation('analysis')
 
   const otherFiles = useMemo(() => {
     const filtered = allFiles.filter(
@@ -62,9 +61,6 @@ export function RelationEditorModal({
   )
   const [targetColumn, setTargetColumn] = useState(
     initialRelation?.targetColumn || ''
-  )
-  const [joinType, setJoinType] = useState<'LEFT' | 'INNER' | 'FULL'>(
-    initialRelation?.joinType || 'LEFT'
   )
 
   const targetFile = useMemo(

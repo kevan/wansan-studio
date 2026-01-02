@@ -19,8 +19,8 @@ export class ProjectManager {
 
   async createProject(name: string, location: string): Promise<string> {
     const projectId = uuidv4()
-    let projectDirName = `${name}.wansan`
-    let projectPath = path.join(location, projectDirName)
+    const projectDirName = `${name}.wansan`
+    const projectPath = path.join(location, projectDirName)
 
     // Prevent name collisions
     if (await fs.pathExists(projectPath)) {
@@ -203,7 +203,9 @@ export class ProjectManager {
       let current = {}
       try {
         current = await fs.readJSON(manifestPath)
-      } catch {}
+      } catch {
+        // ignore
+      }
       // Deep merge meta is tricky, but here we expect data.manifest to be partial updates.
       // We explicitly merge meta.
       const newMeta = {
@@ -225,7 +227,9 @@ export class ProjectManager {
       let current = { relations: [], smartMetrics: {} }
       try {
         current = await fs.readJSON(semanticPath)
-      } catch {}
+      } catch {
+        // ignore
+      }
       const updated = { ...current, ...data.semantic }
       tasks.push(fs.writeJSON(semanticPath, updated, { spaces: 2 }))
     }

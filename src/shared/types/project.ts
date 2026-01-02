@@ -1,6 +1,6 @@
 import { Message } from './chat'
 import { ReportWidget, ReportData } from './dashboard'
-import { FileNode, RelationSuggestion, DomainRule } from '../types'
+import { FileNode, DomainRule } from '../types'
 
 export interface Relation {
   id: string

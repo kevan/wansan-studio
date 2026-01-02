@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { useWizardStore } from '../../../stores/useWizardStore'
 import { useProjectStore } from '../../../stores/useProjectStore'
 import {
@@ -17,23 +17,19 @@ import {
   SelectValue,
 } from '../../ui/select'
 import {
-  Key,
+  ArrowDownToLine,
   ChevronLeft,
   ChevronRight,
-  Link2,
   Edit2,
-  Info,
   FileSearch,
-  ArrowDownToLine,
+  Info,
+  Key,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { ColumnSchema, ColumnType } from '@shared/types'
 import { useTranslation } from 'react-i18next'
-import { Label } from '../../ui/label'
-import { IngestionTask, ColumnConfig } from '@shared/types/wizard'
-import { Input } from '../../ui/input'
+import { ColumnConfig, IngestionTask } from '@shared/types/wizard'
 import { formatForDisplay } from '@shared/serialization'
-import { sanitizeTableName } from '@shared/naming-utils'
 import { COLUMN_TYPE_CONFIG } from '@/src/lib/constants'
 
 export function DataPreviewStep() {

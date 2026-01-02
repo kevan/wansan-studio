@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Edit2 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
@@ -149,7 +149,7 @@ interface A4ChartProps {
 
 export function A4Chart({
   type = 'bar',
-  title = '数据图表',
+  title: _title = '数据图表',
   data = [],
   config,
   className = '',

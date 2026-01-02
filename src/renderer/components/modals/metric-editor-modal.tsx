@@ -9,7 +9,7 @@ import {
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
-import { FileNode, SmartMetric, ColumnType } from '@shared/types'
+import { ColumnType, FileNode, SmartMetric } from '@shared/types'
 import { useProjectStore } from '../../stores/useProjectStore'
 import {
   AlertCircle,
@@ -19,7 +19,6 @@ import {
   Link2,
   Play,
   Wand2,
-  HelpCircle,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { getJoinedColumnName } from '@shared/naming-utils'
@@ -47,7 +46,7 @@ export function MetricEditorModal({
   initialMetric,
   onSave,
 }: MetricEditorModalProps) {
-  const { t } = useTranslation('common')
+  // const { t } = useTranslation('common')
   const { t: tAnalysis } = useTranslation('analysis')
   const files = useProjectStore(s => s.files)
 

@@ -376,3 +376,5 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
     )
   }
 )
+
+QueryPanel.displayName = 'QueryPanel'

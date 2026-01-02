@@ -55,24 +55,4 @@ export class NativeDatabaseService {
   async close(): Promise<void> {
     await dbClient.stop()
   }
-
-  // WASM Legacy Methods (Stubs)
-  async registerFileText(filename: string, data: string): Promise<void> {
-    console.warn('[NativeDB] registerFileText is not needed in native mode.')
-  }
-
-  async dropFile(filename: string): Promise<void> {
-    console.warn('[NativeDB] dropFile is not needed in native mode.')
-  }
-
-  // Accessors
-  getDb(): any {
-    throw new Error('Direct DB access not supported in Native mode (IPC only).')
-  }
-
-  getConn(): any {
-    throw new Error(
-      'Direct Connection access not supported in Native mode (IPC only).'
-    )
-  }
 }

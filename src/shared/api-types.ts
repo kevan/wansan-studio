@@ -1,9 +1,4 @@
-import {
-  TableSchema,
-  RelationSuggestion,
-  ReloadResult,
-  AIConfig,
-} from './types'
+import { AIConfig, TableSchema } from './types'
 
 export interface IPCResponse<T = any> {
   success: boolean

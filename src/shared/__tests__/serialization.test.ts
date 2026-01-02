@@ -112,7 +112,7 @@ describe('Serialization - CSV/JSON Robustness', () => {
     // Simulate the case where user pasted a JSON string with escaped quotes into a cell
     // e.g. Excel cell content: {\"a\": 1}
     // When read as string: '{\"a\": 1}'
-    const rawDirtyJson = '{\"name\": \"test\", \"value\": 123}'
+    const rawDirtyJson = '{"name": "test", "value": 123}'
 
     const processed = processSampleValue(rawDirtyJson)
     const summary = JSON.parse(processed)

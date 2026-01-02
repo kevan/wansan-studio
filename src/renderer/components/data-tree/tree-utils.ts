@@ -1,6 +1,5 @@
 import { FileNode, SyncStatus } from '@shared/types'
 import { Relation } from '@shared/types/project'
-import i18n from '../../i18n'
 
 export interface TreeNodeData {
   id: string

@@ -278,7 +278,7 @@ export function processSampleValue(val: any, columnType?: ColumnType): any {
   }
 
   // 2. Strict Type Check: If it's a numeric type, NEVER format as date fallback
-  const isNumericType = columnType === 'INTEGER' || columnType === 'DOUBLE'
+  // const isNumericType = columnType === 'INTEGER' || columnType === 'DOUBLE'
 
   // 3. Handle BigInt (Generic fallback)
   if (typeof val === 'bigint') {
@@ -317,7 +317,7 @@ export function processSampleValue(val: any, columnType?: ColumnType): any {
       } catch (e) {
         // Try to handle \"unescaped\" JSON
         try {
-          const unescaped = val.replace(/\\\"/g, '"')
+          const unescaped = val.replace(/\\"/g, '"')
           const parsed = JSON.parse(unescaped)
           const summary = summarizeJson(parsed)
           return JSON.stringify(summary)

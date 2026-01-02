@@ -127,9 +127,9 @@ export const ReportCard = React.memo(function ReportCard({
   }
 
   const rowCount = reportData?.tableData?.length || 0
-  const aiLatency = message.metadata?.aiLatency || 0
-  const dbLatency =
-    message.metadata?.dbLatency || message.metadata?.latency || 0
+  // const aiLatency = message.metadata?.aiLatency || 0
+  // const dbLatency =
+  //   message.metadata?.dbLatency || message.metadata?.latency || 0
 
   return (
     <div

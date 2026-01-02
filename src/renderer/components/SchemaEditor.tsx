@@ -1,18 +1,10 @@
 import { useProjectStore } from '../stores/useProjectStore'
-import { useSqlLabStore } from '../stores/useSqlLabStore'
 import { useWizardStore } from '../stores/useWizardStore'
-import {
-  ColumnSchema,
-  ColumnType,
-  SmartMetric,
-  TableRelation,
-} from '@shared/types'
-import { getUIFormatType, UIFormatType as FormatType } from '@shared/type-utils'
+import { ColumnSchema, SmartMetric, TableRelation } from '@shared/types'
 import {
   AlignJustify,
   Calculator,
   Calendar,
-  ChevronDown,
   Clock,
   Database,
   Edit2,
@@ -20,6 +12,7 @@ import {
   FileSpreadsheet,
   Hash,
   HelpCircle,
+  Info,
   Key,
   Link2,
   Plus,
@@ -27,7 +20,6 @@ import {
   ToggleLeft,
   Trash2,
   Type,
-  Info,
   Wand2,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -38,12 +30,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { useToastStore } from '../stores/useToastStore'
 import { useState } from 'react'
 import { useProGate } from '@/hooks/use-pro-gate'
@@ -641,7 +627,7 @@ function RelationRow({
 }
 
 function ColumnRow({
-  fileId,
+  fileId: _fileId,
   column,
   onToggleKey,
   isLinked,

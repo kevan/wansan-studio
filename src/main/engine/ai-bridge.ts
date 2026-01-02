@@ -1,5 +1,4 @@
 import { OpenAI } from 'openai'
-import { z } from 'zod'
 import {
   ContextAnalysisResult,
   DomainRule,
@@ -7,20 +6,19 @@ import {
   TableSchema,
 } from '@shared/types.ts'
 import {
-  AnalysisResultSchema,
   AnalysisResult,
-  RelationSuggestionSchema,
+  AnalysisResultSchema,
   ContextAnalysisResultSchema,
   FixSQLResultSchema,
 } from '@shared/schemas/analysis.ts'
 import {
-  getSystemPrompt,
   CONTEXT_ANALYSIS_SYSTEM_PROMPT,
+  getSystemPrompt,
   serializeSchemas,
 } from './prompts.ts'
 import { isDev } from '../utils/env'
 import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources'
-import { safeStringify, parse } from '@shared/serialization.ts'
+import { parse, safeStringify } from '@shared/serialization.ts'
 import { extractJSON } from '@shared/utils/json-utils'
 
 function getModelToUse(preferredModel?: string) {

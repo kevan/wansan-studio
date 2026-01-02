@@ -1,23 +1,22 @@
 import fs from 'fs-extra'
-import { extname, basename, join } from 'path'
+import { basename, extname } from 'path'
 import { NativeDatabaseService } from './native-db-service'
 import { TempFileManager } from '../utils/temp-manager'
 import {
-  ingestExcelFile,
-  getUniqueTableName,
-  ingestJsonData,
   getSampleValues,
+  ingestExcelFile,
+  ingestJsonData,
 } from '../engine/ingestion'
-import { DEMO_DATA } from '../../shared/demo-data'
-import { ReloadResult, ColumnSchema, ColumnType } from '../../shared/types'
-import { normalizeDuckDBType } from '../../shared/type-utils'
-import { processSampleValue } from '../../shared/serialization'
+import { DEMO_DATA } from '@shared/demo-data.ts'
+import { ColumnSchema, ColumnType, ReloadResult } from '@shared/types.ts'
+import { normalizeDuckDBType } from '@shared/type-utils.ts'
+import { processSampleValue } from '@shared/serialization.ts'
 import {
-  IngestPreCheckParams,
-  IngestPreCheckResponse,
   AppendDataParams,
   CreateTableParams,
-} from '../../shared/electron-api'
+  IngestPreCheckParams,
+  IngestPreCheckResponse,
+} from '@shared/electron-api.ts'
 
 export class FileService {
   constructor(private databaseService: NativeDatabaseService) {}

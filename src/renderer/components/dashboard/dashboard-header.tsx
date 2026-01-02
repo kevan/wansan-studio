@@ -48,7 +48,7 @@ export function DashboardHeader() {
     useWorkbenchStore()
   const pageCount = useWorkbenchStore(state => state.pageCount)
   const setPageCount = useWorkbenchStore(state => state.setPageCount)
-  const layoutScenario = useWorkbenchStore(state => state.layoutScenario)
+  // const layoutScenario = useWorkbenchStore(state => state.layoutScenario)
   const isA4 = canvasConfig.layout === 'a4'
   const { t } = useTranslation('common')
   const { isActivated, language } = useSettingsStore()

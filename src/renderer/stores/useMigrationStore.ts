@@ -26,7 +26,7 @@ interface MigrationState {
   completeMigration: () => void
 }
 
-export const useMigrationStore = create<MigrationState>((set, get) => ({
+export const useMigrationStore = create<MigrationState>(set => ({
   isChecking: true,
   isMigrationNeeded: false,
   step: 'intro',
@@ -61,7 +61,9 @@ export const useMigrationStore = create<MigrationState>((set, get) => ({
             foundKey = key
             break
           }
-        } catch (e) {}
+        } catch (e) {
+          // ignore
+        }
       }
     }
 

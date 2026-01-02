@@ -191,7 +191,7 @@ export const useProjectStore = create<ProjectState>()(
       currentProjectPath: null,
 
       setSidebarMode: mode =>
-        set(state => {
+        set(_state => {
           const updates: Partial<ProjectState> = { sidebarMode: mode }
           if (mode === 'sessions') {
             updates.activeView = 'chat'
@@ -226,7 +226,7 @@ export const useProjectStore = create<ProjectState>()(
         const session = state.sessions.find(s => s.id === state.activeSessionId)
         if (!session) return
 
-        let updatedRegistry = { ...state.widgetRegistry }
+        const updatedRegistry = { ...state.widgetRegistry }
         let hasUpdates = false
 
         await Promise.all(
@@ -414,7 +414,7 @@ export const useProjectStore = create<ProjectState>()(
       addMessage: msg =>
         set(state => {
           let nextRegistry = state.widgetRegistry
-          let nextMsg = { ...msg } as Message
+          const nextMsg = { ...msg } as Message
 
           if (msg.reportData) {
             const widgetId = crypto.randomUUID()
@@ -450,8 +450,8 @@ export const useProjectStore = create<ProjectState>()(
           const existingMsg = session.messages.find(m => m.id === id)
           if (!existingMsg) return state
 
-          let nextRegistry = { ...state.widgetRegistry }
-          let nextUpdate = { ...update } as Partial<Message>
+          const nextRegistry = { ...state.widgetRegistry }
+          const nextUpdate = { ...update } as Partial<Message>
 
           if (update.reportData) {
             const wId = existingMsg.widgetId || crypto.randomUUID()
@@ -555,7 +555,7 @@ export const useProjectStore = create<ProjectState>()(
       addWidget: widget =>
         set(state => {
           let nextRegistry = state.widgetRegistry
-          let nextWidget = { ...widget } as ReportWidget
+          const nextWidget = { ...widget } as ReportWidget
 
           if (widget.reportData) {
             // Use provided widgetId or generate new one
@@ -1170,7 +1170,7 @@ export const useProjectStore = create<ProjectState>()(
         newPath: string,
         force: boolean = false
       ) => {
-        let file = get().files.find(f => f.id === fileId)
+        const file = get().files.find(f => f.id === fileId)
 
         if (!file) {
           console.error(
@@ -1324,55 +1324,56 @@ export const useProjectStore = create<ProjectState>()(
       serialize: () => {
         // Destructure actions to exclude them from serialization
         const {
-          setActiveFile,
-          setActiveSession,
-          setRefreshing,
-          refreshSessionWidgets,
-          confirmReplace,
-          createSession,
-          switchSession,
-          deleteSession,
-          renameSession,
-          clearSessionMessages,
-          addMessage,
-          updateMessage,
-          deleteMessage,
-          setReplyTo,
-          setAbortController,
-          addWidget,
-          removeWidget,
-          updateWidget,
-          updateWidgetData,
-          updateLayout,
-          updateReportTitle,
-          setCanvasConfig,
-          setLayoutScenario,
-          setEditingReportId,
-          setProjectName,
-          setSelectedNode,
-          setRestoring,
-          setSuggestedPrompts,
-          addFile,
-          removeFile,
-          updateFile,
-          updateColumn,
-          toggleKeyColumn,
-          addRelation,
-          removeRelation,
-          markAsStale,
-          markFileMissing,
-          reloadFile,
-          replaceFile,
-          loadProject,
-          serialize,
-          reset,
-          abortControllers,
-          layoutScenario,
-          editingReportId,
-          pendingReplace,
-          showRefreshConfirm,
-          isRestoring,
-          isRefreshing,
+          setActiveFile: _setActiveFile,
+          setActiveSession: _setActiveSession,
+          setRefreshing: _setRefreshing,
+          refreshSessionWidgets: _refreshSessionWidgets,
+          confirmReplace: _confirmReplace,
+          createSession: _createSession,
+          switchSession: _switchSession,
+          deleteSession: _deleteSession,
+          renameSession: _renameSession,
+          clearSessionMessages: _clearSessionMessages,
+          addMessage: _addMessage,
+          updateMessage: _updateMessage,
+          deleteMessage: _deleteMessage,
+          setReplyTo: _setReplyTo,
+          setAbortController: _setAbortController,
+          addWidget: _addWidget,
+          removeWidget: _removeWidget,
+          updateWidget: _updateWidget,
+          updateWidgetData: _updateWidgetData,
+          updateRegistryEntry: _updateRegistryEntry,
+          updateLayout: _updateLayout,
+          updateReportTitle: _updateReportTitle,
+          setCanvasConfig: _setCanvasConfig,
+          setLayoutScenario: _setLayoutScenario,
+          setEditingReportId: _setEditingReportId,
+          setProjectName: _setProjectName,
+          setSelectedNode: _setSelectedNode,
+          setRestoring: _setRestoring,
+          setSuggestedPrompts: _setSuggestedPrompts,
+          addFile: _addFile,
+          removeFile: _removeFile,
+          updateFile: _updateFile,
+          updateColumn: _updateColumn,
+          toggleKeyColumn: _toggleKeyColumn,
+          addRelation: _addRelation,
+          removeRelation: _removeRelation,
+          markAsStale: _markAsStale,
+          markFileMissing: _markFileMissing,
+          reloadFile: _reloadFile,
+          replaceFile: _replaceFile,
+          loadProject: _loadProject,
+          serialize: _serialize,
+          reset: _reset,
+          abortControllers: _abortControllers,
+          layoutScenario: _layoutScenario,
+          editingReportId: _editingReportId,
+          pendingReplace: _pendingReplace,
+          showRefreshConfirm: _showRefreshConfirm,
+          isRestoring: _isRestoring,
+          isRefreshing: _isRefreshing,
           ...data
         } = get()
 
@@ -1406,18 +1407,18 @@ export const useProjectStore = create<ProjectState>()(
       storage: createBigIntStorage(),
       partialize: state => {
         const {
-          abortControllers,
-          layoutScenario,
-          editingReportId,
-          pendingReplace,
-          showRefreshConfirm,
-          isRestoring,
-          isRefreshing,
-          activeView,
-          sidebarMode,
-          selectedNode,
-          smartFilterRequest,
-          isProjectLoaded, // Exclude from persistence
+          abortControllers: _abortControllers,
+          layoutScenario: _layoutScenario,
+          editingReportId: _editingReportId,
+          pendingReplace: _pendingReplace,
+          showRefreshConfirm: _showRefreshConfirm,
+          isRestoring: _isRestoring,
+          isRefreshing: _isRefreshing,
+          activeView: _activeView,
+          sidebarMode: _sidebarMode,
+          selectedNode: _selectedNode,
+          smartFilterRequest: _smartFilterRequest,
+          isProjectLoaded: _isProjectLoaded, // Exclude from persistence
           ...rest
         } = state
 

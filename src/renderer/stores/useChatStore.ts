@@ -211,7 +211,6 @@ const sendMessage = async (
   const language =
     languageOverride || useSettingsStore.getState().language || 'en'
   const readyFiles = fileState.files.filter(f => f.status === 'ready')
-  const startTime = Date.now()
   const { provider } = useSettingsStore.getState()
 
   // API Key Check
@@ -508,7 +507,6 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
   const fileState = useProjectStore.getState()
   const language = useSettingsStore.getState().language || 'en'
   const readyFiles = fileState.files.filter(f => f.status === 'ready')
-  const startTime = Date.now()
 
   const targetMsgIndex = messages.findIndex(m => m.id === messageId)
   if (targetMsgIndex === -1) return

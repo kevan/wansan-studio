@@ -13,7 +13,9 @@ interface WelcomeScreenProps {
   onDataImported?: (tableName: string) => void
 }
 
-export function WelcomeScreen({ onDataImported }: WelcomeScreenProps) {
+export function WelcomeScreen({
+  onDataImported: _onDataImported,
+}: WelcomeScreenProps) {
   const { addToast } = useToastStore()
   const { t } = useTranslation('chat')
   const { isActivated, checkGate, gateNode } = useProGate()

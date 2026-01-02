@@ -2,23 +2,23 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-  Trash2,
   CheckCircle2,
   Circle,
-  Plus,
-  Lightbulb,
   GripVertical,
+  Lightbulb,
+  Plus,
+  Trash2,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/utils/cn'
 import {
-  DndContext,
   closestCenter,
+  DndContext,
+  DragEndEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -141,7 +141,7 @@ export function RuleEditor({
   onReorder,
   placeholder,
   emptyMessage,
-  addButtonLabel,
+  addButtonLabel: _addButtonLabel,
   scope = 'project',
 }: RuleEditorProps) {
   const { t } = useTranslation('common')

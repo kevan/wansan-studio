@@ -4,14 +4,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import {
-  FolderOpen,
-  ArrowRight,
   AlertCircle,
+  ArrowRight,
   CheckCircle2,
-  Loader2,
   Database,
+  FolderOpen,
+  Loader2,
 } from 'lucide-react'
-import { cn } from '@/utils/cn'
 import { performMigration } from '@/services/migration-service'
 import { useTranslation } from 'react-i18next'
 

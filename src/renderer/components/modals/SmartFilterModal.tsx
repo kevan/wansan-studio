@@ -1,12 +1,11 @@
-import { useState, useRef } from 'react'
+import { useRef, useState } from 'react'
 import {
   Dialog,
   DialogContent,
-  DialogTitle,
   DialogDescription,
+  DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Sparkles } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { FilterParam } from '@shared/schemas/analysis'

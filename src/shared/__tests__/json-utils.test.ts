@@ -64,12 +64,10 @@ describe('json-utils', () => {
 
   describe('parseAIResponse', () => {
     it('should parse complex AI responses successfully', () => {
-      const response =
-        'I have analyzed the data.\n```json\n{"success": true, "count": 42}\n```\nLet me know if you need more help.'
       const result = parseAIResponse({ success: true, count: 42 })
-      // @ts-ignore
+      // @ts-expect-error result is dynamic from AI response
       expect(result.success).toBe(true)
-      // @ts-ignore
+      // @ts-expect-error result is dynamic from AI response
       expect(result.count).toBe(42)
     })
 
