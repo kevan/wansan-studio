@@ -13,16 +13,14 @@ export interface AuthState {
 }
 
 const STORE_KEY_ACTIVATED = 'isActivated'
-
 const STORE_KEY_EXPIRY = 'cachedSpecialExpiry' // [NEW] Persistence key
 
-const DEFAULT_EXPIRY = '2026-12-31'
+const FALLBACK_EXPIRY = '2026-12-31'
 
 class AuthService {
   private store: Store
-
   private channelEnv: string
-
+  private defaultExpiry: string
   private currentBetaCodes: string[] = []
 
   constructor() {
@@ -31,30 +29,30 @@ class AuthService {
       encryptionKey: 'wansan-studio-secure-config-key',
     })
     // Read build-time injected env or runtime env
-
     this.channelEnv = process.env.VITE_SPECIAL_CHANNEL || ''
+    this.defaultExpiry = process.env.VITE_DEFAULT_EXPIRY || FALLBACK_EXPIRY
   }
 
   // Allow refreshing env after dotenv load
   loadEnv() {
     this.channelEnv = process.env.VITE_SPECIAL_CHANNEL || ''
-    console.log('[AuthService] Loaded Channel Env:', this.channelEnv)
+    this.defaultExpiry = process.env.VITE_DEFAULT_EXPIRY || FALLBACK_EXPIRY
+    console.log('[AuthService] Loaded Env:', {
+      channel: this.channelEnv,
+      defaultExpiry: this.defaultExpiry,
+    })
   }
 
   /**
-
    * Main entry point to get the current authentication status.
-
    * Merges Local state, Environment variables, and Remote config.
-
    */
-
   async getAuthState(remoteData?: RemoteConfig): Promise<AuthState> {
     const localActivated = this.store.get(STORE_KEY_ACTIVATED, false) as boolean
 
     const cachedExpiry = this.store.get(
       STORE_KEY_EXPIRY,
-      DEFAULT_EXPIRY
+      this.defaultExpiry
     ) as string
 
     // 1. Update in-memory beta codes from remoteData.beta_code

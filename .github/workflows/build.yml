@@ -3,7 +3,8 @@ name: Build & Release
 on:
   push:
     tags:
-      - 'v*' # Trigger only when pushing a tag like v1.0.1
+      - 'v*'      # 匹配 v1.0.0, v2.1.0 等
+      - '!v*-*'   # 排除 v1.0.0-Alpha, v0.3.2-DeepSeek 等包含中划线的标签
 
 jobs:
   build:

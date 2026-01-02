@@ -1,0 +1,75 @@
+name: Build Channel Release
+
+on:
+  push:
+    tags:
+      - 'v*-*' # 触发格式: v[版本号]-[渠道号], 如 v0.3.2-DeepSeek
+
+jobs:
+  build:
+    name: Build ${{ github.ref_name }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Parse Channel from Tag
+        id: parse_tag
+        shell: bash
+        run: |
+          # 提取 tag 中 - 之后的内容作为渠道名
+          TAG_NAME=${GITHUB_REF#refs/tags/v}
+          CHANNEL=$(echo $TAG_NAME | cut -d'-' -f2)
+          # 转换为大写以便匹配 Secret/Variable 命名规范
+          CHANNEL_UPPER=$(echo $CHANNEL | tr '[:lower:]' '[:upper:]')
+          
+          echo "CHANNEL=$CHANNEL" >> $GITHUB_ENV
+          echo "CHANNEL_UPPER=$CHANNEL_UPPER" >> $GITHUB_ENV
+          echo "Building for Channel: $CHANNEL"
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build and Package
+        env:
+          # 核心渠道信息
+          VITE_SPECIAL_CHANNEL: ${{ env.CHANNEL }}
+          VITE_DEFAULT_EXPIRY: ${{ vars[format('{0}_EXPIRY', env.CHANNEL_UPPER)] || '2026-12-31' }} # 默认有效期，也可通过 vars.[CHANNEL]_EXPIRY 获取
+
+          # 动态从 GitHub Variables 获取配置 (非敏感)
+          # 注意: 如果 vars 中不存在，则使用默认值
+          VITE_BUILTIN_BASE_URL: ${{ vars[format('{0}_BASE_URL', env.CHANNEL_UPPER)] || 'https://api.deepseek.com' }}
+          VITE_BUILTIN_MODELS: ${{ vars[format('{0}_MODELS', env.CHANNEL_UPPER)] || 'deepseek-chat' }}
+
+          # 动态从 GitHub Secrets 获取混淆后的 Key (敏感)
+          VITE_BUILTIN_API_KEY: ${{ secrets[format('{0}_OBFUSCATED_KEY', env.CHANNEL_UPPER)] }}
+
+          # 打包所需 Token
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false # Mac 平台强制跳过签名
+        run: |
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            npm run build && npm run dist:mac:all
+          else
+            npm run build && npm run dist:win
+          fi
+
+      - name: Upload Private Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Wansan-${{ env.CHANNEL }}-${{ matrix.os }}
+          path: |
+            dist_electron/*.dmg
+            dist_electron/*.exe
+            dist_electron/*.zip
+          retention-days: 30 # 产物保留 30 天
