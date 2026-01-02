@@ -61,6 +61,7 @@ function App() {
   const { isMigrationNeeded, isChecking, checkStatus } = useMigrationStore()
   const { status: saveStatus, lastError: saveError, forceSave } = useAutoSave()
   const currentProjectPath = useProjectStore(s => s.currentProjectPath)
+  const projectName = useProjectStore(s => s.meta.name)
   const isProjectLoaded = useProjectStore(s => s.isProjectLoaded)
 
   useEffect(() => {
@@ -360,6 +361,17 @@ function App() {
                 <span className="text-sm font-semibold text-zinc-900">
                   Wansan Studio
                 </span>
+                {currentProjectPath && (
+                  <>
+                    <span className="text-zinc-300">/</span>
+                    <span
+                      className="text-sm font-medium text-zinc-600 truncate max-w-[200px]"
+                      title={projectName}
+                    >
+                      {projectName}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
             {/* MIDDLE DRAG SPACER */}
