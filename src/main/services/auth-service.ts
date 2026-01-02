@@ -145,6 +145,7 @@ class AuthService {
     try {
       const res = await fetch(url.toString(), {
         headers: {
+          // 'Cache-Control:': 'no-cache',
           'X-App-Version': appVersion,
           'X-Special-Channel': this.channelEnv,
           'X-Device-Id': deviceId,

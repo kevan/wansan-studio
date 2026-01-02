@@ -12,13 +12,20 @@ export const AI_PROVIDERS = {
   deepseek: {
     name: 'DeepSeek (深度求索)',
     baseUrl: 'https://api.deepseek.com',
-    models: ['deepseek-chat', 'deepseek-coder'],
+    models: ['deepseek-chat', 'deepseek-reasoner'],
     getKeyUrl: 'https://platform.deepseek.com/api_keys',
   },
   openai: {
     name: 'OpenAI',
     baseUrl: 'https://api.openai.com/v1',
-    models: ['gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo'],
+    models: [
+      'gpt-4o',
+      'gpt-4.1',
+      'gpt-4-turbo',
+      'gpt-4o-mini',
+      'o4-mini',
+      'gpt-3.5-turbo',
+    ],
     getKeyUrl: 'https://platform.openai.com/api-keys',
   },
   moonshot: {

@@ -13,6 +13,7 @@ import { ProjectManager } from './services/project-manager'
 import { registerProjectHandlers } from './ipc/project-ipc'
 import { createApplicationMenu } from './config/menu'
 import { authService } from './services/auth-service'
+import { setupFetchLogger } from './utils/fetch-logger'
 import type { AppConfig } from '../shared/types'
 
 class WansanApp {
@@ -30,6 +31,7 @@ class WansanApp {
   private async init() {
     // 加载环境变量 (仅开发模式)
     if (isDev()) {
+      setupFetchLogger()
       try {
         const dotenv = await import('dotenv')
         const envPath = join(app.getAppPath(), '.env')
