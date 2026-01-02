@@ -26,7 +26,7 @@ export interface ReportData {
   vizConfig?: {
     x_axis?: string | null
     y_axis?: string | string[] | null
-    series_name?: string
+    series_name?: string | string[]
   }
   timestamp?: number
   is_template?: boolean

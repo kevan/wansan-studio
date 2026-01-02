@@ -4,7 +4,7 @@ import * as echarts from 'echarts'
 type VizConfig = {
   x_axis?: string | null
   y_axis?: string | string[] | null
-  series_name?: string
+  series_name?: string | string[]
 }
 
 type VizType =
@@ -259,16 +259,23 @@ export function buildEChartsOption(
 
   const xData = data.map(item => item[x_axis])
 
+  const getSeriesName = (index: number) => {
+    if (Array.isArray(series_name)) {
+      return series_name[index] || yAxes[index]
+    }
+    return series_name || yAxes[index]
+  }
+
   const baseSeries: echarts.SeriesOption[] =
     type === 'scatter'
-      ? yAxes.map(key => ({
-          name: series_name || key,
+      ? yAxes.map((key, index) => ({
+          name: getSeriesName(index),
           type: 'scatter',
           data: data.map(item => [item[x_axis], item[key]]),
           emphasis: { focus: 'series' },
         }))
-      : yAxes.map(key => ({
-          name: series_name || key,
+      : yAxes.map((key, index) => ({
+          name: getSeriesName(index),
           type: (type === 'area' ? 'line' : type) as any,
           data: data.map(item => item[key]),
           areaStyle: type === 'area' ? {} : undefined,
@@ -306,7 +313,9 @@ export function buildEChartsOption(
       tooltip: { trigger: 'item' },
       series: [
         {
-          name: series_name || yAxes[0],
+          name: Array.isArray(series_name)
+            ? series_name[0] || yAxes[0]
+            : series_name || yAxes[0],
           type: 'pie',
           radius: '50%',
           data: data.map(item => ({

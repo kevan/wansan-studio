@@ -10,7 +10,9 @@ export function useProjectInit() {
   const setProjectPath = useProjectStore(state => state.setProjectPath)
   const isProjectLoaded = useProjectStore(state => state.isProjectLoaded)
   const createSession = useProjectStore(state => state.createSession)
-  const removeRecentProject = useSettingsStore(state => state.removeRecentProject)
+  const removeRecentProject = useSettingsStore(
+    state => state.removeRecentProject
+  )
   const { openProject } = useProjectIO()
 
   const initializedRef = useRef(false)
@@ -41,7 +43,13 @@ export function useProjectInit() {
         }
       })
     }
-  }, [currentProjectPath, isProjectLoaded, openProject, setProjectPath, removeRecentProject])
+  }, [
+    currentProjectPath,
+    isProjectLoaded,
+    openProject,
+    setProjectPath,
+    removeRecentProject,
+  ])
 
   // 2. Initialize default session
   useEffect(() => {

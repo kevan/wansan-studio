@@ -13,7 +13,7 @@ interface VizChartProps {
   config?: {
     x_axis?: string | null
     y_axis?: string | string[] | null
-    series_name?: string
+    series_name?: string | string[]
   }
   className?: string
   style?: React.CSSProperties

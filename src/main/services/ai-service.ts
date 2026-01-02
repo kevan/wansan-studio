@@ -84,7 +84,7 @@ export class AIService {
         if (!apiKey && !rawKey.includes(':')) {
           try {
             const decoded = Buffer.from(rawKey, 'base64').toString('utf-8')
-            if (/^[a-zA-Z0-9_\-\.]+$/.test(decoded)) {
+            if (/^[a-zA-Z0-9_\-.]+$/.test(decoded)) {
               apiKey = decoded
             }
           } catch {

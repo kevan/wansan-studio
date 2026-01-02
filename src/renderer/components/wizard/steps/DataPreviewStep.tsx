@@ -111,9 +111,7 @@ export function DataPreviewStep() {
   }
 
   const hasMergeKeys = (currentTask.mergeKeys || []).length > 0
-  const hasUpdateColumns = Object.entries(
-    currentTask.columnMapping || {}
-  ).some(
+  const hasUpdateColumns = Object.entries(currentTask.columnMapping || {}).some(
     ([targetCol, sourceCol]) =>
       sourceCol !== null && !(currentTask.mergeKeys || []).includes(targetCol)
   )
@@ -334,7 +332,12 @@ const ColumnPreviewHead = ({
             )}
             title={t('wizard.set_unique_key')}
           >
-            <Key className={cn('w-3.5 h-3.5', column.isPrimaryKey && 'fill-current')} />
+            <Key
+              className={cn(
+                'w-3.5 h-3.5',
+                column.isPrimaryKey && 'fill-current'
+              )}
+            />
           </button>
         </div>
         <Select value={column.type} onValueChange={onTypeChange}>
@@ -413,9 +416,7 @@ const ColumnMappingHead = ({
               : 'bg-white border-zinc-200 text-zinc-300 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-sm'
           )}
           title={
-            isMergeKey
-              ? t('wizard.unset_match_key')
-              : t('wizard.set_match_key')
+            isMergeKey ? t('wizard.unset_match_key') : t('wizard.set_match_key')
           }
         >
           <Key className={cn('w-3.5 h-3.5', isMergeKey && 'fill-current')} />

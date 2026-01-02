@@ -125,7 +125,7 @@ If the user asks for data regarding a specific dimension value (e.g., "sales in 
 2.  **CONFIG**:
     -   \`x_axis\`: The dimension column.
     -   \`y_axis\`: The metric column(s). Can be a string or an array of strings for multi-series.
-    -   \`series_name\`: Label for the data.
+    -   \`series_name\`: Label for the data. Can be a string or an array of strings (matching y_axis).
 
 ---
 
@@ -141,7 +141,7 @@ Return a **raw JSON object**. Do not wrap in markdown code blocks.
   "viz_config": {
     "x_axis": "column_name_for_x",
     "y_axis": "column_name_for_y" or ["col1", "col2"],
-    "series_name": "Label for the data"
+    "series_name": "Label for the data" or ["Label1", "Label2"]
   },
   "reasoning": "String (Briefly explain which columns you used and why)",
   "suggestions": ["String (Question 1)", "String (Question 2)", "String (Question 3)"]

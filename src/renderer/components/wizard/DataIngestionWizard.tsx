@@ -70,7 +70,9 @@ export function DataIngestionWizard() {
             mode === 'merge'
               ? task.mergeKeys || []
               : mode === 'append'
-                ? targetFile.columns.filter(c => c.isPrimaryKey || c.isKey).map(c => c.name)
+                ? targetFile.columns
+                    .filter(c => c.isPrimaryKey || c.isKey)
+                    .map(c => c.name)
                 : task.columns.filter(c => c.isPrimaryKey).map(c => c.name)
 
           const result = await window.electronAPI.appendData({
