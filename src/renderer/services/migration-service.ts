@@ -88,7 +88,8 @@ export async function performMigration(name: string, location: string) {
           file.id,
           file.path,
           file.tableName,
-          file.sheetName
+          file.sheetName,
+          file.columns // Pass existing schema to enforce types
         )
         if (!res.success) {
           console.error(`Migration error for ${file.name}:`, res.error)
@@ -99,10 +100,27 @@ export async function performMigration(name: string, location: string) {
           }
         } else {
           console.log(`[Migration] Re-ingest success for ${file.name}`)
+          
+          // Merge new columns with old metadata to preserve aliases/customization
+          const mergedColumns = res.data.newColumns.map(newCol => {
+            const oldCol = file.columns.find(c => c.name === newCol.name || c.safeName === newCol.safeName)
+            if (oldCol) {
+              return {
+                ...newCol,
+                alias: oldCol.alias,
+                userType: oldCol.userType,
+                isKey: oldCol.isKey,
+                isPrimaryKey: oldCol.isPrimaryKey,
+                nullable: oldCol.nullable
+              }
+            }
+            return newCol
+          })
+
           filesToMigrate[i] = {
             ...file,
             status: 'ready' as SyncStatus,
-            columns: res.data.newColumns,
+            columns: mergedColumns,
           }
         }
       } catch (e) {
