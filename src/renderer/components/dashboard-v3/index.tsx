@@ -25,7 +25,8 @@ export function DashboardCanvasV3({
   const setLayoutScenario = useWorkbenchStore(state => state.setLayoutScenario)
   const pageCount = useWorkbenchStore(state => state.pageCount)
   // const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
-  const mainPanelLayout = useUIStore(s => s.mainPanelLayout)
+  const contentLayout = useUIStore(s => s.contentLayout)
+  const sidebarLayout = useUIStore(s => s.sidebarLayout)
 
   const { zoom, layout } = canvasConfig
   const isA4 = layout === 'a4'
@@ -65,7 +66,7 @@ export function DashboardCanvasV3({
   // Center when zoom or panel layout changes
   useEffect(() => {
     centerCanvas(true)
-  }, [zoom, mainPanelLayout, centerCanvas])
+  }, [zoom, contentLayout, sidebarLayout, centerCanvas])
 
   // Center on window resize
   useEffect(() => {

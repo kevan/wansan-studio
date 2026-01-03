@@ -51,17 +51,9 @@ export class ProjectManager {
 
     const defaultSession = {}
 
-    await fs.writeJSON(path.join(projectPath, 'wansan.json'), defaultManifest, {
-      spaces: 2,
-    })
-    await fs.writeJSON(
-      path.join(projectPath, 'semantic.json'),
-      defaultSemantic,
-      { spaces: 2 }
-    )
-    await fs.writeJSON(path.join(projectPath, 'session.json'), defaultSession, {
-      spaces: 2,
-    })
+    await this.atomicWriteJSON(path.join(projectPath, 'wansan.json'), defaultManifest)
+    await this.atomicWriteJSON(path.join(projectPath, 'semantic.json'), defaultSemantic)
+    await this.atomicWriteJSON(path.join(projectPath, 'session.json'), defaultSession)
 
     return projectPath
   }
@@ -144,7 +136,7 @@ export class ProjectManager {
       }
       // Write it back immediately to fix the file
       try {
-        await fs.writeJSON(manifestPath, manifest, { spaces: 2 })
+        await this.atomicWriteJSON(manifestPath, manifest)
       } catch (writeErr) {
         console.error('Failed to write repaired wansan.json', writeErr)
       }
@@ -219,7 +211,7 @@ export class ProjectManager {
         ...data.manifest,
         meta: newMeta,
       }
-      tasks.push(fs.writeJSON(manifestPath, updated, { spaces: 2 }))
+      tasks.push(this.atomicWriteJSON(manifestPath, updated))
     }
 
     if (data.semantic) {
@@ -231,15 +223,38 @@ export class ProjectManager {
         // ignore
       }
       const updated = { ...current, ...data.semantic }
-      tasks.push(fs.writeJSON(semanticPath, updated, { spaces: 2 }))
+      tasks.push(this.atomicWriteJSON(semanticPath, updated))
     }
 
     if (data.session) {
       const sessionPath = path.join(targetPath, 'session.json')
-      tasks.push(fs.writeJSON(sessionPath, data.session, { spaces: 2 }))
+      tasks.push(this.atomicWriteJSON(sessionPath, data.session))
     }
 
     await Promise.all(tasks)
+  }
+
+  /**
+   * Safe atomic write: Write to .tmp then rename.
+   * Prevents empty files if write fails or process crashes.
+   */
+  private async atomicWriteJSON(filePath: string, data: any): Promise<void> {
+    const tmpPath = `${filePath}.tmp`
+    try {
+      await fs.writeJSON(tmpPath, data, { spaces: 2 })
+      await fs.move(tmpPath, filePath, { overwrite: true })
+    } catch (error) {
+      console.error(`[ProjectManager] Atomic write failed for ${filePath}`, error)
+      // Try to clean up tmp file if it exists
+      try {
+        if (await fs.pathExists(tmpPath)) {
+          await fs.remove(tmpPath)
+        }
+      } catch (cleanupError) {
+        console.warn(`[ProjectManager] Failed to cleanup tmp file ${tmpPath}`, cleanupError)
+      }
+      throw error
+    }
   }
 
   async closeProject(): Promise<void> {
