@@ -63,9 +63,9 @@ jobs:
           ARTIFACT_PATTERN="\${productName}-\${version}-\${os}-\${arch}-\${env.CHANNEL}.\${ext}"
           
           if [ "$RUNNER_OS" == "macOS" ]; then
-            npm run build && npx electron-builder --config electron-builder.yml --mac --x64 --arm64 -c.artifactName="$ARTIFACT_PATTERN"
+            npm run build && npx electron-builder --config electron-builder.yml --mac --x64 --arm64 -p never -c.artifactName="$ARTIFACT_PATTERN"
           else
-            npm run build && npx electron-builder --config electron-builder.yml --win -c.artifactName="$ARTIFACT_PATTERN"
+            npm run build && npx electron-builder --config electron-builder.yml --win -p never -c.artifactName="$ARTIFACT_PATTERN"
           fi
 
       - name: Upload Private Artifacts
