@@ -46,9 +46,21 @@ export class NativeDBClient {
 
         if (!this.child) {
           console.log(`[DB-Client] Spawning Utility Process...`)
+          // Use 'pipe' instead of 'inherit' to avoid EBADF on Windows GUI apps
           this.child = utilityProcess.fork(entryPath, [], {
             serviceName: 'Wansan-DB-Service',
-            stdio: 'inherit',
+            stdio: 'pipe',
+          })
+
+          // Pipe child logs to main process console
+          this.child.stdout?.on('data', (data) => {
+            const str = data.toString().trim()
+            if (str) console.log(`[DB-Service] ${str}`)
+          })
+          
+          this.child.stderr?.on('data', (data) => {
+            const str = data.toString().trim()
+            if (str) console.error(`[DB-Service Error] ${str}`)
           })
 
           this.child.on('message', (msg: DBResponse) => {
