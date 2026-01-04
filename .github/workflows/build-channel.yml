@@ -82,3 +82,14 @@ jobs:
             dist_electron/*.exe
             dist_electron/*.zip
           retention-days: 30 # 产物保留 30 天
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            dist_electron/*.dmg
+            dist_electron/*.exe
+          token: ${{ secrets.GITHUB_TOKEN }}
+          draft: false
+          prerelease: true # 默认为预发布，避免通知所有人
