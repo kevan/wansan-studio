@@ -1,4 +1,5 @@
-import { ipcMain, dialog } from 'electron'
+import { ipcMain, dialog, app } from 'electron'
+import path from 'path'
 import { ProjectManager } from '../services/project-manager'
 import { ProjectSavePayload } from '../../shared/types/project-manifest'
 
@@ -80,5 +81,10 @@ export function registerProjectHandlers(projectManager: ProjectManager) {
       console.error('Project close error:', error)
       return { success: false, error: error.message }
     }
+  })
+
+  ipcMain.handle('project:get-default-path', async () => {
+    const documents = app.getPath('documents')
+    return path.join(documents, 'Wansan')
   })
 }

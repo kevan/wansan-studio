@@ -23,8 +23,7 @@ export const projectService = {
   close: () => invoke<void>('project:close'),
 
   getDefaultLocation: async () => {
-    const path = await invoke<string>('get-path', 'documents')
-    return path + '/Wansan'
+    return invoke<string>('project:get-default-path')
   },
 
   selectDirectory: () => invoke<string>('select-directory'),
