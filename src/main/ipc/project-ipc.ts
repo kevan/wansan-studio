@@ -85,6 +85,6 @@ export function registerProjectHandlers(projectManager: ProjectManager) {
 
   ipcMain.handle('project:get-default-path', async () => {
     const documents = app.getPath('documents')
-    return path.join(documents, 'Wansan')
+    return { success: true, data: path.join(documents, 'Wansan') }
   })
 }
