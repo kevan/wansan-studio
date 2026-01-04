@@ -13,7 +13,7 @@ files:
 
 # [CRITICAL] Unpack Native modules to avoid ASAR issues
 asarUnpack:
-  - "node_modules/@duckdb/node-api"
+  - "node_modules/@duckdb/**/*"
 
 mac:
   target: dmg
@@ -28,6 +28,7 @@ win:
     - nsis
     - portable  # [ADD THIS] Generates a standalone .exe
   icon: resources/icon.ico
+  requestedExecutionLevel: requireAdministrator
 
 nsis:
   oneClick: false
