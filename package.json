@@ -49,6 +49,7 @@
     "node-machine-id": "^1.1.12",
     "openai": "^6.10.0",
     "uuid": "^9.0.1",
+    "zod": "^4.3.4",
     "zustand": "^4.5.2"
   },
   "devDependencies": {
