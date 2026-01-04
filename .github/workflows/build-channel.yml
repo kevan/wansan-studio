@@ -65,7 +65,12 @@ jobs:
           if [ "$RUNNER_OS" == "macOS" ]; then
             npm run build && npx electron-builder --config electron-builder.yml --mac --x64 --arm64 -p never -c.artifactName="$ARTIFACT_PATTERN"
           else
-            npm run build && npx electron-builder --config electron-builder.yml --win -p never -c.artifactName="$ARTIFACT_PATTERN"
+            # Windows: 分别指定 nsis 和 portable 的文件名，防止覆盖
+            # nsis (安装包): 保持标准格式
+            # portable (便携版): 增加 -Portable 后缀
+            npm run build && npx electron-builder --config electron-builder.yml --win -p never \
+              -c.nsis.artifactName="$ARTIFACT_PATTERN" \
+              -c.portable.artifactName="\${productName}-\${version}-\${os}-\${arch}-\${env.CHANNEL}-Portable.\${ext}"
           fi
 
       - name: Upload Private Artifacts
