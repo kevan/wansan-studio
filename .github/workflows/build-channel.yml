@@ -57,11 +57,15 @@ jobs:
           # 打包所需 Token
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false # Mac 平台强制跳过签名
+        shell: bash
         run: |
+          # 定义包含渠道后缀的产物名称格式
+          ARTIFACT_PATTERN="\${productName}-\${version}-\${os}-\${arch}-\${env.CHANNEL}.\${ext}"
+          
           if [ "$RUNNER_OS" == "macOS" ]; then
-            npm run build && npm run dist:mac:all
+            npm run build && npx electron-builder --config electron-builder.yml --mac --x64 --arm64 -c.artifactName="$ARTIFACT_PATTERN"
           else
-            npm run build && npm run dist:win
+            npm run build && npx electron-builder --config electron-builder.yml --win -c.artifactName="$ARTIFACT_PATTERN"
           fi
 
       - name: Upload Private Artifacts
