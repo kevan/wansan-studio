@@ -72,7 +72,8 @@ const electronAPI: ElectronAPI = {
     filePath: string,
     tableName: string,
     sheetName?: string,
-    columns?: any[]
+    columns?: any[],
+    readOptions?: Record<string, any>
   ) =>
     ipcRenderer.invoke(
       're-ingest-file',
@@ -80,7 +81,8 @@ const electronAPI: ElectronAPI = {
       filePath,
       tableName,
       sheetName,
-      columns
+      columns,
+      readOptions
     ),
   ingestPreCheck: (params: any) =>
     ipcRenderer.invoke('ingest:pre-check', params),

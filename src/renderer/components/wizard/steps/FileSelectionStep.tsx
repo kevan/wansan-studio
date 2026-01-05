@@ -136,6 +136,7 @@ export function FileSelectionStep() {
                 mode: mode,
                 status: 'pending',
                 tempFilePath: item.schema?.tempFilePath, // Correctly access nested property
+                readOptions: item.schema?.readOptions,
               } as IngestionTask
             })
 

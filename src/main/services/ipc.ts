@@ -496,7 +496,8 @@ export function setupIPC(
       filePath: string,
       tableName: string,
       sheetName?: string,
-      columns?: ColumnSchema[]
+      columns?: ColumnSchema[],
+      readOptions?: Record<string, any>
     ) => {
       try {
         const onProgress = (info: {
@@ -517,7 +518,8 @@ export function setupIPC(
           tableName,
           sheetName,
           onProgress,
-          columns
+          columns,
+          readOptions
         )
         return { success: true, data: result }
       } catch (error) {

@@ -25,6 +25,7 @@ export interface TableSchema {
   smartMetrics?: SmartMetric[] // Metrics to be displayed in the schema
   tempFilePath?: string // Path to temporary file (e.g. converted CSV) for cleanup
   sheetName?: string // Source sheet name for Excel files
+  readOptions?: Record<string, any> // Options used to read the file (e.g. { encoding: 'GBK' })
 }
 
 export interface AIAnalysisResult {
@@ -128,6 +129,7 @@ export interface FileNode {
   createdAt: number
   smartMetrics?: SmartMetric[] // Persisted metrics
   relations?: TableRelation[] // NEW: Stored per-file
+  readOptions?: Record<string, any> // Options used to read the file (e.g. encoding)
 }
 
 export interface ReloadResult {

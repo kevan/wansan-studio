@@ -1248,7 +1248,9 @@ export const useProjectStore = create<ProjectState>()(
             fileId,
             newPath,
             file.tableName,
-            file.sheetName
+            file.sheetName,
+            file.columns,
+            file.readOptions // Pass saved read options (e.g. encoding)
           )
 
           if (!result.success || !result.data) {

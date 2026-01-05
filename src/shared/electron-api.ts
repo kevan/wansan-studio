@@ -25,6 +25,7 @@ export interface IngestPreCheckParams {
   uniqueKeys?: string[]
   columnMapping: Record<string, string | null>
   tempFilePath?: string // Cached CSV path
+  readOptions?: Record<string, any>
 }
 
 export interface IngestPreCheckResponse {
@@ -46,6 +47,7 @@ export interface AppendDataParams {
   columnMapping: Record<string, string | null>
   tempFilePath?: string // Cached CSV path
   limitRows?: number // Max rows allowed
+  readOptions?: Record<string, any>
 }
 
 export interface CreateTableParams {
@@ -55,6 +57,7 @@ export interface CreateTableParams {
   columns: Array<{ name: string; type: string }> // User-confirmed types
   tempFilePath?: string // Cached CSV path
   limitRows?: number // Max rows allowed
+  readOptions?: Record<string, any>
 }
 
 export interface ElectronAPI {
@@ -72,7 +75,8 @@ export interface ElectronAPI {
     filePath: string,
     tableName: string,
     sheetName?: string,
-    columns?: ColumnSchema[] // Add this
+    columns?: ColumnSchema[], // Add this
+    readOptions?: Record<string, any> // Add this
   ) => Promise<IPCResponse<ReloadResult>>
   ingestPreCheck: (
     params: IngestPreCheckParams

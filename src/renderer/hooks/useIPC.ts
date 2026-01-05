@@ -55,17 +55,16 @@ const mockIPC: ElectronAPI = {
     return { success: true }
   },
   reIngestFile: async (
-    _fileId: string,
-    _filePath: string,
-    _tableName: string,
-    _sheetName?: string,
-    _columns?: ColumnSchema[]
-  ): Promise<IPCResponse<any>> => {
-    return {
-      success: true,
-      data: { lastModified: Date.now(), newColumns: [] },
-    }
-  },
+    fileId: string,
+    filePath: string,
+    tableName: string,
+    sheetName?: string,
+    columns?: ColumnSchema[],
+    readOptions?: Record<string, any>
+  ) => ({
+    success: true,
+    data: { lastModified: Date.now(), newColumns: columns || [] },
+  }),
   ingestPreCheck: async () => ({
     success: true,
     data: {

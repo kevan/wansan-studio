@@ -108,33 +108,74 @@ export class FileService {
   private async parseCSVFile(filePath: string) {
     console.log('[FileService] parseCSVFile start:', filePath)
 
-    try {
-      const fileName = basename(filePath)
+    const fileName = basename(filePath)
+    const safePath = filePath.replace(/\\/g, '/')
 
-      const safePath = filePath.replace(/\\/g, '/')
+    // Helper to format options string
+    const formatOptions = (opts: Record<string, any>) => {
+      const parts = Object.entries(opts).map(([k, v]) => {
+        if (typeof v === 'boolean') return `${k}=${v}`
+        if (typeof v === 'string') return `${k}='${v}'`
+        return `${k}=${v}`
+      })
+      if (!opts['auto_detect']) parts.push('auto_detect=true')
+      if (!opts['SAMPLE_SIZE']) parts.push('SAMPLE_SIZE=-1')
+      return parts.join(', ')
+    }
 
-      // 1. Get Preview Data & Count
+    // Strategies to try
+    const strategies = [
+      { name: 'Default', options: {} },
+      { name: 'GBK', options: { encoding: 'GBK' } },
+      { name: 'GB18030', options: { encoding: 'GB18030' } },
+      { name: 'IgnoreErrors', options: { ignore_errors: true } },
+    ]
 
-      console.log('[FileService] Fetching preview data...')
+    let workingOptions: Record<string, any> | null = null
+    let lastError: any
 
-      const preview = await this.databaseService.query(
-        `SELECT * FROM read_csv_auto('${safePath}', SAMPLE_SIZE=-1, auto_detect=true) LIMIT 100`
+    // 1. Detect working options
+    for (const strategy of strategies) {
+      try {
+        console.log(`[FileService] Trying CSV strategy: ${strategy.name}`)
+        const optsStr = formatOptions(strategy.options)
+        // Test with a lightweight query
+        await this.databaseService.query(
+          `SELECT * FROM read_csv_auto('${safePath}', ${optsStr}) LIMIT 1`
+        )
+        workingOptions = strategy.options
+        console.log(`[FileService] Strategy ${strategy.name} succeeded`)
+        break
+      } catch (e) {
+        console.warn(`[FileService] Strategy ${strategy.name} failed:`, e)
+        lastError = e
+      }
+    }
+
+    if (!workingOptions) {
+      throw new Error(
+        `Failed to parse CSV file: ${lastError instanceof Error ? lastError.message : 'Unknown error'}`
       )
+    }
 
+    const optsStr = formatOptions(workingOptions)
+
+    try {
+      // 2. Get Preview Data
+      console.log('[FileService] Fetching preview data...')
+      const preview = await this.databaseService.query(
+        `SELECT * FROM read_csv_auto('${safePath}', ${optsStr}) LIMIT 100`
+      )
       console.log('[FileService] Preview fetched, rows:', preview?.length)
 
-      // 2. Get Schema
-
+      // 3. Get Schema
       console.log('[FileService] Fetching schema...')
-
       const columnsResult = await this.databaseService.query(
-        `DESCRIBE SELECT * FROM read_csv_auto('${safePath}', SAMPLE_SIZE=-1, auto_detect=true);`
+        `DESCRIBE SELECT * FROM read_csv_auto('${safePath}', ${optsStr});`
       )
-
       console.log('[FileService] Schema fetched, cols:', columnsResult?.length)
 
-      // 3. Process Schema & Extract Samples from Preview
-
+      // 4. Process Schema & Extract Samples from Preview
       const columns: ColumnSchema[] = []
 
       if (columnsResult && preview) {
@@ -142,24 +183,16 @@ export class FileService {
           const finalType = normalizeDuckDBType(col.column_type)
 
           // Extract up to 3 non-null samples from the preview data we already have
-
           const samples = preview
-
             .map(row => row[col.column_name])
-
             .filter(val => val !== null && val !== undefined && val !== '')
-
             .slice(0, 3)
-
             .map(val => processSampleValue(val, finalType as ColumnType))
 
           columns.push({
             name: col.column_name,
-
             safeName: col.column_name,
-
             type: finalType as ColumnType,
-
             sampleValues: samples,
           })
         }
@@ -167,34 +200,27 @@ export class FileService {
 
       const schema = {
         tableName: '',
-
         description: fileName,
-
         columns,
+        readOptions: workingOptions, // Pass back successful options
       }
 
       console.log('[FileService] Fetching count...')
-
       const countResult = await this.databaseService.query(
-        `SELECT COUNT(*) as count FROM read_csv_auto('${safePath}', auto_detect=true)`
+        `SELECT COUNT(*) as count FROM read_csv_auto('${safePath}', ${optsStr})`
       )
-
       console.log('[FileService] Count fetched:', countResult?.[0]?.count)
 
       return [
         {
           tableName: '',
-
           schema,
-
           rowCount: Number(countResult[0].count),
-
           preview,
         },
       ]
     } catch (error) {
       console.error('[FileService] parseCSVFile Error:', error)
-
       throw new Error(
         `Failed to parse CSV file: ${error instanceof Error ? error.message : 'Unknown error'}`
       )
@@ -210,7 +236,8 @@ export class FileService {
       isPercentage?: boolean
       progress?: number
     }) => void,
-    knownColumns?: ColumnSchema[] // Add this param
+    knownColumns?: ColumnSchema[], // Add this param
+    readOptions?: Record<string, any> // Add this
   ): Promise<ReloadResult> {
     // 处理 Demo 数据（DEMO_MEMORY 路径）
     if (filePath === 'DEMO_MEMORY') {
@@ -234,6 +261,20 @@ export class FileService {
     const ext = extname(filePath).toLowerCase()
     const stats = await fs.stat(filePath)
     let columns: ColumnSchema[] = []
+
+    // Helper to format extra options
+    const formatReadOptions = (opts?: Record<string, any>) => {
+      if (!opts) return ''
+      return Object.entries(opts)
+        .map(([k, v]) => {
+          if (typeof v === 'boolean') return `${k}=${v}`
+          if (typeof v === 'string') return `${k}='${v}'`
+          return `${k}=${v}`
+        })
+        .join(', ')
+    }
+    const extraOptions = formatReadOptions(readOptions)
+    const optionsPrefix = extraOptions ? `, ${extraOptions}` : ''
 
     // Build types param if columns are provided
     let typesParam = ''
@@ -277,8 +318,8 @@ export class FileService {
       const safePath = filePath.replace(/\\/g, '/')
       // Use typesParam if available
       const loadOptions = typesParam
-        ? `${typesParam}, auto_detect=true`
-        : `HEADER = TRUE, SAMPLE_SIZE = -1, auto_detect=true`
+        ? `${typesParam}, auto_detect=true${optionsPrefix}`
+        : `HEADER = TRUE, SAMPLE_SIZE = -1, auto_detect=true${optionsPrefix}`
 
       await this.databaseService.exec(
         `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${safePath}', ${loadOptions})`
@@ -350,7 +391,14 @@ export class FileService {
   async createTableFromSource(
     params: CreateTableParams
   ): Promise<{ rowCount: number; columns: ColumnSchema[] }> {
-    const { filePath, tableName, sheetName, columns, tempFilePath } = params
+    const {
+      filePath,
+      tableName,
+      sheetName,
+      columns,
+      tempFilePath,
+      readOptions,
+    } = params
 
     console.log('[FileService] createTableFromSource', {
       ...params,
@@ -379,6 +427,20 @@ export class FileService {
     const typesParam = `types={${typesSql}}`
     const limitClause = params.limitRows ? ` LIMIT ${params.limitRows}` : ''
 
+    // Helper to format extra options
+    const formatReadOptions = (opts?: Record<string, any>) => {
+      if (!opts) return ''
+      return Object.entries(opts)
+        .map(([k, v]) => {
+          if (typeof v === 'boolean') return `${k}=${v}`
+          if (typeof v === 'string') return `${k}='${v}'`
+          return `${k}=${v}`
+        })
+        .join(', ')
+    }
+    const extraOptions = formatReadOptions(readOptions)
+    const optionsPrefix = extraOptions ? `, ${extraOptions}` : ''
+
     let tempFileToDrop: string | undefined
 
     try {
@@ -389,8 +451,8 @@ export class FileService {
           const safeTempPath = tempFilePath.replace(/\\/g, '/')
 
           const loadOptions = typesParam
-            ? `${typesParam}, auto_detect=true`
-            : `HEADER=TRUE, SAMPLE_SIZE=-1, auto_detect=true`
+            ? `${typesParam}, auto_detect=true${optionsPrefix}`
+            : `HEADER=TRUE, SAMPLE_SIZE=-1, auto_detect=true${optionsPrefix}`
 
           await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
 
@@ -433,8 +495,18 @@ export class FileService {
 
         await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
 
+        // For JSON, options might differ, but readOptions usually applies to CSV mainly.
+        // If user passes 'encoding' for JSON, read_json_auto might accept it or not.
+        // We assume readOptions are mostly for CSV for now.
+        // DuckDB read_json_auto also supports auto_detect, format, etc.
+
+        const loadOptions =
+          ext === '.csv'
+            ? `${typesParam}, auto_detect=true${optionsPrefix}`
+            : `${typesParam}, format='auto', auto_detect=true` // JSON usually UTF8
+
         await this.databaseService.exec(
-          `CREATE TABLE "${tableName}" AS SELECT * FROM ${reader}('${safePath}', ${typesParam}, auto_detect=true)${limitClause}`
+          `CREATE TABLE "${tableName}" AS SELECT * FROM ${reader}('${safePath}', ${loadOptions})${limitClause}`
         )
       }
 
@@ -544,6 +616,7 @@ export class FileService {
       uniqueKeys,
       columnMapping,
       tempFilePath,
+      readOptions,
     } = params
 
     console.log('[FileService] ingestPreCheck', {
@@ -555,6 +628,20 @@ export class FileService {
 
     const safePath = filePath.replace(/\\/g, '/')
 
+    // Helper to format extra options
+    const formatReadOptions = (opts?: Record<string, any>) => {
+      if (!opts) return ''
+      return Object.entries(opts)
+        .map(([k, v]) => {
+          if (typeof v === 'boolean') return `${k}=${v}`
+          if (typeof v === 'string') return `${k}='${v}'`
+          return `${k}=${v}`
+        })
+        .join(', ')
+    }
+    const extraOptions = formatReadOptions(readOptions)
+    const optionsPrefix = extraOptions ? `, ${extraOptions}` : ''
+
     let sourceSql = ''
 
     let tempTableToDrop: string | undefined
@@ -563,7 +650,7 @@ export class FileService {
 
     try {
       if (ext === '.csv') {
-        sourceSql = `read_csv_auto('${safePath}', SAMPLE_SIZE=-1, auto_detect=true)`
+        sourceSql = `read_csv_auto('${safePath}', SAMPLE_SIZE=-1, auto_detect=true${optionsPrefix})`
       } else if (ext === '.json') {
         sourceSql = `read_json_auto('${safePath}', format='auto', auto_detect=true)`
       } else if (ext === '.xlsx' || ext === '.xls') {
@@ -572,7 +659,7 @@ export class FileService {
 
           const safeTempPath = tempFilePath.replace(/\\/g, '/')
 
-          sourceSql = `read_csv_auto('${safeTempPath}', HEADER=TRUE, SAMPLE_SIZE=-1, auto_detect=true)`
+          sourceSql = `read_csv_auto('${safeTempPath}', HEADER=TRUE, SAMPLE_SIZE=-1, auto_detect=true${optionsPrefix})`
         } else {
           // CACHE MISS: Convert
 
@@ -694,6 +781,7 @@ export class FileService {
       strategy,
       columnMapping,
       tempFilePath,
+      readOptions,
     } = params
     console.log('[FileService] appendData', {
       ...params,
@@ -702,6 +790,21 @@ export class FileService {
 
     const ext = extname(filePath).toLowerCase()
     const safePath = filePath.replace(/\\/g, '/')
+
+    // Helper to format extra options
+    const formatReadOptions = (opts?: Record<string, any>) => {
+      if (!opts) return ''
+      return Object.entries(opts)
+        .map(([k, v]) => {
+          if (typeof v === 'boolean') return `${k}=${v}`
+          if (typeof v === 'string') return `${k}='${v}'`
+          return `${k}=${v}`
+        })
+        .join(', ')
+    }
+    const extraOptions = formatReadOptions(readOptions)
+    const optionsPrefix = extraOptions ? `, ${extraOptions}` : ''
+
     let sourceSql = ''
     let tempTableToDrop: string | undefined
     let tempFileToDrop: string | undefined
@@ -709,14 +812,14 @@ export class FileService {
     try {
       // 1. Prepare Source SQL
       if (ext === '.csv') {
-        sourceSql = `read_csv_auto('${safePath}', SAMPLE_SIZE=-1, auto_detect=true)`
+        sourceSql = `read_csv_auto('${safePath}', SAMPLE_SIZE=-1, auto_detect=true${optionsPrefix})`
       } else if (ext === '.json') {
         sourceSql = `read_json_auto('${safePath}', format='auto', auto_detect=true)`
       } else if (ext === '.xlsx' || ext === '.xls') {
         if (tempFilePath && (await fs.pathExists(tempFilePath))) {
           // CACHE HIT
           const safeTempPath = tempFilePath.replace(/\\/g, '/')
-          sourceSql = `read_csv_auto('${safeTempPath}', HEADER=TRUE, SAMPLE_SIZE=-1, auto_detect=true)`
+          sourceSql = `read_csv_auto('${safeTempPath}', HEADER=TRUE, SAMPLE_SIZE=-1, auto_detect=true${optionsPrefix})`
         } else {
           // CACHE MISS
           // Excel needs conversion

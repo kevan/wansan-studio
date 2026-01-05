@@ -86,6 +86,7 @@ export function DataIngestionWizard() {
             columnMapping: task.columnMapping || {},
             tempFilePath: task.tempFilePath, // Pass cached CSV path
             limitRows,
+            readOptions: task.readOptions,
           })
 
           if (result.success && result.data) {
@@ -111,6 +112,7 @@ export function DataIngestionWizard() {
             columns: task.columns.map(c => ({ name: c.name, type: c.type })),
             tempFilePath: task.tempFilePath,
             limitRows,
+            readOptions: task.readOptions,
           })
 
           if (!result.success || !result.data) {
@@ -150,6 +152,7 @@ export function DataIngestionWizard() {
             sheetName:
               task.sourceName === task.fileName ? undefined : task.sourceName,
             rowCount: result.data.rowCount,
+            readOptions: task.readOptions,
           })
 
           addedFileIds.push(targetFile.id)
@@ -166,6 +169,7 @@ export function DataIngestionWizard() {
             columns: task.columns.map(c => ({ name: c.name, type: c.type })),
             tempFilePath: task.tempFilePath, // Pass cached CSV path
             limitRows,
+            readOptions: task.readOptions,
           })
 
           if (!result.success || !result.data) {
@@ -203,6 +207,7 @@ export function DataIngestionWizard() {
             status: 'ready',
             columns: columns as any,
             rowCount: result.data.rowCount,
+            readOptions: task.readOptions,
           })
           addedFileIds.push(fileId)
         }

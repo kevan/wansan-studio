@@ -41,6 +41,7 @@ export interface IngestionTask {
   }
   status: 'pending' | 'processing' | 'completed' | 'error'
   error?: string
+  readOptions?: Record<string, any>
 }
 
 export interface WizardState {
