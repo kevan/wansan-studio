@@ -279,9 +279,7 @@ export function buildEChartsOption(
           type: (type === 'area' ? 'line' : type) as any,
           data: data.map(item => item[key]),
           areaStyle: type === 'area' ? {} : undefined,
-          itemStyle: {
-            color: '#4F46E5', // Indigo-600
-          },
+          // itemStyle: { color: '#4F46E5' } // Removed to allow theme colors to take effect
         }))
 
   const baseOption: EChartsOption = {
@@ -289,9 +287,10 @@ export function buildEChartsOption(
       trigger: type === 'pie' ? 'item' : 'axis',
     },
     grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '3%',
+      left: '2%',
+      right: '2%',
+      bottom: '4%',
+      top: '12%',
       containLabel: true,
     },
     xAxis:
@@ -300,10 +299,27 @@ export function buildEChartsOption(
         : {
             type: 'category' as const,
             data: xData,
-            axisLabel: { interval: 0, rotate: 30 },
+            axisLabel: {
+              interval: 'auto',
+              rotate: 45,
+              fontSize: 10,
+              hideOverlap: true,
+            },
+            axisTick: {
+              alignWithLabel: true,
+            },
           },
     yAxis: {
       type: 'value' as const,
+      axisLabel: {
+        fontSize: 10,
+      },
+      splitLine: {
+        lineStyle: {
+          type: 'dashed',
+          color: '#F3F4F6', // gray-100
+        },
+      },
     },
     series: baseSeries,
   }

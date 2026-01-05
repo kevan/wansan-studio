@@ -192,7 +192,8 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
 
     // 5. Minimal Legend
     legend: {
-      bottom: 0,
+      top: 0,
+      padding: [0, 0, 10, 0], // Add padding bottom
       icon: 'circle',
       itemWidth: 8,
       itemHeight: 8,
