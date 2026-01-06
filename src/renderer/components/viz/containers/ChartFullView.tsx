@@ -7,6 +7,8 @@ import {
   PieChart,
   Table2,
   Gauge,
+  AreaChart,
+  ScatterChart,
   ArrowUpDown,
   Check,
 } from 'lucide-react'
@@ -17,25 +19,22 @@ import { VizChart } from '../core/VizChart'
 import { DataTable } from '../base/DataTable'
 import { KpiCard } from '../base/KpiCard'
 import { cn } from '@/utils/cn'
-import type {
-  ReportData,
-  DenormalizedReportWidget,
-} from '@/stores/useWorkbenchStore'
+import type { DenormalizedReportWidget } from '@/stores/useWorkbenchStore'
+import type { ReportData, ChartType } from '@shared/types/dashboard'
 import { useTranslation } from 'react-i18next'
 import { adaptChartConfig } from '@/lib/viz-adapter'
-import type { AIAnalysisResult } from '@shared/types'
 import { getDisplayMode } from '@/utils/viz-logic'
 
-type VizType = NonNullable<AIAnalysisResult['viz_type']>
-
 const chartTypeOptions: Array<{
-  value: VizType
+  value: ChartType
   label: string
   icon: React.ComponentType<any>
 }> = [
   { value: 'bar', label: 'chart_bar', icon: BarChart3 },
   { value: 'line', label: 'chart_line', icon: LineChart },
+  { value: 'area', label: 'chart_area', icon: AreaChart },
   { value: 'pie', label: 'chart_pie', icon: PieChart },
+  { value: 'scatter', label: 'chart_scatter', icon: ScatterChart },
   { value: 'table', label: 'chart_table', icon: Table2 },
   { value: 'kpi', label: 'chart_kpi', icon: Gauge },
 ]
@@ -72,18 +71,25 @@ export function ChartFullView() {
     return undefined
   }, [editingReportId, pinnedReports, widgetRegistry])
 
-  const [localType, setLocalType] = useState<ReportData['chartType']>('bar')
+  const [localType, setLocalType] = useState<ReportData['chartType'] | null>(
+    null
+  )
   const [localConfig, setLocalConfig] = useState<
-    ReportData['vizConfig'] | undefined
-  >(undefined)
-  const [localTitle, setLocalTitle] = useState('')
+    ReportData['vizConfig'] | null
+  >(null)
+  const [localTitle, setLocalTitle] = useState<string | null>(null)
 
+  // Derive effective values: prefer local edits, fallback to report data
+  const effectiveType = localType ?? report?.reportData.chartType ?? 'bar'
+  const effectiveConfig = localConfig ?? report?.reportData.vizConfig
+  const effectiveTitle = localTitle ?? report?.reportData.title ?? ''
+
+  // Reset local state when switching or closing reports
   useEffect(() => {
-    if (!report) return
-    setLocalType(report.reportData.chartType ?? 'bar')
-    setLocalConfig(report.reportData.vizConfig)
-    setLocalTitle(report.reportData.title ?? '')
-  }, [report])
+    setLocalType(null)
+    setLocalConfig(null)
+    setLocalTitle(null)
+  }, [editingReportId])
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
@@ -108,38 +114,39 @@ export function ChartFullView() {
           ? Object.keys(data[0])
           : []) || []
 
-  // --- Inline Viz Controls Logic (Hooks must be unconditional) ---
+  // --- Inline Viz Controls Logic ---
 
   const availableColumns = columns
 
   const yAxisValues = useMemo(() => {
-    const raw = localConfig?.y_axis
+    const raw = effectiveConfig?.y_axis
     if (Array.isArray(raw)) return raw.filter(Boolean) as string[]
     if (typeof raw === 'string' && raw) return [raw]
     return []
-  }, [localConfig?.y_axis])
+  }, [effectiveConfig?.y_axis])
 
   const yAxisOptions = useMemo(
-    () => availableColumns.filter(col => col !== localConfig?.x_axis),
-    [availableColumns, localConfig?.x_axis]
+    () => availableColumns.filter(col => col !== effectiveConfig?.x_axis),
+    [availableColumns, effectiveConfig?.x_axis]
   )
 
-  const effectiveType = localType ?? report?.reportData.chartType ?? 'bar'
-
-  const handleChartTypeChange = (type: VizType) => {
+  const handleChartTypeChange = (type: ChartType) => {
     const adapted = adaptChartConfig(
-      type,
-      effectiveType as VizType,
-      localConfig,
+      type as any, // adaptChartConfig expects string for type
+      effectiveType as any,
+      effectiveConfig,
       data || []
     )
-    setLocalType(adapted.type as any)
-    setLocalConfig(prev => ({ ...(prev || {}), ...adapted.config }))
+    setLocalType(adapted.type as ChartType)
+    setLocalConfig(prev => ({
+      ...(prev || effectiveConfig || {}),
+      ...adapted.config,
+    }))
   }
 
   const handleXAxisChange = (value: string) => {
     setLocalConfig(prev => ({
-      ...(prev || {}),
+      ...(prev || effectiveConfig || {}),
       x_axis: value || null,
     }))
   }
@@ -151,18 +158,18 @@ export function ChartFullView() {
       : [...yAxisValues, value]
 
     setLocalConfig(prev => ({
-      ...(prev || {}),
+      ...(prev || effectiveConfig || {}),
       y_axis: nextY.length > 0 ? nextY : null,
     }))
   }
 
   const handleSwapAxes = () => {
-    if (!localConfig?.x_axis || yAxisValues.length === 0) return
+    if (!effectiveConfig?.x_axis || yAxisValues.length === 0) return
     const nextX = yAxisValues[0]
-    const nextY = [localConfig.x_axis, ...yAxisValues.slice(1)]
+    const nextY = [effectiveConfig.x_axis, ...yAxisValues.slice(1)]
 
     setLocalConfig(prev => ({
-      ...(prev || {}),
+      ...(prev || effectiveConfig || {}),
       x_axis: nextX,
       y_axis: nextY,
     }))
@@ -172,15 +179,15 @@ export function ChartFullView() {
     if (!report) return
     updateReportConfig(report.id, {
       type: effectiveType as any,
-      config: localConfig,
+      config: effectiveConfig,
     })
-    if (localTitle.trim() && localTitle !== report.reportData.title) {
-      updateReportTitle(report.id, localTitle.trim())
+    if (effectiveTitle.trim() && effectiveTitle !== report.reportData.title) {
+      updateReportTitle(report.id, effectiveTitle.trim())
     }
     setEditingReportId(null)
   }
 
-  const displayMode = getDisplayMode(effectiveType, data, localConfig)
+  const displayMode = getDisplayMode(effectiveType, data, effectiveConfig)
 
   const showAxisControls =
     displayMode === 'chart' && availableColumns.length > 0
@@ -191,7 +198,7 @@ export function ChartFullView() {
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
       <div
         className={cn(
-          'relative flex h-[80vh] w-[80vw] rounded-xl border border-zinc-200 bg-white shadow-2xl overflow-hidden transition-all duration-300',
+          'relative flex h-[80vh] w-[80vw] rounded-xl border border-zinc-200 bg-white shadow-2xl overflow-hidden',
           modalMaxWidth
         )}
       >
@@ -199,7 +206,7 @@ export function ChartFullView() {
           <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3">
             <input
               className="w-full max-w-lg border-none text-lg font-semibold text-zinc-900 outline-none focus:ring-0"
-              value={localTitle}
+              value={effectiveTitle}
               onChange={e => setLocalTitle(e.target.value)}
             />
             <div className="flex items-center gap-2">
@@ -227,17 +234,17 @@ export function ChartFullView() {
                   <KpiCard
                     value={
                       (() => {
-                        const yCol = Array.isArray(localConfig?.y_axis)
-                          ? localConfig.y_axis[0]
-                          : localConfig?.y_axis
+                        const yCol = Array.isArray(effectiveConfig?.y_axis)
+                          ? effectiveConfig.y_axis[0]
+                          : effectiveConfig?.y_axis
                         const targetCol = yCol || Object.keys(data[0])[0]
                         return data[0][targetCol]
                       })() as any
                     }
                     label={(() => {
-                      const yCol = Array.isArray(localConfig?.y_axis)
-                        ? localConfig.y_axis[0]
-                        : localConfig?.y_axis
+                      const yCol = Array.isArray(effectiveConfig?.y_axis)
+                        ? effectiveConfig.y_axis[0]
+                        : effectiveConfig?.y_axis
                       return yCol || Object.keys(data[0])[0]
                     })()}
                     variant="dashboard"
@@ -247,9 +254,9 @@ export function ChartFullView() {
                 {displayMode === 'chart' && (
                   <VizChart
                     type={effectiveType}
-                    title={localTitle}
+                    title={effectiveTitle}
                     data={data}
-                    config={localConfig}
+                    config={effectiveConfig}
                     className="h-full w-full"
                   />
                 )}
@@ -297,7 +304,7 @@ export function ChartFullView() {
                           key={option.value}
                           type="button"
                           onClick={() =>
-                            handleChartTypeChange(option.value as VizType)
+                            handleChartTypeChange(option.value)
                           }
                           className={cn(
                             'flex flex-col items-center gap-1 rounded-md border px-2 py-2 text-[11px] font-medium transition-colors',
@@ -321,13 +328,13 @@ export function ChartFullView() {
                     </div>
                     <select
                       value={(() => {
-                        const yVal = localConfig?.y_axis
+                        const yVal = effectiveConfig?.y_axis
                         return Array.isArray(yVal) ? yVal[0] : yVal || ''
                       })()}
                       onChange={e => {
                         const val = e.target.value
                         setLocalConfig(prev => ({
-                          ...(prev || {}),
+                          ...(prev || effectiveConfig || {}),
                           y_axis: val ? [val] : null,
                         }))
                       }}
@@ -363,7 +370,7 @@ export function ChartFullView() {
                         {t('x_axis')}
                       </div>
                       <select
-                        value={localConfig?.x_axis ?? ''}
+                        value={effectiveConfig?.x_axis ?? ''}
                         onChange={e => handleXAxisChange(e.target.value)}
                         className="w-full rounded-md border border-zinc-200 px-2 py-2 text-sm text-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-200"
                       >

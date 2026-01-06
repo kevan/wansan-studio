@@ -43,22 +43,11 @@ export function generateMarkdown(messages: ChatMessage[]): string {
 
       if (msg.reportData) {
         lines.push(`### Report: ${msg.reportData.title}`)
-        if (msg.reportData.subtitle) {
-          lines.push(`_${msg.reportData.subtitle}_`)
-        }
         lines.push('')
 
         if (msg.reportData.summary) {
           lines.push('#### Summary')
           lines.push(msg.reportData.summary)
-          lines.push('')
-        }
-
-        if (msg.reportData.insights && msg.reportData.insights.length > 0) {
-          lines.push('#### Key Insights')
-          for (const insight of msg.reportData.insights) {
-            lines.push(`- ${insight}`)
-          }
           lines.push('')
         }
 

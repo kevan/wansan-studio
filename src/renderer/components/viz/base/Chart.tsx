@@ -23,20 +23,8 @@ export function Chart({
     const el = chartRef.current
     if (!el) return
 
-    if (instanceRef.current) {
-      instanceRef.current.dispose()
-      instanceRef.current = null
-    }
-
     const instance = echarts.init(el)
     instanceRef.current = instance
-
-    // Bind click listener
-    if (onChartClick) {
-      instance.on('click', params => {
-        onChartClick(params)
-      })
-    }
 
     const resize = () => instance.resize()
     const observer = new ResizeObserver(() => resize())
@@ -45,12 +33,24 @@ export function Chart({
 
     return () => {
       window.removeEventListener('resize', resize)
-      if (onChartClick) {
-        instance.off('click')
-      }
       observer.disconnect()
       instance.dispose()
       instanceRef.current = null
+    }
+  }, [])
+
+  // Bind/Unbind click listener separately
+  useEffect(() => {
+    const instance = instanceRef.current
+    if (!instance || !onChartClick) return
+
+    const handler = (params: any) => {
+      onChartClick(params)
+    }
+
+    instance.on('click', handler)
+    return () => {
+      instance.off('click', handler)
     }
   }, [onChartClick])
 

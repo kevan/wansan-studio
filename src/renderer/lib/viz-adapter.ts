@@ -1,27 +1,14 @@
 import type { EChartsOption } from 'echarts'
 import * as echarts from 'echarts'
+import type { ChartType, ReportData } from '@shared/types/dashboard'
 
-type VizConfig = {
-  x_axis?: string | null
-  y_axis?: string | string[] | null
-  series_name?: string | string[]
-}
-
-type VizType =
-  | 'bar'
-  | 'line'
-  | 'pie'
-  | 'scatter'
-  | 'table'
-  | 'area'
-  | 'kpi'
-  | 'text'
+type VizConfig = NonNullable<ReportData['vizConfig']>
 
 /**
  * Categorizes chart types into groups for conversion logic
  */
 function getChartCategory(
-  type: VizType
+  type: ChartType
 ): 'cartesian' | 'radial' | 'tabular' | 'kpi' | 'text' {
   const cartesianTypes = ['bar', 'line', 'area', 'scatter']
   const radialTypes = ['pie']
@@ -48,14 +35,14 @@ function getChartCategory(
  * @returns Adapted configuration for the new chart type
  */
 export function adaptChartConfig(
-  newType: VizType,
-  oldType: VizType | undefined,
+  newType: ChartType,
+  oldType: ChartType | undefined,
   oldConfig: VizConfig | undefined,
   data: Array<Record<string, any>>
-): { type: Exclude<VizType, 'area'>; config?: VizConfig } {
+): { type: Exclude<ChartType, 'area'>; config?: VizConfig } {
   // Convert 'area' to 'line' for compatibility
-  const targetType: Exclude<VizType, 'area'> =
-    newType === 'area' ? 'line' : newType
+  const targetType: Exclude<ChartType, 'area'> =
+    newType === 'area' ? 'line' : (newType as Exclude<ChartType, 'area'>)
 
   const oldCategory = oldType ? getChartCategory(oldType) : 'cartesian'
   const newCategory = getChartCategory(targetType)
@@ -235,7 +222,7 @@ export function adaptChartConfig(
  * Used by components like A4Chart to render the actual chart
  */
 export function buildEChartsOption(
-  type: VizType,
+  type: ChartType,
   config: VizConfig | undefined,
   data: Array<Record<string, any>>
 ): EChartsOption {
@@ -356,18 +343,19 @@ export function buildEChartsOption(
 /**
  * Extracts chart type from ECharts option
  */
-export function extractChartType(option: EChartsOption): VizType | undefined {
-  if (
-    !option ||
-    !option.series ||
-    !Array.isArray(option.series) ||
-    option.series.length === 0
-  ) {
-    return undefined
-  }
+export function extractChartType(option: EChartsOption): ChartType | undefined {
+  const series = Array.isArray(option.series) ? option.series[0] : option.series
+  if (!series) return undefined
 
-  const seriesType = option.series[0].type
-  return seriesType as VizType
+  const seriesType = (series as any).type
+  if (seriesType === 'scatter') return 'scatter'
+  if (seriesType === 'pie') return 'pie'
+  if (seriesType === 'line') {
+    return (series as any).areaStyle ? 'area' : 'line'
+  }
+  if (seriesType === 'bar') return 'bar'
+
+  return seriesType as ChartType
 }
 
 /**

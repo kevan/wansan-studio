@@ -1,15 +1,12 @@
 import { useMemo } from 'react'
 import type { EChartsOption } from 'echarts'
 import { buildEChartsOption } from '../lib/viz-adapter'
+import type { ChartType, ReportData } from '@shared/types/dashboard'
 
 interface UseChartOptionProps {
-  type?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi' | 'text'
+  type?: ChartType
   data?: Array<Record<string, any>>
-  config?: {
-    x_axis?: string | null
-    y_axis?: string | string[] | null
-    series_name?: string | string[]
-  }
+  config?: ReportData['vizConfig']
 }
 
 export function useChartOption({
@@ -18,7 +15,7 @@ export function useChartOption({
   config,
 }: UseChartOptionProps): EChartsOption {
   const option = useMemo(() => {
-    return buildEChartsOption(type, config, data)
+    return buildEChartsOption(type as ChartType, config as any, data)
   }, [type, config, data])
 
   return option

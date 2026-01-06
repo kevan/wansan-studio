@@ -459,13 +459,11 @@ const sendMessage = async (
         reasoning: plan.reasoning,
         suggestions: plan.suggestions,
         chartType: plan.viz_type,
-        chartTitle: plan.title,
         tableData: execution.data.data,
         columnFields: execution.data.columnFields,
         vizConfig: plan.viz_config as any,
         is_template: plan.is_template,
         missing_params: plan.missing_params as any,
-        insights: [],
       },
     }))
 
@@ -687,13 +685,11 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
         reasoning: plan.reasoning,
         suggestions: plan.suggestions,
         chartType: plan.viz_type,
-        chartTitle: plan.title,
         tableData: execution.data.data,
         columnFields: execution.data.columnFields,
         vizConfig: plan.viz_config as any,
         is_template: plan.is_template,
         missing_params: plan.missing_params as any,
-        insights: [],
       },
     }))
     useProjectStore.getState().setAbortController(null)

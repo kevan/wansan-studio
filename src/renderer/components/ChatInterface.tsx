@@ -25,30 +25,9 @@ import { AnalysisTemplateCard } from './chat/analysis-template-card'
 import { FilterParam } from '@shared/schemas/analysis'
 import { VizSummary } from './viz/core/VizSummary'
 import type { ReportData } from '@shared/types/dashboard'
+import type { Message } from '@shared/types/chat'
 
-export interface ChatMessage {
-  id: string
-  type: 'user' | 'assistant'
-  content: string
-  hiddenPrompt?: string
-  timestamp: number
-  status?: 'thinking' | 'planning' | 'executing' | 'error'
-  error?: string
-  planSql?: string
-  planReasoning?: string
-  contextRef?: {
-    query: string
-    sqlSummary: string
-  }
-  originalQuery?: string
-  metadata?: {
-    aiLatency?: number
-    dbLatency?: number
-    latency?: number
-  }
-  widgetId?: string
-  reportData?: ReportData
-}
+export type ChatMessage = Message
 
 interface ChatInterfaceProps {
   tableName?: string

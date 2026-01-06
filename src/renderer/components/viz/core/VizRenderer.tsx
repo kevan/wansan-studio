@@ -8,31 +8,20 @@ import { Lightbulb } from 'lucide-react'
 import { DataTable } from '../base/DataTable'
 import { useTranslation } from 'react-i18next'
 import { getDisplayMode } from '@/utils/viz-logic'
+import type { ChartType, ReportData } from '@shared/types/dashboard'
 
 interface VizRendererProps {
   title: string
   subtitle?: string
   summary?: string
   insights?: string[]
-  chartType?:
-    | 'bar'
-    | 'line'
-    | 'pie'
-    | 'area'
-    | 'table'
-    | 'scatter'
-    | 'kpi'
-    | 'text'
+  chartType?: ChartType
   chartTitle?: string
   tableData?: Array<Record<string, any>>
   columnFields?: Array<{ name: string; type: string }>
   columns?: string[]
   columnTypes?: Record<string, string>
-  vizConfig?: {
-    x_axis?: string | null
-    y_axis?: string | string[] | null
-    series_name?: string | string[]
-  }
+  vizConfig?: ReportData['vizConfig']
   timestamp?: number
   className?: string
   variant?: 'chat' | 'dashboard'

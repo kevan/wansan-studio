@@ -1,12 +1,12 @@
-import type { AIAnalysisResult } from '@shared/types'
+import type { ChartType } from '@shared/types/dashboard'
 
 export type DisplayMode = 'chart' | 'table' | 'bignumber' | 'empty'
 
 export function getDisplayMode(
-  chartType: AIAnalysisResult['viz_type'],
+  chartType: ChartType | undefined,
   data: any[],
   vizConfig?: any
-): 'chart' | 'table' | 'bignumber' | 'empty' {
+): DisplayMode {
   const hasData = data && data.length > 0
   if (!hasData) return 'empty'
 

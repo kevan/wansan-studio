@@ -1,3 +1,6 @@
+import type { ChartType } from './types/dashboard'
+import type { FilterParam } from './schemas/analysis'
+
 export type ColumnType =
   | 'VARCHAR'
   | 'DOUBLE'
@@ -42,15 +45,7 @@ export interface AIAnalysisResult {
   error?: string
 
   // Visualization (Matching Prompt Structure)
-  viz_type?:
-    | 'bar'
-    | 'line'
-    | 'pie'
-    | 'scatter'
-    | 'table'
-    | 'kpi'
-    | 'area'
-    | 'text'
+  viz_type?: ChartType
   viz_config?: {
     x_axis?: string | null
     y_axis?: string | string[] | null
@@ -59,14 +54,7 @@ export interface AIAnalysisResult {
 
   // v1.2 Smart Filters
   is_template?: boolean
-  missing_params?: Array<{
-    placeholder: string
-    label?: string
-    column: string
-    table: string
-    display_columns?: string[]
-    hint?: string
-  }>
+  missing_params?: FilterParam[]
 }
 
 // [UPDATE] Add this new interface

@@ -293,9 +293,7 @@ export async function exportDashboardToHtml(
       const reportData = r.reportData || ({} as any)
       return {
         title: reportData.title || 'Untitled',
-        subtitle: reportData.subtitle,
         summary: reportData.summary,
-        insights: reportData.insights,
         vizConfig: reportData.vizConfig,
         data: reportData.tableData,
         chartType: reportData.chartType,

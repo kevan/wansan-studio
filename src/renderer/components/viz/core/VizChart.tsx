@@ -1,20 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import { Chart } from '../base/Chart'
 import { DrillDownMenu } from '../../visualizations/drill-down-menu'
 import { useChatStore } from '../../../stores/useChatStore'
 import { useChartOption } from '../../../hooks/useChartOption'
+import type { ChartType, ReportData } from '@shared/types/dashboard'
 
 interface VizChartProps {
-  type?: 'bar' | 'line' | 'pie' | 'area' | 'table' | 'scatter' | 'kpi' | 'text'
+  type?: ChartType
   title?: string
   data?: Array<Record<string, any>>
-  config?: {
-    x_axis?: string | null
-    y_axis?: string | string[] | null
-    series_name?: string | string[]
-  }
+  config?: ReportData['vizConfig']
   className?: string
   style?: React.CSSProperties
   messageId?: string
@@ -40,7 +37,7 @@ export function VizChart({
     seriesName?: string
   } | null>(null)
 
-  const handleChartClick = (params: any) => {
+  const handleChartClick = useCallback((params: any) => {
     if (params && params.event && params.event.event) {
       const { clientX, clientY } = params.event.event
       setMenuState({
@@ -51,9 +48,9 @@ export function VizChart({
         seriesName: params.seriesName,
       })
     }
-  }
+  }, [])
 
-  const handleFocus = () => {
+  const handleFocus = useCallback(() => {
     if (!menuState) return
     const displayMsg = `🔍 ${t('focus_analysis', { name: menuState.name })}`
     const hiddenMsg = `Filter the current analysis by ${menuState.name}. 
@@ -67,9 +64,9 @@ export function VizChart({
     }
     useChatStore.getState().sendMessage(displayMsg, hiddenMsg)
     setMenuState(null)
-  }
+  }, [menuState, messageId, t])
 
-  const handleViewData = () => {
+  const handleViewData = useCallback(() => {
     if (!menuState) return
     const displayMsg = `📄 ${t('view_raw_data', { name: menuState.name })}`
     const hiddenMsg = `Show the first 100 raw data rows for '${menuState.name}'.
@@ -80,7 +77,7 @@ export function VizChart({
     }
     useChatStore.getState().sendMessage(displayMsg, hiddenMsg)
     setMenuState(null)
-  }
+  }, [menuState, messageId, t])
 
   useEffect(() => {
     const handler = () => requestAnimationFrame(() => {})

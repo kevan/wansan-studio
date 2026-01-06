@@ -46,9 +46,6 @@ export const DashboardReportCard = forwardRef<
     const [showMenu, setShowMenu] = useState(false)
     const { t } = useTranslation('common')
     const addToast = useToastStore(state => state.addToast)
-    const setEditingReportId = useWorkbenchStore(
-      state => state.setEditingReportId
-    )
     const isDashboard = variant === 'dashboard'
     const isTextWidget = report.reportData.chartType === 'text'
 
@@ -123,20 +120,6 @@ export const DashboardReportCard = forwardRef<
               title={t('drag_rearrange')}
             >
               <GripHorizontal className="w-4 h-4" />
-            </button>
-          )}
-          {isDashboard && !isTextWidget && (
-            <button
-              type="button"
-              onClick={e => {
-                e.stopPropagation()
-                setEditingReportId(report.id)
-              }}
-              onMouseDown={e => e.stopPropagation()}
-              className="p-1.5 bg-white text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 rounded-md border border-zinc-200 shadow-sm transition-colors cursor-pointer"
-              title={t('expand_edit')}
-            >
-              <Maximize2 className="w-4 h-4" />
             </button>
           )}
           {!isTextWidget && (

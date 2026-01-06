@@ -1,25 +1,25 @@
 import type { Layout } from 'react-grid-layout'
+import type { FilterParam } from '../schemas/analysis'
+
+export type ChartType =
+  | 'bar'
+  | 'line'
+  | 'pie'
+  | 'area'
+  | 'table'
+  | 'scatter'
+  | 'kpi'
+  | 'text'
 
 export interface ReportData {
   title: string
-  subtitle?: string
   summary?: string
-  insights?: string[]
   content?: string // For Text Widget
   sql?: string
   reasoning?: string
   suggestions?: string[]
-  chartType?:
-    | 'bar'
-    | 'line'
-    | 'pie'
-    | 'area'
-    | 'table'
-    | 'scatter'
-    | 'kpi'
-    | 'text'
-  chartTitle?: string
-  tableData?: Array<Record<string, any>>
+  chartType?: ChartType
+  tableData?: Array<Record<string, unknown>>
   columnFields?: Array<{ name: string; type: string }>
   columns?: string[] // Legacy support
   columnTypes?: Record<string, string> // Legacy support
@@ -30,7 +30,7 @@ export interface ReportData {
   }
   timestamp?: number
   is_template?: boolean
-  missing_params?: any[]
+  missing_params?: FilterParam[]
   selected_params?: Record<string, string[]>
 }
 
