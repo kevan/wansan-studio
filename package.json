@@ -48,6 +48,8 @@
     "lodash.debounce": "^4.0.8",
     "node-machine-id": "^1.1.12",
     "openai": "^6.10.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "uuid": "^9.0.1",
     "zod": "^4.3.4",
     "zustand": "^4.5.2"
