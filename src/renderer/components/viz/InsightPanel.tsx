@@ -259,28 +259,32 @@ export function InsightPanel({
         </div>
         
         <div className="flex items-center gap-1">
-             <button
-               onClick={handleRegenerate}
-               className="p-1.5 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded bg-transparent transition-colors"
-               title={t('regenerate') || 'Regenerate'}
-             >
+          {isExpanded && (
+            <>
+              <button
+                onClick={handleRegenerate}
+                className="p-1.5 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded bg-transparent transition-colors"
+                title={t('regenerate') || 'Regenerate'}
+              >
                 <RefreshCw className="w-3.5 h-3.5" />
-             </button>
-             {onRemove && (
-                 <button
-                   onClick={handleRemove}
-                   className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded bg-transparent transition-colors"
-                   title={t('remove') || 'Remove'}
-                 >
-                    <Trash2 className="w-3.5 h-3.5" />
-                 </button>
-             )}
-            <div className="w-[1px] h-3 bg-zinc-200 mx-1" />
-            {isExpanded ? (
-              <ChevronUp className="w-4 h-4 text-indigo-400" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-indigo-400" />
-            )}
+              </button>
+              {onRemove && (
+                <button
+                  onClick={handleRemove}
+                  className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded bg-transparent transition-colors"
+                  title={t('remove') || 'Remove'}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <div className="w-[1px] h-3 bg-zinc-200 mx-1" />
+            </>
+          )}
+          {isExpanded ? (
+            <ChevronUp className="w-4 h-4 text-indigo-400" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-indigo-400" />
+          )}
         </div>
       </div>
 
