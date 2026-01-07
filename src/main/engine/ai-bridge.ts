@@ -268,6 +268,18 @@ export async function generateInsight(
   language: 'en' | 'zh' = 'en'
 ): Promise<string> {
   const languageNote = language === 'zh' ? 'Chinese (Simplified)' : 'English'
+  const headers =
+    language === 'zh'
+      ? {
+          summary: '概览',
+          findings: '关键发现',
+          recommendation: '建议',
+        }
+      : {
+          summary: 'Summary',
+          findings: 'Key Findings',
+          recommendation: 'Recommendation',
+        }
 
   // Convert data to a compact representation
   const dataStr = JSON.stringify(aggregatedData.slice(0, 50), null, 2)
@@ -284,9 +296,9 @@ CONSTRAINTS:
 
 OUTPUT FORMAT:
 Provide a short analysis in 3 parts:
-1. **Summary**: One sentence describing the overall trend.
-2. **Key Findings**: 2-3 bullet points highlighting important observations.
-3. **Recommendation** (optional): One actionable suggestion if applicable.`
+1. **${headers.summary}**: One sentence describing the overall trend.
+2. **${headers.findings}**: 2-3 bullet points highlighting important observations.
+3. **${headers.recommendation}** (optional): One actionable suggestion if applicable.`
 
   const userPrompt = `### Chart Title
 ${chartTitle}
