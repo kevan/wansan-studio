@@ -1,7 +1,7 @@
 import Store from 'electron-store'
 import { OpenAI } from 'openai'
 import type { ClientOptions } from 'openai'
-import { generateAnalysis, analyzeContext, fixSQL } from '../engine/ai-bridge'
+import { generateAnalysis, analyzeContext, fixSQL, generateInsight } from '../engine/ai-bridge'
 import crypto from 'crypto'
 import { secureGet, secureSet } from './secure-storage'
 import type {
@@ -331,6 +331,27 @@ CRITICAL SYNTAX RULES:
     })
 
     return response.choices[0].message.content?.trim() || ''
+  }
+
+  /**
+   * Generate natural language insight from aggregated chart data.
+   * This is part of the AI Insight feature with explicit user consent.
+   */
+  async generateChartInsight(
+    chartTitle: string,
+    chartType: string,
+    aggregatedData: Array<Record<string, unknown>>,
+    language: 'en' | 'zh' = 'en'
+  ): Promise<string> {
+    const client = this.requireOpenAI()
+    return await generateInsight(
+      client,
+      chartTitle,
+      chartType,
+      aggregatedData,
+      this.model,
+      language
+    )
   }
 
   clearConfig() {

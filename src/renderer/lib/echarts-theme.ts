@@ -13,8 +13,11 @@ const COLORS = [
   '#14B8A6', // Teal 500
 ]
 
-// Gradient Utils
-const getLinearGradient = (color: string) => {
+// Enhanced Gradient Utils with better opacity transitions
+const getLinearGradient = (color: string, opacity: number = 0.06) => {
+  const endOpacity = Math.round(opacity * 255)
+    .toString(16)
+    .padStart(2, '0')
   return {
     type: 'linear',
     x: 0,
@@ -22,9 +25,109 @@ const getLinearGradient = (color: string) => {
     x2: 0,
     y2: 1,
     colorStops: [
-      { offset: 0, color: color }, // Start color
-      { offset: 1, color: `${color}10` }, // End color (faded)
+      { offset: 0, color: color },
+      { offset: 0.7, color: `${color}40` }, // 25% opacity midpoint
+      { offset: 1, color: `${color}${endOpacity}` },
     ],
+  }
+}
+
+// Bar chart gradient (top to bottom with subtle glow)
+const getBarGradient = (color: string) => ({
+  type: 'linear',
+  x: 0,
+  y: 0,
+  x2: 0,
+  y2: 1,
+  colorStops: [
+    { offset: 0, color: color },
+    { offset: 0.5, color: color },
+    { offset: 1, color: `${color}CC` }, // 80% opacity at bottom
+  ],
+})
+
+/**
+ * Creates a rich HTML tooltip with glassmorphism styling
+ * Used for axis-triggered tooltips (bar, line charts)
+ */
+export function getAxisTooltipFormatter(isDark: boolean) {
+  return (params: any) => {
+    if (!Array.isArray(params) || params.length === 0) return ''
+
+    const categoryName = params[0]?.axisValueLabel || params[0]?.name || ''
+    const bgColor = isDark ? 'rgba(24,24,27,0.95)' : 'rgba(255,255,255,0.98)'
+    const textColor = isDark ? '#fafafa' : '#18181b'
+    const mutedColor = isDark ? '#a1a1aa' : '#71717a'
+
+    let rows = ''
+    for (const p of params) {
+      if (p.value === undefined || p.value === null) continue
+      const value =
+        typeof p.value === 'number' ? p.value.toLocaleString() : p.value
+      rows += `
+        <div style="display:flex;align-items:center;gap:8px;padding:4px 0;">
+          <span style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0;"></span>
+          <span style="flex:1;color:${mutedColor};font-size:12px;">${p.seriesName}</span>
+          <span style="font-weight:600;color:${textColor};font-size:13px;">${value}</span>
+        </div>
+      `
+    }
+
+    return `
+      <div style="
+        font-family:Inter,system-ui,sans-serif;
+        padding:12px 16px;
+        background:${bgColor};
+        backdrop-filter:blur(12px);
+        border-radius:12px;
+        box-shadow:0 10px 25px -5px rgba(0,0,0,0.1),0 8px 10px -6px rgba(0,0,0,0.05);
+        min-width:160px;
+      ">
+        <div style="font-size:11px;font-weight:600;color:${mutedColor};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+          ${categoryName}
+        </div>
+        ${rows}
+      </div>
+    `
+  }
+}
+
+/**
+ * Creates a tooltip formatter for pie/item-based charts
+ */
+export function getItemTooltipFormatter(isDark: boolean) {
+  return (params: any) => {
+    const bgColor = isDark ? 'rgba(24,24,27,0.95)' : 'rgba(255,255,255,0.98)'
+    const textColor = isDark ? '#fafafa' : '#18181b'
+    const mutedColor = isDark ? '#a1a1aa' : '#71717a'
+
+    const name = params.name || ''
+    const value =
+      typeof params.value === 'number'
+        ? params.value.toLocaleString()
+        : params.value
+    const percent = params.percent ? `${params.percent.toFixed(1)}%` : ''
+
+    return `
+      <div style="
+        font-family:Inter,system-ui,sans-serif;
+        padding:12px 16px;
+        background:${bgColor};
+        backdrop-filter:blur(12px);
+        border-radius:12px;
+        box-shadow:0 10px 25px -5px rgba(0,0,0,0.1),0 8px 10px -6px rgba(0,0,0,0.05);
+        min-width:140px;
+      ">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:${params.color};"></span>
+          <span style="font-weight:600;color:${textColor};font-size:13px;">${name}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:16px;">
+          <span style="color:${mutedColor};font-size:12px;">${value}</span>
+          ${percent ? `<span style="font-weight:600;color:${textColor};font-size:12px;">${percent}</span>` : ''}
+        </div>
+      </div>
+    `
   }
 }
 
@@ -34,10 +137,11 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
   // Theme Colors
   const textColor = isDark ? '#a1a1aa' : '#71717a' // zinc-400 / zinc-500
   const splitLineColor = isDark ? '#27272a' : '#f4f4f5' // zinc-800 / zinc-100
-  const tooltipBg = isDark
-    ? 'rgba(24, 24, 27, 0.9)'
-    : 'rgba(255, 255, 255, 0.95)'
-  const tooltipBorder = isDark ? '#27272a' : '#e4e4e7'
+
+  // Detect chart type for tooltip behavior
+  const isPieChart =
+    Array.isArray(option.series) &&
+    option.series.some((s: any) => s.type === 'pie')
 
   // 1. Enhance Series (Bar, Line, Pie)
   const series = Array.isArray(option.series)
@@ -49,12 +153,20 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
           return {
             ...s,
             itemStyle: {
-              borderRadius: [4, 4, 0, 0], // Slightly reduce radius for sharper look
-              color: baseColor,
+              borderRadius: [6, 6, 0, 0],
+              color: getBarGradient(baseColor),
+              shadowColor: `${baseColor}30`,
+              shadowBlur: 8,
+              shadowOffsetY: 2,
               ...s.itemStyle,
             },
-            barMaxWidth: 40,
-            // showBackground: false, // Removed to fix 'shadow' complaint
+            barMaxWidth: 48,
+            emphasis: {
+              itemStyle: {
+                shadowBlur: 16,
+                shadowColor: `${baseColor}50`,
+              },
+            },
           }
         }
 
@@ -173,20 +285,15 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
     yAxis,
     series,
 
-    // 4. Modern Tooltip
+    // 4. Modern Tooltip with HTML Formatter
     tooltip: {
-      trigger: 'axis',
-      backgroundColor: tooltipBg,
-      borderColor: tooltipBorder,
-      borderWidth: 1,
-      textStyle: {
-        color: isDark ? '#fafafa' : '#18181b',
-        fontSize: 12,
-        fontFamily: 'Inter, system-ui, sans-serif',
-      },
-      padding: [10, 14],
-      extraCssText:
-        'box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); border-radius: 12px; backdrop-filter: blur(8px);',
+      trigger: isPieChart ? 'item' : 'axis',
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+      padding: 0,
+      formatter: isPieChart
+        ? getItemTooltipFormatter(isDark)
+        : getAxisTooltipFormatter(isDark),
       ...(option.tooltip as any),
     },
 

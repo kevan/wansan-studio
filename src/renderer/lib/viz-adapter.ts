@@ -2,6 +2,7 @@ import type { EChartsOption } from 'echarts'
 import * as echarts from 'echarts'
 import type { ChartType, ReportData } from '@shared/types/dashboard'
 
+
 type VizConfig = NonNullable<ReportData['vizConfig']>
 
 /**
@@ -10,8 +11,8 @@ type VizConfig = NonNullable<ReportData['vizConfig']>
 function getChartCategory(
   type: ChartType
 ): 'cartesian' | 'radial' | 'tabular' | 'kpi' | 'text' {
-  const cartesianTypes = ['bar', 'line', 'area', 'scatter']
-  const radialTypes = ['pie']
+  const cartesianTypes = ['bar', 'line', 'area', 'scatter', 'combo']
+  const radialTypes = ['pie', 'radar']
   const tabularTypes = ['table']
   const kpiTypes = ['kpi']
 
@@ -334,6 +335,111 @@ export function buildEChartsOption(
           },
         },
       ],
+    }
+  }
+
+  // Radar Chart: Each row is a data point, each y_axis is an indicator
+  if (type === 'radar') {
+    const maxValues: Record<string, number> = {}
+    for (const key of yAxes) {
+      maxValues[key] = Math.max(...data.map(d => Number(d[key]) || 0)) * 1.2
+    }
+
+    const indicators = yAxes.map(key => ({
+      name: key,
+      max: maxValues[key] || 100,
+    }))
+
+    const radarData = data.map(item => ({
+      value: yAxes.map(key => item[key]),
+      name: item[x_axis],
+    }))
+
+    return {
+      tooltip: { trigger: 'item' },
+      legend: {
+        data: data.map(item => item[x_axis]),
+        top: 0,
+      },
+      radar: {
+        indicator: indicators,
+        shape: 'polygon',
+        splitNumber: 4,
+        axisName: {
+          color: '#71717a',
+          fontSize: 11,
+        },
+        splitLine: {
+          lineStyle: { color: '#f4f4f5' },
+        },
+        splitArea: {
+          show: true,
+          areaStyle: { color: ['#fafafa', '#fff'] },
+        },
+      },
+      series: [
+        {
+          type: 'radar',
+          data: radarData,
+          emphasis: {
+            lineStyle: { width: 3 },
+          },
+        },
+      ],
+    }
+  }
+
+  // Combo Chart: First y_axis as bar, rest as lines
+  if (type === 'combo' && yAxes.length >= 2) {
+    const barKey = yAxes[0]
+    const lineKeys = yAxes.slice(1)
+
+    const comboSeries: echarts.SeriesOption[] = [
+      {
+        name: getSeriesName(0),
+        type: 'bar',
+        data: data.map(item => item[barKey]),
+        yAxisIndex: 0,
+      },
+      ...lineKeys.map((key, i) => ({
+        name: getSeriesName(i + 1),
+        type: 'line' as const,
+        data: data.map(item => item[key]),
+        yAxisIndex: 1,
+        smooth: true,
+      })),
+    ]
+
+    return {
+      tooltip: { trigger: 'axis' },
+      legend: { top: 0 },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true,
+      },
+      xAxis: {
+        type: 'category' as const,
+        data: xData,
+        axisLabel: { rotate: 45, fontSize: 10 },
+      },
+      yAxis: [
+        {
+          type: 'value' as const,
+          name: getSeriesName(0),
+          position: 'left',
+          axisLabel: { fontSize: 10 },
+        },
+        {
+          type: 'value' as const,
+          name: lineKeys.length === 1 ? getSeriesName(1) : 'Rate',
+          position: 'right',
+          axisLabel: { fontSize: 10 },
+          splitLine: { show: false },
+        },
+      ],
+      series: comboSeries,
     }
   }
 

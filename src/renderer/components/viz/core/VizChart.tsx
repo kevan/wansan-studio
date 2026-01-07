@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import { Chart } from '../base/Chart'
@@ -15,6 +15,10 @@ interface VizChartProps {
   className?: string
   style?: React.CSSProperties
   messageId?: string
+  /** Column schema for breakdown dimension suggestions */
+  columnFields?: Array<{ name: string; type: string }>
+  /** Callback to trigger AI insight generation */
+  onRequestInsight?: (chartData: any[]) => void
 }
 
 export function VizChart({
@@ -25,6 +29,8 @@ export function VizChart({
   className = '',
   style,
   messageId,
+  columnFields = [],
+  onRequestInsight,
 }: VizChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const { t } = useTranslation('common')
@@ -36,6 +42,21 @@ export function VizChart({
     name: string
     seriesName?: string
   } | null>(null)
+
+  // Extract dimension columns (non-numeric) for breakdown suggestions
+  const dimensionColumns = useMemo(() => {
+    if (!columnFields.length) return []
+    return columnFields
+      .filter(
+        col =>
+          col.type === 'VARCHAR' ||
+          col.type === 'TEXT' ||
+          col.type.includes('CHAR')
+      )
+      .map(col => col.name)
+      .filter(name => name !== config?.x_axis) // Exclude current x-axis
+      .slice(0, 8) // Limit to prevent menu overflow
+  }, [columnFields, config?.x_axis])
 
   const handleChartClick = useCallback((params: any) => {
     if (params && params.event && params.event.event) {
@@ -79,6 +100,35 @@ export function VizChart({
     setMenuState(null)
   }, [menuState, messageId, t])
 
+  const handleBreakdown = useCallback(
+    (dimension: string) => {
+      if (!menuState) return
+      const yAxisStr = Array.isArray(config?.y_axis)
+        ? config.y_axis.join(', ')
+        : config?.y_axis || 'metric'
+
+      const displayMsg = `📊 ${t('breakdown_analysis', { dimension }) || `Breakdown by ${dimension}`}`
+      const hiddenMsg = `Break down the metric (${yAxisStr}) by "${dimension}", filtered to "${menuState.name}".
+    CRITICAL CONSTRAINTS:
+    - Show aggregated values grouped by "${dimension}".
+    - Prefer bar chart for the breakdown.
+    - Keep the same measurement units.`
+
+      if (messageId) {
+        useChatStore.getState().setReplyTo(messageId)
+      }
+      useChatStore.getState().sendMessage(displayMsg, hiddenMsg)
+      setMenuState(null)
+    },
+    [menuState, config?.y_axis, messageId, t]
+  )
+
+  const handleInsight = useCallback(() => {
+    if (!onRequestInsight || !data.length) return
+    onRequestInsight(data)
+    setMenuState(null)
+  }, [data, onRequestInsight])
+
   useEffect(() => {
     const handler = () => requestAnimationFrame(() => {})
     window.addEventListener('dashboard:layout-changed', handler)
@@ -120,8 +170,11 @@ export function VizChart({
           x={menuState.x}
           y={menuState.y}
           dataName={menuState.name}
+          dimensions={dimensionColumns}
           onFocus={handleFocus}
           onViewData={handleViewData}
+          onBreakdown={handleBreakdown}
+          onInsight={onRequestInsight ? handleInsight : undefined}
           onClose={() => setMenuState(null)}
         />
       )}

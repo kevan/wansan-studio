@@ -283,6 +283,36 @@ export function setupIPC(
     }
   )
 
+  // AI Insight Generation (Chart Data -> Natural Language)
+  ipcMain.handle(
+    'ai:generate-insight',
+    async (
+      _event,
+      options: {
+        chartTitle: string
+        chartType: string
+        aggregatedData: Array<Record<string, unknown>>
+        language?: 'en' | 'zh'
+      }
+    ) => {
+      try {
+        const result = await aiService.generateChartInsight(
+          options.chartTitle,
+          options.chartType,
+          options.aggregatedData,
+          options.language || 'en'
+        )
+        return { success: true, data: result }
+      } catch (error) {
+        console.error('Generate insight error:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      }
+    }
+  )
+
   // 获取 AI 配置
   ipcMain.handle('get-ai-config', async () => {
     try {

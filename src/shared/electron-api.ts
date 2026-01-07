@@ -139,6 +139,12 @@ export interface ElectronAPI {
     columns: Array<{ name: string; type: string }>
     mode: 'generate' | 'refine'
   }) => Promise<IPCResponse<string>>
+  generateInsight: (options: {
+    chartTitle: string
+    chartType: string
+    aggregatedData: Array<Record<string, unknown>>
+    language?: 'en' | 'zh'
+  }) => Promise<IPCResponse<string>>
 
   // AI Config
   getAIConfig: () => Promise<AIConfigResponse>

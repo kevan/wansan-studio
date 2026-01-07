@@ -254,3 +254,73 @@ Fix the SQL. Ensure all table/column names are double-quoted and match the schem
     throw new Error(`Failed to parse fix result: ${resultJson}`)
   }
 }
+
+/**
+ * Generate a natural language insight/explanation from aggregated chart data.
+ * This function receives ONLY aggregated data (not raw rows) after user consent.
+ */
+export async function generateInsight(
+  openai: OpenAI,
+  chartTitle: string,
+  chartType: string,
+  aggregatedData: Array<Record<string, unknown>>,
+  model?: string,
+  language: 'en' | 'zh' = 'en'
+): Promise<string> {
+  const languageNote = language === 'zh' ? 'Chinese (Simplified)' : 'English'
+
+  // Convert data to a compact representation
+  const dataStr = JSON.stringify(aggregatedData.slice(0, 50), null, 2)
+
+  const systemPrompt = `You are a Senior Business Analyst specializing in data storytelling.
+Your task is to analyze aggregated chart data and provide actionable business insights.
+
+CONSTRAINTS:
+- Be concise and professional.
+- Focus on trends, anomalies, and actionable recommendations.
+- Use bullet points for clarity.
+- Do NOT mention technical details (SQL, chart types).
+- Write in ${languageNote}.
+
+OUTPUT FORMAT:
+Provide a short analysis in 3 parts:
+1. **Summary**: One sentence describing the overall trend.
+2. **Key Findings**: 2-3 bullet points highlighting important observations.
+3. **Recommendation** (optional): One actionable suggestion if applicable.`
+
+  const userPrompt = `### Chart Title
+${chartTitle}
+
+### Visualization Type
+${chartType}
+
+### Aggregated Data (${aggregatedData.length} points)
+${dataStr}
+
+### Your Analysis`
+
+  const body: ChatCompletionCreateParamsNonStreaming = {
+    model: getModelToUse(model),
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+  }
+
+  if (isDev()) {
+    console.log('generateInsight pre request - body', body)
+  }
+
+  const response = await openai.chat.completions.create(body)
+  const result = response.choices[0].message.content
+
+  if (!result) {
+    throw new Error('AI returned empty response for insight generation')
+  }
+
+  if (isDev()) {
+    console.log('generateInsight post request - result:', result)
+  }
+
+  return result.trim()
+}

@@ -24,6 +24,9 @@ import type { ReportData, ChartType } from '@shared/types/dashboard'
 import { useTranslation } from 'react-i18next'
 import { adaptChartConfig } from '@/lib/viz-adapter'
 import { getDisplayMode } from '@/utils/viz-logic'
+import { InsightPanel } from '../InsightPanel'
+import { useGenerateInsight } from '@/hooks/useIPC'
+import { useSettingsStore } from '@/stores/useSettingsStore'
 
 const chartTypeOptions: Array<{
   value: ChartType
@@ -50,7 +53,11 @@ export function ChartFullView() {
   )
   const updateReportTitle = useWorkbenchStore(state => state.updateReportTitle)
   const widgetRegistry = useProjectStore(state => state.widgetRegistry)
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
+  const generateInsight = useGenerateInsight()
+  const language = i18n.language === 'zh' ? 'zh' : 'en'
+
+  const [insightMode, setInsightMode] = useState(false)
 
   const report = useMemo(() => {
     // 1. Check pinned
@@ -175,6 +182,21 @@ export function ChartFullView() {
     }))
   }
 
+  const handleRequestInsight = () => {
+    setInsightMode(true)
+  }
+
+  const handleGenerateInsight = async (
+    chartData: Array<Record<string, unknown>>
+  ) => {
+    return await generateInsight.mutateAsync({
+      chartTitle: effectiveTitle,
+      chartType: effectiveType,
+      aggregatedData: chartData,
+      language,
+    })
+  }
+
   const handleSave = () => {
     if (!report) return
     updateReportConfig(report.id, {
@@ -258,6 +280,7 @@ export function ChartFullView() {
                     data={data}
                     config={effectiveConfig}
                     className="h-full w-full"
+                    onRequestInsight={handleRequestInsight}
                   />
                 )}
 
@@ -319,7 +342,20 @@ export function ChartFullView() {
                       )
                     })}
                   </div>
-                </div>
+                  </div>
+
+
+                {/* Insight Panel (Visible when triggered or always visible if we want) */}
+                {(insightMode || displayMode === 'chart') && (
+                  <div className="pt-2 border-t border-zinc-100">
+                    <InsightPanel
+                      title={effectiveTitle}
+                      chartType={effectiveType}
+                      chartData={data}
+                      onGenerateInsight={handleGenerateInsight}
+                    />
+                  </div>
+                )}
 
                 {displayMode === 'bignumber' && (
                   <div className="space-y-3">

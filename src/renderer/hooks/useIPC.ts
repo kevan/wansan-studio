@@ -42,6 +42,10 @@ const mockIPC: ElectronAPI = {
     success: true,
     data: '1 + 1',
   }),
+  generateInsight: async () => ({
+    success: true,
+    data: 'Mock Insight: Sales are trending upwards.',
+  }),
   getAIConfig: async (): Promise<AIConfigResponse> => {
     return { success: true, data: {} }
   },
@@ -356,6 +360,23 @@ export function useCheckFilesConsistency() {
       const response = await getIpc().checkFilesConsistency(files)
       if (!response.success) {
         throw new Error(response.error || 'Failed to check consistency')
+      }
+      return response.data
+    },
+  })
+}
+
+export function useGenerateInsight() {
+  return useMutation({
+    mutationFn: async (options: {
+      chartTitle: string
+      chartType: string
+      aggregatedData: Array<Record<string, unknown>>
+      language?: 'en' | 'zh'
+    }) => {
+      const response = await getIpc().generateInsight(options)
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to generate insight')
       }
       return response.data
     },

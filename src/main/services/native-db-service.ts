@@ -1,4 +1,5 @@
 import { dbClient } from './db-service/client'
+import { formatForDisplay } from '../../shared/serialization'
 
 export class NativeDatabaseService {
   constructor() {}
@@ -17,15 +18,40 @@ export class NativeDatabaseService {
     return dbClient.executeQuery(sql)
   }
 
+
+
   async queryWithSchema(sql: string): Promise<{
     data: any[]
     columnFields: Array<{ name: string; type: string }>
   }> {
     console.log('[NativeDB] QueryWithSchema:', sql)
     const res = await dbClient.executeQueryFull(sql)
+    
+    const data = res.data || []
+    const columnFields = res.meta?.columnFields || []
+
+    // Post-process: Format Date/Time columns to strings to prevent them being shown as raw timestamps
+    // We do NOT format numeric columns here to preserve them for chart rendering
+    if (data.length > 0 && columnFields.length > 0) {
+      const dateColumns = columnFields.filter(col => {
+        const type = col.type.toUpperCase()
+        return type.includes('DATE') || type.includes('TIMESTAMP')
+      })
+
+      if (dateColumns.length > 0) {
+        for (const row of data) {
+          for (const col of dateColumns) {
+            if (row[col.name] !== null && row[col.name] !== undefined) {
+              row[col.name] = formatForDisplay(row[col.name], col.type)
+            }
+          }
+        }
+      }
+    }
+
     return {
-      data: res.data || [],
-      columnFields: res.meta?.columnFields || [],
+      data,
+      columnFields,
     }
   }
 

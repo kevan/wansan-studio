@@ -8,6 +8,8 @@ export type ChartType =
   | 'area'
   | 'table'
   | 'scatter'
+  | 'radar'
+  | 'combo'
   | 'kpi'
   | 'text'
 
