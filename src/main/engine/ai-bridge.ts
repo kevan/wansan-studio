@@ -295,10 +295,17 @@ CONSTRAINTS:
 - Write in ${languageNote}.
 
 OUTPUT FORMAT:
-Provide a short analysis in 3 parts:
-1. **${headers.summary}**: One sentence describing the overall trend.
-2. **${headers.findings}**: 2-3 bullet points highlighting important observations.
-3. **${headers.recommendation}** (optional): One actionable suggestion if applicable.`
+Provide a short analysis with the following sections (use Markdown headers):
+
+### ${headers.summary}
+One sentence describing the overall trend.
+
+### ${headers.findings}
+- Bullet point 1
+- Bullet point 2 (limit to 3 points)
+
+### ${headers.recommendation}
+One actionable suggestion (optional).`
 
   const userPrompt = `### Chart Title
 ${chartTitle}
