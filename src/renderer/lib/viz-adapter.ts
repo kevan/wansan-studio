@@ -339,52 +339,117 @@ export function buildEChartsOption(
 
   // Radar Chart: Each row is a data point, each y_axis is an indicator
   if (type === 'radar') {
-    const maxValues: Record<string, number> = {}
-    for (const key of yAxes) {
-      maxValues[key] = Math.max(...data.map(d => Number(d[key]) || 0)) * 1.2
-    }
+    // Heuristic: If we have fewer than 3 metrics (Y-axes), standard radar chart logic (using metrics as axes)
+    // produces a line or a flat shape. In this case, we TRANSPOSE the data:
+    // Use X-Axis values (e.g., Months) as the Radar Axes (Indicators), and Y-Axis columns as Series.
+    const useTranspose = yAxes.length < 3
 
-    const indicators = yAxes.map(key => ({
-      name: key,
-      max: maxValues[key] || 100,
-    }))
+    if (useTranspose) {
+      // Transposed Mode: X-Axis = Indicators, Y-Axis Columns = Series
+      // Limit to top 12 categories to prevent clutter
+      const displayData = data.slice(0, 12)
 
-    const radarData = data.map(item => ({
-      value: yAxes.map(key => item[key]),
-      name: item[x_axis],
-    }))
+      // Calculate global max for scaling
+      let globalMax = 0
+      for (const row of displayData) {
+        for (const key of yAxes) {
+          const val = Number(row[key]) || 0
+          if (val > globalMax) globalMax = val
+        }
+      }
+      globalMax = globalMax * 1.2 || 100
 
-    return {
-      tooltip: { trigger: 'item' },
-      legend: {
-        data: data.map(item => item[x_axis]),
-        top: 0,
-      },
-      radar: {
-        indicator: indicators,
-        shape: 'polygon',
-        splitNumber: 4,
-        axisName: {
-          color: '#71717a',
-          fontSize: 11,
+      const indicators = displayData.map(item => ({
+        name: String(item[x_axis]),
+        max: globalMax,
+      }))
+
+      const seriesData = yAxes.map(yKey => ({
+        name: yKey,
+        value: displayData.map(item => Number(item[yKey]) || 0),
+      }))
+
+      return {
+        tooltip: { trigger: 'item' },
+        legend: {
+          data: yAxes,
+          top: 0,
         },
-        splitLine: {
-          lineStyle: { color: '#f4f4f5' },
-        },
-        splitArea: {
-          show: true,
-          areaStyle: { color: ['#fafafa', '#fff'] },
-        },
-      },
-      series: [
-        {
-          type: 'radar',
-          data: radarData,
-          emphasis: {
-            lineStyle: { width: 3 },
+        radar: {
+          indicator: indicators,
+          shape: 'polygon',
+          splitNumber: 4,
+          axisName: {
+            color: '#71717a',
+            fontSize: 11,
+          },
+          splitLine: {
+            lineStyle: { color: '#f4f4f5' },
+          },
+          splitArea: {
+            show: true,
+            areaStyle: { color: ['#fafafa', '#fff'] },
           },
         },
-      ],
+        series: [
+          {
+            type: 'radar',
+            data: seriesData,
+            emphasis: {
+              lineStyle: { width: 3 },
+            },
+          },
+        ],
+      }
+    } else {
+      // Standard Mode: Y-Axis Columns = Indicators, Data Rows = Series (Comparison)
+      const maxValues: Record<string, number> = {}
+      for (const key of yAxes) {
+        maxValues[key] = Math.max(...data.map(d => Number(d[key]) || 0)) * 1.2
+      }
+
+      const indicators = yAxes.map(key => ({
+        name: key,
+        max: maxValues[key] || 100,
+      }))
+
+      const radarData = data.map(item => ({
+        value: yAxes.map(key => item[key]),
+        name: item[x_axis],
+      }))
+
+      return {
+        tooltip: { trigger: 'item' },
+        legend: {
+          data: data.map(item => item[x_axis]),
+          top: 0,
+        },
+        radar: {
+          indicator: indicators,
+          shape: 'polygon',
+          splitNumber: 4,
+          axisName: {
+            color: '#71717a',
+            fontSize: 11,
+          },
+          splitLine: {
+            lineStyle: { color: '#f4f4f5' },
+          },
+          splitArea: {
+            show: true,
+            areaStyle: { color: ['#fafafa', '#fff'] },
+          },
+        },
+        series: [
+          {
+            type: 'radar',
+            data: radarData,
+            emphasis: {
+              lineStyle: { width: 3 },
+            },
+          },
+        ],
+      }
     }
   }
 
