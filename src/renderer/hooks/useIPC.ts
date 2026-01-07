@@ -7,7 +7,12 @@ import {
   RunSQLResponse,
 } from '@shared/api-types'
 import { ElectronAPI } from '@shared/electron-api'
-import { AIConfig, ColumnSchema, FileNode, TableSchema, } from '@shared/types'
+import type {
+  AIAnalysisResult,
+  ContextAnalysisResult,
+  TableSchema,
+  InsightResult,
+} from '@shared/types'
 
 /**
  * Mock IPC implementation for development/testing when electronAPI is not available.
@@ -44,7 +49,16 @@ const mockIPC: ElectronAPI = {
   }),
   generateInsight: async () => ({
     success: true,
-    data: 'Mock Insight: Sales are trending upwards.',
+    data: {
+      summary: 'Mock Insight Summary',
+      findings: [
+        {
+          id: '1',
+          markdown: 'Mock Finding: Sales are trending upwards.',
+          relatedItems: [],
+        },
+      ],
+    } as any,
   }),
   getAIConfig: async (): Promise<AIConfigResponse> => {
     return { success: true, data: {} }
@@ -373,12 +387,19 @@ export function useGenerateInsight() {
       chartType: string
       aggregatedData: Array<Record<string, unknown>>
       language?: 'en' | 'zh'
-    }) => {
+    }): Promise<InsightResult> => {
       const response = await getIpc().generateInsight(options)
       if (!response.success) {
         throw new Error(response.error || 'Failed to generate insight')
       }
-      return response.data
+      // Handle legacy string response fallback
+      if (typeof response.data === 'string') {
+        return {
+          summary: 'Analysis',
+          findings: [{ id: '0', markdown: response.data }],
+        }
+      }
+      return response.data as InsightResult
     },
   })
 }

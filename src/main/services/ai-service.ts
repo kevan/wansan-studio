@@ -342,7 +342,7 @@ CRITICAL SYNTAX RULES:
     chartType: string,
     aggregatedData: Array<Record<string, unknown>>,
     language: 'en' | 'zh' = 'en'
-  ): Promise<string> {
+  ): Promise<any> {
     const client = this.requireOpenAI()
     return await generateInsight(
       client,

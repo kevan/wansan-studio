@@ -19,6 +19,8 @@ interface VizChartProps {
   columnFields?: Array<{ name: string; type: string }>
   /** Callback to trigger AI insight generation */
   onRequestInsight?: (chartData: any[]) => void
+  /** Items to highlight (for visual anchoring) */
+  highlightedItems?: string[]
 }
 
 export function VizChart({
@@ -31,6 +33,7 @@ export function VizChart({
   messageId,
   columnFields = [],
   onRequestInsight,
+  highlightedItems,
 }: VizChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const { t } = useTranslation('common')
@@ -163,6 +166,7 @@ export function VizChart({
         className="relative h-full w-full"
         style={{ height: '100%', width: '100%', ...style }}
         onChartClick={handleChartClick}
+        highlightedItems={highlightedItems}
       />
       {!isRenderable && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-zinc-500">

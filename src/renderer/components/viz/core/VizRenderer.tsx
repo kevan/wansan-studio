@@ -27,6 +27,7 @@ interface VizRendererProps {
   variant?: 'chat' | 'dashboard'
   onTitleChange?: (newTitle: string) => void
   messageId?: string
+  highlightedItems?: string[]
 }
 
 const VizRendererBase = ({
@@ -46,6 +47,7 @@ const VizRendererBase = ({
   onTitleChange,
   timestamp,
   messageId,
+  highlightedItems,
 }: VizRendererProps) => {
   const [showSummary, setShowSummary] = useState(false)
   const { t } = useTranslation('common')
@@ -113,6 +115,7 @@ const VizRendererBase = ({
               config={vizConfig}
               className="h-full w-full"
               messageId={messageId}
+              highlightedItems={highlightedItems}
             />
           )}
 
@@ -179,6 +182,7 @@ const VizRendererBase = ({
               config={vizConfig}
               className="h-full w-full"
               messageId={messageId}
+              highlightedItems={highlightedItems}
             />
           </div>
         )}
@@ -231,6 +235,7 @@ export const VizRenderer = React.memo(VizRendererBase, (prev, next) => {
     prev.variant === next.variant &&
     prev.timestamp === next.timestamp &&
     prev.tableData === next.tableData &&
-    JSON.stringify(prev.vizConfig) === JSON.stringify(next.vizConfig)
+    JSON.stringify(prev.vizConfig) === JSON.stringify(next.vizConfig) &&
+    prev.highlightedItems === next.highlightedItems
   )
 })

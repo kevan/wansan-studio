@@ -9,9 +9,14 @@ import {
   Check,
   RefreshCw,
   Trash2,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Lightbulb,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { SimpleMarkdown } from '../ui/simple-markdown'
+import type { InsightResult } from '@shared/types/dashboard'
 
 type InsightState = 'idle' | 'consent' | 'analyzing' | 'done' | 'error'
 
@@ -23,9 +28,11 @@ interface InsightPanelProps {
   /** Chart type for context */
   chartType?: string
   /** Existing insight text if available */
-  insight?: string
+  insight?: string | InsightResult
   /** Called to request AI insight generation */
-  onGenerateInsight: (data: Array<Record<string, unknown>>) => Promise<string>
+  onGenerateInsight: (
+    data: Array<Record<string, unknown>>
+  ) => Promise<InsightResult | string>
   className?: string
   expanded?: boolean
   defaultExpanded?: boolean
@@ -34,6 +41,8 @@ interface InsightPanelProps {
   requestTrigger?: number
   onCancel?: () => void
   onRemove?: () => void
+  /** Called when hovering over a finding to highlight chart elements */
+  onHighlight?: (items: string[]) => void
 }
 
 export function InsightPanel({
@@ -50,19 +59,14 @@ export function InsightPanel({
   hiddenIfIdle = false,
   onCancel,
   onRemove,
-}: InsightPanelProps & {
-  expanded?: boolean
-  defaultExpanded?: boolean
-  onExpandChange?: (expanded: boolean) => void
-  hiddenIfIdle?: boolean
-  requestTrigger?: number
-  onCancel?: () => void
-  onRemove?: () => void
-}) {
-  const { t } = useTranslation('common')
+  onHighlight,
+}: InsightPanelProps) {
+  const { t, i18n } = useTranslation('common')
   const [state, setState] = useState<InsightState>(insight ? 'done' : 'idle')
   const [internalExpanded, setInternalExpanded] = useState(defaultExpanded)
-  const [insightText, setInsightText] = useState<string>(insight || '')
+  const [insightData, setInsightData] = useState<string | InsightResult>(
+    insight || ''
+  )
   const [error, setError] = useState<string>('')
 
   const isExpanded = expanded !== undefined ? expanded : internalExpanded
@@ -70,16 +74,17 @@ export function InsightPanel({
 
   useEffect(() => {
     if (insight) {
-      setInsightText(insight)
+      setInsightData(insight)
       setState('done')
       if (expanded === undefined && !internalExpanded) {
         setInternalExpanded(true)
       }
     } else {
-        // If insight removed externally
-        if (state === 'done') {
-            setState('idle')
-        }
+      // If insight removed externally
+      if (state === 'done') {
+        setState('idle')
+        setInsightData('')
+      }
     }
   }, [insight])
 
@@ -90,11 +95,11 @@ export function InsightPanel({
     }
   }, [requestTrigger, state, insight])
 
-  // Sync internal expanded state if prop changes (optional, but good for controlled->uncontrolled switch safety)
+  // Sync internal expanded state if prop changes
   useEffect(() => {
-      if (expanded !== undefined) {
-          setInternalExpanded(expanded)
-      }
+    if (expanded !== undefined) {
+      setInternalExpanded(expanded)
+    }
   }, [expanded])
 
   const toggleExpanded = () => {
@@ -110,13 +115,11 @@ export function InsightPanel({
   }, [])
 
   const handleConfirmSend = useCallback(async () => {
-    // If controlled, parent might want to know we are starting?
-    // But this component logic for 'consent' -> 'analyzing' is self-contained unless overridden.
     setState('analyzing')
     setError('')
     try {
       const result = await onGenerateInsight(chartData)
-      setInsightText(result)
+      setInsightData(result)
       setState('done')
       setInternalExpanded(true)
       onExpandChange?.(true)
@@ -125,25 +128,104 @@ export function InsightPanel({
       setState('error')
     }
   }, [chartData, onGenerateInsight, onExpandChange])
-  
-  const handleRegenerate = useCallback(async (e: React.MouseEvent) => {
+
+  const handleRegenerate = useCallback(
+    async (e: React.MouseEvent) => {
       e.stopPropagation()
       handleConfirmSend()
-  }, [handleConfirmSend])
+    },
+    [handleConfirmSend]
+  )
 
-  const handleRemove = useCallback((e: React.MouseEvent) => {
+  const handleRemove = useCallback(
+    (e: React.MouseEvent) => {
       e.stopPropagation()
       if (onRemove) {
-          onRemove()
-          setState('idle')
-          setInsightText('')
+        onRemove()
+        setState('idle')
+        setInsightData('')
       }
-  }, [onRemove])
+    },
+    [onRemove]
+  )
 
   const handleCancel = useCallback(() => {
     setState('idle')
     onCancel?.()
   }, [onCancel])
+
+  const renderSentimentIcon = (sentiment?: string) => {
+    switch (sentiment) {
+      case 'positive':
+        return (
+          <TrendingUp className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+        )
+      case 'negative':
+        return (
+          <TrendingDown className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" />
+        )
+      default:
+        return <Minus className="w-4 h-4 text-zinc-400 mt-0.5 flex-shrink-0" />
+    }
+  }
+
+  const renderContent = () => {
+    if (typeof insightData === 'string') {
+      return <SimpleMarkdown content={insightData} />
+    }
+    if (!insightData) return null
+
+    const { summary, findings, recommendation } = insightData as InsightResult
+    const language = i18n.language
+
+    return (
+      <div className="space-y-4 pt-1">
+        {/* Summary */}
+        {summary && (
+          <div className="text-sm text-zinc-700 font-medium leading-relaxed bg-white/60 p-3 rounded-lg border border-indigo-50/50 shadow-sm">
+            {summary}
+          </div>
+        )}
+
+        {/* Findings */}
+        {findings && findings.length > 0 && (
+          <div className="space-y-2">
+            <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider ml-1">
+              {language === 'zh' ? '关键发现' : 'Key Findings'}
+            </div>
+            <ul className="space-y-1">
+              {findings.map((item, idx) => (
+                <li
+                  key={item.id || idx}
+                  className="group flex items-start gap-3 p-2.5 rounded-lg hover:bg-white hover:shadow-md hover:ring-1 hover:ring-indigo-100 transition-all duration-200 cursor-default"
+                  onMouseEnter={() => onHighlight?.(item.relatedItems || [])}
+                  onMouseLeave={() => onHighlight?.([])}
+                >
+                  {renderSentimentIcon(item.sentiment)}
+                  <div className="text-sm text-zinc-600 group-hover:text-zinc-900 transition-colors flex-1">
+                    <SimpleMarkdown
+                      content={item.markdown}
+                      className="prose-p:my-0 prose-p:leading-relaxed"
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Recommendation */}
+        {recommendation && (
+          <div className="flex items-start gap-3 p-3 bg-emerald-50/50 border border-emerald-100/50 rounded-lg">
+            <Lightbulb className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-emerald-800 leading-relaxed font-medium">
+              {recommendation}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   // Render based on state
   if (state === 'idle') {
@@ -249,7 +331,7 @@ export function InsightPanel({
       {/* Header */}
       <div
         onClick={toggleExpanded}
-        className="w-full flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-indigo-50/50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-indigo-50/50 transition-colors select-none"
       >
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-indigo-500" />
@@ -257,7 +339,7 @@ export function InsightPanel({
             {t('ai_insight') || 'AI Insight'}
           </span>
         </div>
-        
+
         <div className="flex items-center gap-1">
           {isExpanded && (
             <>
@@ -289,11 +371,7 @@ export function InsightPanel({
       </div>
 
       {/* Content */}
-      {isExpanded && (
-        <div className="px-4 pb-4">
-          <SimpleMarkdown content={insightText} />
-        </div>
-      )}
+      {isExpanded && <div className="px-4 pb-4">{renderContent()}</div>}
     </div>
   )
 }

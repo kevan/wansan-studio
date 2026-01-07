@@ -266,46 +266,34 @@ export async function generateInsight(
   aggregatedData: Array<Record<string, unknown>>,
   model?: string,
   language: 'en' | 'zh' = 'en'
-): Promise<string> {
+): Promise<any> {
   const languageNote = language === 'zh' ? 'Chinese (Simplified)' : 'English'
-  const headers =
-    language === 'zh'
-      ? {
-          summary: '概览',
-          findings: '关键发现',
-          recommendation: '建议',
-        }
-      : {
-          summary: 'Summary',
-          findings: 'Key Findings',
-          recommendation: 'Recommendation',
-        }
 
   // Convert data to a compact representation
   const dataStr = JSON.stringify(aggregatedData.slice(0, 50), null, 2)
 
   const systemPrompt = `You are a Senior Business Analyst specializing in data storytelling.
-Your task is to analyze aggregated chart data and provide actionable business insights.
+Your task is to analyze aggregated chart data and provide actionable business insights in structured JSON format.
 
 CONSTRAINTS:
 - Be concise and professional.
 - Focus on trends, anomalies, and actionable recommendations.
-- Use bullet points for clarity.
-- Do NOT mention technical details (SQL, chart types).
-- Write in ${languageNote}.
+- Write content in ${languageNote}.
+- **CRITICAL**: For each finding, identify the EXACT X-axis category names from the data that support the finding (e.g., specific months, regions).
 
-OUTPUT FORMAT:
-Provide a short analysis with the following sections (use Markdown headers):
-
-### ${headers.summary}
-One sentence describing the overall trend.
-
-### ${headers.findings}
-- Bullet point 1
-- Bullet point 2 (limit to 3 points)
-
-### ${headers.recommendation}
-One actionable suggestion (optional).`
+OUTPUT FORMAT (JSON):
+{
+  "summary": "One sentence describing the overall trend.",
+  "findings": [
+    {
+      "id": "1",
+      "markdown": "**February** sales dropped by 15%...",
+      "sentiment": "negative",
+      "relatedItems": ["Feb"] // Must match data keys exactly
+    }
+  ],
+  "recommendation": "One actionable suggestion (optional)"
+}`
 
   const userPrompt = `### Chart Title
 ${chartTitle}
@@ -316,7 +304,7 @@ ${chartType}
 ### Aggregated Data (${aggregatedData.length} points)
 ${dataStr}
 
-### Your Analysis`
+### Your Analysis (JSON)`
 
   const body: ChatCompletionCreateParamsNonStreaming = {
     model: getModelToUse(model),
@@ -324,6 +312,7 @@ ${dataStr}
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
+    response_format: { type: 'json_object' },
   }
 
   if (isDev()) {
@@ -331,15 +320,21 @@ ${dataStr}
   }
 
   const response = await openai.chat.completions.create(body)
-  const result = response.choices[0].message.content
+  const resultJson = response.choices[0].message.content
 
-  if (!result) {
+  if (!resultJson) {
     throw new Error('AI returned empty response for insight generation')
   }
 
   if (isDev()) {
-    console.log('generateInsight post request - result:', result)
+    console.log('generateInsight post request - result:', resultJson)
   }
 
-  return result.trim()
+  try {
+    const cleanedJson = extractJSON(resultJson)
+    return parse(cleanedJson)
+  } catch (error) {
+    console.error('Failed to parse AI insight JSON:', error)
+    throw new Error(`AI returned invalid JSON for insight: ${resultJson}`)
+  }
 }

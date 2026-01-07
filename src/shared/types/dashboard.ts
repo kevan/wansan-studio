@@ -34,10 +34,21 @@ export interface ReportData {
   is_template?: boolean
   missing_params?: FilterParam[]
   selected_params?: Record<string, string[]>
-  /** AI Business Insight (Markdown format) */
-  insight?: string
+  /** AI Business Insight (Structured) */
+  insight?: InsightResult
   /** Timestamp when insight was generated */
   insightTime?: number
+}
+
+export interface InsightResult {
+  summary: string
+  findings: Array<{
+    id: string
+    markdown: string
+    sentiment?: 'positive' | 'negative' | 'neutral'
+    relatedItems?: string[]
+  }>
+  recommendation?: string
 }
 
 export interface ReportWidget {

@@ -54,6 +54,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
   const [expanded, setExpanded] = useState(false)
   const [manualActive, setManualActive] = useState(false)
   const [triggerCount, setTriggerCount] = useState(0)
+  const [highlightedItems, setHighlightedItems] = useState<string[]>([])
 
   const generateInsight = useGenerateInsight()
   const language = i18n.language === 'zh' ? 'zh' : 'en'
@@ -184,6 +185,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
             variant="chat"
             timestamp={message.timestamp}
             messageId={messageId}
+            highlightedItems={highlightedItems}
           />
         )}
       </div>
@@ -209,6 +211,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
               setManualActive(false)
               setExpanded(false)
             }}
+            onHighlight={setHighlightedItems}
           />
         </div>
       )}

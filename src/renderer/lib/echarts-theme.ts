@@ -187,6 +187,20 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
               shadowOffsetY: 4,
               ...s.lineStyle,
             },
+            emphasis: {
+              focus: 'series',
+              lineStyle: {
+                width: 4,
+              },
+              // Ensure data points are visible when highlighted
+              itemStyle: {
+                opacity: 1,
+              },
+            },
+            // Show symbol only on hover/highlight to keep clean look normally
+            showSymbol: false, 
+            symbol: 'circle',
+            symbolSize: 8,
             areaStyle: isAreaChart
               ? {
                   opacity: 0.3,

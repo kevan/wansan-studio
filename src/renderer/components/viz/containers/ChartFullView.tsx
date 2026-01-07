@@ -64,6 +64,7 @@ export function ChartFullView() {
   const language = i18n.language === 'zh' ? 'zh' : 'en'
 
   const [insightMode, setInsightMode] = useState(false)
+  const [highlightedItems, setHighlightedItems] = useState<string[]>([])
 
   const report = useMemo(() => {
     // 1. Check pinned
@@ -303,6 +304,7 @@ export function ChartFullView() {
                     config={effectiveConfig}
                     className="h-full w-full"
                     onRequestInsight={handleRequestInsight}
+                    highlightedItems={highlightedItems}
                   />
                 )}
 
@@ -351,6 +353,7 @@ export function ChartFullView() {
                         updateReportConfig(report.id, { insight: '' })
                       }
                     }}
+                    onHighlight={setHighlightedItems}
                   />
                 </div>
               )}
