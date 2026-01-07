@@ -262,7 +262,7 @@ export function buildEChartsOption(
         }))
       : yAxes.map((key, index) => ({
           name: getSeriesName(index),
-          type: (type === 'area' ? 'line' : type) as any,
+          type: (type === 'area' ? 'line' : type === 'combo' ? 'bar' : type) as any,
           data: data.map(item => item[key]),
           areaStyle: type === 'area' ? {} : undefined,
           // itemStyle: { color: '#4F46E5' } // Removed to allow theme colors to take effect
