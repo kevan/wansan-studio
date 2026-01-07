@@ -245,6 +245,15 @@ export function buildEChartsOption(
 
   const xData = data.map(item => item[x_axis])
 
+  // Check if X-axis should be numeric (standard scatter) or categorical (dot plot)
+  const isXAxisNumeric =
+    type === 'scatter' &&
+    xData.every(val => {
+      if (val === null || val === undefined || val === '') return true
+      const num = Number(val)
+      return !isNaN(num) && isFinite(num)
+    })
+
   const getSeriesName = (index: number) => {
     if (Array.isArray(series_name)) {
       return series_name[index] || yAxes[index]
@@ -257,12 +266,18 @@ export function buildEChartsOption(
       ? yAxes.map((key, index) => ({
           name: getSeriesName(index),
           type: 'scatter',
+          // If X-axis is numeric, we map [x, y]. ECharts handles strings on category axis automatically.
           data: data.map(item => [item[x_axis], item[key]]),
           emphasis: { focus: 'series' },
+          symbolSize: 10,
         }))
       : yAxes.map((key, index) => ({
           name: getSeriesName(index),
-          type: (type === 'area' ? 'line' : type === 'combo' ? 'bar' : type) as any,
+          type: (type === 'area'
+            ? 'line'
+            : type === 'combo'
+              ? 'bar'
+              : type) as any,
           data: data.map(item => item[key]),
           areaStyle: type === 'area' ? {} : undefined,
           // itemStyle: { color: '#4F46E5' } // Removed to allow theme colors to take effect
@@ -270,7 +285,10 @@ export function buildEChartsOption(
 
   const baseOption: EChartsOption = {
     tooltip: {
-      trigger: type === 'pie' ? 'item' : 'axis',
+      trigger:
+        type === 'pie' || type === 'radar' || (type === 'scatter' && isXAxisNumeric)
+          ? 'item'
+          : 'axis',
     },
     grid: {
       left: '2%',
@@ -281,7 +299,24 @@ export function buildEChartsOption(
     },
     xAxis:
       type === 'scatter'
-        ? { type: 'value' as const }
+        ? {
+            type: isXAxisNumeric ? ('value' as const) : ('category' as const),
+            data: isXAxisNumeric ? undefined : xData,
+            scale: true, // Optimizes view for numeric axes
+            axisLabel: {
+              interval: 'auto',
+              rotate: 45,
+              fontSize: 10,
+              hideOverlap: true,
+            },
+            splitLine: {
+              show: isXAxisNumeric, // Show grid for numeric scatter
+              lineStyle: {
+                type: 'dashed',
+                color: '#F3F4F6',
+              },
+            },
+          }
         : {
             type: 'category' as const,
             triggerEvent: true,
