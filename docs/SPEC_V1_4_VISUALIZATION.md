@@ -2,55 +2,56 @@
 
 > **Target Version**: v1.4.0
 > **Scope**: ECharts Engine, Theme System, Drill-Down v2.
+> **Status**: Implemented (merged to develop)
 
 ## 1. Visual Polish (瑞士级图表体验)
 
 ### 1.1 Custom Tooltip Engine
-*   **Problem**: Default ECharts tooltip is rigid and lacks semantic richness.
-*   **Solution**: Implement a `renderTooltip` HTML formatter using Tailwind classes.
+*   **Problem**: Default ECharts tooltip is rigid.
+*   **Solution**: Implemented `getAxisTooltipFormatter` and `getItemTooltipFormatter` with HTML/Tailwind.
 *   **Design**:
-    *   **Glassmorphism**: `backdrop-blur-md`, `bg-white/90`.
-    *   **Typography**: `Inter` font, distinct header (Date/Category) and rows (Metrics).
-    *   **Indicators**: Colored dots matching the series color.
+    *   **Glassmorphism**: `backdrop-blur-md`, `bg-white/90` (or dark mode equivalent).
+    *   **Typography**: `Inter` font, clear hierarchy.
 
 ### 1.2 The "Airy" Theme Extension
 *   **Files**: `src/renderer/lib/echarts-theme.ts`
 *   **Upgrades**:
-    *   **Gradients**: Auto-generate vertical gradients for Bar/Area charts to add depth.
-    *   **Shadows**: Soft, colored shadows (diffused glow) for Line charts.
-    *   **Axis**: Completely hide axis lines, keeping only essential grid lines and labels.
+    *   **Gradients**: Auto-generated vertical gradients with opacity transitions.
+    *   **Area Charts**: Enhanced opacity (0.3) and gradients to ensuring visibility.
+    *   **Shadows**: Soft, colored shadows matching series color.
+    *   **Axis**: Hidden axis lines, dashed split lines.
 
 ## 2. Advanced Chart Support
 
-### 2.1 New Chart Types
-*   **Scatter / Bubble**: For correlation analysis (e.g., Price vs. Sales).
-*   **Radar**: For multi-dimension capability comparison.
-*   **Combo (Dual Axis)**: Bar + Line (e.g., Revenue vs. Growth Rate).
-*   **Sankey / Funnel**: For flow and conversion analysis.
+### 2.1 Supported Types
+*   **Standard**: Bar, Line, Area, Pie.
+*   **New in v1.4**:
+    *   **Scatter**: Includes intelligent X-axis detection.
+        *   *Numeric X*: Uses `value` axis with scaling.
+        *   *Non-Numeric X*: Fallback to `category` axis (Dot Plot).
+    *   **Radar**: Includes heuristic for single-metric data.
+        *   *< 3 Metrics*: Transpose mode (X-axis as Radar Indicators) to prevent "line" shapes.
+        *   *>= 3 Metrics*: Standard mode (Y-axis columns as Radar Indicators).
+    *   **Combo**: Dual-axis support (Bar + Line).
+        *   *Fallback*: Degrades to simple Bar chart if < 2 metrics selected.
 
-### 2.2 Implementation
-*   Update `useChartOption` hook to handle `scatter`, `radar`, `combo` types.
-*   Update `SchemaEditor` to allow selecting these types.
+### 2.2 Configuration UX (`ChartFullView`)
+*   **No-Jump Config**: Decoupled rendering mode from validation. Configuring a chart (e.g., removing Y-axis temporarily) does not force a fallback to Table view, maintaining context.
 
 ## 3. Intelligent Drill-Down (交互升级)
 
-User pointed out `drill-down-menu.tsx` exists. We will evolve it from a static menu to a dynamic decision point.
-
-### 3.1 Menu Expansion
-*   **Current Items**:
-    *   `Focus`: Filter currrent view.
-    *   `View Data`: Show raw table.
-*   **New Item: "Breakdown by..." (下钻)**:
-    *   **UX**: Hovering triggers a sub-menu of Dimensions from the current table Schema (e.g., `Region`, `Category`).
-    *   **Action**: Clicking `Region` triggers a new AI Query:
-        > `Break down the current metric (${metric}) by Region, filtered by ${currentSelection}. Show as Bar Chart.`
+### 3.1 Dynamic Menu (`DrillDownMenu`)
+*   **Trigger**: ECharts `click` event (handled for both Items and Axis Labels via `triggerEvent: true`).
+*   **Context Aware**:
+    *   `Focus`: Filter current analysis.
+    *   `View Data`: Show raw table rows.
+    *   `Breakdown by...`: Suggests dimension columns (VARCHAR/TEXT) from the schema for immediate drill-down.
 
 ### 3.2 AI Insight Entry
-*   Add entry point: `💡 Explain Data` (Trigger AI Insight Protocol).
+*   **Integration**: "💡 AI Insight" button available directly in the drill-down menu.
 
-## 4. Engineering Plan
+## 4. Engineering Plan (Completed)
 
-1.  **Refactor**: `echarts-theme.ts` -> `src/renderer/viz/theme/`.
-2.  **Tooltips**: Create `getTooltipFormatter` utility.
-3.  **Hooks**: Expand `useChartOption.ts` switch-case.
-4.  **Components**: Update `DrillDownMenu.tsx` to support sub-menus.
+1.  **Refactor**: Unified logic in `src/renderer/lib/viz-adapter.ts`.
+2.  **Theme**: Centralized in `src/renderer/lib/echarts-theme.ts`.
+3.  **Components**: `VizChart`, `InsightPanel`, `ChartFullView` fully integrated.
