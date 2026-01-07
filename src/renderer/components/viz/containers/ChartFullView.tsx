@@ -223,7 +223,15 @@ export function ChartFullView() {
     setEditingReportId(null)
   }
 
-  const displayMode = getDisplayMode(effectiveType, data, effectiveConfig)
+  // Determine rendering mode:
+  // In Full View (Edit Mode), we adhere strictly to the selected chartType.
+  // We only fallback to 'table' if the type is explicitly 'table'.
+  // This prevents the UI from jumping to Table view while the user is configuring axes.
+  let displayMode = 'chart'
+  if (effectiveType === 'table') displayMode = 'table'
+  else if (effectiveType === 'kpi') displayMode = 'bignumber'
+  else if (effectiveType === 'text') displayMode = 'text'
+  else if (!data || data.length === 0) displayMode = 'empty'
 
   const showAxisControls =
     displayMode === 'chart' && availableColumns.length > 0
