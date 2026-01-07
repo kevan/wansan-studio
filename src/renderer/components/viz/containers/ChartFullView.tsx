@@ -11,6 +11,9 @@ import {
   ScatterChart,
   ArrowUpDown,
   Check,
+  Radar,
+  Layers,
+  Type,
 } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
@@ -25,6 +28,7 @@ import { useTranslation } from 'react-i18next'
 import { adaptChartConfig } from '@/lib/viz-adapter'
 import { getDisplayMode } from '@/utils/viz-logic'
 import { InsightPanel } from '../InsightPanel'
+import { SimpleMarkdown } from '@/components/ui/simple-markdown'
 import { useGenerateInsight } from '@/hooks/useIPC'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 
@@ -38,8 +42,11 @@ const chartTypeOptions: Array<{
   { value: 'area', label: 'chart_area', icon: AreaChart },
   { value: 'pie', label: 'chart_pie', icon: PieChart },
   { value: 'scatter', label: 'chart_scatter', icon: ScatterChart },
+  { value: 'radar', label: 'chart_radar', icon: Radar },
+  { value: 'combo', label: 'chart_combo', icon: Layers },
   { value: 'table', label: 'chart_table', icon: Table2 },
   { value: 'kpi', label: 'chart_kpi', icon: Gauge },
+  { value: 'text', label: 'chart_text', icon: Type },
 ]
 
 export function ChartFullView() {
@@ -189,12 +196,20 @@ export function ChartFullView() {
   const handleGenerateInsight = async (
     chartData: Array<Record<string, unknown>>
   ) => {
-    return await generateInsight.mutateAsync({
+    const result = await generateInsight.mutateAsync({
       chartTitle: effectiveTitle,
       chartType: effectiveType,
       aggregatedData: chartData,
       language,
     })
+    
+    if (report) {
+      updateReportConfig(report.id, {
+        insight: result,
+      })
+    }
+    
+    return result
   }
 
   const handleSave = () => {
@@ -250,8 +265,8 @@ export function ChartFullView() {
           </div>
 
           <div className="flex flex-1 overflow-hidden">
-            <div className="flex-1 p-5 min-w-0">
-              <div className="h-full w-full rounded-lg border border-zinc-200 bg-zinc-50/60 p-4">
+            <div className="flex-1 p-5 min-w-0 flex flex-col">
+              <div className="flex-1 min-h-0 rounded-lg border border-zinc-200 bg-zinc-50/60 p-4 relative">
                 {displayMode === 'bignumber' && data.length > 0 && (
                   <KpiCard
                     value={
@@ -284,6 +299,18 @@ export function ChartFullView() {
                   />
                 )}
 
+                {displayMode === 'text' && (
+                  <div className="h-full w-full overflow-auto p-6 bg-white">
+                    <SimpleMarkdown
+                      content={
+                        report?.reportData.content ||
+                        report?.reportData.insight ||
+                        t('no_chart_data')
+                      }
+                    />
+                  </div>
+                )}
+
                 {displayMode === 'table' && (
                   <div className="h-full w-full overflow-auto">
                     <DataTable
@@ -302,6 +329,17 @@ export function ChartFullView() {
                   </div>
                 )}
               </div>
+
+              {(insightMode || report?.reportData.insight) && (
+                <div className="mt-4 shrink-0">
+                  <InsightPanel
+                    title={effectiveTitle}
+                    chartType={effectiveType}
+                    chartData={data}
+                    onGenerateInsight={handleGenerateInsight}
+                  />
+                </div>
+              )}
             </div>
 
             <div
@@ -345,17 +383,7 @@ export function ChartFullView() {
                   </div>
 
 
-                {/* Insight Panel (Visible when triggered or always visible if we want) */}
-                {(insightMode || displayMode === 'chart') && (
-                  <div className="pt-2 border-t border-zinc-100">
-                    <InsightPanel
-                      title={effectiveTitle}
-                      chartType={effectiveType}
-                      chartData={data}
-                      onGenerateInsight={handleGenerateInsight}
-                    />
-                  </div>
-                )}
+
 
                 {displayMode === 'bignumber' && (
                   <div className="space-y-3">
