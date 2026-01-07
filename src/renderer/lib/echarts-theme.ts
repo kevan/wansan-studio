@@ -172,6 +172,9 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
 
         // Line Chart Styling
         if (s.type === 'line') {
+          // Check if areaStyle exists (even if empty object) to identify Area Charts
+          const isAreaChart = s.areaStyle !== undefined && s.areaStyle !== null
+
           return {
             ...s,
             smooth: true, // Spline interpolation
@@ -184,10 +187,10 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
               shadowOffsetY: 4,
               ...s.lineStyle,
             },
-            areaStyle: s.areaStyle
+            areaStyle: isAreaChart
               ? {
-                  opacity: 0.2,
-                  color: getLinearGradient(baseColor),
+                  opacity: 0.3,
+                  color: getLinearGradient(baseColor, 0.1),
                 }
               : undefined,
           }
