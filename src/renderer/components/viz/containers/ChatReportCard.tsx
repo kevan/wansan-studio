@@ -6,8 +6,10 @@ import {
   Settings2,
   SlidersHorizontal,
   Sparkles,
+  Lightbulb,
 } from 'lucide-react'
 import { VizRenderer } from '../core/VizRenderer'
+import { InsightPanel } from '../InsightPanel'
 import {
   ReportData,
   useWorkbenchStore,
@@ -19,6 +21,7 @@ import { cn } from '@/utils/cn.ts'
 import type { ChatMessage } from '../../ChatInterface'
 import { useTranslation } from 'react-i18next'
 import { ExpandableAction } from '../../ui/expandable-action'
+import { useGenerateInsight } from '@/hooks/useIPC'
 
 interface ChatReportCardProps {
   messageId: string
@@ -43,14 +46,37 @@ export const ChatReportCard = React.memo(function ChatReportCard({
   )
   const setReplyTo = useChatStore(state => state.setReplyTo)
   const updateMessageData = useChatStore(state => state.updateMessageData)
+  const updateMessageInsight = useChatStore(state => state.updateMessageInsight)
   const addToast = useToastStore(state => state.addToast)
   const openSqlLab = useSqlLabStore(state => state.open)
-  const { t } = useTranslation(['common', 'chat'])
+  const { t, i18n } = useTranslation(['common', 'chat'])
   const [isRerunning, setIsRerunning] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+  const [manualActive, setManualActive] = useState(false)
+  const [triggerCount, setTriggerCount] = useState(0)
+
+  const generateInsight = useGenerateInsight()
+  const language = i18n.language === 'zh' ? 'zh' : 'en'
 
   if (!reportData) return null
 
+  const hasInsight = !!reportData.insight
+  const showPanel = hasInsight || manualActive
   const isPinned = pinnedReports.some(r => r?.sourceMessageId === messageId)
+
+  const handleInsightToggle = () => {
+    if (hasInsight) {
+      setExpanded(!expanded)
+    } else {
+      if (!manualActive) {
+        setManualActive(true)
+        setTriggerCount(c => c + 1)
+        setExpanded(true)
+      } else {
+        setExpanded(!expanded)
+      }
+    }
+  }
 
   const handleRerun = async () => {
     if (!reportData?.sql || isRerunning) return
@@ -77,6 +103,19 @@ export const ChatReportCard = React.memo(function ChatReportCard({
     } finally {
       setIsRerunning(false)
     }
+  }
+
+  const handleGenerateInsight = async (
+    chartData: Array<Record<string, unknown>>
+  ) => {
+    const result = await generateInsight.mutateAsync({
+      chartTitle: reportData.title || t('chat:analysis_result'),
+      chartType: reportData.chartType || 'bar',
+      aggregatedData: chartData,
+      language,
+    })
+    updateMessageInsight(messageId, result)
+    return result
   }
 
   const handlePinToggle = () => {
@@ -130,9 +169,6 @@ export const ChatReportCard = React.memo(function ChatReportCard({
   }
 
   const rowCount = reportData?.tableData?.length || 0
-  // const aiLatency = message.metadata?.aiLatency || 0
-  // const dbLatency =
-  //   message.metadata?.dbLatency || message.metadata?.latency || 0
 
   return (
     <div
@@ -152,7 +188,46 @@ export const ChatReportCard = React.memo(function ChatReportCard({
         )}
       </div>
 
-      <div className="flex items-center justify-end px-3 py-2 border-t border-zinc-50 bg-white">
+      {showPanel && (
+        <div className="border-t border-zinc-100 bg-zinc-50/30 p-3">
+          <InsightPanel
+            title={reportData.title}
+            chartType={reportData.chartType}
+            chartData={reportData.tableData || []}
+            insight={reportData.insight}
+            onGenerateInsight={handleGenerateInsight}
+            expanded={expanded}
+            onExpandChange={setExpanded}
+            hiddenIfIdle={true}
+            requestTrigger={triggerCount}
+            onCancel={() => {
+              setManualActive(false)
+              setExpanded(false)
+            }}
+            onRemove={() => {
+              updateMessageInsight(messageId, '')
+              setManualActive(false)
+              setExpanded(false)
+            }}
+          />
+        </div>
+      )}
+
+      <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-50 bg-white">
+        {/* Left: AI Insight Trigger */}
+        <div>
+          {!hasInsight && !manualActive && (
+            <button
+              onClick={handleInsightToggle}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors border border-indigo-100"
+            >
+              <Lightbulb className="w-3.5 h-3.5 fill-current" />
+              <span className="text-xs font-medium">{t('ai_insight')}</span>
+            </button>
+          )}
+        </div>
+
+        {/* Right: Standard Actions */}
         <div className="flex items-center gap-1">
           <ExpandableAction
             icon={<Settings2 className="h-3.5 w-3.5" />}

@@ -49,6 +49,7 @@ interface WorkbenchState {
     updates: {
       type?: AIAnalysisResult['viz_type']
       config?: AIAnalysisResult['viz_config']
+      insight?: string
     }
   ) => void
   updateLayout: (layouts: Layout[]) => void
@@ -392,6 +393,7 @@ export const useWorkbenchStore = <T = WorkbenchState>(
         useProjectStore.getState().updateWidgetData(id, {
           chartType: updates.type ?? currentData.chartType,
           vizConfig: nextVizConfig,
+          insight: updates.insight ?? currentData.insight,
         })
       } else {
         // Try direct registry update
@@ -405,6 +407,7 @@ export const useWorkbenchStore = <T = WorkbenchState>(
           useProjectStore.getState().updateRegistryEntry(id, {
             chartType: updates.type ?? currentData.chartType,
             vizConfig: nextVizConfig,
+            insight: updates.insight ?? currentData.insight,
           })
         }
       }
@@ -475,6 +478,7 @@ useWorkbenchStore.getState = () => {
           ...(reportData || { title: 'Untitled' }),
           chartType: updates.type,
           vizConfig: updates.config,
+          insight: updates.insight,
         },
       })
     },

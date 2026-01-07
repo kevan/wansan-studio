@@ -61,11 +61,15 @@ export function VizChart({
   const handleChartClick = useCallback((params: any) => {
     if (params && params.event && params.event.event) {
       const { clientX, clientY } = params.event.event
+      const name = params.componentType === 'xAxis' ? params.value : params.name
+
+      if (!name) return
+
       setMenuState({
         visible: true,
         x: clientX,
         y: clientY,
-        name: params.name,
+        name,
         seriesName: params.seriesName,
       })
     }

@@ -40,10 +40,8 @@ export function adaptChartConfig(
   oldType: ChartType | undefined,
   oldConfig: VizConfig | undefined,
   data: Array<Record<string, any>>
-): { type: Exclude<ChartType, 'area'>; config?: VizConfig } {
-  // Convert 'area' to 'line' for compatibility
-  const targetType: Exclude<ChartType, 'area'> =
-    newType === 'area' ? 'line' : (newType as Exclude<ChartType, 'area'>)
+): { type: ChartType; config?: VizConfig } {
+  const targetType = newType
 
   const oldCategory = oldType ? getChartCategory(oldType) : 'cartesian'
   const newCategory = getChartCategory(targetType)
@@ -286,6 +284,7 @@ export function buildEChartsOption(
         ? { type: 'value' as const }
         : {
             type: 'category' as const,
+            triggerEvent: true,
             data: xData,
             axisLabel: {
               interval: 'auto',

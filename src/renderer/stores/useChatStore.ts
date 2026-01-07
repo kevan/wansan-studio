@@ -30,6 +30,7 @@ interface ChatStore {
     newData: Record<string, unknown>[],
     columnFields: Array<{ name: string; type: string }>
   ) => void
+  updateMessageInsight: (messageId: string, insight: string) => void
   sendMessage: (
     text: string,
     hiddenPrompt?: string,
@@ -167,6 +168,20 @@ const updateMessageData = (
         tableData: newData,
         columnFields,
       } as ReportData,
+    }
+  })
+}
+
+const updateMessageInsight = (messageId: string, insight: string) => {
+  updateMessage(messageId, msg => {
+    if (!msg.reportData) return msg
+    return {
+      ...msg,
+      reportData: {
+        ...msg.reportData,
+        insight,
+        insightTime: Date.now(),
+      },
     }
   })
 }
@@ -920,6 +935,7 @@ export const useChatStore = <T = ChatStore>(
     updateMessage,
     updateReportConfig,
     updateMessageData,
+    updateMessageInsight,
     sendMessage,
     retryMessage,
     rerunAnalysis,
@@ -946,6 +962,7 @@ useChatStore.getState = (): ChatStore => {
     updateMessage,
     updateReportConfig,
     updateMessageData,
+    updateMessageInsight,
     sendMessage,
     retryMessage,
     rerunAnalysis,

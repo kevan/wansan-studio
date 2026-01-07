@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Sparkles,
@@ -7,8 +7,11 @@ import {
   Loader2,
   AlertTriangle,
   Check,
+  RefreshCw,
+  Trash2,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
+import { SimpleMarkdown } from '../ui/simple-markdown'
 
 type InsightState = 'idle' | 'consent' | 'analyzing' | 'done' | 'error'
 
@@ -19,50 +22,132 @@ interface InsightPanelProps {
   chartData: Array<Record<string, unknown>>
   /** Chart type for context */
   chartType?: string
+  /** Existing insight text if available */
+  insight?: string
   /** Called to request AI insight generation */
   onGenerateInsight: (data: Array<Record<string, unknown>>) => Promise<string>
   className?: string
+  expanded?: boolean
+  defaultExpanded?: boolean
+  onExpandChange?: (expanded: boolean) => void
+  hiddenIfIdle?: boolean
+  requestTrigger?: number
+  onCancel?: () => void
+  onRemove?: () => void
 }
 
 export function InsightPanel({
   title = 'Chart',
   chartData,
   chartType = 'bar',
+  insight,
   onGenerateInsight,
   className,
-}: InsightPanelProps) {
+  expanded,
+  defaultExpanded = false,
+  onExpandChange,
+  requestTrigger = 0,
+  hiddenIfIdle = false,
+  onCancel,
+  onRemove,
+}: InsightPanelProps & {
+  expanded?: boolean
+  defaultExpanded?: boolean
+  onExpandChange?: (expanded: boolean) => void
+  hiddenIfIdle?: boolean
+  requestTrigger?: number
+  onCancel?: () => void
+  onRemove?: () => void
+}) {
   const { t } = useTranslation('common')
-  const [state, setState] = useState<InsightState>('idle')
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [insightText, setInsightText] = useState<string>('')
+  const [state, setState] = useState<InsightState>(insight ? 'done' : 'idle')
+  const [internalExpanded, setInternalExpanded] = useState(defaultExpanded)
+  const [insightText, setInsightText] = useState<string>(insight || '')
   const [error, setError] = useState<string>('')
 
+  const isExpanded = expanded !== undefined ? expanded : internalExpanded
   const dataPointCount = chartData.length
+
+  useEffect(() => {
+    if (insight) {
+      setInsightText(insight)
+      setState('done')
+      if (expanded === undefined && !internalExpanded) {
+        setInternalExpanded(true)
+      }
+    } else {
+        // If insight removed externally
+        if (state === 'done') {
+            setState('idle')
+        }
+    }
+  }, [insight])
+
+  // Auto request logic
+  useEffect(() => {
+    if (requestTrigger > 0 && state === 'idle' && !insight) {
+      setState('consent')
+    }
+  }, [requestTrigger, state, insight])
+
+  // Sync internal expanded state if prop changes (optional, but good for controlled->uncontrolled switch safety)
+  useEffect(() => {
+      if (expanded !== undefined) {
+          setInternalExpanded(expanded)
+      }
+  }, [expanded])
+
+  const toggleExpanded = () => {
+    const next = !isExpanded
+    if (onExpandChange) {
+      onExpandChange(next)
+    }
+    setInternalExpanded(next)
+  }
 
   const handleRequestInsight = useCallback(() => {
     setState('consent')
   }, [])
 
   const handleConfirmSend = useCallback(async () => {
+    // If controlled, parent might want to know we are starting?
+    // But this component logic for 'consent' -> 'analyzing' is self-contained unless overridden.
     setState('analyzing')
     setError('')
     try {
       const result = await onGenerateInsight(chartData)
       setInsightText(result)
       setState('done')
-      setIsExpanded(true)
+      setInternalExpanded(true)
+      onExpandChange?.(true)
     } catch (err: any) {
       setError(err.message || 'Failed to generate insight')
       setState('error')
     }
-  }, [chartData, onGenerateInsight])
+  }, [chartData, onGenerateInsight, onExpandChange])
+  
+  const handleRegenerate = useCallback(async (e: React.MouseEvent) => {
+      e.stopPropagation()
+      handleConfirmSend()
+  }, [handleConfirmSend])
+
+  const handleRemove = useCallback((e: React.MouseEvent) => {
+      e.stopPropagation()
+      if (onRemove) {
+          onRemove()
+          setState('idle')
+          setInsightText('')
+      }
+  }, [onRemove])
 
   const handleCancel = useCallback(() => {
     setState('idle')
-  }, [])
+    onCancel?.()
+  }, [onCancel])
 
   // Render based on state
   if (state === 'idle') {
+    if (hiddenIfIdle) return null
     return (
       <button
         onClick={handleRequestInsight}
@@ -94,14 +179,6 @@ export function InsightPanel({
             <div className="text-xs text-amber-700 mt-1">
               {t('insight_consent_desc', { count: dataPointCount }) ||
                 `This will send ${dataPointCount} aggregated data points to generate insights. No raw data rows will be transmitted.`}
-            </div>
-
-            {/* Data Preview */}
-            <div className="mt-3 bg-white/80 rounded-lg p-2 border border-amber-100 max-h-32 overflow-auto">
-              <pre className="text-[10px] text-zinc-600 font-mono">
-                {JSON.stringify(chartData.slice(0, 5), null, 2)}
-                {chartData.length > 5 && '\n...'}
-              </pre>
             </div>
 
             <div className="flex gap-2 mt-3">
@@ -170,9 +247,9 @@ export function InsightPanel({
       )}
     >
       {/* Header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-indigo-50/50 transition-colors"
+      <div
+        onClick={toggleExpanded}
+        className="w-full flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-indigo-50/50 transition-colors"
       >
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-indigo-500" />
@@ -180,23 +257,37 @@ export function InsightPanel({
             {t('ai_insight') || 'AI Insight'}
           </span>
         </div>
-        {isExpanded ? (
-          <ChevronUp className="w-4 h-4 text-indigo-400" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-indigo-400" />
-        )}
-      </button>
+        
+        <div className="flex items-center gap-1">
+             <button
+               onClick={handleRegenerate}
+               className="p-1.5 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded bg-transparent transition-colors"
+               title={t('regenerate') || 'Regenerate'}
+             >
+                <RefreshCw className="w-3.5 h-3.5" />
+             </button>
+             {onRemove && (
+                 <button
+                   onClick={handleRemove}
+                   className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded bg-transparent transition-colors"
+                   title={t('remove') || 'Remove'}
+                 >
+                    <Trash2 className="w-3.5 h-3.5" />
+                 </button>
+             )}
+            <div className="w-[1px] h-3 bg-zinc-200 mx-1" />
+            {isExpanded ? (
+              <ChevronUp className="w-4 h-4 text-indigo-400" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-indigo-400" />
+            )}
+        </div>
+      </div>
 
       {/* Content */}
       {isExpanded && (
         <div className="px-4 pb-4">
-          <div className="prose prose-sm prose-zinc max-w-none text-sm text-zinc-700 leading-relaxed">
-            {insightText.split('\n').map((line, i) => (
-              <p key={i} className="my-1">
-                {line}
-              </p>
-            ))}
-          </div>
+          <SimpleMarkdown content={insightText} />
         </div>
       )}
     </div>

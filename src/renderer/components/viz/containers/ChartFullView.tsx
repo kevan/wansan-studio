@@ -1,36 +1,35 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import {
-  X,
-  Save,
+  AreaChart,
+  ArrowUpDown,
   BarChart3,
+  Check,
+  Gauge,
+  Layers,
   LineChart,
   PieChart,
-  Table2,
-  Gauge,
-  AreaChart,
-  ScatterChart,
-  ArrowUpDown,
-  Check,
   Radar,
-  Layers,
+  Save,
+  ScatterChart,
+  Table2,
   Type,
+  X,
 } from 'lucide-react'
 import { createPortal } from 'react-dom'
+import type { DenormalizedReportWidget } from '@/stores/useWorkbenchStore'
 import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { VizChart } from '../core/VizChart'
 import { DataTable } from '../base/DataTable'
 import { KpiCard } from '../base/KpiCard'
 import { cn } from '@/utils/cn'
-import type { DenormalizedReportWidget } from '@/stores/useWorkbenchStore'
-import type { ReportData, ChartType } from '@shared/types/dashboard'
+import type { ChartType, ReportData } from '@shared/types/dashboard'
 import { useTranslation } from 'react-i18next'
 import { adaptChartConfig } from '@/lib/viz-adapter'
 import { getDisplayMode } from '@/utils/viz-logic'
 import { InsightPanel } from '../InsightPanel'
 import { SimpleMarkdown } from '@/components/ui/simple-markdown'
 import { useGenerateInsight } from '@/hooks/useIPC'
-import { useSettingsStore } from '@/stores/useSettingsStore'
 
 const chartTypeOptions: Array<{
   value: ChartType
@@ -202,13 +201,13 @@ export function ChartFullView() {
       aggregatedData: chartData,
       language,
     })
-    
+
     if (report) {
       updateReportConfig(report.id, {
         insight: result,
       })
     }
-    
+
     return result
   }
 
@@ -330,13 +329,20 @@ export function ChartFullView() {
                 )}
               </div>
 
-              {(insightMode || report?.reportData.insight) && (
+              {(displayMode === 'chart' || report?.reportData.insight) && (
                 <div className="mt-4 shrink-0">
                   <InsightPanel
                     title={effectiveTitle}
                     chartType={effectiveType}
                     chartData={data}
+                    insight={report?.reportData.insight}
                     onGenerateInsight={handleGenerateInsight}
+                    defaultExpanded={true}
+                    onRemove={() => {
+                      if (report) {
+                        updateReportConfig(report.id, { insight: '' })
+                      }
+                    }}
                   />
                 </div>
               )}
@@ -364,9 +370,7 @@ export function ChartFullView() {
                         <button
                           key={option.value}
                           type="button"
-                          onClick={() =>
-                            handleChartTypeChange(option.value)
-                          }
+                          onClick={() => handleChartTypeChange(option.value)}
                           className={cn(
                             'flex flex-col items-center gap-1 rounded-md border px-2 py-2 text-[11px] font-medium transition-colors',
                             isActive
@@ -380,10 +384,7 @@ export function ChartFullView() {
                       )
                     })}
                   </div>
-                  </div>
-
-
-
+                </div>
 
                 {displayMode === 'bignumber' && (
                   <div className="space-y-3">

@@ -1,6 +1,6 @@
 import type { ChartType } from '@shared/types/dashboard'
 
-export type DisplayMode = 'chart' | 'table' | 'bignumber' | 'empty'
+export type DisplayMode = 'chart' | 'table' | 'bignumber' | 'empty' | 'text'
 
 export function getDisplayMode(
   chartType: ChartType | undefined,
@@ -8,14 +8,10 @@ export function getDisplayMode(
   vizConfig?: any
 ): DisplayMode {
   const hasData = data && data.length > 0
-  if (!hasData) return 'empty'
+  if (!hasData && chartType !== 'text') return 'empty'
 
-  const isBigNumber =
-    chartType === 'kpi' &&
-    data.length === 1 &&
-    Object.keys(data[0] || {}).length > 0
-
-  if (isBigNumber) return 'bignumber'
+  if (chartType === 'kpi') return 'bignumber'
+  if (chartType === 'text') return 'text'
 
   const showAsTable =
     chartType === 'table' || !vizConfig?.x_axis || !vizConfig?.y_axis

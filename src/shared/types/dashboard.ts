@@ -34,6 +34,10 @@ export interface ReportData {
   is_template?: boolean
   missing_params?: FilterParam[]
   selected_params?: Record<string, string[]>
+  /** AI Business Insight (Markdown format) */
+  insight?: string
+  /** Timestamp when insight was generated */
+  insightTime?: number
 }
 
 export interface ReportWidget {
