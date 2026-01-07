@@ -45,7 +45,7 @@ const chartTypeOptions: Array<{
   { value: 'combo', label: 'chart_combo', icon: Layers },
   { value: 'table', label: 'chart_table', icon: Table2 },
   { value: 'kpi', label: 'chart_kpi', icon: Gauge },
-  { value: 'text', label: 'chart_text', icon: Type },
+  // { value: 'text', label: 'chart_text', icon: Type },
 ]
 
 export function ChartFullView() {
