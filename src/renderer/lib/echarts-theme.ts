@@ -47,6 +47,29 @@ const getBarGradient = (color: string) => ({
 })
 
 /**
+ * Helper to extract a displayable value from ECharts params
+ */
+function getDisplayValue(val: any): string {
+  if (val === undefined || val === null) return '-'
+  
+  let target = val
+  if (Array.isArray(val)) {
+    // For [x, y] or [x, y, z] data, y is usually the value we want to show
+    // If it's a scatter chart with numeric X, index 1 is Y.
+    // In our typical data structure, the last element is often the metric.
+    target = val.length > 1 ? val[val.length - 1] : val[0]
+  }
+
+  if (typeof target === 'number') {
+    return target.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })
+  }
+  return String(target)
+}
+
+/**
  * Creates a rich HTML tooltip with glassmorphism styling
  * Used for axis-triggered tooltips (bar, line charts)
  */
@@ -61,14 +84,12 @@ export function getAxisTooltipFormatter(isDark: boolean) {
 
     let rows = ''
     for (const p of params) {
-      if (p.value === undefined || p.value === null) continue
-      const value =
-        typeof p.value === 'number' ? p.value.toLocaleString() : p.value
+      const value = getDisplayValue(p.value)
       rows += `
-        <div style="display:flex;align-items:center;gap:8px;padding:4px 0;">
+        <div style="display:flex;align-items:center;gap:12px;padding:4px 0;">
           <span style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0;"></span>
-          <span style="flex:1;color:${mutedColor};font-size:12px;">${p.seriesName}</span>
-          <span style="font-weight:600;color:${textColor};font-size:13px;">${value}</span>
+          <span style="flex:1;color:${mutedColor};font-size:12px;white-space:nowrap;margin-right:8px;">${p.seriesName}</span>
+          <span style="font-weight:600;color:${textColor};font-size:13px;tabular-nums:proportional-nums;">${value}</span>
         </div>
       `
     }
@@ -81,9 +102,10 @@ export function getAxisTooltipFormatter(isDark: boolean) {
         backdrop-filter:blur(12px);
         border-radius:12px;
         box-shadow:0 10px 25px -5px rgba(0,0,0,0.1),0 8px 10px -6px rgba(0,0,0,0.05);
-        min-width:160px;
+        min-width:180px;
+        border: 1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'};
       ">
-        <div style="font-size:11px;font-weight:600;color:${mutedColor};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+        <div style="font-size:11px;font-weight:700;color:${mutedColor};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;border-bottom:1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'};padding-bottom:6px;">
           ${categoryName}
         </div>
         ${rows}
@@ -102,10 +124,7 @@ export function getItemTooltipFormatter(isDark: boolean) {
     const mutedColor = isDark ? '#a1a1aa' : '#71717a'
 
     const name = params.name || ''
-    const value =
-      typeof params.value === 'number'
-        ? params.value.toLocaleString()
-        : params.value
+    const value = getDisplayValue(params.value)
     const percent = params.percent ? `${params.percent.toFixed(1)}%` : ''
 
     return `
@@ -116,15 +135,16 @@ export function getItemTooltipFormatter(isDark: boolean) {
         backdrop-filter:blur(12px);
         border-radius:12px;
         box-shadow:0 10px 25px -5px rgba(0,0,0,0.1),0 8px 10px -6px rgba(0,0,0,0.05);
-        min-width:140px;
+        min-width:160px;
+        border: 1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'};
       ">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
           <span style="width:10px;height:10px;border-radius:50%;background:${params.color};"></span>
           <span style="font-weight:600;color:${textColor};font-size:13px;">${name}</span>
         </div>
-        <div style="display:flex;justify-content:space-between;gap:16px;">
+        <div style="display:flex;justify-content:space-between;gap:16px;align-items:baseline;">
           <span style="color:${mutedColor};font-size:12px;">${value}</span>
-          ${percent ? `<span style="font-weight:600;color:${textColor};font-size:12px;">${percent}</span>` : ''}
+          ${percent ? `<span style="font-weight:700;color:${textColor};font-size:12px;background:${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'};padding:2px 6px;border-radius:4px;">${percent}</span>` : ''}
         </div>
       </div>
     `
@@ -287,7 +307,7 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
                 show: true,
                 length: 15,
                 length2: 0,
-                smooth: false,
+                smooth: true,
                 lineStyle: {
                   width: 1.5,
                   color: splitLineColor,
