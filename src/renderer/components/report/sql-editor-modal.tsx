@@ -15,7 +15,7 @@ import { QueryPanel, QueryPanelRef } from './query-panel'
 interface SqlEditorModalProps {
   isOpen: boolean
   onClose: () => void
-  mode?: 'file' | 'widget'
+  mode?: 'file' | 'widget' | 'create'
   targetTitle?: string
   initialSql: string
   reasoning?: string
@@ -38,6 +38,7 @@ export function SqlEditorModal({
   const queryPanelRef = useRef<QueryPanelRef>(null)
 
   const isFileMode = mode === 'file'
+  const isCreateMode = mode === 'create'
 
   // Sync state when initialSql changes or modal opens
   // Note: Formatting is now handled by QueryPanel on mount
@@ -88,15 +89,19 @@ export function SqlEditorModal({
                 <BarChart className="w-5 h-5 text-indigo-600" />
               )}
               {targetTitle ||
-                (isFileMode
-                  ? t('sql_editor.file_preview')
-                  : t('sql_editor.widget_edit'))}
+                (isCreateMode
+                  ? t('sql_editor.new_query')
+                  : isFileMode
+                    ? t('sql_editor.file_preview')
+                    : t('sql_editor.widget_edit'))}
             </DialogTitle>
 
             <p className="text-xs text-zinc-400 font-mono flex items-center gap-2">
-              {isFileMode
-                ? t('sql_editor.mode_read_only')
-                : t('sql_editor.mode_editing')}
+              {isCreateMode
+                ? t('sql_editor.mode_edit')
+                : isFileMode
+                  ? t('sql_editor.mode_read_only')
+                  : t('sql_editor.mode_editing')}
             </p>
           </div>
         </DialogHeader>
@@ -108,7 +113,7 @@ export function SqlEditorModal({
             onChange={setSql}
             initialSql={initialSql}
             reasoning={reasoning}
-            runOnMount={true}
+            runOnMount={!isCreateMode} // Only run on mount if not in create mode
           />
         </div>
 
@@ -130,7 +135,9 @@ export function SqlEditorModal({
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
-                {t('sql_editor.save')}
+                {isCreateMode
+                  ? t('sql_editor.send_to_chat')
+                  : t('sql_editor.save')}
               </Button>
             )}
           </div>

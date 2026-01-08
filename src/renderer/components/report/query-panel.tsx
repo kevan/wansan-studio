@@ -71,7 +71,7 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
     const { isActivated, checkGate, gateNode } = useProGate()
 
     const handleRunPreview = async (queryToRun: string, bypassGate = false) => {
-      if (isRestoring) return false
+      if (isRestoring || !queryToRun.trim()) return false
 
       let success = false
       const run = async () => {

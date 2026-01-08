@@ -63,6 +63,7 @@ interface ChatStore {
     sql: string,
     selectedParams?: Record<string, string[]>
   ) => Promise<void>
+  addManualSqlMessage: (sql: string) => Promise<void>
 }
 
 const generateId = () => crypto.randomUUID()
@@ -881,6 +882,62 @@ const runTemplateSQL = async (
   }
 }
 
+const addManualSqlMessage = async (sql: string) => {
+  const userMsgId = generateId()
+  const botMsgId = generateId()
+
+  // 1. Add User Message (The SQL)
+  useProjectStore.getState().addMessage({
+    id: userMsgId,
+    type: 'user',
+    content: '```sql\n' + sql + '\n```',
+    timestamp: Date.now(),
+  } as any)
+
+  // 2. Add Assistant Placeholder
+  useProjectStore.getState().addMessage({
+    id: botMsgId,
+    type: 'assistant',
+    content: '',
+    status: 'executing',
+    timestamp: Date.now() + 1,
+  } as any)
+
+  // 3. Execute SQL
+  try {
+    const startTime = Date.now()
+    const execution = await window.electronAPI.runSQL(sql)
+    const dbLatency = Date.now() - startTime
+
+    if (!execution.success || !execution.data) {
+      throw new Error(execution.error || 'SQL execution failed')
+    }
+
+    const { data, columnFields } = execution.data
+
+    // 4. Update with Result
+    updateMessage(botMsgId, msg => ({
+      ...msg,
+      status: undefined,
+      metadata: { aiLatency: 0, dbLatency, latency: dbLatency },
+      reportData: {
+        title: 'Manual Query',
+        sql: sql,
+        chartType: 'table', // Default to table for manual queries
+        tableData: data,
+        columnFields: columnFields,
+        vizConfig: {},
+      },
+    }))
+  } catch (error: any) {
+    updateMessage(botMsgId, msg => ({
+      ...msg,
+      status: 'error',
+      error: error?.message || 'Unknown error',
+    }))
+  }
+}
+
 const removeMessage = (id: string) => {
   const { messages } = getSessionState()
   const index = messages.findIndex(m => m.id === id)
@@ -941,6 +998,7 @@ export const useChatStore = <T = ChatStore>(
     rerunAnalysis,
     autoFixMessage,
     runTemplateSQL,
+    addManualSqlMessage,
     resetLoading,
     stopGeneration,
     removeMessage,
@@ -968,6 +1026,7 @@ useChatStore.getState = (): ChatStore => {
     rerunAnalysis,
     autoFixMessage,
     runTemplateSQL,
+    addManualSqlMessage,
     resetLoading,
     stopGeneration,
     removeMessage,

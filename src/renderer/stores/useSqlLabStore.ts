@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 
 export interface SqlLabSession {
-  mode: 'widget' | 'file'
-  targetId: string // widgetId or tableName
+  mode: 'widget' | 'file' | 'create'
+  targetId?: string // widgetId or tableName
   targetTitle?: string // <--- Added
   initialSql: string
   reasoning?: string

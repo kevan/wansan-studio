@@ -20,6 +20,7 @@ import { useProjectStore } from '@/stores/useProjectStore.ts'
 import { useChatStore } from '@/stores/useChatStore.ts'
 import { useToastStore } from '@/stores/useToastStore.ts'
 import { useSettingsStore } from '@/stores/useSettingsStore.ts'
+import { useSqlLabStore } from '@/stores/useSqlLabStore.ts'
 
 import type { ChatMessage } from '../ChatInterface'
 import { useTranslation } from 'react-i18next'
@@ -107,6 +108,8 @@ export function MagicInput({
   )
   const setRefreshing = useProjectStore(state => state.setRefreshing)
   const { checkGate, gateNode } = useProGate()
+  const openSqlLab = useSqlLabStore(state => state.open)
+  const addManualSqlMessage = useChatStore(state => state.addManualSqlMessage)
 
   const handleStop = () => {
     stopGeneration()
@@ -216,6 +219,25 @@ export function MagicInput({
     if (!value.startsWith('/')) return []
 
     const cmds = [
+      {
+        id: 'sql',
+        label: t('command_sql', 'Write SQL'),
+        icon: Database,
+        action: () => {
+          setPopoverOpen(false)
+          setValue('')
+          setInputDraft('')
+          valueRef.current = ''
+
+          openSqlLab({
+            mode: 'create',
+            initialSql: '',
+            onSave: async sql => {
+              await addManualSqlMessage(sql)
+            },
+          })
+        },
+      },
       {
         id: 'clear',
         label: t('command_clear'),
