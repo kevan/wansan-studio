@@ -7,10 +7,9 @@
 
 ## ✅ v1.3.0: The "Persistence" Update (Done)
 
-**Goal**: Eliminate memory limits and startup latency. Enable true multi-project management.
-*   **Native Persistence (.duckdb)**: File-based storage.
-*   **Multi-Project Architecture**: `.wansan` project bundles.
-*   **Project Launcher**: New welcome screen.
+**Goal**: Eliminate memory limits and startup latency.
+*   **Native Persistence**: File-based storage (.duckdb).
+*   **Multi-Project Architecture**: Project bundles.
 
 ---
 
@@ -19,14 +18,22 @@
 **Goal**: Transform "Data Reading" into "Interactive Storytelling".
 
 ### 1. AI Business Insight
-*   **Feature**: **Insight Protocol**. AI generates structured analysis from aggregated data.
-*   **Feature**: **Visual Anchoring**. Linking text insights to chart highlights (Hover to highlight).
-*   **Feature**: **Auto-Localization**. EN/ZH support for generated reports.
+*   **Insight Protocol**: Structured AI analysis from aggregated data.
+*   **Visual Anchoring**: Hover text to highlight chart elements.
+*   **Auto-Localization**: EN/ZH support.
 
 ### 2. Visualization Engine 2.0
-*   **New Charts**: **Nightingale Rose**, Radar, Combo, Scatter (Smart Axis).
-*   **Theme System**: "Airy" design with glassmorphism tooltips and smart layouts.
-*   **UX**: No-jump configuration, edge-aligned labels.
+*   **New Charts**: **Rose**, Radar, Combo, Scatter (Smart Axis).
+*   **Theme System**: "Airy" design, glassmorphism tooltips.
+*   **Interactive Drill-Down**: Context menu on chart elements (Filter, View Data, Breakdown).
+
+---
+
+## ✅ v1.2.5: The "Semantic" Update (Done - Backported)
+
+**Goal**: Define business logic once, reuse everywhere.
+*   **Smart Metrics**: User-defined computed columns (DuckDB Views).
+*   **Schema Masking**: AI uses `v_orders` instead of raw tables.
 
 ---
 
@@ -42,19 +49,7 @@
 ### 2. Live Data (Connectors)
 *   **Feature**: **Database Connectors (MySQL/PostgreSQL)**.
     *   Direct connection from Electron Main Process.
-    *   Real-time query execution (Hybrid Engine: DuckDB for Analytics, SQL DB for Source).
-
----
-
-## 🔬 v1.6.0: The "Deep Logic" Update (Planned)
-
-**Goal**: Advanced BI features for Power Users.
-
-### 1. Logic
-*   **Feature**: **Computed Columns (UI Builder)**.
-    *   No-code formula builder for metrics (e.g., `profit = rev - cost`).
-*   **Feature**: **Advanced Drill Down Actions**.
-    *   Converting textual "Recommendations" into clickable filter actions.
+    *   Real-time query execution.
 
 ---
 

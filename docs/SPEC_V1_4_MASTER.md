@@ -12,7 +12,7 @@ This release focuses on bridging the gap between raw data and business understan
 *   **AI Insight Protocol**: Securely generating insights from aggregated chart data.
 *   **Visual Anchoring**: Interactive highlighting linking insight text to chart elements.
 *   **Visualization Upgrade**: New chart types (Rose, Radar, Combo) and "Airy" theme system.
-*   **UX Refinement**: Intelligent drill-down, non-blocking configuration, and optimized mobile layouts.
+*   **Interactive Drill-Down**: Click chart elements to filter, view data, or breakdown analysis.
 
 ---
 
@@ -77,6 +77,15 @@ This release focuses on bridging the gap between raw data and business understan
     *   `Chart` component calls `dispatchAction({ type: 'highlight', name: ... })`.
 *   **Constraint**: Tooltip is **disabled** during visual anchoring to prevent occlusion and overlap. We rely on the text panel for "What" and the chart for "Where".
 
+### 3.4 Interactive Drill Down (`DrillDownMenu.tsx`)
+*   **Trigger**: User clicks any chart element (Bar, Pie Sector, Scatter Point, or Axis Label).
+*   **Context Menu**: A popover appears with context-aware actions.
+*   **Actions**:
+    1.  **🔍 Focus**: Filters the current analysis by the selected dimension.
+    2.  **📄 View Data**: Shows raw data rows for the selected dimension.
+    3.  **📊 Breakdown by...**: Suggests dimension columns from the schema. Clicking one triggers a new analysis grouping by that dimension.
+    4.  **💡 AI Insight**: Triggers the Insight generation for the current view.
+
 ---
 
 ## 4. Engineering & Architecture
@@ -97,6 +106,5 @@ This release focuses on bridging the gap between raw data and business understan
 ---
 
 ## 5. Future Roadmap (Post v1.4)
-*   **Drill-Down Actions**: Converting "Recommendation" text into clickable filters.
-*   **Mobile Adaptation**: Further optimizing the Insight Panel for narrow screens.
 *   **Export**: PDF export including the full insight text.
+*   **Mobile Adaptation**: Further optimizing the Insight Panel for narrow screens.

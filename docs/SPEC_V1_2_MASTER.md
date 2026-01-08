@@ -1,59 +1,55 @@
-# 🧠 Wansan Studio v1.2.0: The Analyst Update
+# 📦 Spec: v1.2 Master - Advanced Data & Intelligence
 
-> **Release Date**: 2024-12-24
-> **Code Name**: "Analyst"
-> **Core Value**: Performance meets Intelligence. From a static query tool to a context-aware, high-performance virtual analyst.
+> **Target Version**: v1.2.0
+> **Status**: Implemented
+> **Core Value**: Empowering users with Smart Metrics, Templates, and deep data understanding.
 
-## 1. 🚀 Data Engine Re-architecture (性能核心)
+## 1. Overview
 
-We completely rewrote the ingestion pipeline to handle real-world business data with zero friction.
-
-* **Streaming Ingestion (Major Upgrade)**:
-* **Excel**: Switched to `ExcelJS` stream processing. Now supports **Million-row files (40MB+)** with instant parsing and minimal memory footprint.
-* **Zero-Copy**: For CSV/JSON, DuckDB now reads directly from the disk, eliminating memory overhead.
-* **Real-time Feedback**: Added a live progress indicator in the sidebar (e.g., "Processing... 15,200 rows") for large dataset imports.
-
-
-* **Precision**: Fixed date recognition issues by implementing style-aware parsing (`styles: 'cache'`), ensuring Excel serial numbers convert correctly to `TIMESTAMP`.
-
-## 2. 📐 Semantic Layer & Smart Metrics (语义层)
-
-We bridged the gap between raw data and business logic.
-
-* **AI Metric Generator**:
-* **Natural Language to SQL**: Users can simply type "Calculate Gross Margin", and the **Expression-Only Agent** will infer the correct logic (`(revenue - cost) / revenue`) based on available columns.
-* **Hybrid Refinement**: Supports mixing SQL and text instructions (e.g., "profit / sales excluding tax") for iterative formula building.
-
-
-* **Virtual Views**: Introduced `DuckDBViewManager`. The system dynamically builds virtual views (`v_table`) for smart metrics, rebuilding only when logic changes to maximize query performance.
-
-## 3. 🛡️ Intelligence Architecture (智能架构)
-
-### 3.1 The "Sandwich Defense" Protocol
-
-We restructured the AI System Prompt to ensure stability in a **BYOK** environment.
-
-* **Structure**: Top-level Role -> **Domain Layer** (User Rules) -> **Protocol Layer** (Immutable JSON/SQL rules).
-* **Business Domain Memory**: Users can define global rules (e.g., "Fiscal year starts in April"). The AI persists this context across sessions.
-
-### 3.2 Shadow Prompt Mechanism
-
-* **Feature**: Decoupled user-facing chat messages from AI instructions.
-* **Use Case**: When users click "Focus", the UI shows "🔍 Focus: East", but the AI receives a strict constraint: `Filter by 'East'. Constraint: Maintain visualization type. No raw data.`.
-
-## 4. ⚡ Interactive Exploration (交互体验)
-
-* **Interactive Drill-down**: Charts are no longer static images. Click on any bar or pie sector to trigger a **Context Action Popover** for deep-diving into specific dimensions.
-* **Execution Breakdown**: Added detailed timing stats to every report, distinguishing between **AI Thinking Time** and **DB Execution Time**.
-
-## 5. 🛠️ UI/UX Polish (瑞士工艺)
-
-* **SQL Lab**: Fixed editor persistence issues and cleaned up state logic for a smoother coding experience.
-* **Smart Filters**: Upgraded to a Sidebar layout to support complex parameter sets, with "Quick Clear" functionality.
-* **Swiss Style Inputs**: Standardized all input fields with subtle gray borders and brand-colored focus rings, replacing heavy default styles.
+This release focuses on data semantics. We introduce **Smart Metrics** (allowing users to define business logic like `profit = sales - cost`), **Analysis Templates** (reusable query patterns), and a smarter **Schema Understanding** engine.
 
 ---
 
-### 🔮 What's Next?
+## 2. Smart Metrics (Virtual Wide Tables)
 
-* **v1.3.0**: Breaking the local silo with Cloud Connectors (Postgres/MySQL) and Web Sharing.
+### 2.1 Core Concept
+Instead of relying on AI to guess formulas every time, we solidify business logic into **DuckDB Views**.
+*   **Virtual Wide Table**: The system automatically `LEFT JOIN`s relevant dimension tables based on metrics' dependencies.
+*   **Schema Masking**: The AI sees `v_{tableName}` (View) instead of the raw table, forcing it to use the defined metrics.
+
+### 2.2 View Construction Logic (`rebuildView`)
+When a metric is added to `FileNode(A)`:
+1.  **Base**: `SELECT T1.* FROM A AS T1`
+2.  **Auto-Join**: Identify relations where `A` is the source and generate `LEFT JOIN`.
+3.  **Injection**: Inject calculated columns: `({metric.sqlExpression}) AS {metric.name}`.
+4.  **Execution**: `CREATE OR REPLACE VIEW v_A AS ...`.
+
+### 2.3 Data Structures
+```typescript
+export interface SmartMetric {
+  id: string;
+  name: string;          // e.g., "profit_margin"
+  label: string;         // e.g., "Profit Margin"
+  sqlExpression: string; // e.g., "amount - cost"
+  description?: string;
+}
+```
+
+---
+
+## 3. Analysis Templates (Smart Filters)
+
+### 3.1 Template Mode
+*   **Concept**: Pre-defined analysis paths (e.g., "Sales Trend", "Customer Segmentation") that guide the user.
+*   **UI**: `SmartFilterModal` allows users to configure parameters (Time Range, Categories) before running the analysis.
+
+### 3.2 Parameter Injection
+*   The AI generates SQL templates with placeholders.
+*   The UI resolves these placeholders into SQL `WHERE` clauses based on user input.
+
+---
+
+## 4. Engineering Improvements
+
+*   **Schema Preprocessing**: Enhanced schema mapper to support `TIMESTAMP` recognition from numeric columns.
+*   **Migration Service**: Robust migration logic to upgrade v1.1 data to v1.2 structures.
