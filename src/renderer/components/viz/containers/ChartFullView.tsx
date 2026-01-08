@@ -5,14 +5,12 @@ import {
   BarChart3,
   Check,
   Gauge,
-  Layers,
   LineChart,
   PieChart,
   Radar,
   Save,
   ScatterChart,
   Table2,
-  Type,
   X,
 } from 'lucide-react'
 import { createPortal } from 'react-dom'
@@ -26,7 +24,6 @@ import { cn } from '@/utils/cn'
 import type { ChartType, ReportData } from '@shared/types/dashboard'
 import { useTranslation } from 'react-i18next'
 import { adaptChartConfig } from '@/lib/viz-adapter'
-import { getDisplayMode } from '@/utils/viz-logic'
 import { InsightPanel } from '../InsightPanel'
 import { SimpleMarkdown } from '@/components/ui/simple-markdown'
 import { useGenerateInsight } from '@/hooks/useIPC'
@@ -43,7 +40,7 @@ const chartTypeOptions: Array<{
   { value: 'rose', label: 'chart_rose', icon: PieChart },
   { value: 'scatter', label: 'chart_scatter', icon: ScatterChart },
   { value: 'radar', label: 'chart_radar', icon: Radar },
-  { value: 'combo', label: 'chart_combo', icon: Layers },
+  // { value: 'combo', label: 'chart_combo', icon: Layers },
   { value: 'table', label: 'chart_table', icon: Table2 },
   { value: 'kpi', label: 'chart_kpi', icon: Gauge },
   // { value: 'text', label: 'chart_text', icon: Type },
@@ -64,7 +61,7 @@ export function ChartFullView() {
   const generateInsight = useGenerateInsight()
   const language = i18n.language === 'zh' ? 'zh' : 'en'
 
-  const [insightMode, setInsightMode] = useState(false)
+  const [_insightMode, setInsightMode] = useState(false)
   const [highlightedItems, setHighlightedItems] = useState<string[]>([])
 
   const report = useMemo(() => {
@@ -238,7 +235,8 @@ export function ChartFullView() {
   const showAxisControls =
     displayMode === 'chart' && availableColumns.length > 0
 
-  const modalMaxWidth = displayMode === 'table' ? 'max-w-[95vw]' : 'max-w-[1600px]'
+  const modalMaxWidth =
+    displayMode === 'table' ? 'max-w-[95vw]' : 'max-w-[1600px]'
 
   const content = (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">

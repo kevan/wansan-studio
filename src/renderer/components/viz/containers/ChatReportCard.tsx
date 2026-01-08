@@ -148,7 +148,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
     if (!editId) return
 
     setEditingReportId(editId)
-    window.dispatchEvent(new Event('wansan:open-dashboard'))
+    // ChartFullView is a fullscreen modal, no need to open dashboard panel
   }
 
   const handleRunSql = async (newSql: string) => {

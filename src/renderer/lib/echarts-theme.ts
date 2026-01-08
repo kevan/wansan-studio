@@ -124,6 +124,7 @@ export function getItemTooltipFormatter(isDark: boolean) {
     const mutedColor = isDark ? '#a1a1aa' : '#71717a'
 
     const name = params.name || ''
+    const seriesName = params.seriesName || ''
     const value = getDisplayValue(params.value)
     const percent = params.percent ? `${params.percent.toFixed(1)}%` : ''
 
@@ -135,15 +136,18 @@ export function getItemTooltipFormatter(isDark: boolean) {
         backdrop-filter:blur(12px);
         border-radius:12px;
         box-shadow:0 10px 25px -5px rgba(0,0,0,0.1),0 8px 10px -6px rgba(0,0,0,0.05);
-        min-width:160px;
+        min-width:180px;
         border: 1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'};
       ">
+        <div style="font-size:11px;font-weight:700;color:${mutedColor};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;border-bottom:1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'};padding-bottom:6px;">
+          ${name}
+        </div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <span style="width:10px;height:10px;border-radius:50%;background:${params.color};"></span>
-          <span style="font-weight:600;color:${textColor};font-size:13px;">${name}</span>
+          <span style="width:10px;height:10px;border-radius:50%;background:${params.color};flex-shrink:0;"></span>
+          <span style="flex:1;font-weight:600;color:${textColor};font-size:13px;white-space:nowrap;">${seriesName}</span>
         </div>
         <div style="display:flex;justify-content:space-between;gap:16px;align-items:baseline;">
-          <span style="color:${mutedColor};font-size:12px;">${value}</span>
+          <span style="color:${mutedColor};font-size:12px;font-family:monospace;">${value}</span>
           ${percent ? `<span style="font-weight:700;color:${textColor};font-size:12px;background:${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'};padding:2px 6px;border-radius:4px;">${percent}</span>` : ''}
         </div>
       </div>
@@ -162,6 +166,12 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
   const isPieChart =
     Array.isArray(option.series) &&
     option.series.some((s: any) => s.type === 'pie')
+  
+  const isRadarChart =
+    Array.isArray(option.series) &&
+    option.series.some((s: any) => s.type === 'radar')
+  
+  const isItemTriggered = isPieChart || isRadarChart
 
   // 1. Enhance Series (Bar, Line, Pie)
   const series = Array.isArray(option.series)
@@ -407,11 +417,11 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
 
     // 4. Modern Tooltip with HTML Formatter
     tooltip: {
-      trigger: isPieChart ? 'item' : 'axis',
+      trigger: isItemTriggered ? 'item' : 'axis',
       backgroundColor: 'transparent',
       borderWidth: 0,
       padding: 0,
-      formatter: isPieChart
+      formatter: isItemTriggered
         ? getItemTooltipFormatter(isDark)
         : getAxisTooltipFormatter(isDark),
       ...(option.tooltip as any),
