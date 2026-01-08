@@ -1,78 +1,65 @@
-# 🗺️ Wansan Studio: Master Roadmap (Post-v1.2)
+# 🗺️ Wansan Studio: Master Roadmap (v1.3 - v1.5)
 
-> **Strategic Focus**: **Scalability & Connectivity**.
-> **Core Shift**: From "In-Memory Toy" to "File-Based Powerhouse".
+> **Strategic Focus**: **Experience & Insight**.
+> **Status**: v1.4.0 Completed.
 
 ---
 
-## 📦 v1.3.0: The "Persistence" Update (核心基石)
+## ✅ v1.3.0: The "Persistence" Update (Done)
 
 **Goal**: Eliminate memory limits and startup latency. Enable true multi-project management.
-
-### 1. Engine Upgrade (Architecture)
-*   **Feature**: **Native Persistence (.duckdb)**.
-    *   Migrate from `:memory:` to on-disk database files.
-    *   Benefit: Instant startup for 1GB+ datasets. Zero re-ingestion time.
-*   **Feature**: **Multi-Project Isolation**.
-    *   **Structure**: One Project = One Folder (`.wansan` bundle).
-    *   **Isolation**: Physical separation of `.duckdb` files prevents cross-project pollution.
-
-### 2. Data Capabilities (Local)
-*   **Feature**: **Append Data (追加数据)**.
-    *   Leverage persistence to perform `INSERT INTO` without re-parsing old files.
-    *   Solve the "Monthly Report" accumulation problem.
-*   **Feature**: **Import Wizard**.
-    *   Support selecting specific Sheets from Excel.
-    *   Support Column Type override during import.
-
-### 3. Workflow UI
-*   **Feature**: **Project Launcher (Welcome Screen)**.
-    *   "Recent Projects", "Create New", "Open from Disk".
+*   **Native Persistence (.duckdb)**: File-based storage.
+*   **Multi-Project Architecture**: `.wansan` project bundles.
+*   **Project Launcher**: New welcome screen.
 
 ---
 
-## ☁️ v1.4.0: The "Connectivity" Update (连接与分享)
+## ✅ v1.4.0: The "Insight & Storytelling" Update (Done)
+
+**Goal**: Transform "Data Reading" into "Interactive Storytelling".
+
+### 1. AI Business Insight
+*   **Feature**: **Insight Protocol**. AI generates structured analysis from aggregated data.
+*   **Feature**: **Visual Anchoring**. Linking text insights to chart highlights (Hover to highlight).
+*   **Feature**: **Auto-Localization**. EN/ZH support for generated reports.
+
+### 2. Visualization Engine 2.0
+*   **New Charts**: **Nightingale Rose**, Radar, Combo, Scatter (Smart Axis).
+*   **Theme System**: "Airy" design with glassmorphism tooltips and smart layouts.
+*   **UX**: No-jump configuration, edge-aligned labels.
+
+---
+
+## ☁️ v1.5.0: The "Connectivity" Update (Next)
 
 **Goal**: Break the local silo. Share results and connect to live data.
 
-### 1. Sharing
-*   **Feature**: **Shareable Web Links**.
-    *   Upload generated HTML to Cloudflare R2.
-    *   Generate `wansan.app/s/xyz` links with password protection.
+### 1. Sharing (Web Export)
+*   **Feature**: **Static Report Export**.
+    *   Export dashboard as a standalone `.html` file.
+    *   Include interactive charts (ECharts) and insights.
 
-### 2. Live Data
-*   **Feature**: **Database Connectors (MySQL/PG)**.
-    *   Requires Electron Main Process streaming (Node.js driver -> DuckDB).
-    *   Real-time query execution.
+### 2. Live Data (Connectors)
+*   **Feature**: **Database Connectors (MySQL/PostgreSQL)**.
+    *   Direct connection from Electron Main Process.
+    *   Real-time query execution (Hybrid Engine: DuckDB for Analytics, SQL DB for Source).
 
 ---
 
-## 🔬 v1.5.0: The "Deep Insight" Update (深度分析)
+## 🔬 v1.6.0: The "Deep Logic" Update (Planned)
 
 **Goal**: Advanced BI features for Power Users.
 
-### 1. Interaction
-*   **Feature**: **Advanced Drill Down**.
-    *   Contextual menu on charts: "Breakdown by..." -> AI suggests dimensions.
-
-### 2. Logic
-*   **Feature**: **Project-Level Domain Memory**.
-    *   Custom instructions scoped to specific projects (e.g., "Fiscal Year" rules).
+### 1. Logic
 *   **Feature**: **Computed Columns (UI Builder)**.
     *   No-code formula builder for metrics (e.g., `profit = rev - cost`).
+*   **Feature**: **Advanced Drill Down Actions**.
+    *   Converting textual "Recommendations" into clickable filter actions.
 
 ---
 
-## 🅿️ Parking Lot (待排期 / 探索中)
+## 🅿️ Parking Lot (Backlog)
 
 *   **Plugin System**: Allow 3rd party chart libraries.
 *   **Team Sync**: P2P real-time collaboration.
-*   **Mobile App**: Viewer app for `.wansan` files.
-
----
-
-### 🚀 Immediate Next Step (v1.3 Kickoff)
-
-The first step is **Technical Research (Spike)** for DuckDB-WASM File Persistence in Electron. This is the hardest part.
-
-**Shall we start the "Engine Persistence" research task?**
+*   **Cloudflare R2 Sync**: One-click publish.
