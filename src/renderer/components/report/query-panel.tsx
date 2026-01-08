@@ -4,10 +4,7 @@ import React, {
   useImperativeHandle,
   forwardRef,
 } from 'react'
-import Editor from 'react-simple-code-editor'
-import Prism from 'prismjs'
-import 'prismjs/components/prism-sql'
-import 'prismjs/themes/prism.css'
+import { MonacoSqlEditor } from '../ui/MonacoSqlEditor'
 import {
   Check,
   ChevronDown,
@@ -121,8 +118,6 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
         return await handleRunPreview(sql, bypassGate)
       },
     }))
-
-    // ... (rest of the component)
 
     // Auto-format and run on mount if requested
     const [hasRunOnMount, setHasRunOnMount] = useState(false)
@@ -272,7 +267,7 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
               </Button>
             </div>
           </div>
-          <div className="flex-1 min-h-0 relative overflow-auto">
+          <div className="flex-1 min-h-0 relative">
             {!isActivated && (
               <div
                 className="absolute inset-0 z-10 bg-zinc-100/10 backdrop-blur-[1px] flex items-center justify-center cursor-pointer group/lock"
@@ -286,41 +281,27 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
                 </div>
               </div>
             )}
-            {showReasoning && reasoning && (
-              <div className="m-4 mb-0 bg-indigo-50/50 border border-indigo-100 p-3 rounded-lg text-xs text-indigo-900/80 animate-in slide-in-from-top-2">
-                <div className="flex items-center gap-2 mb-1">
-                  <Sparkles className="h-3 w-3 text-indigo-500" />
-                  <span className="font-semibold tracking-wide uppercase text-indigo-400">
-                    {t('sql_editor.ai_reasoning')}
-                  </span>
+            <div className="h-full flex flex-col">
+              {showReasoning && reasoning && (
+                <div className="m-4 mb-2 bg-indigo-50/50 border border-indigo-100 p-3 rounded-lg text-xs text-indigo-900/80 animate-in slide-in-from-top-2 shrink-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles className="h-3 w-3 text-indigo-500" />
+                    <span className="font-semibold tracking-wide uppercase text-indigo-400">
+                      {t('sql_editor.ai_reasoning')}
+                    </span>
+                  </div>
+                  <p className="leading-relaxed whitespace-pre-wrap font-medium italic">
+                    {reasoning}
+                  </p>
                 </div>
-                <p className="leading-relaxed whitespace-pre-wrap font-medium italic">
-                  {reasoning}
-                </p>
-              </div>
-            )}
-            <Editor
-              value={sql}
-              onValueChange={onChange}
-              highlight={code =>
-                Prism.highlight(
-                  code,
-                  Prism.languages.sql || Prism.languages.extend('sql', {}),
-                  'sql'
-                )
-              }
-              padding={16}
-              style={{
-                fontFamily: '"Fira Code", "Fira Mono", monospace',
-                fontSize: 13,
-                backgroundColor: 'transparent',
-                minHeight: '100%',
-              }}
-              className={cn(
-                'min-h-full',
-                !isActivated && 'opacity-80 bg-zinc-100 cursor-not-allowed'
               )}
-            />
+              <MonacoSqlEditor
+                value={sql}
+                onChange={onChange}
+                readOnly={!isActivated}
+                className="flex-1"
+              />
+            </div>
           </div>
         </div>
 

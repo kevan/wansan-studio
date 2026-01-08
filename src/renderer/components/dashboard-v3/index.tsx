@@ -105,14 +105,17 @@ export function DashboardCanvasV3({
   // --- Space Key Logic ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        e.code === 'Space' &&
-        !e.repeat &&
-        !(
-          e.target instanceof HTMLInputElement ||
-          e.target instanceof HTMLTextAreaElement
-        )
-      ) {
+      // Check if the target is an editable element
+      const target = e.target as HTMLElement
+      const isEditable =
+        target.isContentEditable ||
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        // Check for specific Monaco Editor class if needed, but isContentEditable usually covers it
+        target.classList.contains('monaco-editor') ||
+        target.closest('.monaco-editor') !== null
+
+      if (e.code === 'Space' && !e.repeat && !isEditable) {
         e.preventDefault() // Prevent page scroll
         setIsSpacePressed(true)
       }

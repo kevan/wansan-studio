@@ -379,7 +379,7 @@ sequenceDiagram
 *   **入口**: Report Card 底部的 `<Code />` 按钮。
 *   **模态框**: 打开 **Analysis Inspector** 弹窗。
     *   **Top (Reasoning)**: 展示 AI 的思考过程（只读），作为用户修改代码的参考。
-    *   **Main (Editor)**: 嵌入 **Monaco Editor**（后降级为 `react-simple-code-editor` 以减小体积），展示生成的 SQL。
+    *   **Main (Editor)**: 嵌入 **Monaco Editor**，提供基于 DuckDB Schema 的智能自动补全、语法高亮和格式化功能。
 *   **功能**:
     *   **Format**: 集成 `sql-formatter`，自动美化 SQL 缩进。
     *   **Run**: 点击运行，调用本地 DuckDB 执行，成功后**实时更新**背后的 Report Card 图表。

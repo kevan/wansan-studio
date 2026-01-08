@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -24,12 +24,7 @@ import { cn } from '@/utils/cn'
 import { getJoinedColumnName } from '@shared/naming-utils'
 import { DuckDBViewManager } from '../../lib/duckdb-view-manager'
 import { useTranslation } from 'react-i18next'
-
-// Code Editor
-import Editor from 'react-simple-code-editor'
-import { highlight, languages } from 'prismjs'
-import 'prismjs/components/prism-sql'
-import 'prismjs/themes/prism.css'
+import { MonacoSqlEditor } from '../ui/MonacoSqlEditor'
 
 interface MetricEditorModalProps {
   isOpen: boolean
@@ -49,6 +44,7 @@ export function MetricEditorModal({
   // const { t } = useTranslation('common')
   const { t: tAnalysis } = useTranslation('analysis')
   const files = useProjectStore(s => s.files)
+  const editorRef = useRef<any>(null)
 
   // States
   const [name, setName] = useState('')
@@ -239,31 +235,30 @@ export function MetricEditorModal({
   }
 
   const insertAtCursor = (text: string) => {
-    const textarea = document.getElementById(
-      'metric-sql-editor'
-    ) as HTMLTextAreaElement
-
     const textToInsert = `"${text}"`
 
-    if (!textarea) {
+    if (!editorRef.current) {
       setExpression(prev => prev + textToInsert)
       return
     }
 
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const currentVal = expression
+    const editor = editorRef.current
+    const selection = editor.getSelection()
+    const range = {
+      startLineNumber: selection.startLineNumber,
+      startColumn: selection.startColumn,
+      endLineNumber: selection.endLineNumber,
+      endColumn: selection.endColumn,
+    }
 
-    const newVal =
-      currentVal.substring(0, start) + textToInsert + currentVal.substring(end)
-
-    setExpression(newVal)
-
-    setTimeout(() => {
-      textarea.focus()
-      const newCursorPos = start + textToInsert.length
-      textarea.setSelectionRange(newCursorPos, newCursorPos)
-    }, 0)
+    editor.executeEdits('wansan-insert', [
+      {
+        range,
+        text: textToInsert,
+        forceMoveMarkers: true,
+      },
+    ])
+    editor.focus()
   }
 
   return (
@@ -321,19 +316,12 @@ export function MetricEditorModal({
                       : tAnalysis('smart_metric.ai_magic')}
                   </Button>
                 </div>
-                <div className="flex-1 overflow-auto relative">
-                  <Editor
+                <div className="flex-1 overflow-hidden relative">
+                  <MonacoSqlEditor
                     value={expression}
-                    onValueChange={setExpression}
-                    highlight={code => highlight(code, languages.sql, 'sql')}
-                    padding={16}
-                    textareaId="metric-sql-editor"
-                    style={{
-                      fontFamily: '"Fira Code", "Fira Mono", monospace',
-                      fontSize: 14,
-                      minHeight: '100%',
-                    }}
-                    textareaClassName="focus:outline-none"
+                    onChange={setExpression}
+                    onMount={editor => (editorRef.current = editor)}
+                    className="h-full"
                   />
                 </div>
               </div>
@@ -452,3 +440,4 @@ export function MetricEditorModal({
     </Dialog>
   )
 }
+
