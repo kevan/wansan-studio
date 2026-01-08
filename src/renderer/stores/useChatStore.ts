@@ -890,7 +890,7 @@ const addManualSqlMessage = async (sql: string) => {
   useProjectStore.getState().addMessage({
     id: userMsgId,
     type: 'user',
-    content: i18n.t('manual_sql_submitted', { ns: 'chat' }), // Display a user-friendly message
+    content: i18n.t('sql_query_submitted', { ns: 'chat' }), // Display a user-friendly message
     timestamp: Date.now(),
   } as any)
 

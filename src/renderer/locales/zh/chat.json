@@ -21,7 +21,7 @@
   "command_clear": "清空对话",
   "command_sql": "编写 SQL",
   "command_refresh": "刷新数据",
-  "manual_sql_submitted": "已提交手动 SQL 查询。",
+  "sql_query_submitted": "已提交 SQL 查询。",
   "restoring_session": "正在恢复数据连接与分析状态...",
   "export_success_title": "导出成功",
   "export_failed_title": "导出失败",
