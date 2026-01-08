@@ -21,6 +21,7 @@
   "command_clear": "Clear Chat",
   "command_sql": "Write SQL",
   "command_refresh": "Refresh Data",
+  "manual_sql_submitted": "Manual SQL Query Submitted.",
   "restoring_session": "Restoring data connections & analysis state...",
   "export_success_title": "Export Successful",
   "export_failed_title": "Export Failed",
