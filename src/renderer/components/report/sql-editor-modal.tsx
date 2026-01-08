@@ -75,7 +75,7 @@ export function SqlEditorModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="max-w-5xl h-[90vh] flex flex-col p-0 gap-0 overflow-hidden"
+        className="max-w-[1600px] w-[94vw] h-[92vh] flex flex-col p-0 gap-0 overflow-hidden"
         onPointerDownOutside={e => e.preventDefault()}
       >
         {gateNode}
