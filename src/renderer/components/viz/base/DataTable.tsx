@@ -114,8 +114,8 @@ export function DataTable({
                       className={cn(
                         'h-9 px-3 text-left transition-colors whitespace-nowrap',
                         isCard
-                          ? 'text-[10px] font-bold text-zinc-400 uppercase tracking-widest border-b border-zinc-100'
-                          : 'font-bold text-zinc-600 uppercase tracking-wider border-r border-b border-zinc-300 last:border-r-0',
+                          ? 'text-[10px] font-bold text-zinc-400 tracking-widest border-b border-zinc-100'
+                          : 'font-bold text-zinc-600 tracking-wider border-r border-b border-zinc-300 last:border-r-0',
                         header.column.getCanSort()
                           ? 'cursor-pointer select-none hover:bg-zinc-50'
                           : ''
