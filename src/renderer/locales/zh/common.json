@@ -201,6 +201,7 @@
   "chart_line": "折线图",
   "chart_area": "面积图",
   "chart_pie": "饼图",
+  "chart_rose": "玫瑰图",
   "chart_scatter": "散点图",
   "chart_radar": "雷达图",
   "chart_combo": "组合图",

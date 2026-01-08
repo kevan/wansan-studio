@@ -5,6 +5,7 @@ export type ChartType =
   | 'bar'
   | 'line'
   | 'pie'
+  | 'rose'
   | 'area'
   | 'table'
   | 'scatter'

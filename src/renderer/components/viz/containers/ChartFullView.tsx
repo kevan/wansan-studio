@@ -40,6 +40,7 @@ const chartTypeOptions: Array<{
   { value: 'line', label: 'chart_line', icon: LineChart },
   { value: 'area', label: 'chart_area', icon: AreaChart },
   { value: 'pie', label: 'chart_pie', icon: PieChart },
+  { value: 'rose', label: 'chart_rose', icon: PieChart },
   { value: 'scatter', label: 'chart_scatter', icon: ScatterChart },
   { value: 'radar', label: 'chart_radar', icon: Radar },
   { value: 'combo', label: 'chart_combo', icon: Layers },
@@ -237,13 +238,13 @@ export function ChartFullView() {
   const showAxisControls =
     displayMode === 'chart' && availableColumns.length > 0
 
-  const modalMaxWidth = displayMode === 'table' ? 'max-w-[95vw]' : 'max-w-6xl'
+  const modalMaxWidth = displayMode === 'table' ? 'max-w-[95vw]' : 'max-w-[1600px]'
 
   const content = (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
       <div
         className={cn(
-          'relative flex h-[80vh] w-[80vw] rounded-xl border border-zinc-200 bg-white shadow-2xl overflow-hidden',
+          'relative flex h-[92vh] w-[94vw] rounded-xl border border-zinc-200 bg-white shadow-2xl overflow-hidden',
           modalMaxWidth
         )}
       >
@@ -348,6 +349,9 @@ export function ChartFullView() {
                     insight={report?.reportData.insight}
                     onGenerateInsight={handleGenerateInsight}
                     defaultExpanded={true}
+                    onExpandChange={val => {
+                      if (!val) setHighlightedItems([])
+                    }}
                     onRemove={() => {
                       if (report) {
                         updateReportConfig(report.id, { insight: '' })

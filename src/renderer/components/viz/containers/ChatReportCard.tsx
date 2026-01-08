@@ -67,14 +67,18 @@ export const ChatReportCard = React.memo(function ChatReportCard({
 
   const handleInsightToggle = () => {
     if (hasInsight) {
-      setExpanded(!expanded)
+      const next = !expanded
+      setExpanded(next)
+      if (!next) setHighlightedItems([])
     } else {
       if (!manualActive) {
         setManualActive(true)
         setTriggerCount(c => c + 1)
         setExpanded(true)
       } else {
-        setExpanded(!expanded)
+        const next = !expanded
+        setExpanded(next)
+        if (!next) setHighlightedItems([])
       }
     }
   }
@@ -199,7 +203,10 @@ export const ChatReportCard = React.memo(function ChatReportCard({
             insight={reportData.insight}
             onGenerateInsight={handleGenerateInsight}
             expanded={expanded}
-            onExpandChange={setExpanded}
+            onExpandChange={val => {
+              setExpanded(val)
+              if (!val) setHighlightedItems([])
+            }}
             hiddenIfIdle={true}
             requestTrigger={triggerCount}
             onCancel={() => {

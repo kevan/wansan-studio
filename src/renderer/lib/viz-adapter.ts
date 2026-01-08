@@ -12,7 +12,7 @@ function getChartCategory(
   type: ChartType
 ): 'cartesian' | 'radial' | 'tabular' | 'kpi' | 'text' {
   const cartesianTypes = ['bar', 'line', 'area', 'scatter', 'combo']
-  const radialTypes = ['pie', 'radar']
+  const radialTypes = ['pie', 'rose', 'radar']
   const tabularTypes = ['table']
   const kpiTypes = ['kpi']
 
@@ -47,15 +47,15 @@ export function adaptChartConfig(
   const newCategory = getChartCategory(targetType)
 
   // Case 1: Same category conversion (trivial)
-  if (oldCategory === newCategory && oldCategory !== 'radial') {
-    // For cartesian charts, just change the type
+  if (oldCategory === newCategory) {
+    // For charts in the same category, just change the type and keep configuration
     return {
       type: targetType,
       config: oldConfig,
     }
   }
 
-  // Case 2: Cartesian to Radial (e.g., bar -> pie)
+  // Case 2: Cartesian to Radial (e.g., bar -> pie/rose)
   if (oldCategory === 'cartesian' && newCategory === 'radial') {
     const xAxis = oldConfig?.x_axis
     const yAxis = Array.isArray(oldConfig?.y_axis)
@@ -100,7 +100,7 @@ export function adaptChartConfig(
     }
   }
 
-  // Case 3: Radial to Cartesian (e.g., pie -> bar)
+  // Case 3: Radial to Cartesian (e.g., pie/rose -> bar)
   if (oldCategory === 'radial' && newCategory === 'cartesian') {
     // For pie to cartesian, try to preserve the same columns if possible
     if (oldConfig?.x_axis && oldConfig?.y_axis) {
@@ -346,7 +346,7 @@ export function buildEChartsOption(
     series: baseSeries,
   }
 
-  if (type === 'pie') {
+  if (type === 'pie' || type === 'rose') {
     return {
       tooltip: { trigger: 'item' },
       series: [
@@ -355,7 +355,8 @@ export function buildEChartsOption(
             ? series_name[0] || yAxes[0]
             : series_name || yAxes[0],
           type: 'pie',
-          radius: '50%',
+          roseType: type === 'rose' ? ('radius' as const) : undefined,
+          radius: type === 'rose' ? ['20%', '80%'] : '50%',
           data: data.map(item => ({
             value: item[yAxes[0]],
             name: item[x_axis],
@@ -554,7 +555,9 @@ export function extractChartType(option: EChartsOption): ChartType | undefined {
 
   const seriesType = (series as any).type
   if (seriesType === 'scatter') return 'scatter'
-  if (seriesType === 'pie') return 'pie'
+  if (seriesType === 'pie') {
+    return (series as any).roseType === 'radius' ? 'rose' : 'pie'
+  }
   if (seriesType === 'line') {
     return (series as any).areaStyle ? 'area' : 'line'
   }

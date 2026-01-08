@@ -162,9 +162,17 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
             },
             barMaxWidth: 48,
             emphasis: {
+              focus: 'self', // Critical: Dim everything else
               itemStyle: {
                 shadowBlur: 16,
                 shadowColor: `${baseColor}50`,
+                borderColor: '#fff',
+                borderWidth: 2,
+              },
+            },
+            blur: {
+              itemStyle: {
+                opacity: 0.1, // Strong fade out
               },
             },
           }
@@ -178,8 +186,22 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
           return {
             ...s,
             smooth: true, // Spline interpolation
-            showSymbol: false, // Clean lines
-            symbolSize: 8,
+
+            // Workaround: To allow highlighting specific points via dispatchAction,
+            // we must set showSymbol: true. To keep the clean look, we hide them
+            // using itemStyle.opacity: 0 in normal state.
+            showSymbol: true,
+            symbol: 'circle',
+            symbolSize: 8, // Larger size for better interaction target
+
+            itemStyle: {
+              opacity: 0, // Hidden by default
+              color: baseColor,
+              borderColor: '#fff',
+              borderWidth: 2,
+              ...s.itemStyle,
+            },
+
             lineStyle: {
               width: 3,
               shadowColor: `${baseColor}40`, // 25% opacity
@@ -188,19 +210,27 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
               ...s.lineStyle,
             },
             emphasis: {
-              focus: 'series',
+              focus: 'series', // Keep the line visible
+              scale: true,
               lineStyle: {
                 width: 4,
               },
-              // Ensure data points are visible when highlighted
               itemStyle: {
-                opacity: 1,
+                opacity: 1, // Visible on highlight/hover
+                borderColor: '#fff',
+                borderWidth: 2,
+                shadowBlur: 10,
+                shadowColor: baseColor,
               },
             },
-            // Show symbol only on hover/highlight to keep clean look normally
-            showSymbol: false, 
-            symbol: 'circle',
-            symbolSize: 8,
+            blur: {
+              lineStyle: {
+                opacity: 0.1,
+              },
+              itemStyle: {
+                opacity: 0, // Keep hidden
+              },
+            },
             areaStyle: isAreaChart
               ? {
                   opacity: 0.3,
@@ -210,29 +240,82 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
           }
         }
 
-        // Pie Chart Styling
+        // Pie / Rose Chart Styling
         if (s.type === 'pie') {
+          const isRose = s.roseType === 'radius'
+
           return {
             ...s,
-            radius: ['40%', '70%'], // Donut style by default
+            // Rose: 10-65% to give plenty of room for labels, Pie: 40-70%
+            radius: isRose ? ['10%', '65%'] : ['40%', '70%'],
+            avoidLabelOverlap: true,
             itemStyle: {
-              borderRadius: 5,
+              borderRadius: isRose ? 10 : 6,
               borderColor: isDark ? '#000' : '#fff',
               borderWidth: 2,
               ...s.itemStyle,
             },
             label: {
-              show: false, // Cleaner look
-              position: 'center',
+              show: false, // Cleaner look normally
+            },
+            labelLine: {
+              show: false,
+            },
+            labelLayout: {
+              hideOverlap: true, // Critical: Automatically hide overlapping labels
             },
             emphasis: {
+              focus: 'self',
+              scale: true,
+              scaleSize: isRose ? 12 : 10,
+              itemStyle: {
+                shadowBlur: 20,
+                shadowOffsetX: 0,
+                shadowColor: 'rgba(0,0,0,0.2)',
+                borderColor: '#fff',
+                borderWidth: 3,
+              },
               label: {
+                show: true, // Re-enable labels
+                margin: 20,
+                fontSize: 12,
+                fontWeight: '600',
+                color: isDark ? '#fff' : '#18181b',
+                formatter: '{b}: {d}%',
+              },
+              labelLine: {
                 show: true,
-                fontSize: 16,
-                fontWeight: 'bold',
+                length: 15,
+                length2: 0,
+                smooth: false,
+                lineStyle: {
+                  width: 1.5,
+                  color: splitLineColor,
+                },
+              },
+            },
+            blur: {
+              itemStyle: {
+                opacity: 0.1,
               },
             },
           }
+        }
+
+        // Scatter Chart Styling (Generic fallback for others)
+        if (s.type === 'scatter') {
+             return {
+                 ...s,
+                 emphasis: {
+                     focus: 'self',
+                     scale: true,
+                 },
+                 blur: {
+                     itemStyle: {
+                         opacity: 0.1
+                     }
+                 }
+             }
         }
 
         return s

@@ -201,6 +201,7 @@
   "chart_line": "Line",
   "chart_area": "Area",
   "chart_pie": "Pie",
+  "chart_rose": "Rose",
   "chart_scatter": "Scatter",
   "chart_radar": "Radar",
   "chart_combo": "Combo",
