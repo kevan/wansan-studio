@@ -215,10 +215,7 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
                 }
                 variant="ghost"
                 size="sm"
-                className={cn(
-                  'h-7 text-xs hover:text-zinc-900',
-                  !isActivated ? 'text-amber-600 font-medium' : 'text-zinc-500'
-                )}
+                className="h-7 text-xs hover:text-zinc-900 text-zinc-500"
               >
                 {!isActivated && <Lock className="w-3 h-3 mr-1" />}
                 <Sparkles className="h-3 w-3 mr-1" />
