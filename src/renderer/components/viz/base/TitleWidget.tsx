@@ -1,7 +1,15 @@
 import { useEffect, useRef } from 'react'
 import { useProjectStore } from '../../../stores/useProjectStore'
 
-export function TitleWidget({ id, content }: { id: string; content: string }) {
+export function TitleWidget({
+  id,
+  content,
+  readOnly = false,
+}: {
+  id: string
+  content: string
+  readOnly?: boolean
+}) {
   const updateWidgetData = useProjectStore(s => s.updateWidgetData)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -19,9 +27,10 @@ export function TitleWidget({ id, content }: { id: string; content: string }) {
         ref={textareaRef}
         value={content}
         onChange={e => updateWidgetData(id, { content: e.target.value })}
-        className="w-full bg-transparent resize-none outline-none text-4xl font-bold text-zinc-900 placeholder:text-zinc-300 overflow-hidden text-center"
+        className="w-full bg-transparent resize-none outline-none text-4xl font-bold text-zinc-900 placeholder:text-zinc-300 overflow-hidden text-center disabled:cursor-default"
         placeholder="Untitled Report"
         rows={1}
+        disabled={readOnly}
       />
     </div>
   )

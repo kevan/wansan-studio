@@ -150,7 +150,7 @@ const createNewSession = (): Session => ({
   inputDraft: '',
   dashboard: {
     widgets: [],
-    layoutMode: 'a4',
+    layoutMode: 'report',
     pageCount: 1,
     zoom: 80,
   },

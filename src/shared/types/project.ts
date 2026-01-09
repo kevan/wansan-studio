@@ -23,7 +23,7 @@ export interface Session {
   inputDraft?: string
   dashboard: {
     widgets: ReportWidget[]
-    layoutMode: 'a4' | 'screen'
+    layoutMode: 'a4' | 'screen' | 'report'
     pageCount: number
     zoom: number
   }

@@ -22,7 +22,7 @@ import { VizChart } from '../core/VizChart'
 import { DataTable } from '../base/DataTable'
 import { KpiCard } from '../base/KpiCard'
 import { cn } from '@/utils/cn'
-import type { ChartType, ReportData } from '@shared/types/dashboard'
+import type { ChartType, ReportData, ReportWidget } from '@shared/types/dashboard'
 import { useTranslation } from 'react-i18next'
 import { adaptChartConfig } from '@/lib/viz-adapter'
 import { InsightPanel } from '../InsightPanel'
@@ -264,6 +264,18 @@ export function ChartFullView() {
       updateReportTitle(report.id, effectiveTitle.trim())
     }
     setEditingReportId(null)
+  }
+
+  const handleUpdateReportConfig = (
+    updates: Partial<ReportWidget['reportConfig']>
+  ) => {
+    if (!report) return
+    updateReportConfig(report.id, {
+      reportConfig: {
+        ...(report.reportConfig || { layoutType: 'flow', showInsight: true }),
+        ...updates,
+      },
+    })
   }
 
   // Determine rendering mode:
@@ -537,6 +549,52 @@ export function ChartFullView() {
                     </div>
                   </div>
                 )}
+
+                {/* Report Layout Controls */}
+                <div className="pt-6 mt-6 border-t border-zinc-100">
+                  <div className="mb-4 text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                    {t('report_layout', 'Report Layout')}
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-tight ml-1">
+                        {t('layout_type', 'Display Format')}
+                      </label>
+                      <div className="flex bg-zinc-100 p-1 rounded-xl">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleUpdateReportConfig({ layoutType: 'flow' })
+                          }
+                          className={cn(
+                            'flex-1 py-2 text-[11px] font-bold rounded-lg transition-all',
+                            (report?.reportConfig?.layoutType || 'flow') ===
+                              'flow'
+                              ? 'bg-white shadow-sm text-zinc-900'
+                              : 'text-zinc-500 hover:text-zinc-700'
+                          )}
+                        >
+                          {t('layout_flow', 'Full Width')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleUpdateReportConfig({ layoutType: 'split' })
+                          }
+                          className={cn(
+                            'flex-1 py-2 text-[11px] font-bold rounded-lg transition-all',
+                            report?.reportConfig?.layoutType === 'split'
+                              ? 'bg-white shadow-sm text-zinc-900'
+                              : 'text-zinc-500 hover:text-zinc-700'
+                          )}
+                        >
+                          {t('layout_split', 'Side-by-Side')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

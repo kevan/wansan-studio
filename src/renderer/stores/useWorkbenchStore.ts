@@ -18,7 +18,7 @@ import { useSettingsStore } from './useSettingsStore'
 
 // Re-exports for compatibility
 export type { LayoutScenario, Language }
-export type CanvasLayout = 'a4' | 'screen'
+export type CanvasLayout = 'a4' | 'screen' | 'report'
 export type { ReportData, ReportWidget }
 
 export interface DenormalizedReportWidget extends Omit<
@@ -55,6 +55,7 @@ interface WorkbenchState {
       type?: AIAnalysisResult['viz_type']
       config?: AIAnalysisResult['viz_config']
       insight?: InsightResult
+      reportConfig?: ReportWidget['reportConfig']
     }
   ) => void
   updateLayout: (layouts: Layout[]) => void
@@ -62,6 +63,7 @@ interface WorkbenchState {
   moveWidgetToPage: (reportId: string, targetPageIndex: number) => void
   setLayoutScenario: (scenario: LayoutScenario) => void
   setCanvasConfig: (updates: Partial<WorkbenchState['canvasConfig']>) => void
+
   setPageCount: (count: number) => void
   incrementPageCount: () => void
   setEditingReportId: (id: string | null) => void
@@ -395,11 +397,22 @@ export const useWorkbenchStore = <T = WorkbenchState>(
             ? { ...currentData.vizConfig, ...updates.config }
             : currentData.vizConfig
 
+        // 1. Update Data (Registry)
         useProjectStore.getState().updateWidgetData(id, {
           chartType: updates.type ?? currentData.chartType,
           vizConfig: nextVizConfig,
           insight: updates.insight ?? currentData.insight,
         })
+
+        // 2. Update Layout Config (Report options)
+        if (updates.reportConfig) {
+          useProjectStore.getState().updateWidget(id, {
+            reportConfig: {
+              ...(widget.reportConfig || {}),
+              ...updates.reportConfig,
+            },
+          })
+        }
       } else {
         // Try direct registry update
         const currentData = projectState.widgetRegistry[id]

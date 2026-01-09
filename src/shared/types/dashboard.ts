@@ -58,4 +58,10 @@ export interface ReportWidget {
   widgetId: string
   layout: Layout
   pageIndex: number // 0-based index for A4 pagination
+  /** [NEW] Layout preferences for Report mode */
+  reportConfig?: {
+    layoutType: 'split' | 'flow'
+    showInsight: boolean
+    isSectionHeader?: boolean
+  }
 }

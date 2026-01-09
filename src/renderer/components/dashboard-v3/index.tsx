@@ -8,6 +8,7 @@ import {
   SCREEN_WIDTH_PX,
 } from './page-layer'
 import { GridLayer } from './grid-layer'
+import { ReportFlowLayer } from './report-flow-layer' // Added
 import { ChartFullView } from '@/components/viz/containers/ChartFullView'
 import { LayoutScenario, useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { useUIStore } from '@/stores/useUIStore'
@@ -201,7 +202,7 @@ export function DashboardCanvasV3({
           <div
             id="dashboard-export-root"
             className={`relative w-full transition-transform duration-200 ${
-              !isA4 ? 'bg-white shadow-sm' : ''
+              !isA4 && canvasConfig.layout !== 'report' ? 'bg-white shadow-sm' : ''
             }`}
             style={{
               transform: `scale(${activeScale})`,
@@ -212,13 +213,19 @@ export function DashboardCanvasV3({
                 : '100vh',
             }}
           >
-            <PageLayer isA4={isA4} pageCount={pageCount} />
-            <GridLayer
-              width={gridWidth}
-              isA4={isA4}
-              height={isA4 ? totalHeightPx : undefined}
-              scale={activeScale}
-            />
+            {canvasConfig.layout === 'report' ? (
+              <ReportFlowLayer width={gridWidth} scale={activeScale} />
+            ) : (
+              <>
+                <PageLayer isA4={isA4} pageCount={pageCount} />
+                <GridLayer
+                  width={gridWidth}
+                  isA4={isA4}
+                  height={isA4 ? totalHeightPx : undefined}
+                  scale={activeScale}
+                />
+              </>
+            )}
           </div>
         </div>
 

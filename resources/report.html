@@ -1,0 +1,2169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>周大福终端销售执行分析报告（12月01日-12月07日）</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* 主色调配置 */
+        :root {
+            --primary-color: rgb(167, 10, 22);
+            --primary-light-1: rgba(167, 10, 22, 0.9);
+            --primary-light-2: rgba(167, 10, 22, 0.7);
+            --primary-light-3: rgba(167, 10, 22, 0.5);
+            --primary-light-4: rgba(167, 10, 22, 0.3);
+            --primary-light-5: rgba(167, 10, 22, 0.1);
+            --secondary-color: #333;
+            --accent-color: #ffd700;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light-1) 50%, var(--primary-light-2) 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+        }
+        
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .header h1 i {
+            margin-right: 15px;
+            color: var(--accent-color);
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .period {
+            background-color: rgba(255, 255, 255, 0.15);
+            padding: 10px 20px;
+            border-radius: 50px;
+            display: inline-block;
+            font-weight: 600;
+        }
+        
+        .section {
+            background-color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease;
+            border-left: 5px solid var(--primary-light-3);
+        }
+        
+        .section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-light-5);
+        }
+        
+        .section-title i {
+            margin-right: 10px;
+            font-size: 1.4rem;
+            color: var(--primary-light-2);
+        }
+        
+        .section-title h2 {
+            font-size: 1.6rem;
+        }
+        
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid var(--primary-light-2);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border-left-color: var(--primary-light-1);
+        }
+        
+        .card h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-item {
+            background: linear-gradient(to right, var(--primary-light-5), rgba(255, 255, 255, 0.9));
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid var(--primary-light-5);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            font-size: 0.95rem;
+            color: #666;
+        }
+        
+        .highlight {
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+        
+        .positive {
+            color: #388e3c;
+            font-weight: 700;
+        }
+        
+        .negative {
+            color: #c62828;
+            font-weight: 700;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary-light-3), var(--primary-light-2));
+            border-radius: 5px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+        
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tr:nth-child(even) {
+            background-color: var(--primary-light-5);
+        }
+        
+        tr:hover {
+            background-color: var(--primary-light-5);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+        
+        .badge-good {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .badge-warning {
+            background-color: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .badge-poor {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        
+        .tab-container {
+            margin-top: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--primary-light-5);
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 12px 25px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: var(--primary-color);
+        }
+        
+        .tab.active::after {
+            content: "";
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--primary-color);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 350px;
+            margin: 20px 0;
+        }
+        
+        .small-chart-container {
+            position: relative;
+            height: 280px;
+            margin: 20px 0;
+        }
+        
+        .region-selector {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .region-btn {
+            padding: 8px 20px;
+            background-color: var(--primary-light-5);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            color: var(--primary-color);
+        }
+        
+        .region-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .recommendation {
+            background: linear-gradient(to right, var(--primary-light-5), rgba(255, 255, 255, 0.9));
+            border-left: 5px solid var(--primary-color);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .recommendation h4 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .recommendation h4 i {
+            margin-right: 10px;
+        }
+        
+        .insight {
+            background: linear-gradient(to right, rgba(231, 76, 60, 0.05), rgba(231, 76, 60, 0.1));
+            border-left: 5px solid #e74c3c;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .insight h4 {
+            color: #c0392b;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .insight h4 i {
+            margin-right: 10px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+        
+        .no-data {
+            color: #9e9e9e;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .correlation-matrix {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1px;
+            background-color: var(--primary-light-5);
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .correlation-cell {
+            background-color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .correlation-header {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .correlation-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .correlation-positive {
+            color: #388e3c;
+        }
+        
+        .correlation-negative {
+            color: #c62828;
+        }
+        
+        .sop-impact-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .impact-chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+            border: 1px solid var(--primary-light-5);
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .data-source {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            border-left: 4px solid var(--primary-light-2);
+        }
+        
+        .quadrant-chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+            border: 1px solid var(--primary-light-5);
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .quadrant-label {
+            position: absolute;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 4px;
+            z-index: 10;
+        }
+        
+        .quadrant-label.q1 {
+            top: 20px;
+            right: 20px;
+            background-color: rgba(75, 192, 192, 0.2);
+            color: #2e7d32;
+        }
+        
+        .quadrant-label.q2 {
+            top: 20px;
+            left: 20px;
+            background-color: rgba(255, 159, 64, 0.2);
+            color: #f57c00;
+        }
+        
+        .quadrant-label.q3 {
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(255, 99, 132, 0.2);
+            color: #c62828;
+        }
+        
+        .quadrant-label.q4 {
+            bottom: 20px;
+            right: 20px;
+            background-color: rgba(153, 102, 255, 0.2);
+            color: #5e35b1;
+        }
+        
+        /* 新增的复选框组样式 */
+        .region-checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: var(--primary-light-5);
+            border-radius: 10px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-color);
+            cursor: pointer;
+        }
+        
+        .checkbox-item label {
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+        
+        .checkbox-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .checkbox-btn {
+            padding: 6px 15px;
+            background-color: white;
+            border: 1px solid var(--primary-light-3);
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            transition: all 0.3s;
+        }
+        
+        .checkbox-btn:hover {
+            background-color: var(--primary-light-5);
+        }
+        
+        /* 新增的对比数据样式 */
+        .comparison-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            border-top: 1px solid var(--primary-light-5);
+            padding-top: 15px;
+        }
+        
+        .comparison-group {
+            flex: 1;
+            text-align: center;
+            padding: 0 10px;
+        }
+        
+        .comparison-group:first-child {
+            border-right: 1px solid var(--primary-light-5);
+        }
+        
+        .comparison-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 5px 0;
+        }
+        
+        .comparison-value.converted {
+            color: #388e3c;
+        }
+        
+        .comparison-value.not-converted {
+            color: #c62828;
+        }
+        
+        .comparison-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .card-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            table {
+                font-size: 0.9rem;
+            }
+            
+            th, td {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .correlation-matrix {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .sop-impact-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .quadrant-chart-container {
+                height: 300px;
+            }
+            
+            .region-checkbox-group {
+                gap: 10px;
+                padding: 10px;
+            }
+            
+            .comparison-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .comparison-group:first-child {
+                border-right: none;
+                border-bottom: 1px solid var(--primary-light-5);
+                padding-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 报告标题区域 -->
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> 周大福终端销售执行分析报告</h1>
+            <p class="subtitle">智能工牌数据分析 | 基于销售对话录音的SOP执行评估</p>
+            <div class="period">报告数据时间：12月01日 - 12月07日</div>
+        </div>
+        
+        <!-- 数据总览 -->
+        <div class="section">
+            <div class="section-title">
+                <i class="fas fa-tachometer-alt"></i>
+                <h2>整体执行概览</h2>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">总接待数</div>
+                    <div class="stat-value">3,763</div>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: 100%;"></div>
+                    </div>
+                    <div>本周总接待量，环比数据待补充</div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-label">平均执行率</div>
+                    <div class="stat-value">35.05%</div>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: 35.05%;"></div>
+                    </div>
+                    
+                    <!-- 新增：成交组与未成交组执行率对比 -->
+                    <div class="comparison-container">
+                        <div class="comparison-group">
+                            <div class="comparison-value converted">39.8%</div>
+                            <div class="comparison-label">成交组</div>
+                        </div>
+                        <div class="comparison-group">
+                            <div class="comparison-value not-converted">30.3%</div>
+                            <div class="comparison-label">未成交组</div>
+                        </div>
+                    </div>
+                    
+                    <div>成交组执行率显著高于未成交组9.5个百分点</div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-label">平均得分率</div>
+                    <div class="stat-value">30.8%</div>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: 30.8%;"></div>
+                    </div>
+                    
+                    <!-- 新增：成交组与未成交组得分率对比 -->
+                    <div class="comparison-container">
+                        <div class="comparison-group">
+                            <div class="comparison-value converted">41.5%</div>
+                            <div class="comparison-label">成交组</div>
+                        </div>
+                        <div class="comparison-group">
+                            <div class="comparison-value not-converted">20.1%</div>
+                            <div class="comparison-label">未成交组</div>
+                        </div>
+                    </div>
+                    
+                    <div>成交组得分率是未成交组的2.06倍，差距显著</div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-label">平均成交率</div>
+                    <div class="stat-value">13.61%</div>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: 13.61%;"></div>
+                    </div>
+                    <div>执行率与成交率正相关初步验证</div>
+                </div>
+            </div>
+            
+            <div class="recommendation">
+                <h4><i class="fas fa-lightbulb"></i> 整体评估</h4>
+                <p>本周执行率(35.05%)较试点阶段(28%)有显著提升，得分率(30.8%)同步增长，表明标准化流程落地初见成效。成交组与未成交组对比分析显示：</p>
+                <ul style="padding-left: 20px; margin-top: 10px;">
+                    <li><strong>执行率差距：</strong>成交组(39.8%)比未成交组(30.3%)高出9.5个百分点</li>
+                    <li><strong>得分率差距：</strong>成交组(41.5%)是未成交组(20.1%)的2.06倍</li>
+                    <li><strong>正相关验证：</strong>执行率与成交率正相关关系得到进一步验证</li>
+                </ul>
+                <p style="margin-top: 10px;">六安区域表现突出，执行率达53.15%，值得深入分析其成功经验。</p>
+            </div>
+        </div>
+        
+        <!-- 区域综合表现分析（整合执行、得分与成交） -->
+        <div class="section">
+            <div class="section-title">
+                <i class="fas fa-map-marked-alt"></i>
+                <h2>区域综合表现分析</h2>
+            </div>
+            
+            <p style="margin-bottom: 20px;">以下为各区域在<strong>执行率、得分率、成交率、接待量</strong>四个维度的综合表现：</p>
+            
+            <div class="chart-container">
+                <canvas id="regionRadarChart"></canvas>
+            </div>
+            
+            <div class="card-container">
+                <div class="card">
+                    <h3><span class="badge badge-good">标杆区域</span> 六安</h3>
+                    <p>执行率: <strong>53.15%</strong> | 得分率: <strong>50.4%</strong></p>
+                    <p>成交率: <strong>15.22%</strong> | 接待数: <strong>92</strong></p>
+                    <p class="stat-label">执行与得分双高，成交率领先，样本虽小但表现卓越</p>
+                </div>
+                
+                <div class="card">
+                    <h3><span class="badge badge-good">稳定区域</span> 武汉</h3>
+                    <p>执行率: <strong>35.75%</strong> | 得分率: <strong>31.5%</strong></p>
+                    <p>成交率: <strong>13.61%</strong> | 接待数: <strong>2182</strong> <span class="positive">(最高)</span></p>
+                    <p class="stat-label">接待量最大，执行表现稳定，未来机会环节突出(24%)</p>
+                </div>
+                
+                <div class="card">
+                    <h3><span class="badge badge-warning">需关注区域</span> 南昌</h3>
+                    <p>执行率: <strong>31.35%</strong> | 得分率: <strong>34.25%</strong></p>
+                    <p>成交率: <strong>14.2%</strong> | 接待数: <strong>176</strong></p>
+                    <p class="stat-label">未来机会与永久记忆环节执行率极低(均<5%)</p>
+                </div>
+                
+                <div class="card">
+                    <h3><span class="badge badge-warning">待提升区域</span> 长沙</h3>
+                    <p>执行率: <strong>34.1%</strong> | 得分率: <strong>29.5%</strong></p>
+                    <p>成交率: <strong>13.06%</strong> | 接待数: <strong>942</strong></p>
+                    <p class="stat-label">表现中等，永久记忆环节执行率(15.5%)相对突出</p>
+                </div>
+                
+                <div class="card">
+                    <h3><span class="badge badge-poor">重点关注区域</span> 苏州</h3>
+                    <p>执行率: <strong>31.2%</strong> | 得分率: <strong>27.55%</strong></p>
+                    <p>成交率: <strong>14.25%</strong> | 接待数: <strong>372</strong></p>
+                    <p class="stat-label">执行率与得分率均最低，但成交率中等，存在优化潜力</p>
+                </div>
+            </div>
+            
+            <div class="insight">
+                <h4><i class="fas fa-search"></i> 关键发现：六安区域的卓越表现与区域差异分析</h4>
+                <p><strong>六安区域</strong>以仅92次接待量，实现了<strong>53.15%的执行率</strong>和<strong>50.4%的得分率</strong>，成交率达<strong>15.22%</strong>，三项指标均领先。其成功经验值得深入研究：</p>
+                <ul style="padding-left: 20px; margin-top: 10px;">
+                    <li><strong>用心发现环节表现突出：</strong>执行率64.3%，得分率61.6%，远高于其他区域</li>
+                    <li><strong>专业推荐质量高：</strong>执行率50.4%，得分率50.6%，执行质量与频率均衡</li>
+                    <li><strong>长期价值环节领先：</strong>执行率60.5%，得分率55.7%，客户关系维护意识强</li>
+                </ul>
+                <p style="margin-top: 10px;"><strong>苏州区域重点关注：</strong>执行率(31.2%)和得分率(27.55%)均为最低，但成交率(14.25%)处于中等水平，说明若提升SOP执行，成交率有较大提升空间。</p>
+            </div>
+        </div>
+        
+        <!-- SOP环节表现与成交关联分析 -->
+        <div class="section">
+            <div class="section-title">
+                <i class="fas fa-list-ol"></i>
+                <h2>SOP环节执行与成交关联分析</h2>
+            </div>
+            
+            <div class="tab-container">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('sop-execution-tab')">执行率分析</button>
+                    <button class="tab" onclick="switchTab('sop-score-tab')">得分率分析</button>
+                    <button class="tab" onclick="switchTab('sop-impact-tab')">成交组与未成交组对比</button>
+                </div>
+                
+                <div id="sop-execution-tab" class="tab-content active">
+                    <div class="chart-container">
+                        <canvas id="executionChart"></canvas>
+                    </div>
+                    
+                    <!-- 修改为复选框组区域选择器 -->
+                    <div class="region-checkbox-group" id="region-execution-checkbox">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="exec-all" name="region-execution" value="all" checked>
+                            <label for="exec-all">东区总体</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="exec-wuhan" name="region-execution" value="wuhan" checked>
+                            <label for="exec-wuhan">武汉</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="exec-changsha" name="region-execution" value="changsha" checked>
+                            <label for="exec-changsha">长沙</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="exec-suzhou" name="region-execution" value="suzhou" checked>
+                            <label for="exec-suzhou">苏州</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="exec-liuan" name="region-execution" value="liuan" checked>
+                            <label for="exec-liuan">六安</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="exec-nanchang" name="region-execution" value="nanchang" checked>
+                            <label for="exec-nanchang">南昌</label>
+                        </div>
+                        
+                        <div class="checkbox-controls">
+                            <button class="checkbox-btn" onclick="selectAllRegions('region-execution')">全选</button>
+                            <button class="checkbox-btn" onclick="deselectAllRegions('region-execution')">全不选</button>
+                            <button class="checkbox-btn" onclick="updateSOPChart('execution')">更新图表</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="sop-score-tab" class="tab-content">
+                    <div class="chart-container">
+                        <canvas id="scoreChart"></canvas>
+                    </div>
+                    
+                    <!-- 修改为复选框组区域选择器 -->
+                    <div class="region-checkbox-group" id="region-score-checkbox">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="score-all" name="region-score" value="all" checked>
+                            <label for="score-all">东区总体</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="score-wuhan" name="region-score" value="wuhan" checked>
+                            <label for="score-wuhan">武汉</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="score-changsha" name="region-score" value="changsha" checked>
+                            <label for="score-changsha">长沙</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="score-suzhou" name="region-score" value="suzhou" checked>
+                            <label for="score-suzhou">苏州</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="score-liuan" name="region-score" value="liuan" checked>
+                            <label for="score-liuan">六安</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="score-nanchang" name="region-score" value="nanchang" checked>
+                            <label for="score-nanchang">南昌</label>
+                        </div>
+                        
+                        <div class="checkbox-controls">
+                            <button class="checkbox-btn" onclick="selectAllRegions('region-score')">全选</button>
+                            <button class="checkbox-btn" onclick="deselectAllRegions('region-score')">全不选</button>
+                            <button class="checkbox-btn" onclick="updateSOPChart('score')">更新图表</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="sop-impact-tab" class="tab-content">
+                    <div class="sop-impact-grid">
+                        <div class="chart-container">
+                            <h4 style="text-align: center; color: var(--primary-color); margin-bottom: 10px;">成交组与未成交组执行率对比</h4>
+                            <canvas id="conversionExecutionChart"></canvas>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <h4 style="text-align: center; color: var(--primary-color); margin-bottom: 10px;">成交组与未成交组得分率对比</h4>
+                            <canvas id="conversionScoreChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="data-source">
+                        <i class="fas fa-info-circle"></i> <strong>数据说明：</strong>基于总体成交组与未成交组的各维度执行率与得分率数据对比分析。未来机会环节未成交组数据缺失。
+                    </div>
+                    
+                    <div class="insight">
+                        <h4><i class="fas fa-chart-line"></i> 成交组与未成交组执行表现对比分析</h4>
+                        <p>基于总体成交组与未成交组数据，各SOP环节表现呈现以下差异特征：</p>
+                        
+                        <div class="correlation-matrix">
+                            <div class="correlation-cell correlation-header">SOP环节</div>
+                            <div class="correlation-cell correlation-header">成交组执行率</div>
+                            <div class="correlation-cell correlation-header">未成交组执行率</div>
+                            <div class="correlation-cell correlation-header">成交组得分率</div>
+                            <div class="correlation-cell correlation-header">未成交组得分率</div>
+                            
+                            <div class="correlation-cell">轻松开场</div>
+                            <div class="correlation-cell"><span class="correlation-value">48.8%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">29.3%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">48.8%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">11.3%</span></div>
+                            
+                            <div class="correlation-cell">用心发现</div>
+                            <div class="correlation-cell"><span class="correlation-value">29.3%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">32.3%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">31.6%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">24.4%</span></div>
+                            
+                            <div class="correlation-cell">专业推荐</div>
+                            <div class="correlation-cell"><span class="correlation-value">35.9%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">31.8%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">41.2%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">24.7%</span></div>
+                            
+                            <div class="correlation-cell">温情解决</div>
+                            <div class="correlation-cell"><span class="correlation-value">54.5%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">44.2%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">49.1%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">28.2%</span></div>
+                            
+                            <div class="correlation-cell">温馨提示</div>
+                            <div class="correlation-cell"><span class="correlation-value">66.6%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">49.3%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">65.6%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">38.7%</span></div>
+                            
+                            <div class="correlation-cell">长期价值</div>
+                            <div class="correlation-cell"><span class="correlation-value">44.7%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">16.8%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">48.7%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">12.3%</span></div>
+                            
+                            <div class="correlation-cell">未来机会</div>
+                            <div class="correlation-cell"><span class="correlation-value">20.1%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">-</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">16.7%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">-</span></div>
+                            
+                            <div class="correlation-cell">永久记忆</div>
+                            <div class="correlation-cell"><span class="correlation-value">10.8%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">13.9%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">10.8%</span></div>
+                            <div class="correlation-cell"><span class="correlation-value">5.8%</span></div>
+                        </div>
+                        
+                        <p style="margin-top: 15px;"><strong>关键发现：</strong></p>
+                        <ul style="padding-left: 20px; margin-top: 10px;">
+                            <li><strong>轻松开场环节差异最大：</strong>成交组执行率(48.8%)和得分率(48.8%)显著高于未成交组(29.3%和11.3%)，说明良好的开场对成交有重要影响</li>
+                            <li><strong>长期价值环节差距明显：</strong>成交组执行率(44.7%)是未成交组(16.8%)的2.66倍，得分率差距更达3.96倍，客户关系维护对成交转化至关重要</li>
+                            <li><strong>温馨提示环节执行率高：</strong>成交组执行率66.6%为所有环节最高，说明售后服务意识强的销售更容易促成成交</li>
+                            <li><strong>用心发现环节反差不显著：</strong>成交组执行率(29.3%)甚至略低于未成交组(32.3%)，但得分率更高(31.6% vs 24.4%)，表明质量比频率更重要</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 执行-得分-成交关联矩阵分析 -->
+        <div class="section">
+            <div class="section-title">
+                <i class="fas fa-project-diagram"></i>
+                <h2>执行率、得分率与成交率三维关联分析</h2>
+            </div>
+            
+            <div class="insight">
+                <h4><i class="fas fa-sitemap"></i> 三维关联分析模型验证</h4>
+                <p>基于本周完整数据，我们验证了执行率、得分率与成交率的三维关联模型：</p>
+                
+                <div style="margin: 25px 0; padding: 20px; background-color: var(--primary-light-5); border-radius: 10px;">
+                    <h5 style="color: var(--primary-color); margin-bottom: 15px;">执行率 × 得分率 × 成交率 三维验证</h5>
+                    
+                    <!-- 象限图 -->
+                    <div class="quadrant-chart-container">
+                        <canvas id="quadrantChart"></canvas>
+                        <div class="quadrant-label q1">高执行 + 高得分</div>
+                        <div class="quadrant-label q2">低执行 + 高得分</div>
+                        <div class="quadrant-label q3">低执行 + 低得分</div>
+                        <div class="quadrant-label q4">高执行 + 低得分</div>
+                    </div>
+                    
+                    <div class="card-container" style="margin-top: 20px;">
+                        <div class="card">
+                            <h3><span class="badge badge-good">高执行+高得分</span> 六安</h3>
+                            <p><strong>执行率：</strong>53.15% | <strong>得分率：</strong>50.4%</p>
+                            <p><strong>成交率：</strong>15.22% (最高)</p>
+                            <p><strong>验证：</strong>执行与质量双高确实带来高成交</p>
+                            <p><strong>策略：</strong>提炼最佳实践，东区推广</p>
+                        </div>
+                        
+                        <div class="card">
+                            <h3><span class="badge badge-warning">中执行+中得分</span> 武汉</h3>
+                            <p><strong>执行率：</strong>35.75% | <strong>得分率：</strong>31.5%</p>
+                            <p><strong>成交率：</strong>13.61% (中等)</p>
+                            <p><strong>验证：</strong>执行与质量中等对应中等成交</p>
+                            <p><strong>策略：</strong>对标六安，重点提升关键环节</p>
+                        </div>
+                        
+                        <div class="card">
+                            <h3><span class="badge badge-warning">中执行+中得分</span> 长沙</h3>
+                            <p><strong>执行率：</strong>34.1% | <strong>得分率：</strong>29.5%</p>
+                            <p><strong>成交率：</strong>13.06% (中等)</p>
+                            <p><strong>验证：</strong>执行率与得分率匹配，成交率符合预期</p>
+                            <p><strong>策略：</strong>强化用心发现环节，提升成交转化</p>
+                        </div>
+                        
+                        <div class="card">
+                            <h3><span class="badge badge-poor">低执行+低得分</span> 苏州</h3>
+                            <p><strong>执行率：</strong>31.2% | <strong>得分率：</strong>27.55%</p>
+                            <p><strong>成交率：</strong>14.25% (中等)</p>
+                            <p><strong>验证：</strong>低执行低得分但成交率中等，说明存在其他成交驱动因素</p>
+                            <p><strong>策略：</strong>提升SOP执行的同时，研究其他促成成交的关键因素</p>
+                        </div>
+                        
+                        <div class="card">
+                            <h3><span class="badge badge-warning">中执行+中得分</span> 南昌</h3>
+                            <p><strong>执行率：</strong>31.35% | <strong>得分率：</strong>34.25%</p>
+                            <p><strong>成交率：</strong>14.2% (中等)</p>
+                            <p><strong>验证：</strong>得分率略高于执行率，但成交率中等</p>
+                            <p><strong>策略：</strong>强化长期价值与未来机会环节</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <p><strong>核心结论验证：</strong>六安区域验证了"高执行+高得分=高成交"的假设，为SOP标准化推广提供了有力证据。长沙区域表现为典型的"中执行+中得分=中成交"，验证了模型的连续性。苏州区域表现为"低执行+低得分=中成交"，说明存在其他成交驱动因素，若提升SOP执行，成交率有较大提升空间。</p>
+            </div>
+                         
+            <div class="recommendation">
+                <h4><i class="fas fa-database"></i> 数据质量与深度分析建议</h4>
+                <p>为进一步提升分析价值，建议：</p>
+                <ol style="padding-left: 20px; margin-top: 10px;">
+                    <li><strong>标杆学习：</strong>组织长沙、苏州区域向六安学习"用心发现"与"专业推荐"经验</li>
+                    <li><strong>深度分析：</strong>对苏州区域进行专项研究，分析其"低执行+低得分=中成交"的原因</li>
+                    <li><strong>趋势跟踪：</strong>建立执行率-成交率周度趋势分析，识别领先与滞后指标</li>
+                    <li><strong>A/B测试：</strong>在苏州区域试点"用心发现"专项提升计划，验证执行率提升对成交率的影响</li>
+                </ol>
+            </div>
+        </div>
+        
+        <!-- 门店排名与成交分析 -->
+        <div class="section">
+            <div class="section-title">
+                <i class="fas fa-store"></i>
+                <h2>门店执行表现与成交分析</h2>
+            </div>
+            
+            <div class="tab-container">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('top-execution-tab')">执行率TOP5</button>
+                    <button class="tab" onclick="switchTab('top-score-tab')">得分率TOP5</button>
+                    <button class="tab" onclick="switchTab('top-conversion-tab')">成交率TOP5</button>
+                </div>
+                
+                <div id="top-execution-tab" class="tab-content active">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>门店名称</th>
+                                <th>执行率</th>
+                                <th>得分率</th>
+                                <th>成交率</th>
+                                <th>执行-得分差距</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>六安梅山路百大金商都店</td>
+                                <td>54.45%</td>
+                                <td>50.85%</td>
+                                <td>25.81% <span class="positive">(最高)</span></td>
+                                <td><span class="negative">-3.6%</span></td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>六安万达广场店</td>
+                                <td>53.95%</td>
+                                <td>51.65%</td>
+                                <td>9.84%</td>
+                                <td><span class="negative">-2.3%</span></td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td>荟馆长沙九龙仓长沙国金中心店</td>
+                                <td>45.45%</td>
+                                <td>40.55%</td>
+                                <td>10.39%</td>
+                                <td><span class="negative">-4.9%</span></td>
+                            </tr>
+                            <tr>
+                                <td>4</td>
+                                <td>武汉光谷珞瑜路世界城店</td>
+                                <td>41.75%</td>
+                                <td>36.05%</td>
+                                <td>10.42%</td>
+                                <td><span class="negative">-5.7%</span></td>
+                            </tr>
+                            <tr>
+                                <td>5</td>
+                                <td>荟馆武汉解放大道武汉世贸店</td>
+                                <td>40.95%</td>
+                                <td>35.80%</td>
+                                <td>19.39% <span class="positive">(第二)</span></td>
+                                <td><span class="negative">-5.15%</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="top-score-tab" class="tab-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>门店名称</th>
+                                <th>得分率</th>
+                                <th>执行率</th>
+                                <th>成交率</th>
+                                <th>执行-得分差距</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>六安万达广场店</td>
+                                <td>51.65%</td>
+                                <td>53.95%</td>
+                                <td>9.84%</td>
+                                <td><span class="positive">+2.3%</span></td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>六安梅山路百大金商都店</td>
+                                <td>50.85%</td>
+                                <td>54.45%</td>
+                                <td>25.81% <span class="positive">(最高)</span></td>
+                                <td><span class="positive">+3.6%</span></td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td>长沙芙蓉龙湖天街</td>
+                                <td>40.15%</td>
+                                <td>37.65%</td>
+                                <td>8.77%</td>
+                                <td><span class="negative">-2.5%</span></td>
+                            </tr>
+                            <tr>
+                                <td>4</td>
+                                <td>荟馆长沙九龙仓长沙国金中心店</td>
+                                <td>40.55%</td>
+                                <td>45.45%</td>
+                                <td>10.39%</td>
+                                <td><span class="positive">+4.9%</span></td>
+                            </tr>
+                            <tr>
+                                <td>5</td>
+                                <td>武汉SKP店</td>
+                                <td>37.75%</td>
+                                <td>35.95%</td>
+                                <td>16.31%</td>
+                                <td><span class="negative">-1.8%</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="top-conversion-tab" class="tab-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>门店名称</th>
+                                <th>成交率</th>
+                                <th>执行率</th>
+                                <th>得分率</th>
+                                <th>接待数</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>六安梅山路百大金商都店</td>
+                                <td>25.81% <span class="positive">(最高)</span></td>
+                                <td>54.45%</td>
+                                <td>50.85%</td>
+                                <td>31</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>武汉黄陂中百店</td>
+                                <td>24.59%</td>
+                                <td>39.10%</td>
+                                <td>34.45%</td>
+                                <td>61</td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td>荟馆武汉江岸中山大道壹方店</td>
+                                <td>22.73%</td>
+                                <td>30.70%</td>
+                                <td>25.75%</td>
+                                <td>22</td>
+                            </tr>
+                            <tr>
+                                <td>4</td>
+                                <td>长沙世纪金源购物中心店</td>
+                                <td>22.34%</td>
+                                <td>30.80%</td>
+                                <td>31.55%</td>
+                                <td>94</td>
+                            </tr>
+                            <tr>
+                                <td>5</td>
+                                <td>荟馆武汉解放大道武汉世贸店</td>
+                                <td>19.39%</td>
+                                <td>40.95%</td>
+                                <td>35.80%</td>
+                                <td>98</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="recommendation" style="margin-top: 20px;">
+                <h4><i class="fas fa-medal"></i> 标杆门店提炼与推广建议</h4>
+                <p><strong>六安梅山路百大金商都店</strong>以25.81%的成交率位居榜首，其成功经验值得深入研究：</p>
+                <ul style="padding-left: 20px; margin-top: 10px;">
+                    <li><strong>高执行高质量：</strong>执行率54.45%，得分率50.85%，执行与质量均衡</li>
+                    <li><strong>关键环节突出：</strong>"用心发现"执行率64.3%，"专业推荐"执行率50.4%</li>
+                    <li><strong>小样本高效转化：</strong>仅31次接待实现8次成交，转化效率极高</li>
+                </ul>
+                <p style="margin-top: 10px;">建议立即开展该门店的案例研究，提炼可复制方法论。</p>
+            </div>
+        </div>
+        
+        <!-- 问题诊断与改进建议 -->
+        <div class="section">
+            <div class="section-title">
+                <i class="fas fa-clipboard-check"></i>
+                <h2>基于数据洞察的问题诊断与改进建议</h2>
+            </div>
+            
+            <div class="card-container">
+                <div class="card">
+                    <h3><span class="badge badge-poor">核心问题诊断</span></h3>
+                    <ul style="padding-left: 20px; margin-top: 10px;">
+                        <li><strong>资源分配错位：</strong>高执行环节非高影响环节，优化空间大</li>
+                        <li><strong>区域发展不均：</strong>六安表现卓越，苏州执行薄弱</li>
+                        <li><strong>关键环节缺失：</strong>未来机会与永久记忆环节整体薄弱</li>
+                        <li><strong>苏州特殊现象：</strong>低执行低得分但成交率中等，需深入研究</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h3><span class="badge badge-good">短期改进策略(1-2周)</span></h3>
+                    <ul style="padding-left: 20px; margin-top: 10px;">
+                        <li><strong>聚焦关键环节：</strong>东区推广"用心发现"专项提升计划</li>
+                        <li><strong>区域差异化辅导：</strong>长沙、苏州重点帮扶，六安总结经验</li>
+                        <li><strong>苏州专项研究：</strong>分析其"低执行+中成交"现象，挖掘其他成交驱动因素</li>
+                        <li><strong>建立执行-得分-成交周报：</strong>三维度跟踪进展</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <h3><span class="badge badge-good">中长期体系构建(3-8周)</span></h3>
+                    <ul style="padding-left: 20px; margin-top: 10px;">
+                        <li><strong>执行-成交关联模型：</strong>完善执行-得分-成交三维分析体系</li>
+                        <li><strong>智能督导系统：</strong>基于数据自动识别低效门店与环节</li>
+                        <li><strong>个性化SOP优化：</strong>根据不同门店特点调整SOP重点</li>
+                        <li><strong>客户终身价值体系：</strong>强化长期价值与未来机会环节</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="recommendation">
+                <h4><i class="fas fa-road"></i> 实施路线图建议</h4>
+                <p><strong>第一阶段(1-2周)：</strong>六安成功案例深度研究，提炼可复制方法论</p>
+                <p><strong>第二阶段(3-4周)：</strong>"用心发现"与"专业推荐"东区专项提升计划，苏州为重点试点区域</p>
+                <p><strong>第三阶段(5-8周)：</strong>建立执行-得分-成交三维智能分析平台</p>
+                <p><strong>第四阶段(9-12周)：</strong>基于数据优化SOP环节权重，建立个性化执行标准</p>
+            </div>
+        </div>
+        
+        <!-- 报告脚注 -->
+        <div class="footer">
+            <p>©职行力&周大福智能工牌项目组 | 数据周期：12月01日-12月07日</p>
+            <p>本报告基于智能工牌销售对话数据生成，旨在为终端服务数字化升级提供决策依据</p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">
+                <i class="fas fa-info-circle"></i> 本报告为交互式H5格式，支持图表点击查看详情，建议使用Chrome或Edge浏览器查看
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // SOP环节数据（基于周报模板）
+        const sopData = {
+            categories: ['轻松开场', '用心发现', '专业推荐', '温情解决', '温馨提示', '长期价值', '未来机会', '永久记忆'],
+            all: {
+                execution: [39.1, 30.8, 33.9, 49.4, 58.0, 30.8, 20.1, 12.4],
+                score: [30.1, 28.0, 33.0, 38.7, 52.2, 30.5, 16.7, 8.3]
+            },
+            wuhan: {
+                execution: [42.1, 32.1, 34.3, 50.5, 58.1, 30.6, 24.0, 11.9],
+                score: [32.7, 29.2, 33.4, 39.6, 52.0, 29.9, 19.5, 8.3]
+            },
+            changsha: {
+                execution: [37.3, 29.1, 32.4, 47.8, 56.7, 31.5, 16.6, 15.5],
+                score: [28.2, 26.0, 31.4, 37.2, 50.7, 32.3, 14.9, 10.0]
+            },
+            suzhou: {
+                execution: [30.7, 22.2, 33.5, 43.5, 60.0, 25.8, 13.2, 9.8],
+                score: [23.2, 20.2, 33.3, 32.5, 55.6, 25.1, 11.9, 6.0]
+            },
+            liuan: {
+                execution: [47.2, 64.3, 50.4, 66.7, 64.7, 60.5, 21.4, 22.4],
+                score: [40.0, 61.6, 50.6, 58.8, 64.6, 55.7, 16.6, 15.9]
+            },
+            nanchang: {
+                execution: [32.9, 25.4, 27.7, 47.6, 54.9, 27.0, 4.0, 2.3],
+                score: [32.9, 28.2, 32.8, 42.3, 54.8, 35.9, 4.0, 2.3]
+            }
+        };
+        
+        // 成交组与未成交组数据（来自附件）
+        const conversionData = {
+            categories: ['轻松开场', '用心发现', '专业推荐', '温情解决', '温馨提示', '长期价值', '未来机会', '永久记忆'],
+            成交组: {
+                execution: [48.8, 29.3, 35.9, 54.5, 66.6, 44.7, 20.1, 10.8],
+                score: [48.8, 31.6, 41.2, 49.1, 65.6, 48.7, 16.7, 10.8]
+            },
+            未成交组: {
+                execution: [29.3, 32.3, 31.8, 44.2, 49.3, 16.8, null, 13.9],
+                score: [11.3, 24.4, 24.7, 28.2, 38.7, 12.3, null, 5.8]
+            }
+        };
+        
+        // 区域对比数据
+        const regionData = {
+            labels: ['六安', '武汉', '长沙', '苏州', '南昌'],
+            execution: [53.15, 35.75, 34.1, 31.2, 31.35],
+            score: [50.4, 31.5, 29.5, 27.55, 34.25],
+            conversion: [15.22, 13.61, 13.06, 14.25, 14.2],
+            reception: [92, 2182, 942, 372, 176]
+        };
+        
+        // 图表颜色配置
+        const chartColors = {
+            regionColors: [
+                'rgba(153, 102, 255, 0.8)',     // 六安 - 紫色
+                'rgba(54, 162, 235, 0.8)',      // 武汉 - 蓝色
+                'rgba(75, 192, 192, 0.8)',      // 长沙 - 青色
+                'rgba(255, 159, 64, 0.8)',      // 苏州 - 橙色
+                'rgba(255, 99, 132, 0.8)'       // 南昌 - 红色
+            ],
+            
+            sopColors: [
+                'rgba(54, 162, 235, 0.7)',   // 蓝色
+                'rgba(75, 192, 192, 0.7)',   // 青色
+                'rgba(255, 159, 64, 0.7)',   // 橙色
+                'rgba(153, 102, 255, 0.7)',  // 紫色
+                'rgba(255, 99, 132, 0.7)',   // 红色
+                'rgba(255, 205, 86, 0.7)',   // 黄色
+                'rgba(201, 203, 207, 0.7)',  // 灰色
+                'rgba(0, 150, 136, 0.7)'     // 蓝绿色
+            ],
+            
+            conversionColors: {
+                成交组: 'rgba(75, 192, 192, 0.8)',   // 青色
+                未成交组: 'rgba(255, 99, 132, 0.8)'  // 红色
+            },
+            
+            primary: 'rgba(167, 10, 22, 0.8)',
+            primaryLight1: 'rgba(167, 10, 22, 0.6)'
+        };
+        
+        // 初始化SOP执行率图表（多区域对比）
+        let executionChart = new Chart(document.getElementById('executionChart'), {
+            type: 'bar',
+            data: {
+                labels: sopData.categories,
+                datasets: [
+                    {
+                        label: '东区总体',
+                        data: sopData.all.execution,
+                        backgroundColor: chartColors.sopColors[0],
+                        borderColor: chartColors.sopColors[0].replace('0.7', '1'),
+                        borderWidth: 1
+                    },
+                    {
+                        label: '武汉',
+                        data: sopData.wuhan.execution,
+                        backgroundColor: chartColors.sopColors[1],
+                        borderColor: chartColors.sopColors[1].replace('0.7', '1'),
+                        borderWidth: 1
+                    },
+                    {
+                        label: '长沙',
+                        data: sopData.changsha.execution,
+                        backgroundColor: chartColors.sopColors[2],
+                        borderColor: chartColors.sopColors[2].replace('0.7', '1'),
+                        borderWidth: 1
+                    },
+                    {
+                        label: '苏州',
+                        data: sopData.suzhou.execution,
+                        backgroundColor: chartColors.sopColors[3],
+                        borderColor: chartColors.sopColors[3].replace('0.7', '1'),
+                        borderWidth: 1
+                    },
+                    {
+                        label: '六安',
+                        data: sopData.liuan.execution,
+                        backgroundColor: chartColors.sopColors[4],
+                        borderColor: chartColors.sopColors[4].replace('0.7', '1'),
+                        borderWidth: 1
+                    },
+                    {
+                        label: '南昌',
+                        data: sopData.nanchang.execution,
+                        backgroundColor: chartColors.sopColors[5],
+                        borderColor: chartColors.sopColors[5].replace('0.7', '1'),
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 70,
+                        title: {
+                            display: true,
+                            text: '执行率 (%)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: 'rgba(167, 10, 22, 0.8)'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(167, 10, 22, 0.9)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.raw}%`;
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+        
+        // 初始化SOP得分率图表（多区域对比）
+        let scoreChart = new Chart(document.getElementById('scoreChart'), {
+            type: 'bar',
+            data: {
+                labels: sopData.categories,
+                datasets: [
+                    {
+                        label: '东区总体',
+                        data: sopData.all.score,
+                        backgroundColor: chartColors.sopColors[0],
+                        borderColor: chartColors.sopColors[0].replace('0.7', '1'),
+                        borderWidth: 1
+                    },
+                    {
+                        label: '武汉',
+                        data: sopData.wuhan.score,
+                        backgroundColor: chartColors.sopColors[1],
+                        borderColor: chartColors.sopColors[1].replace('0.7', '1'),
+                        borderWidth: 1
+                    },
+                    {
+                        label: '长沙',
+                        data: sopData.changsha.score,
+                        backgroundColor: chartColors.sopColors[2],
+                        borderColor: chartColors.sopColors[2].replace('0.7', '1'),
+                        borderWidth: 1
+                    },
+                    {
+                        label: '苏州',
+                        data: sopData.suzhou.score,
+                        backgroundColor: chartColors.sopColors[3],
+                        borderColor: chartColors.sopColors[3].replace('0.7', '1'),
+                        borderWidth: 1
+                    },
+                    {
+                        label: '六安',
+                        data: sopData.liuan.score,
+                        backgroundColor: chartColors.sopColors[4],
+                        borderColor: chartColors.sopColors[4].replace('0.7', '1'),
+                        borderWidth: 1
+                    },
+                    {
+                        label: '南昌',
+                        data: sopData.nanchang.score,
+                        backgroundColor: chartColors.sopColors[5],
+                        borderColor: chartColors.sopColors[5].replace('0.7', '1'),
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 70,
+                        title: {
+                            display: true,
+                            text: '得分率 (%)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: 'rgba(167, 10, 22, 0.8)'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(167, 10, 22, 0.9)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.raw}%`;
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+        
+        // 初始化成交组与未成交组执行率对比图表
+        let conversionExecutionChart = new Chart(document.getElementById('conversionExecutionChart'), {
+            type: 'bar',
+            data: {
+                labels: conversionData.categories,
+                datasets: [
+                    {
+                        label: '成交组执行率',
+                        data: conversionData.成交组.execution,
+                        backgroundColor: chartColors.conversionColors.成交组,
+                        borderColor: chartColors.conversionColors.成交组.replace('0.8', '1'),
+                        borderWidth: 1
+                    },
+                    {
+                        label: '未成交组执行率',
+                        data: conversionData.未成交组.execution,
+                        backgroundColor: chartColors.conversionColors.未成交组,
+                        borderColor: chartColors.conversionColors.未成交组.replace('0.8', '1'),
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 80,
+                        title: {
+                            display: true,
+                            text: '执行率 (%)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: 'rgba(167, 10, 22, 0.8)'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(167, 10, 22, 0.9)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.raw !== null ? context.raw + '%' : '数据缺失'}`;
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+        
+        // 初始化成交组与未成交组得分率对比图表
+        let conversionScoreChart = new Chart(document.getElementById('conversionScoreChart'), {
+            type: 'bar',
+            data: {
+                labels: conversionData.categories,
+                datasets: [
+                    {
+                        label: '成交组得分率',
+                        data: conversionData.成交组.score,
+                        backgroundColor: chartColors.conversionColors.成交组,
+                        borderColor: chartColors.conversionColors.成交组.replace('0.8', '1'),
+                        borderWidth: 1
+                    },
+                    {
+                        label: '未成交组得分率',
+                        data: conversionData.未成交组.score,
+                        backgroundColor: chartColors.conversionColors.未成交组,
+                        borderColor: chartColors.conversionColors.未成交组.replace('0.8', '1'),
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 80,
+                        title: {
+                            display: true,
+                            text: '得分率 (%)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: 'rgba(167, 10, 22, 0.8)'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(167, 10, 22, 0.9)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.raw !== null ? context.raw + '%' : '数据缺失'}`;
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+        
+        // 修正后的区域雷达图
+        let regionRadarChart = new Chart(document.getElementById('regionRadarChart'), {
+            type: 'radar',
+            data: {
+                labels: ['执行率', '得分率', '成交率', '接待量指数'],
+                datasets: [
+                    {
+                        label: '六安',
+                        data: [53.15, 50.4, 15.22, 4.2],
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(153, 102, 255, 1)'
+                    },
+                    {
+                        label: '武汉',
+                        data: [35.75, 31.5, 13.61, 100],
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(54, 162, 235, 1)'
+                    },
+                    {
+                        label: '长沙',
+                        data: [34.1, 29.5, 13.06, 43.2],
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(75, 192, 192, 1)'
+                    },
+                    {
+                        label: '苏州',
+                        data: [31.2, 27.55, 14.25, 17.1],
+                        backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(255, 159, 64, 1)'
+                    },
+                    {
+                        label: '南昌',
+                        data: [31.35, 34.25, 14.2, 8.1],
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(255, 99, 132, 1)'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 100,
+                        ticks: {
+                            stepSize: 20,
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        pointLabels: {
+                            color: 'rgba(167, 10, 22, 0.8)',
+                            font: {
+                                weight: 'bold'
+                            },
+                            callback: function(value, index) {
+                                // 根据不同的维度显示不同的单位
+                                if (index === 3) {
+                                    return value; // 接待量指数不带单位
+                                }
+                                return value; // 其他维度已经在回调函数中添加了%
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: 'rgba(167, 10, 22, 0.8)',
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(167, 10, 22, 0.9)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                
+                                const index = context.dataIndex;
+                                const region = context.dataset.label;
+                                let actualValue = '';
+                                
+                                if (index === 0) {
+                                    actualValue = region === '六安' ? '53.15%' : 
+                                                 region === '武汉' ? '35.75%' : 
+                                                 region === '长沙' ? '34.1%' : 
+                                                 region === '苏州' ? '31.2%' : '31.35%';
+                                    label += '执行率 ' + actualValue;
+                                } else if (index === 1) {
+                                    actualValue = region === '六安' ? '50.4%' : 
+                                                 region === '武汉' ? '31.5%' : 
+                                                 region === '长沙' ? '29.5%' : 
+                                                 region === '苏州' ? '27.55%' : '34.25%';
+                                    label += '得分率 ' + actualValue;
+                                } else if (index === 2) {
+                                    actualValue = region === '六安' ? '15.22%' : 
+                                                 region === '武汉' ? '13.61%' : 
+                                                 region === '长沙' ? '13.06%' : 
+                                                 region === '苏州' ? '14.25%' : '14.2%';
+                                    label += '成交率 ' + actualValue;
+                                } else if (index === 3) {
+                                    actualValue = region === '六安' ? '92' : 
+                                                 region === '武汉' ? '2182' : 
+                                                 region === '长沙' ? '942' : 
+                                                 region === '苏州' ? '372' : '176';
+                                    label += '接待量 ' + actualValue + ' (指数: ' + context.raw + ')';
+                                }
+                                
+                                return label;
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+        
+        // 初始化象限图
+        let quadrantChart = new Chart(document.getElementById('quadrantChart'), {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    {
+                        label: '六安',
+                        data: [{x: 53.15, y: 50.4}],
+                        backgroundColor: chartColors.regionColors[0],
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        borderWidth: 2,
+                        pointRadius: 15
+                    },
+                    {
+                        label: '武汉',
+                        data: [{x: 35.75, y: 31.5}],
+                        backgroundColor: chartColors.regionColors[1],
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        pointRadius: 12
+                    },
+                    {
+                        label: '长沙',
+                        data: [{x: 34.1, y: 29.5}],
+                        backgroundColor: chartColors.regionColors[2],
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        pointRadius: 10
+                    },
+                    {
+                        label: '苏州',
+                        data: [{x: 31.2, y: 27.55}],
+                        backgroundColor: chartColors.regionColors[3],
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 2,
+                        pointRadius: 10
+                    },
+                    {
+                        label: '南昌',
+                        data: [{x: 31.35, y: 34.25}],
+                        backgroundColor: chartColors.regionColors[4],
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 2,
+                        pointRadius: 8
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        title: {
+                            display: true,
+                            text: '执行率 (%)'
+                        },
+                        min: 25,
+                        max: 60,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '得分率 (%)'
+                        },
+                        min: 20,
+                        max: 55,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: 'rgba(167, 10, 22, 0.8)',
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(167, 10, 22, 0.9)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        callbacks: {
+                            label: function(context) {
+                                const region = context.dataset.label;
+                                const point = context.raw;
+                                let conversionRate = '';
+                                let reception = '';
+                                
+                                if (region === '六安') {
+                                    conversionRate = '15.22%';
+                                    reception = '92';
+                                } else if (region === '武汉') {
+                                    conversionRate = '13.61%';
+                                    reception = '2182';
+                                } else if (region === '长沙') {
+                                    conversionRate = '13.06%';
+                                    reception = '942';
+                                } else if (region === '苏州') {
+                                    conversionRate = '14.25%';
+                                    reception = '372';
+                                } else if (region === '南昌') {
+                                    conversionRate = '14.2%';
+                                    reception = '176';
+                                }
+                                
+                                return [
+                                    `${region}`,
+                                    `执行率: ${point.x}%`,
+                                    `得分率: ${point.y}%`,
+                                    `成交率: ${conversionRate}`,
+                                    `接待量: ${reception}`
+                                ];
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+        
+        // 切换标签页
+        function switchTab(tabId) {
+            // 隐藏所有标签内容
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的标签内容
+            document.getElementById(tabId).classList.add('active');
+            
+            // 更新标签按钮状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            event.target.classList.add('active');
+        }
+        
+        // 更新SOP图表（根据复选框选择）
+        function updateSOPChart(chartType) {
+            let chart, checkboxName;
+            
+            if (chartType === 'execution') {
+                chart = executionChart;
+                checkboxName = 'region-execution';
+            } else {
+                chart = scoreChart;
+                checkboxName = 'region-score';
+            }
+            
+            // 获取所有选中的复选框
+            const checkedBoxes = document.querySelectorAll(`input[name="${checkboxName}"]:checked`);
+            
+            // 如果没有选中任何区域，则默认选中"东区总体"
+            if (checkedBoxes.length === 0) {
+                document.querySelector(`input[name="${checkboxName}"][value="all"]`).checked = true;
+                checkedBoxes.push(document.querySelector(`input[name="${checkboxName}"][value="all"]`));
+            }
+            
+            // 更新图表数据集
+            const datasets = [];
+            
+            checkedBoxes.forEach(checkbox => {
+                const region = checkbox.value;
+                const regionLabel = getRegionLabel(region);
+                const colorIndex = getRegionColorIndex(region);
+                
+                datasets.push({
+                    label: regionLabel,
+                    data: sopData[region][chartType],
+                    backgroundColor: chartColors.sopColors[colorIndex],
+                    borderColor: chartColors.sopColors[colorIndex].replace('0.7', '1'),
+                    borderWidth: 1
+                });
+            });
+            
+            // 更新图表数据
+            chart.data.datasets = datasets;
+            chart.update();
+        }
+        
+        // 获取区域标签
+        function getRegionLabel(region) {
+            const labels = {
+                'all': '东区总体',
+                'wuhan': '武汉',
+                'changsha': '长沙',
+                'suzhou': '苏州',
+                'liuan': '六安',
+                'nanchang': '南昌'
+            };
+            return labels[region] || region;
+        }
+        
+        // 获取区域颜色索引
+        function getRegionColorIndex(region) {
+            const indices = {
+                'all': 0,
+                'wuhan': 1,
+                'changsha': 2,
+                'suzhou': 3,
+                'liuan': 4,
+                'nanchang': 5
+            };
+            return indices[region] || 0;
+        }
+        
+        // 全选区域
+        function selectAllRegions(checkboxType) {
+            const checkboxes = document.querySelectorAll(`input[name="${checkboxType}"]`);
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            
+            // 更新图表
+            const chartType = checkboxType === 'region-execution' ? 'execution' : 'score';
+            updateSOPChart(chartType);
+        }
+        
+        // 全不选区域
+        function deselectAllRegions(checkboxType) {
+            const checkboxes = document.querySelectorAll(`input[name="${checkboxType}"]`);
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            // 默认选中"东区总体"
+            document.querySelector(`input[name="${checkboxType}"][value="all"]`).checked = true;
+            
+            // 更新图表
+            const chartType = checkboxType === 'region-execution' ? 'execution' : 'score';
+            updateSOPChart(chartType);
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始激活第一个标签页
+            document.querySelector('.tab.active').click();
+            
+            // 初始化复选框事件监听
+            document.querySelectorAll('input[name="region-execution"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    updateSOPChart('execution');
+                });
+            });
+            
+            document.querySelectorAll('input[name="region-score"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    updateSOPChart('score');
+                });
+            });
+            
+            // 为所有可点击元素添加动画效果
+            document.querySelectorAll('.card, .section').forEach(element => {
+                element.addEventListener('click', function() {
+                    this.style.transform = 'scale(1.02)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 200);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

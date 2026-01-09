@@ -14,10 +14,8 @@ export async function exportWebReport(
   // 1. Locate Template
   let templatePath = ''
   if (isDev()) {
-    // Use process.cwd() in dev mode for reliability
     templatePath = path.join(process.cwd(), 'dist/export/index.html')
   } else {
-    // In production, resources/export/index.html
     templatePath = path.join(process.resourcesPath, 'export', 'index.html')
   }
 
@@ -30,16 +28,12 @@ export async function exportWebReport(
   let html = await fs.readFile(templatePath, 'utf-8')
 
   // 2. Prepare Snapshot Data
-  // We construct the Store state that DashboardCanvasV3 expects.
-  // WorkbenchStore: canvasConfig, pageCount, layoutScenario, pinnedReports
-  // UIStore: contentLayout, sidebarLayout
-
-  // Use defaults if fullSnapshot is not provided or partial
   const workbenchDefaults = {
     canvasConfig: { zoom: 100, layout: 'a4', title: reportTitle },
     pageCount: 1,
     layoutScenario: 'default',
-    pinnedReports: widgets, // Critical: Inject data here
+    viewMode: 'dashboard', // Default
+    pinnedReports: widgets,
   }
 
   const snapshot = {

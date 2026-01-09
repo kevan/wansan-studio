@@ -12,6 +12,7 @@ import {
   Printer,
   Sparkles,
   Type,
+  LayoutDashboard,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -33,6 +34,7 @@ import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 import { PAGE_GAP_PX } from '@/components/dashboard-v3/page-layer'
 import { useTranslation } from 'react-i18next'
+import { cn } from '@/utils/cn'
 import { Analytics } from '../../services/analytics'
 import logo from '@/src/assets/logo.png'
 import { useExportWebReport } from '@/hooks/useIPC'
@@ -63,10 +65,11 @@ export function DashboardHeader() {
     setIsConfigOpen(false)
     setIsExportingWeb(true)
     try {
-      const { pinnedReports } = useWorkbenchStore.getState()
+      const { pinnedReports, canvasConfig } = useWorkbenchStore.getState()
       await exportWebReport({
         widgets: pinnedReports,
         config: { ...config, language: language as 'en' | 'zh' },
+        fullSnapshot: { workbench: { canvasConfig } },
       })
       addToast({
         title: t('export_success', 'Web Report Generated'),
@@ -314,6 +317,52 @@ export function DashboardHeader() {
 
       {/* CENTER: View Controls */}
       <div className="flex items-center gap-3">
+        {/* View Mode Toggle (Segmented Control) */}
+        <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-lg p-0.5 border border-zinc-200 dark:border-zinc-700 h-9">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              'h-8 px-3 text-xs gap-1.5 rounded-md transition-all',
+              canvasConfig.layout === 'report'
+                ? 'bg-white shadow-sm text-zinc-900 font-bold'
+                : 'text-zinc-500 hover:text-zinc-700'
+            )}
+            onClick={() => handleLayoutChange('report')}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            {t('view_report', 'Report')}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              'h-8 px-3 text-xs gap-1.5 rounded-md transition-all',
+              canvasConfig.layout === 'screen'
+                ? 'bg-white shadow-sm text-zinc-900 font-bold'
+                : 'text-zinc-500 hover:text-zinc-700'
+            )}
+            onClick={() => handleLayoutChange('screen')}
+          >
+            <Monitor className="w-3.5 h-3.5" />
+            {t('view_dashboard', 'Dashboard')}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              'h-8 px-3 text-xs gap-1.5 rounded-md transition-all',
+              canvasConfig.layout === 'a4'
+                ? 'bg-white shadow-sm text-zinc-900 font-bold'
+                : 'text-zinc-500 hover:text-zinc-700'
+            )}
+            onClick={() => handleLayoutChange('a4')}
+          >
+            <Printer className="w-3.5 h-3.5" />
+            {t('layout_print', 'Print')}
+          </Button>
+        </div>
+
         {/* Zoom Control */}
         <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-md p-0.5 border border-zinc-200 dark:border-zinc-700 h-8">
           <Button
@@ -372,40 +421,6 @@ export function DashboardHeader() {
 
       {/* RIGHT: System & Export */}
       <div className="flex items-center gap-3 w-[200px] justify-end">
-        {/* Layout Switcher */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 gap-2 text-xs">
-              {canvasConfig.layout === 'a4' ? (
-                <Printer className="h-3.5 w-3.5" />
-              ) : (
-                <Monitor className="h-3.5 w-3.5" />
-              )}
-              <span className="hidden sm:inline">
-                {canvasConfig.layout === 'a4'
-                  ? t('layout_print')
-                  : t('layout_screen')}
-              </span>
-              {/*<ChevronDown className="h-3 w-3 opacity-50" />*/}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuRadioGroup
-              value={canvasConfig.layout}
-              onValueChange={val => handleLayoutChange(val as CanvasLayout)}
-            >
-              <DropdownMenuRadioItem value="a4">
-                {t('layout_print')}
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="screen">
-                {t('layout_screen')}
-              </DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/*<div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700 mx-1" />*/}
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
