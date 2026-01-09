@@ -12,10 +12,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npm run build:main && concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
+    "dev": "npm run build:main && npm run build:export && concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
     "dev:electron": "cross-env NODE_ENV=development electron .",
-    "build": "rimraf dist && npm run build:renderer && npm run build:main",
+    "build": "rimraf dist && npm run build:renderer && npm run build:main && npm run build:export",
     "build:renderer": "vite build",
     "build:main": "tsup",
     "dist": "rimraf dist_electron && npm run build && electron-builder --config electron-builder.yml",

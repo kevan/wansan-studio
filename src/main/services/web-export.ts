@@ -14,7 +14,8 @@ export async function exportWebReport(
   // 1. Locate Template
   let templatePath = ''
   if (isDev()) {
-    templatePath = path.resolve(__dirname, '../../dist/export/index.html')
+    // Use process.cwd() in dev mode for reliability
+    templatePath = path.join(process.cwd(), 'dist/export/index.html')
   } else {
     // In production, resources/export/index.html
     templatePath = path.join(process.resourcesPath, 'export', 'index.html')

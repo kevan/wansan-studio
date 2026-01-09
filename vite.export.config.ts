@@ -3,8 +3,10 @@ import react from '@vitejs/plugin-react'
 import { viteSingleFile } from 'vite-plugin-singlefile'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import fs from 'fs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'))
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -23,12 +25,13 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist/export', // Adjusted relative to root
+    outDir: '../../dist/export',
     emptyOutDir: true,
     target: 'esnext',
     minify: 'esbuild',
   },
   define: {
     'process.env': {},
+    '__APP_VERSION__': JSON.stringify(pkg.version),
   },
 })
