@@ -317,52 +317,6 @@ export function DashboardHeader() {
 
       {/* CENTER: View Controls */}
       <div className="flex items-center gap-3">
-        {/* View Mode Toggle (Segmented Control) */}
-        <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-lg p-0.5 border border-zinc-200 dark:border-zinc-700 h-9">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              'h-8 px-3 text-xs gap-1.5 rounded-md transition-all',
-              canvasConfig.layout === 'report'
-                ? 'bg-white shadow-sm text-zinc-900 font-bold'
-                : 'text-zinc-500 hover:text-zinc-700'
-            )}
-            onClick={() => handleLayoutChange('report')}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            {t('view_report', 'Report')}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              'h-8 px-3 text-xs gap-1.5 rounded-md transition-all',
-              canvasConfig.layout === 'screen'
-                ? 'bg-white shadow-sm text-zinc-900 font-bold'
-                : 'text-zinc-500 hover:text-zinc-700'
-            )}
-            onClick={() => handleLayoutChange('screen')}
-          >
-            <Monitor className="w-3.5 h-3.5" />
-            {t('view_dashboard', 'Dashboard')}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              'h-8 px-3 text-xs gap-1.5 rounded-md transition-all',
-              canvasConfig.layout === 'a4'
-                ? 'bg-white shadow-sm text-zinc-900 font-bold'
-                : 'text-zinc-500 hover:text-zinc-700'
-            )}
-            onClick={() => handleLayoutChange('a4')}
-          >
-            <Printer className="w-3.5 h-3.5" />
-            {t('layout_print', 'Print')}
-          </Button>
-        </div>
-
         {/* Zoom Control */}
         <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-md p-0.5 border border-zinc-200 dark:border-zinc-700 h-8">
           <Button
@@ -420,7 +374,50 @@ export function DashboardHeader() {
       </div>
 
       {/* RIGHT: System & Export */}
-      <div className="flex items-center gap-3 w-[200px] justify-end">
+      <div className="flex items-center gap-3 w-[240px] justify-end">
+        {/* Layout Switcher (Primary Control) */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 gap-2 text-xs border-zinc-200 shadow-sm">
+              {canvasConfig.layout === 'report' ? (
+                <FileText className="h-3.5 w-3.5 text-indigo-600" />
+              ) : canvasConfig.layout === 'a4' ? (
+                <Printer className="h-3.5 w-3.5 text-zinc-500" />
+              ) : (
+                <Monitor className="h-3.5 w-3.5 text-zinc-500" />
+              )}
+              <span className="hidden sm:inline">
+                {canvasConfig.layout === 'report'
+                  ? t('view_report')
+                  : canvasConfig.layout === 'a4'
+                    ? t('layout_print')
+                    : t('layout_screen')}
+              </span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel>{t('view_mode', 'View Mode')}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuRadioGroup
+              value={canvasConfig.layout}
+              onValueChange={val => handleLayoutChange(val as CanvasLayout)}
+            >
+              <DropdownMenuRadioItem value="report" className="gap-2">
+                <FileText className="h-4 w-4 text-indigo-600" />
+                {t('view_report')}
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="screen" className="gap-2">
+                <Monitor className="h-4 w-4 text-zinc-500" />
+                {t('view_dashboard')}
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="a4" className="gap-2">
+                <Printer className="h-4 w-4 text-zinc-500" />
+                {t('layout_print')}
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
