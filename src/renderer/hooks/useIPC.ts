@@ -12,6 +12,9 @@ import type {
   ContextAnalysisResult,
   TableSchema,
   InsightResult,
+  FileNode,
+  ColumnSchema,
+  AIConfig,
 } from '@shared/types'
 
 /**
@@ -307,15 +310,21 @@ export function useExportWebReport() {
     mutationFn: async ({
       widgets,
       config,
+      fullSnapshot,
     }: {
-      widgets: unknown[]
-      config: unknown
+      widgets: any[]
+      config: { title: string; theme: string; language?: 'en' | 'zh' }
+      fullSnapshot?: any
     }) => {
-      const response = await getIpc().exportWebReport(widgets, config)
+      const response = await getIpc().exportWebReport(
+        widgets,
+        config,
+        fullSnapshot
+      )
       if (!response.success) {
         throw new Error(response.error || 'Failed to export web report')
       }
-      return response.data
+      return (response as any).filePath
     },
   })
 }

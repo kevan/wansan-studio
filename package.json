@@ -27,7 +27,8 @@
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "type-check": "tsc --noEmit",
-    "test": "cross-env NODE_ENV=development vitest --run"
+    "test": "cross-env NODE_ENV=development vitest --run",
+    "build:export": "vite build --config vite.export.config.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -117,6 +118,7 @@
     "typescript": "^5.3.3",
     "vite": "^7.2.7",
     "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-singlefile": "^2.3.0",
     "vitest": "^4.0.15",
     "wait-on": "^7.2.0",
     "zustand": "^5.0.9"

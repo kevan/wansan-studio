@@ -356,9 +356,7 @@ export function ChartFullView() {
                   <div className="h-full w-full overflow-auto p-6 bg-white">
                     <SimpleMarkdown
                       content={
-                        report?.reportData.content ||
-                        report?.reportData.insight ||
-                        t('no_chart_data')
+                        report?.reportData.content || t('no_chart_data')
                       }
                     />
                   </div>
@@ -397,7 +395,7 @@ export function ChartFullView() {
                     }}
                     onRemove={() => {
                       if (report) {
-                        updateReportConfig(report.id, { insight: '' })
+                        updateReportConfig(report.id, { insight: undefined })
                       }
                     }}
                     onHighlight={setHighlightedItems}

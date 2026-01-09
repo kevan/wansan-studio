@@ -355,9 +355,19 @@ export function setupIPC(
   // AI Web Export
   ipcMain.handle(
     'export-web-report',
-    async (_event, widgets: unknown[], config: unknown) => {
+    async (
+      _event,
+      widgets: unknown[],
+      config: unknown,
+      fullSnapshot?: unknown
+    ) => {
       try {
-        const result = await exportWebReport(aiService, widgets, config as any)
+        const result = await exportWebReport(
+          aiService,
+          widgets,
+          config as any,
+          fullSnapshot
+        )
         return result
       } catch (error) {
         console.error('Export web report error:', error)

@@ -255,7 +255,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
               setExpanded(false)
             }}
             onRemove={() => {
-              updateMessageInsight(messageId, '')
+              updateMessageInsight(messageId, undefined as any)
               setManualActive(false)
               setExpanded(false)
             }}

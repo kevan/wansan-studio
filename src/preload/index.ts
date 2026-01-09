@@ -106,15 +106,11 @@ const electronAPI: ElectronAPI = {
     ipcRenderer.invoke('save-image', dataUrl, name),
   saveFile: (content: string, extension: string, name: string) =>
     ipcRenderer.invoke('save-file', content, extension, name),
-  exportReport: (payload: {
-    type: 'pdf' | 'html' | 'png'
-    title: string
-    layoutOptions: { isA4: boolean; landscape?: boolean }
-  }) => ipcRenderer.invoke('export-report', payload),
-  exportWebReport: (widgets: any[], config: any) =>
-    ipcRenderer.invoke('export-web-report', widgets, config),
+  exportReport: (payload: any) => ipcRenderer.invoke('export-report', payload),
+  exportWebReport: (widgets: any[], config: any, fullSnapshot?: any) =>
+    ipcRenderer.invoke('export-web-report', widgets, config, fullSnapshot),
 
-  // 系统信息
+  // System
   getDeviceId: () => ipcRenderer.invoke('get-device-id'),
   getUserInfo: () => ipcRenderer.invoke('get-user-info'),
   getPath: (name: string) => ipcRenderer.invoke('get-path', name),

@@ -1,7 +1,12 @@
 import { Language, LayoutScenario, useProjectStore } from './useProjectStore'
 import { ReportData, ReportWidget } from '@shared/types/dashboard'
 import type { Layout } from 'react-grid-layout'
-import type { AIAnalysisResult } from '@shared/types'
+import type {
+  AIAnalysisResult,
+  SyncStatus,
+  DomainRule,
+  InsightResult,
+} from '@shared/types'
 import { useMemo } from 'react'
 import {
   GRID_MARGIN_Y,
@@ -49,7 +54,7 @@ interface WorkbenchState {
     updates: {
       type?: AIAnalysisResult['viz_type']
       config?: AIAnalysisResult['viz_config']
-      insight?: string
+      insight?: InsightResult
     }
   ) => void
   updateLayout: (layouts: Layout[]) => void
@@ -378,8 +383,8 @@ export const useWorkbenchStore = <T = WorkbenchState>(
       }
     },
     updateReportConfig: (id, updates) => {
-      const { dashboard, projectState } = getSessionState()
-      const widget = dashboard?.widgets.find(w => w.id === id)
+      const { projectState } = getSessionState()
+      const widget = getSessionState().dashboard?.widgets.find(w => w.id === id)
 
       if (widget) {
         const currentData = projectState.widgetRegistry[widget.widgetId]

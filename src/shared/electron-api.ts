@@ -155,7 +155,11 @@ export interface ElectronAPI {
   // Export
   exportPDF: (data: unknown) => Promise<IPCResponse>
   exportReport: (payload: unknown) => Promise<IPCResponse>
-  exportWebReport: (widgets: unknown[], config: unknown) => Promise<IPCResponse>
+  exportWebReport: (
+    widgets: unknown[],
+    config: unknown,
+    fullSnapshot?: unknown
+  ) => Promise<IPCResponse>
 
   // System / Misc
   getDeviceId: () => Promise<IPCResponse<string>>

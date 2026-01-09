@@ -7,6 +7,7 @@ import type {
   AIAnalysisResult,
   RelationSuggestion,
   TableSchema,
+  InsightResult,
 } from '@shared/types'
 import type { ReportData } from '@shared/types/dashboard'
 import { FilterParam } from '@shared/schemas/analysis'
@@ -30,7 +31,7 @@ interface ChatStore {
     newData: Record<string, unknown>[],
     columnFields: Array<{ name: string; type: string }>
   ) => void
-  updateMessageInsight: (messageId: string, insight: string) => void
+  updateMessageInsight: (messageId: string, insight?: InsightResult) => void
   sendMessage: (
     text: string,
     hiddenPrompt?: string,
@@ -173,7 +174,7 @@ const updateMessageData = (
   })
 }
 
-const updateMessageInsight = (messageId: string, insight: string) => {
+const updateMessageInsight = (messageId: string, insight?: InsightResult) => {
   updateMessage(messageId, msg => {
     if (!msg.reportData) return msg
     return {

@@ -1,5 +1,7 @@
-import type { ChartType } from './types/dashboard'
+import type { ChartType, InsightResult, ReportData, ReportWidget } from './types/dashboard'
 import type { FilterParam } from './schemas/analysis'
+
+export type { ChartType, InsightResult, ReportData, ReportWidget }
 
 export type ColumnType =
   | 'VARCHAR'
