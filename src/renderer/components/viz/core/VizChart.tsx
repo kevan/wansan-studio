@@ -3,9 +3,10 @@ import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import { Chart } from '../base/Chart'
 import { DrillDownMenu } from '../../visualizations/drill-down-menu'
-import { useChatStore } from '../../../stores/useChatStore'
 import { useChartOption } from '../../../hooks/useChartOption'
 import type { ChartType, ReportData } from '@shared/types/dashboard'
+
+export type DrillDownActionType = 'focus' | 'view_data' | 'breakdown'
 
 interface VizChartProps {
   type?: ChartType
@@ -21,6 +22,11 @@ interface VizChartProps {
   onRequestInsight?: (chartData: any[]) => void
   /** Items to highlight (for visual anchoring) */
   highlightedItems?: string[]
+  /** Callback for drill-down actions */
+  onDrillDownAction?: (
+    action: DrillDownActionType,
+    payload: { name: string; dimension?: string }
+  ) => void
 }
 
 export function VizChart({
@@ -34,6 +40,7 @@ export function VizChart({
   columnFields = [],
   onRequestInsight,
   highlightedItems,
+  onDrillDownAction,
 }: VizChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const { t } = useTranslation('common')
@@ -79,55 +86,24 @@ export function VizChart({
   }, [])
 
   const handleFocus = useCallback(() => {
-    if (!menuState) return
-    const displayMsg = `🔍 ${t('focus_analysis', { name: menuState.name })}`
-    const hiddenMsg = `Filter the current analysis by ${menuState.name}. 
-  CRITICAL CONSTRAINTS:
-  - Maintain the current visualization metrics (aggregation).
-  - DO NOT show raw data rows.
-  - Keep the same chart type if possible.`
-
-    if (messageId) {
-      useChatStore.getState().setReplyTo(messageId)
-    }
-    useChatStore.getState().sendMessage(displayMsg, hiddenMsg)
+    if (!menuState || !onDrillDownAction) return
+    onDrillDownAction('focus', { name: menuState.name })
     setMenuState(null)
-  }, [menuState, messageId, t])
+  }, [menuState, onDrillDownAction])
 
   const handleViewData = useCallback(() => {
-    if (!menuState) return
-    const displayMsg = `📄 ${t('view_raw_data', { name: menuState.name })}`
-    const hiddenMsg = `Show the first 100 raw data rows for '${menuState.name}'.
-    Constraint: Switch viz_type to 'table'.`
-
-    if (messageId) {
-      useChatStore.getState().setReplyTo(messageId)
-    }
-    useChatStore.getState().sendMessage(displayMsg, hiddenMsg)
+    if (!menuState || !onDrillDownAction) return
+    onDrillDownAction('view_data', { name: menuState.name })
     setMenuState(null)
-  }, [menuState, messageId, t])
+  }, [menuState, onDrillDownAction])
 
   const handleBreakdown = useCallback(
     (dimension: string) => {
-      if (!menuState) return
-      const yAxisStr = Array.isArray(config?.y_axis)
-        ? config.y_axis.join(', ')
-        : config?.y_axis || 'metric'
-
-      const displayMsg = `📊 ${t('breakdown_analysis', { dimension }) || `Breakdown by ${dimension}`}`
-      const hiddenMsg = `Break down the metric (${yAxisStr}) by "${dimension}", filtered to "${menuState.name}".
-    CRITICAL CONSTRAINTS:
-    - Show aggregated values grouped by "${dimension}".
-    - Prefer bar chart for the breakdown.
-    - Keep the same measurement units.`
-
-      if (messageId) {
-        useChatStore.getState().setReplyTo(messageId)
-      }
-      useChatStore.getState().sendMessage(displayMsg, hiddenMsg)
+      if (!menuState || !onDrillDownAction) return
+      onDrillDownAction('breakdown', { name: menuState.name, dimension })
       setMenuState(null)
     },
-    [menuState, config?.y_axis, messageId, t]
+    [menuState, onDrillDownAction]
   )
 
   const handleInsight = useCallback(() => {
@@ -173,7 +149,7 @@ export function VizChart({
           {t('no_chart_data')}
         </div>
       )}
-      {menuState && (
+      {menuState && onDrillDownAction && ( // Only show menu if handler is provided
         <DrillDownMenu
           x={menuState.x}
           y={menuState.y}

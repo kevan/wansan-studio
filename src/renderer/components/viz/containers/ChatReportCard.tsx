@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   Code,
   Pin,
@@ -58,6 +58,46 @@ export const ChatReportCard = React.memo(function ChatReportCard({
 
   const generateInsight = useGenerateInsight()
   const language = i18n.language === 'zh' ? 'zh' : 'en'
+
+  const handleDrillDown = useCallback(
+    (
+      action: 'focus' | 'view_data' | 'breakdown',
+      payload: { name: string; dimension?: string }
+    ) => {
+      const { name, dimension } = payload
+      const vizConfig = reportData.vizConfig
+      const yAxisStr = Array.isArray(vizConfig?.y_axis)
+        ? vizConfig.y_axis.join(', ')
+        : vizConfig?.y_axis || 'metric'
+
+      if (action === 'focus') {
+        const displayMsg = `🔍 ${t('common:focus_analysis', { name })}`
+        const hiddenMsg = `Filter the current analysis by ${name}. 
+      CRITICAL CONSTRAINTS:
+      - Maintain the current visualization metrics (aggregation).
+      - DO NOT show raw data rows.
+      - Keep the same chart type if possible.`
+        setReplyTo(messageId)
+        useChatStore.getState().sendMessage(displayMsg, hiddenMsg)
+      } else if (action === 'view_data') {
+        const displayMsg = `📄 ${t('common:view_raw_data', { name })}`
+        const hiddenMsg = `Show the first 100 raw data rows for '${name}'.
+        Constraint: Switch viz_type to 'table'.`
+        setReplyTo(messageId)
+        useChatStore.getState().sendMessage(displayMsg, hiddenMsg)
+      } else if (action === 'breakdown' && dimension) {
+        const displayMsg = `📊 ${t('common:breakdown_analysis', { dimension })}`
+        const hiddenMsg = `Break down the metric (${yAxisStr}) by "${dimension}", filtered to "${name}".
+        CRITICAL CONSTRAINTS:
+        - Show aggregated values grouped by "${dimension}".
+        - Prefer bar chart for the breakdown.
+        - Keep the same measurement units.`
+        setReplyTo(messageId)
+        useChatStore.getState().sendMessage(displayMsg, hiddenMsg)
+      }
+    },
+    [messageId, reportData.vizConfig, setReplyTo, t]
+  )
 
   if (!reportData) return null
 
@@ -190,6 +230,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
             timestamp={message.timestamp}
             messageId={messageId}
             highlightedItems={highlightedItems}
+            onDrillDownAction={handleDrillDown}
           />
         )}
       </div>

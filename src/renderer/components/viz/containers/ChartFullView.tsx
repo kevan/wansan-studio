@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import {
   AreaChart,
   ArrowUpDown,
@@ -17,6 +17,7 @@ import { createPortal } from 'react-dom'
 import type { DenormalizedReportWidget } from '@/stores/useWorkbenchStore'
 import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { useProjectStore } from '@/stores/useProjectStore'
+import { useChatStore } from '@/stores/useChatStore'
 import { VizChart } from '../core/VizChart'
 import { DataTable } from '../base/DataTable'
 import { KpiCard } from '../base/KpiCard'
@@ -210,6 +211,49 @@ export function ChartFullView() {
     return result
   }
 
+  const handleDrillDown = useCallback(
+    (
+      action: 'focus' | 'view_data' | 'breakdown',
+      payload: { name: string; dimension?: string }
+    ) => {
+      const { name, dimension } = payload
+      const vizConfig = effectiveConfig
+      const yAxisStr = Array.isArray(vizConfig?.y_axis)
+        ? vizConfig.y_axis.join(', ')
+        : vizConfig?.y_axis || 'metric'
+
+      setEditingReportId(null) // Close modal
+
+      if (report?.sourceMessageId) {
+        useChatStore.getState().setReplyTo(report.sourceMessageId)
+      }
+
+      if (action === 'focus') {
+        const displayMsg = `🔍 ${t('focus_analysis', { name })}`
+        const hiddenMsg = `Filter the current analysis by ${name}. 
+      CRITICAL CONSTRAINTS:
+      - Maintain the current visualization metrics (aggregation).
+      - DO NOT show raw data rows.
+      - Keep the same chart type if possible.`
+        useChatStore.getState().sendMessage(displayMsg, hiddenMsg)
+      } else if (action === 'view_data') {
+        const displayMsg = `📄 ${t('view_raw_data', { name })}`
+        const hiddenMsg = `Show the first 100 raw data rows for '${name}'.
+        Constraint: Switch viz_type to 'table'.`
+        useChatStore.getState().sendMessage(displayMsg, hiddenMsg)
+      } else if (action === 'breakdown' && dimension) {
+        const displayMsg = `📊 ${t('breakdown_analysis', { dimension })}`
+        const hiddenMsg = `Break down the metric (${yAxisStr}) by "${dimension}", filtered to "${name}".
+        CRITICAL CONSTRAINTS:
+        - Show aggregated values grouped by "${dimension}".
+        - Prefer bar chart for the breakdown.
+        - Keep the same measurement units.`
+        useChatStore.getState().sendMessage(displayMsg, hiddenMsg)
+      }
+    },
+    [effectiveConfig, report, setEditingReportId, t]
+  )
+
   const handleSave = () => {
     if (!report) return
     updateReportConfig(report.id, {
@@ -304,6 +348,7 @@ export function ChartFullView() {
                     className="h-full w-full"
                     onRequestInsight={handleRequestInsight}
                     highlightedItems={highlightedItems}
+                    onDrillDownAction={handleDrillDown}
                   />
                 )}
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { VizHeader } from './VizHeader'
 import { VizSummary } from './VizSummary'
-import { VizChart } from './VizChart'
+import { VizChart, DrillDownActionType } from './VizChart'
 import { KpiCard } from '../base/KpiCard'
 import { cn } from '@/utils/cn'
 import { Lightbulb } from 'lucide-react'
@@ -28,6 +28,10 @@ interface VizRendererProps {
   onTitleChange?: (newTitle: string) => void
   messageId?: string
   highlightedItems?: string[]
+  onDrillDownAction?: (
+    action: DrillDownActionType,
+    payload: { name: string; dimension?: string }
+  ) => void
 }
 
 const VizRendererBase = ({
@@ -48,6 +52,7 @@ const VizRendererBase = ({
   timestamp,
   messageId,
   highlightedItems,
+  onDrillDownAction,
 }: VizRendererProps) => {
   const [showSummary, setShowSummary] = useState(false)
   const { t } = useTranslation('common')
@@ -116,6 +121,7 @@ const VizRendererBase = ({
               className="h-full w-full"
               messageId={messageId}
               highlightedItems={highlightedItems}
+              onDrillDownAction={onDrillDownAction}
             />
           )}
 
@@ -183,6 +189,7 @@ const VizRendererBase = ({
               className="h-full w-full"
               messageId={messageId}
               highlightedItems={highlightedItems}
+              onDrillDownAction={onDrillDownAction}
             />
           </div>
         )}
@@ -236,6 +243,7 @@ export const VizRenderer = React.memo(VizRendererBase, (prev, next) => {
     prev.timestamp === next.timestamp &&
     prev.tableData === next.tableData &&
     JSON.stringify(prev.vizConfig) === JSON.stringify(next.vizConfig) &&
-    prev.highlightedItems === next.highlightedItems
+    prev.highlightedItems === next.highlightedItems &&
+    prev.onDrillDownAction === next.onDrillDownAction
   )
 })
