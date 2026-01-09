@@ -13,6 +13,7 @@ import { ChartFullView } from '@/components/viz/containers/ChartFullView'
 import { LayoutScenario, useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { useUIStore } from '@/stores/useUIStore'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
+import { cn } from '@/utils/cn'
 
 export function DashboardCanvasV3({
   isPresentationMode,
@@ -172,8 +173,9 @@ export function DashboardCanvasV3({
       : undefined
 
   const gridWidth = isA4 ? PAGE_WIDTH_PX : SCREEN_WIDTH_PX
-  // Allow zooming in both modes, but force 1.0 in Presentation Mode
-  const activeScale = isPresentationMode ? 1.0 : zoom / 100
+  const isReportMode = canvasConfig.layout === 'report'
+  // Allow zooming in dashboard/a4 modes, but force 1.0 in Presentation or Report Mode
+  const activeScale = isPresentationMode || isReportMode ? 1.0 : zoom / 100
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
@@ -186,34 +188,43 @@ export function DashboardCanvasV3({
       )}
       <div
         ref={containerRef}
-        className={`flex w-full flex-1 overflow-auto bg-zinc-100/60 p-6 dark:bg-zinc-900 ${
-          isSpacePressed ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''
-        }`}
-        onMouseDown={handleMouseDown}
+        className={cn(
+          'flex w-full flex-1 overflow-auto bg-zinc-100/60 p-6 dark:bg-zinc-900',
+          !isReportMode &&
+            isSpacePressed &&
+            (isDragging ? 'cursor-grabbing' : 'cursor-grab')
+        )}
+        onMouseDown={e => !isReportMode && handleMouseDown(e)}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
         <div
-          className={`mx-auto flex min-h-min w-fit flex-col ${
-            isA4 ? 'items-center' : ''
-          }`}
+          className={cn(
+            'flex min-h-min flex-col',
+            isReportMode ? 'w-full' : 'mx-auto w-fit',
+            isA4 && !isReportMode ? 'items-center' : ''
+          )}
         >
           <div
             id="dashboard-export-root"
             className={`relative w-full transition-transform duration-200 ${
-              !isA4 && canvasConfig.layout !== 'report' ? 'bg-white shadow-sm' : ''
+              !isA4 && !isReportMode ? 'bg-white shadow-sm' : ''
             }`}
-            style={{
-              transform: `scale(${activeScale})`,
-              transformOrigin: 'top center',
-              width: `${gridWidth}px`,
-              minHeight: isA4
-                ? `${totalHeightPx ?? PAGE_HEIGHT_PX}px`
-                : '100vh',
-            }}
+            style={
+              isReportMode
+                ? { width: '100%', minHeight: '100vh' }
+                : {
+                    transform: `scale(${activeScale})`,
+                    transformOrigin: 'top center',
+                    width: `${gridWidth}px`,
+                    minHeight: isA4
+                      ? `${totalHeightPx ?? PAGE_HEIGHT_PX}px`
+                      : '100vh',
+                  }
+            }
           >
-            {canvasConfig.layout === 'report' ? (
+            {isReportMode ? (
               <ReportFlowLayer width={gridWidth} scale={activeScale} />
             ) : (
               <>
