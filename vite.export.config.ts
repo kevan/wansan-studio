@@ -19,6 +19,15 @@ export default defineConfig({
       '@/components/viz/containers/ChartFullView': path.resolve(__dirname, 'src/export-runtime/mocks/MockChartFullView.tsx'),
       '@/components/dashboard/dashboard-header': path.resolve(__dirname, 'src/export-runtime/mocks/MockDashboardHeader.tsx'),
       
+      // Mock Stores (Critical for hydration)
+      '@/stores/useWorkbenchStore': path.resolve(__dirname, 'src/export-runtime/mocks/stores.ts'),
+      '@/stores/useProjectStore': path.resolve(__dirname, 'src/export-runtime/mocks/stores.ts'),
+      '@/stores/useUIStore': path.resolve(__dirname, 'src/export-runtime/mocks/stores.ts'),
+      '@/stores/useChatStore': path.resolve(__dirname, 'src/export-runtime/mocks/stores.ts'),
+      '@/stores/useSettingsStore': path.resolve(__dirname, 'src/export-runtime/mocks/stores.ts'),
+      '@/stores/useSqlLabStore': path.resolve(__dirname, 'src/export-runtime/mocks/stores.ts'),
+      '@/stores/useToastStore': path.resolve(__dirname, 'src/export-runtime/mocks/stores.ts'),
+
       // Real source
       '@': path.resolve(__dirname, 'src/renderer'),
       '@shared': path.resolve(__dirname, 'src/shared'),
@@ -29,6 +38,16 @@ export default defineConfig({
     emptyOutDir: true,
     target: 'esnext',
     minify: 'esbuild',
+    rollupOptions: {
+        input: path.resolve(__dirname, 'src/export-runtime/index.html'),
+        external: ['echarts'], // Only externalize ECharts
+        output: {
+            format: 'iife', 
+            globals: {
+                'echarts': 'echarts',
+            }
+        }
+    }
   },
   define: {
     'process.env': {},
