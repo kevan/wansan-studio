@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { VizHeader } from './VizHeader'
-import { VizSummary } from './VizSummary'
 import { VizChart, DrillDownActionType } from './VizChart'
 import { KpiCard } from '../base/KpiCard'
 import { cn } from '@/utils/cn'
@@ -14,7 +13,7 @@ interface VizRendererProps {
   title: string
   subtitle?: string
   summary?: string
-  insights?: string[]
+  hideHeader?: boolean
   chartType?: ChartType
   chartTitle?: string
   tableData?: Array<Record<string, any>>
@@ -38,7 +37,7 @@ const VizRendererBase = ({
   title,
   subtitle,
   summary,
-  insights,
+  hideHeader = false,
   chartType = 'bar',
   chartTitle,
   tableData,
@@ -62,54 +61,56 @@ const VizRendererBase = ({
   if (variant === 'dashboard') {
     return (
       <div className={cn('flex flex-col h-full p-4 bg-white', className)}>
-        <VizHeader
-          title={title}
-          subtitle={subtitle}
-          className="mb-1 pb-2 flex-shrink-0"
-          onTitleChange={onTitleChange}
-          isEditable={true}
-          showTimestamp={false}
-          size="sm"
-          actions={
-            summary ? (
-              <div className="relative">
-                <button
-                  className={cn(
-                    'p-2 rounded-full transition-colors hide-on-export',
-                    showSummary
-                      ? 'bg-yellow-50 text-yellow-600'
-                      : 'text-zinc-400 hover:text-yellow-600 hover:bg-zinc-50'
-                  )}
-                  onMouseEnter={() => setShowSummary(true)}
-                  onMouseLeave={() => setShowSummary(false)}
-                  title={t('summary')}
-                >
-                  <Lightbulb className="w-5 h-5" />
-                </button>
-
-                {showSummary && (
-                  <div className="absolute right-0 top-full mt-2 w-72 p-4 bg-white rounded-lg shadow-xl border border-zinc-200 z-50 text-sm text-zinc-600 animate-in fade-in slide-in-from-top-1">
-                    <div className="font-medium text-zinc-900 mb-2 flex items-center gap-2">
-                      <Lightbulb className="w-4 h-4 text-yellow-500" />
-                      {t('summary')}
-                    </div>
-                    <div className="max-h-60 overflow-y-auto">{summary}</div>
-                    {timestamp && (
-                      <div className="mt-3 pt-2 border-t border-zinc-100 text-xs text-zinc-400">
-                        <div className="font-medium text-zinc-500 mb-0.5">
-                          {t('generated_time')}
-                        </div>
-                        <div className="font-mono">
-                          {new Date(timestamp).toLocaleString()}
-                        </div>
-                      </div>
+        {!hideHeader && (
+          <VizHeader
+            title={title}
+            subtitle={subtitle}
+            className="mb-1 pb-2 flex-shrink-0"
+            onTitleChange={onTitleChange}
+            isEditable={true}
+            showTimestamp={false}
+            size="sm"
+            actions={
+              summary ? (
+                <div className="relative">
+                  <button
+                    className={cn(
+                      'p-2 rounded-full transition-colors hide-on-export',
+                      showSummary
+                        ? 'bg-yellow-50 text-yellow-600'
+                        : 'text-zinc-400 hover:text-yellow-600 hover:bg-zinc-50'
                     )}
-                  </div>
-                )}
-              </div>
-            ) : undefined
-          }
-        />
+                    onMouseEnter={() => setShowSummary(true)}
+                    onMouseLeave={() => setShowSummary(false)}
+                    title={t('summary')}
+                  >
+                    <Lightbulb className="w-5 h-5" />
+                  </button>
+
+                  {showSummary && (
+                    <div className="absolute right-0 top-full mt-2 w-72 p-4 bg-white rounded-lg shadow-xl border border-zinc-200 z-50 text-sm text-zinc-600 animate-in fade-in slide-in-from-top-1">
+                      <div className="font-medium text-zinc-900 mb-2 flex items-center gap-2">
+                        <Lightbulb className="w-4 h-4 text-yellow-500" />
+                        {t('summary')}
+                      </div>
+                      <div className="max-h-60 overflow-y-auto">{summary}</div>
+                      {timestamp && (
+                        <div className="mt-3 pt-2 border-t border-zinc-100 text-xs text-zinc-400">
+                          <div className="font-medium text-zinc-500 mb-0.5">
+                            {t('generated_time')}
+                          </div>
+                          <div className="font-mono">
+                            {new Date(timestamp).toLocaleString()}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : undefined
+            }
+          />
+        )}
 
         <div className="flex-1 min-h-0 w-full mb-0 p-2">
           {displayMode === 'chart' && (
@@ -175,7 +176,7 @@ const VizRendererBase = ({
       <div className="flex-1 min-h-0 overflow-y-auto space-y-6 pr-2">
         {summary && (
           <div className="text-sm text-zinc-600 leading-relaxed mb-4">
-            <VizSummary content={summary} insights={insights} />
+            {summary}
           </div>
         )}
 

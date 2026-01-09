@@ -71,7 +71,7 @@ export function ReportFlowLayer({ width, scale }: ReportFlowLayerProps) {
   }, [sortedReports])
 
   return (
-    <div className="w-full min-h-screen bg-zinc-50/50 pb-24 overflow-y-auto">
+    <div className="w-full min-h-screen bg-[#fbfbfa] pb-24 overflow-y-auto">
       {/* 1. Report Cover / Header */}
       <div className="max-w-[1400px] mx-auto pt-12 pb-16 px-6 lg:px-12">
         <div className="bg-white border border-zinc-200 rounded-[2.5rem] p-10 lg:p-16 shadow-sm relative overflow-hidden">

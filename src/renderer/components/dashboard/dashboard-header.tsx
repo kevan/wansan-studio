@@ -317,32 +317,34 @@ export function DashboardHeader() {
 
       {/* CENTER: View Controls */}
       <div className="flex items-center gap-3">
-        {/* Zoom Control */}
-        <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-md p-0.5 border border-zinc-200 dark:border-zinc-700 h-8">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 rounded-sm hover:bg-white hover:shadow-sm"
-            onClick={() =>
-              updateConfig('zoom', Math.max(50, canvasConfig.zoom - 10))
-            }
-          >
-            <Minus className="w-3 h-3 text-zinc-600" />
-          </Button>
-          <span className="text-xs font-medium font-mono w-10 text-center text-zinc-700 dark:text-zinc-300 select-none">
-            {Math.round(canvasConfig.zoom)}%
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 rounded-sm hover:bg-white hover:shadow-sm"
-            onClick={() =>
-              updateConfig('zoom', Math.min(200, canvasConfig.zoom + 10))
-            }
-          >
-            <Plus className="w-3 h-3 text-zinc-600" />
-          </Button>
-        </div>
+        {/* Zoom Control (Hide in Report Mode) */}
+        {canvasConfig.layout !== 'report' && (
+          <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-md p-0.5 border border-zinc-200 dark:border-zinc-700 h-8">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-sm hover:bg-white hover:shadow-sm"
+              onClick={() =>
+                updateConfig('zoom', Math.max(50, canvasConfig.zoom - 10))
+              }
+            >
+              <Minus className="w-3 h-3 text-zinc-600" />
+            </Button>
+            <span className="text-xs font-medium font-mono w-10 text-center text-zinc-700 dark:text-zinc-300 select-none">
+              {Math.round(canvasConfig.zoom)}%
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-sm hover:bg-white hover:shadow-sm"
+              onClick={() =>
+                updateConfig('zoom', Math.min(200, canvasConfig.zoom + 10))
+              }
+            >
+              <Plus className="w-3 h-3 text-zinc-600" />
+            </Button>
+          </div>
+        )}
 
         {/* Page Control (Conditional) */}
         {isA4 && (
