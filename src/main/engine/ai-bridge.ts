@@ -20,6 +20,7 @@ import { isDev } from '../utils/env'
 import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources'
 import { parse, safeStringify } from '@shared/serialization.ts'
 import { extractJSON } from '@shared/utils/json-utils'
+import { autospaceInsight } from '@shared/utils/autospace'
 
 function getModelToUse(preferredModel?: string) {
   const envModel = process.env.OPENAI_MODEL
@@ -339,7 +340,9 @@ ${dataStr}
 
   try {
     const cleanedJson = extractJSON(resultJson)
-    return parse(cleanedJson)
+    const rawResult = parse(cleanedJson)
+    // Apply autospace for better Chinese-English mixed text typography
+    return autospaceInsight(rawResult)
   } catch (error) {
     console.error('Failed to parse AI insight JSON:', error)
     throw new Error(`AI returned invalid JSON for insight: ${resultJson}`)

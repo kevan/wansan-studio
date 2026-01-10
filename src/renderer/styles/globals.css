@@ -81,6 +81,9 @@
     font-feature-settings:
       'rlig' 1,
       'calt' 1;
+
+    /* CJK Typography Optimization (Chrome 123+) */
+    text-spacing-trim: space-all;
   }
 
   /* Monospace for code/SQL */
