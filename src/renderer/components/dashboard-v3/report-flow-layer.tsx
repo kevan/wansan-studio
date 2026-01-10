@@ -57,19 +57,27 @@ export function ReportFlowLayer({ width, scale }: ReportFlowLayerProps) {
 
     sortedReports.forEach(report => {
       const type = report.reportData.chartType
+      const data = report.reportData.tableData || []
+      const yAxes = Array.isArray(report.reportData.vizConfig?.y_axis) 
+        ? report.reportData.vizConfig.y_axis 
+        : [report.reportData.vizConfig?.y_axis].filter(Boolean)
+
+      // A KPI is "combinable" only if it has 1 row and 1 metric.
+      // Otherwise, it needs its own space to expand into a grid.
+      const isSimpleKpi = type === 'kpi' && data.length <= 1 && yAxes.length <= 1
 
       if (type === 'text') {
         flushKpiBuffer()
         // Push the completed group before starting a new one
         if (currentGroup.items.length > 0 || currentGroup.header) {
-            result.push(currentGroup)
+          result.push(currentGroup)
         }
         currentGroup = {
-            id: report.id,
-            header: report,
-            items: []
+          id: report.id,
+          header: report,
+          items: [],
         }
-      } else if (type === 'kpi') {
+      } else if (isSimpleKpi) {
         kpiBuffer.push(report)
       } else {
         flushKpiBuffer()
