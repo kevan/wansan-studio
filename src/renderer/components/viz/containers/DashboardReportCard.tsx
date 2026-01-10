@@ -15,7 +15,6 @@ import { useTranslation } from 'react-i18next'
 interface DashboardReportCardProps {
   report: any
   onRemove: () => void
-  onTitleChange: (newTitle: string) => void
   style?: React.CSSProperties
   className?: string
   variant?: 'dashboard' | 'chat' | 'report'
@@ -32,7 +31,6 @@ export const DashboardReportCard = forwardRef<
     {
       report,
       onRemove,
-      onTitleChange,
       style,
       className,
       variant = 'dashboard',
@@ -196,7 +194,6 @@ export const DashboardReportCard = forwardRef<
             <VizRenderer
               {...report.reportData}
               variant={isReport ? 'report' : 'dashboard'}
-              onTitleChange={onTitleChange}
               timestamp={report.reportData.timestamp}
               className="flex-1 min-h-0 w-full"
             />

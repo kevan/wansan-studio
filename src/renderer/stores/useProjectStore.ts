@@ -16,6 +16,7 @@ import { Analytics } from '../services/analytics'
 import { useSettingsStore } from './useSettingsStore'
 import { FilterParam } from '@shared/schemas/analysis'
 import { DuckDBViewManager } from '../lib/duckdb-view-manager'
+import { getCleanedRegistry } from '../utils/project-utils'
 
 const TRIAL_FILE_LIMIT = 3
 
@@ -286,37 +287,12 @@ export const useProjectStore = create<ProjectState>()(
         set(state => {
           const newSession = createNewSession()
 
-          // Add Default Title Widget
-          const titleWidgetId = crypto.randomUUID()
-          const reportId = crypto.randomUUID()
-
-          const defaultTitleWidget: ReportWidget = {
-            id: reportId,
-            sourceMessageId: 'system',
-            widgetId: titleWidgetId,
-            layout: { i: reportId, x: 0, y: 0, w: 12, h: 2 },
-            pageIndex: 0,
-          }
-
-          const defaultTitleData: ReportData = {
-            title: newSession.title,
-            content: newSession.title,
-            chartType: 'text',
-            timestamp: Date.now(),
-          }
-
-          newSession.dashboard.widgets.push(defaultTitleWidget)
-
           const nextSessions = [...state.sessions, newSession]
           Analytics.track('session_created', {
             session_count: nextSessions.length,
           })
 
           return {
-            widgetRegistry: {
-              ...state.widgetRegistry,
-              [titleWidgetId]: defaultTitleData,
-            },
             sessions: nextSessions,
             activeSessionId: newSession.id,
           }
@@ -1388,6 +1364,9 @@ export const useProjectStore = create<ProjectState>()(
       name: 'wansan-project-v2',
       storage: createBigIntStorage(),
       partialize: state => {
+        // Use common utility to prune registry before persistence
+        const cleanedRegistry = getCleanedRegistry(state.widgetRegistry, state.sessions)
+
         // Exclude transient/runtime state from persistence
         const {
           abortControllers: _ac,
@@ -1405,7 +1384,10 @@ export const useProjectStore = create<ProjectState>()(
           ...rest
         } = state
 
-        return rest
+        return {
+          ...rest,
+          widgetRegistry: cleanedRegistry,
+        }
       },
       merge: (persistedState: any, currentState) => {
         // Force transient fields to null/default even if they exist in storage
@@ -1422,28 +1404,8 @@ export const useProjectStore = create<ProjectState>()(
       },
       onRehydrateStorage: () => state => {
         if (state) {
-          // Get all valid widget IDs from messages and dashboard
-          const allWidgetIds = new Set<string>()
-          state.sessions.forEach(s => {
-            s.messages.forEach(m => {
-              if (m.widgetId) allWidgetIds.add(m.widgetId)
-            })
-            s.dashboard.widgets.forEach(w => {
-              if (w.widgetId) allWidgetIds.add(w.widgetId)
-            })
-          })
-
-          // 1. Clean the registry: only keep entries that are actually referenced.
-          const cleanedRegistry: Record<string, ReportData> = {}
-          for (const id of allWidgetIds) {
-            // Also ensure the entry itself is not malformed
-            if (
-              state.widgetRegistry[id] &&
-              typeof state.widgetRegistry[id] === 'object'
-            ) {
-              cleanedRegistry[id] = state.widgetRegistry[id]
-            }
-          }
+          // 1. Clean the registry using common utility
+          const cleanedRegistry = getCleanedRegistry(state.widgetRegistry, state.sessions)
           state.widgetRegistry = cleanedRegistry
 
           // 2. Clean the dashboard: remove any widgets that point to non-existent registry entries.

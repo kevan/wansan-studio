@@ -12,6 +12,7 @@ import { FileNode, SmartMetric, SyncStatus, TableRelation } from '@shared/types'
 import { ProjectData, Session } from '@shared/types/project'
 import { ReportData } from '@shared/types/dashboard'
 import { Analytics } from '../services/analytics'
+import { getCleanedRegistry } from '../utils/project-utils'
 
 const TRIAL_PROJECT_LIMIT = 2
 
@@ -80,18 +81,15 @@ export function useProjectIO() {
     }
 
     // 3. Build Session Layer
-    // We only save what's necessary for ProjectData (sessions, widgetRegistry, etc.)
-    // But ProjectData includes files and relations too.
-    // The "session.json" should conceptually hold the runtime/user session state.
-    // Based on the spec, session.json treats it as "any".
-    // We will save the parts of ProjectData that are NOT in manifest or semantic.
+    // Use common utility to prune unreferenced widgets (especially 'text' type)
+    const cleanedRegistry = getCleanedRegistry(state.widgetRegistry, state.sessions)
+
     const sessionData = {
       sessions: state.sessions,
       activeSessionId: state.activeSessionId,
       activeView: state.activeView,
       activeFileId: state.activeFileId,
-      widgetRegistry: state.widgetRegistry,
-      // We might want to save some meta info too, but manifest handles high level meta.
+      widgetRegistry: cleanedRegistry,
     }
 
     await projectService.save(path, {

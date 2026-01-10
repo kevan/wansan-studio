@@ -24,7 +24,6 @@ interface VizRendererProps {
   timestamp?: number
   className?: string
   variant?: 'chat' | 'dashboard'
-  onTitleChange?: (newTitle: string) => void
   messageId?: string
   highlightedItems?: string[]
   onDrillDownAction?: (
@@ -47,7 +46,6 @@ const VizRendererBase = ({
   vizConfig,
   className,
   variant = 'chat',
-  onTitleChange,
   timestamp,
   messageId,
   highlightedItems,
@@ -66,8 +64,6 @@ const VizRendererBase = ({
             title={title}
             subtitle={subtitle}
             className="mb-1 pb-2 flex-shrink-0"
-            onTitleChange={onTitleChange}
-            isEditable={true}
             showTimestamp={false}
             size="sm"
             actions={

@@ -126,9 +126,6 @@ function PageGrid({
                   <ReportCard
                     report={report}
                     onRemove={() => removeReport(report.id)}
-                    onTitleChange={newTitle =>
-                      useProjectStore.getState().updateWidgetData(report.id, { title: newTitle })
-                    }
                     className="h-full w-full"
                   />
                 </div>
@@ -233,7 +230,6 @@ function ScreenGrid({ width, scale }: { width: number; scale: number }) {
             <ReportCard
               report={report}
               onRemove={() => removeReport(report.id)}
-              onTitleChange={newTitle => useProjectStore.getState().updateWidgetData(report.id, { title: newTitle })}
               className="h-full w-full"
             />
           </div>
