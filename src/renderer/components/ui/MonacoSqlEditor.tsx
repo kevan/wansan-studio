@@ -11,6 +11,7 @@ interface MonacoSqlEditorProps {
   height?: string | number
   className?: string
   readOnly?: boolean
+  language?: string
 }
 
 export function MonacoSqlEditor({
@@ -20,6 +21,7 @@ export function MonacoSqlEditor({
   height = '100%',
   className,
   readOnly = false,
+  language = 'sql',
 }: MonacoSqlEditorProps) {
   const files = useProjectStore(s => s.files)
   const monacoRef = useRef<Monaco | null>(null)
@@ -63,7 +65,7 @@ export function MonacoSqlEditor({
   return (
     <div className={className} style={{ height }}>
       <Editor
-        language="sql"
+        language={language}
         value={value}
         onChange={val => onChange(val || '')}
         onMount={handleEditorDidMount}
