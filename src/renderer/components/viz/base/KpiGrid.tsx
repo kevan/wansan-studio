@@ -86,7 +86,9 @@ export function KpiGrid({ reportData, widgets, variant = 'chat', className }: Kp
   // 1. Determine Grid Columns
   const getGridCols = () => {
     if (variant === 'dashboard') {
-      return count >= 2 ? 'grid-cols-2' : 'grid-cols-1'
+      if (count >= 6) return 'grid-cols-3'
+      if (count >= 2) return 'grid-cols-2'
+      return 'grid-cols-1'
     }
     if (count >= 7) return 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
     if (count >= 4) return 'grid-cols-2 lg:grid-cols-4'
