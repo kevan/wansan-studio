@@ -26,6 +26,7 @@ export function DashboardCanvasV3({
   const layoutScenario = useWorkbenchStore(state => state.layoutScenario)
   const setLayoutScenario = useWorkbenchStore(state => state.setLayoutScenario)
   const pageCount = useWorkbenchStore(state => state.pageCount)
+  const editingReportId = useWorkbenchStore(state => state.editingReportId)
   // const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const contentLayout = useUIStore(s => s.contentLayout)
   const sidebarLayout = useUIStore(s => s.sidebarLayout)
