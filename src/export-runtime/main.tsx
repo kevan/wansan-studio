@@ -27,15 +27,15 @@ if (snapshot) {
   }
 
   if (snapshot.workbench) {
-    useWorkbenchStore.setState(snapshot.workbench)
+    ;(useWorkbenchStore as any).setState(snapshot.workbench)
   }
   
   if (snapshot.project) {
-    useProjectStore.setState(snapshot.project)
+    ;(useProjectStore as any).setState(snapshot.project)
   }
 
   if (snapshot.ui) {
-      useUIStore.setState(snapshot.ui)
+      ;(useUIStore as any).setState(snapshot.ui)
   }
 }
 
