@@ -177,7 +177,6 @@ export function DashboardCanvasV3({
   const isReportMode = canvasConfig.layout === 'report'
   // Allow zooming in dashboard/a4 modes, but force 1.0 in Presentation or Report Mode
   const activeScale = isPresentationMode ? 1.0 : zoom / 100
-  const editingReportId = useWorkbenchStore(state => state.editingReportId)
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">

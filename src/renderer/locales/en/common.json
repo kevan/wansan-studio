@@ -285,7 +285,7 @@
   "data_detail": "Data Detail",
   "breakdown_by": "Breakdown by...",
   "breakdown_analysis": "Breakdown by {{dimension}}",
-  "ai_insight": "AI Insight",
+  "ai_insight": "Business Insight",
   "insight_consent_title": "Send Data to AI?",
   "insight_consent_desc": "This will send {{count}} aggregated data points to generate insights. No raw data rows will be transmitted.",
   "confirm_send": "Send & Analyze",

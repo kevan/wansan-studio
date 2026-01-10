@@ -100,12 +100,14 @@ export function ChartFullView() {
 
   // Reset local state when switching or closing reports
   useEffect(() => {
-    setLocalType(null)
-    setLocalConfig(null)
-    setLocalTitle(null)
-    setLocalContent(null)
-    setLocalSummary(null)
-    setLocalInsight(null)
+    if (!editingReportId) {
+      setLocalType(null)
+      setLocalConfig(null)
+      setLocalTitle(null)
+      setLocalContent(null)
+      setLocalSummary(null)
+      setLocalInsight(null)
+    }
   }, [editingReportId])
 
   useEffect(() => {
