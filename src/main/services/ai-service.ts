@@ -341,7 +341,8 @@ CRITICAL SYNTAX RULES:
     chartTitle: string,
     chartType: string,
     aggregatedData: Array<Record<string, unknown>>,
-    language: 'en' | 'zh' = 'en'
+    language: 'en' | 'zh' = 'en',
+    domainRules: DomainRule[] = []
   ): Promise<any> {
     const client = this.requireOpenAI()
     return await generateInsight(
@@ -350,7 +351,8 @@ CRITICAL SYNTAX RULES:
       chartType,
       aggregatedData,
       this.model,
-      language
+      language,
+      domainRules
     )
   }
 

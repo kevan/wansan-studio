@@ -144,6 +144,7 @@ export interface ElectronAPI {
     chartType: string
     aggregatedData: Array<Record<string, unknown>>
     language?: 'en' | 'zh'
+    domainRules?: DomainRule[]
   }) => Promise<IPCResponse<string>>
 
   // AI Config

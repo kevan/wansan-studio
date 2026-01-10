@@ -44,7 +44,7 @@ export function ReportWidgetContainer({
 
   if (isTextWidget) {
     return (
-      <div className={cn('mb-8 px-2', className)}>
+      <div className={cn('mb-2 px-2', className)}>
         <ReportTitleEditor
           id={report.id}
           content={reportData.content || ''}
@@ -58,7 +58,7 @@ export function ReportWidgetContainer({
   return (
     <div
       className={cn(
-        'group flex flex-col gap-5 mb-16 pb-8 border-b border-zinc-100 last:border-0',
+        'group flex flex-col gap-3 mb-4 pb-4 border-b border-zinc-100 last:border-0',
         className
       )}
     >

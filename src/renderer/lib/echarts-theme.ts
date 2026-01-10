@@ -216,6 +216,7 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
           return {
             ...s,
             smooth: true, // Spline interpolation
+            sampling: 'none', // CRITICAL: Disable sampling to ensure all points are available for highlighting
 
             // Workaround: To allow highlighting specific points via dispatchAction,
             // we must set showSymbol: true. To keep the clean look, we hide them
@@ -240,7 +241,7 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
               ...s.lineStyle,
             },
             emphasis: {
-              focus: 'series', // Keep the line visible
+              focus: 'self', // Highlight specific point and dim others
               scale: true,
               lineStyle: {
                 width: 4,

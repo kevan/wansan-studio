@@ -17,7 +17,7 @@ export function ReportSectionHeader({
   const reportData = report.reportData
 
   return (
-    <div className="group relative mt-4 mb-8 border-b-2 border-indigo-50 pb-4">
+    <div className="group relative mt-2 mb-4 border-b border-indigo-50 pb-2">
       <div className="flex items-start gap-4">
         {/* Section Number/Icon */}
         <div className="shrink-0 w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xl font-black shadow-lg shadow-indigo-200 select-none mt-1">
@@ -57,7 +57,7 @@ export function ReportSectionHeader({
 // --- KPI Row ---
 export function ReportKpiRow({ reports }: { reports: any[] }) {
   return (
-    <div className="mb-16">
+    <div className="mb-4 pb-4 border-b border-zinc-100 last:border-0">
       <KpiGrid widgets={reports} variant="dashboard" />
     </div>
   )

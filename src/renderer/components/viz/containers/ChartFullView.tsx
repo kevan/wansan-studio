@@ -16,6 +16,7 @@ import type { DenormalizedReportWidget } from '@/stores/useWorkbenchStore'
 import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { useChatStore } from '@/stores/useChatStore'
+import { useSettingsStore } from '@/stores/useSettingsStore'
 import { VizChart } from '../core/VizChart'
 import { DataTable } from '../base/DataTable'
 import { KpiGrid } from '../base/KpiGrid'
@@ -184,11 +185,13 @@ export function ChartFullView() {
   const handleGenerateInsight = async (
     chartData: Array<Record<string, unknown>>
   ) => {
+    const domainRules = useSettingsStore.getState().domainRules || []
     const result = await generateInsight.mutateAsync({
       chartTitle: effectiveTitle,
       chartType: effectiveType,
       aggregatedData: chartData,
       language,
+      domainRules,
     })
     setLocalInsight(result as InsightResult)
     return result

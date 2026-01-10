@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { ElectronAPI } from '../shared/electron-api'
+import { DomainRule } from '../shared/types'
 
 // 定义暴露给渲染进程的 API
 const electronAPI: ElectronAPI = {
@@ -63,6 +64,7 @@ const electronAPI: ElectronAPI = {
     chartType: string
     aggregatedData: Array<Record<string, unknown>>
     language?: 'en' | 'zh'
+    domainRules?: DomainRule[]
   }) => ipcRenderer.invoke('ai:generate-insight', options),
   getAIConfig: () => ipcRenderer.invoke('get-ai-config'),
   setAIConfig: (config: any) => ipcRenderer.invoke('set-ai-config', config),

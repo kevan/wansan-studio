@@ -18,6 +18,7 @@ import { useChatStore } from '@/stores/useChatStore.ts'
 import { useProjectStore } from '@/stores/useProjectStore.ts'
 import { useSqlLabStore } from '@/stores/useSqlLabStore.ts'
 import { useToastStore } from '@/stores/useToastStore.ts'
+import { useSettingsStore } from '@/stores/useSettingsStore.ts'
 import { cn } from '@/utils/cn.ts'
 import type { ChatMessage } from '../../ChatInterface'
 import { useTranslation } from 'react-i18next'
@@ -162,11 +163,13 @@ export const ChatReportCard = React.memo(function ChatReportCard({
   const handleGenerateInsight = async (
     chartData: Array<Record<string, unknown>>
   ) => {
+    const domainRules = useSettingsStore.getState().domainRules || []
     const result = await generateInsight.mutateAsync({
       chartTitle: reportData.title || t('chat:analysis_result'),
       chartType: reportData.chartType || 'bar',
       aggregatedData: chartData,
       language,
+      domainRules,
     })
     updateMessageInsight(messageId, result)
     return result
@@ -263,6 +266,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
               setManualActive(false)
               setExpanded(false)
             }}
+            onHighlight={setHighlightedItems}
             readOnly={true}
           />
         </div>

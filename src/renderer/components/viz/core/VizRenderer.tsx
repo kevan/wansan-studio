@@ -222,7 +222,7 @@ export const VizRenderer = React.memo(VizRendererBase, (prev, next) => {
     prev.timestamp === next.timestamp &&
     prev.tableData === next.tableData &&
     JSON.stringify(prev.vizConfig) === JSON.stringify(next.vizConfig) &&
-    prev.highlightedItems === next.highlightedItems &&
+    JSON.stringify(prev.highlightedItems) === JSON.stringify(next.highlightedItems) &&
     prev.onDrillDownAction === next.onDrillDownAction
   )
 })

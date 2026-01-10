@@ -293,6 +293,7 @@ export function setupIPC(
         chartType: string
         aggregatedData: Array<Record<string, unknown>>
         language?: 'en' | 'zh'
+        domainRules?: DomainRule[]
       }
     ) => {
       try {
@@ -300,7 +301,8 @@ export function setupIPC(
           options.chartTitle,
           options.chartType,
           options.aggregatedData,
-          options.language || 'en'
+          options.language || 'en',
+          options.domainRules || []
         )
         return { success: true, data: result }
       } catch (error) {

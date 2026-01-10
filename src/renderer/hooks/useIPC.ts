@@ -15,6 +15,7 @@ import type {
   FileNode,
   ColumnSchema,
   AIConfig,
+  DomainRule,
 } from '@shared/types'
 
 /**
@@ -396,6 +397,7 @@ export function useGenerateInsight() {
       chartType: string
       aggregatedData: Array<Record<string, unknown>>
       language?: 'en' | 'zh'
+      domainRules?: DomainRule[]
     }): Promise<InsightResult> => {
       const response = await getIpc().generateInsight(options)
       if (!response.success) {

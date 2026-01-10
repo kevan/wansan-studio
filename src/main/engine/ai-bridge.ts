@@ -265,15 +265,21 @@ export async function generateInsight(
   chartType: string,
   aggregatedData: Array<Record<string, unknown>>,
   model?: string,
-  language: 'en' | 'zh' = 'en'
+  language: 'en' | 'zh' = 'en',
+  domainRules: DomainRule[] = []
 ): Promise<any> {
   const languageNote = language === 'zh' ? 'Chinese (Simplified)' : 'English'
 
   // Convert data to a compact representation
   const dataStr = JSON.stringify(aggregatedData.slice(0, 50), null, 2)
 
+  // Build domain context section
+  const domainContext = domainRules.length > 0
+    ? `\n\nBUSINESS CONTEXT:\n${domainRules.filter(r => r.isEnabled).map(r => `- ${r.content}`).join('\n')}`
+    : ''
+
   const systemPrompt = `You are a Senior Business Analyst specializing in data storytelling.
-Your task is to analyze aggregated chart data and provide actionable business insights in structured JSON format.
+Your task is to analyze aggregated chart data and provide actionable business insights in structured JSON format.${domainContext}
 
 CONSTRAINTS:
 - Be concise and professional.
