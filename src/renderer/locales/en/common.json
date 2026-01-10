@@ -166,6 +166,7 @@
   "history": "RECENT SESSIONS",
   "no_sessions": "No history yet.",
   "insert_text": "Insert Text",
+  "insert_section": "New Section",
   "text_block": "Text Block",
   "new_section": "New Section",
   "pages_count": "{{count}} Pages",

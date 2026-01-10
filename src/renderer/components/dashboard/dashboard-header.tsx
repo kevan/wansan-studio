@@ -307,11 +307,11 @@ export function DashboardHeader() {
           variant="outline"
           size="sm"
           onClick={insertTextWidget}
-          title={t('insert_text')}
+          title={t('insert_section', 'New Section')}
           className="h-8 gap-2 bg-white hover:bg-zinc-50 border-zinc-200 shadow-sm"
         >
           <Type className="w-4 h-4 text-zinc-500" />
-          <span className="text-zinc-700 text-xs">{t('insert_text')}</span>
+          <span className="text-zinc-700 text-xs">{t('insert_section', 'New Section')}</span>
         </Button>
       </div>
 

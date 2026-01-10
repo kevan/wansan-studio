@@ -43,6 +43,8 @@ interface InsightPanelProps {
   onRemove?: () => void
   /** Called when hovering over a finding to highlight chart elements */
   onHighlight?: (items: string[]) => void
+  /** If true, hides action buttons (Regenerate/Remove) */
+  readOnly?: boolean
 }
 
 export function InsightPanel({
@@ -60,6 +62,7 @@ export function InsightPanel({
   onCancel,
   onRemove,
   onHighlight,
+  readOnly = false,
 }: InsightPanelProps) {
   const { t, i18n } = useTranslation('common')
   const [state, setState] = useState<InsightState>(insight ? 'done' : 'idle')
@@ -341,7 +344,7 @@ export function InsightPanel({
         </div>
 
         <div className="flex items-center gap-1">
-          {isExpanded && (
+          {isExpanded && !readOnly && (
             <>
               <button
                 onClick={handleRegenerate}

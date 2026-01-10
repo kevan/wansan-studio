@@ -12,7 +12,9 @@ i18n
           'generated_time': 'Generated At',
           'no_chart_data': 'No Data',
           'page_of': 'Page {{page}} of {{total}}',
-          'data_detail': 'Data Detail'
+          'data_detail': 'Data Detail',
+          'ai_insight': 'AI Insight',
+          'untitled_chart': 'Untitled Chart'
         },
         chat: {
             'lineage_engine': 'Wansan Engine',
@@ -25,7 +27,9 @@ i18n
           'generated_time': '生成时间',
           'no_chart_data': '暂无数据',
           'page_of': '第 {{page}} 页 / 共 {{total}} 页',
-          'data_detail': '数据详情'
+          'data_detail': '数据详情',
+          'ai_insight': 'AI 解读',
+          'untitled_chart': '未命名图表'
         },
         chat: {
             'lineage_engine': '万三引擎',
