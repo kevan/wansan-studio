@@ -23,7 +23,7 @@ import { useProjectStore } from '@/stores/useProjectStore'
 import { useChatStore } from '@/stores/useChatStore'
 import { VizChart } from '../core/VizChart'
 import { DataTable } from '../base/DataTable'
-import { KpiCard } from '../base/KpiCard'
+import { KpiGrid } from '../base/KpiGrid'
 import { cn } from '@/utils/cn'
 import type { ChartType, ReportData, ReportWidget, InsightResult } from '@shared/types/dashboard'
 import { useTranslation } from 'react-i18next'
@@ -198,7 +198,9 @@ export function ChartFullView() {
   else if (effectiveType === 'text') displayMode = 'text'
   else if (!data || data.length === 0) displayMode = 'empty'
 
-  const showAxisControls = displayMode === 'chart' && availableColumns.length > 0
+  const showAxisControls =
+    (displayMode === 'chart' || displayMode === 'bignumber') &&
+    availableColumns.length > 0
   const modalMaxWidth = displayMode === 'table' ? 'max-w-[95vw]' : 'max-w-[1600px]'
 
   return (
@@ -255,8 +257,18 @@ export function ChartFullView() {
                   </div>
                 )}
 
-                {displayMode === 'bignumber' && data.length > 0 && (
-                  <KpiCard value={data[0][yAxisValues[0] || Object.keys(data[0])[0]] as any} label={yAxisValues[0] || Object.keys(data[0])[0]} variant="dashboard" />
+                {displayMode === 'bignumber' && (
+                  <div className="h-full w-full flex items-center justify-center">
+                    <KpiGrid
+                      reportData={{
+                        title: effectiveTitle,
+                        chartType: effectiveType,
+                        tableData: data,
+                        vizConfig: effectiveConfig,
+                      }}
+                      variant="dashboard"
+                    />
+                  </div>
                 )}
 
                 {displayMode === 'chart' && (
