@@ -575,13 +575,15 @@ export function InsightPanel({
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
                 )}
-                <button
-                  onClick={handleRegenerate}
-                  className="p-1.5 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded bg-transparent transition-colors"
-                  title={t('regenerate') || 'Regenerate'}
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                </button>
+                {!readOnly && (
+                  <button
+                    onClick={handleRegenerate}
+                    className="p-1.5 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded bg-transparent transition-colors"
+                    title={t('regenerate') || 'Regenerate'}
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
+                )}
                 {onRemove && (
                   <button
                     onClick={handleRemove}
