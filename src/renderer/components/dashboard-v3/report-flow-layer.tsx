@@ -123,43 +123,39 @@ export function ReportFlowLayer({ width, scale }: ReportFlowLayerProps) {
         </div>
       </div>
 
-      {/* 2. Main Content Flow (Dense) */}
-      <div className="w-full">
-        {groups.some(g => g.items.length > 0 || g.header) ? (
-          groups.map((group) => (
-            <div 
-                key={group.id} 
-                className="py-4 border-b border-zinc-50 last:border-0"
-            >
-                <div className="max-w-[1200px] mx-auto px-6">
-                    {group.header && (
-                        <ReportSectionHeader
-                            report={group.header}
-                            onRemove={() => removeReport(group.header.id)}
-                        />
-                    )}
-                    
-                    <div className="space-y-6">
-                        {group.items.map((block, idx) => {
-                            if (block.type === 'kpi-row') {
-                                return <ReportKpiRow key={`${group.id}-kpi-${idx}`} reports={block.items} />
-                            }
-                            if (block.type === 'widget') {
-                                return (
-                                    <ReportWidgetContainer 
-                                        key={block.data.id} 
-                                        report={block.data} 
-                                        onRemove={() => removeReport(block.data.id)}
-                                    />
-                                )
-                            }
-                            return null
-                        })}
-                    </div>
-                </div>
-            </div>
-          ))
-        ) : (
+      {/* 2. Main Content Flow (Continuous) */}
+      <div className="w-full max-w-[1200px] mx-auto px-6">
+        <div className="space-y-4">
+          {groups.some(g => g.items.length > 0 || g.header) ? (
+            groups.map((group) => (
+              <div key={group.id} className="pt-2">
+                  {group.header && (
+                      <ReportSectionHeader
+                          report={group.header}
+                          onRemove={() => removeReport(group.header.id)}
+                      />
+                  )}
+                  
+                  <div className="space-y-6">
+                      {group.items.map((block, idx) => {
+                          if (block.type === 'kpi-row') {
+                              return <ReportKpiRow key={`${group.id}-kpi-${idx}`} reports={block.items} />
+                          }
+                          if (block.type === 'widget') {
+                              return (
+                                  <ReportWidgetContainer 
+                                      key={block.data.id} 
+                                      report={block.data} 
+                                      onRemove={() => removeReport(block.data.id)}
+                                  />
+                              )
+                          }
+                          return null
+                      })}
+                  </div>
+              </div>
+            ))
+          ) : (
           <div className="py-24 text-center">
             <div className="inline-flex p-4 bg-zinc-100 rounded-full mb-4">
               <FileText className="w-8 h-8 text-zinc-400" />
