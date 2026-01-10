@@ -8,8 +8,6 @@ import {
 } from '@shared/api-types'
 import { ElectronAPI } from '@shared/electron-api'
 import type {
-  AIAnalysisResult,
-  ContextAnalysisResult,
   TableSchema,
   InsightResult,
   FileNode,

@@ -120,7 +120,7 @@ const VizRendererBase = ({
               data={tableData}
               config={vizConfig}
               className="h-full w-full"
-              messageId={messageId}
+              _messageId={messageId}
               highlightedItems={highlightedItems}
               onDrillDownAction={onDrillDownAction}
             />
@@ -177,7 +177,7 @@ const VizRendererBase = ({
               data={tableData}
               config={vizConfig}
               className="h-full w-full"
-              messageId={messageId}
+              _messageId={messageId}
               highlightedItems={highlightedItems}
               onDrillDownAction={onDrillDownAction}
             />

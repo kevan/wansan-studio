@@ -1,9 +1,8 @@
-import React, { useState } from 'react'
-import { cn } from '@/utils/cn'
-import { ReportTitleEditor } from '../base/ReportTitleEditor'
+import React from 'react'
+import { MoreVertical, Trash2, LayoutDashboard, FileText, X } from 'lucide-react'
 import { KpiGrid } from '../base/KpiGrid'
-import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { ReportTitleEditor } from '../base/ReportTitleEditor'
 
 // --- Section Header (Interactive) ---
 export function ReportSectionHeader({ 

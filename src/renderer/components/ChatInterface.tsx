@@ -24,7 +24,6 @@ import { format } from 'sql-formatter'
 import { AnalysisTemplateCard } from './chat/analysis-template-card'
 import { FilterParam } from '@shared/schemas/analysis'
 import { VizSummary } from './viz/core/VizSummary'
-import type { ReportData } from '@shared/types/dashboard'
 import type { Message } from '@shared/types/chat'
 
 export type ChatMessage = Message

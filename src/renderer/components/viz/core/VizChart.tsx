@@ -15,7 +15,7 @@ interface VizChartProps {
   config?: ReportData['vizConfig']
   className?: string
   style?: React.CSSProperties
-  messageId?: string
+  _messageId?: string
   /** Column schema for breakdown dimension suggestions */
   columnFields?: Array<{ name: string; type: string }>
   /** Callback to trigger AI insight generation */
@@ -36,7 +36,7 @@ export function VizChart({
   config,
   className = '',
   style,
-  messageId,
+  _messageId,
   columnFields = [],
   onRequestInsight,
   highlightedItems,

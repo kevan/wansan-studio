@@ -199,8 +199,8 @@ export function ChartFullView() {
 
   const handleDrillDown = useCallback(
     (
-      action: 'focus' | 'view_data' | 'breakdown',
-      payload: { name: string; dimension?: string }
+      _action: 'focus' | 'view_data' | 'breakdown',
+      _payload: { name: string; dimension?: string }
     ) => {
       setEditingReportId(null)
       if (report?.sourceMessageId) {

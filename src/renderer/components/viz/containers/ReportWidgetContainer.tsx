@@ -4,7 +4,7 @@ import { ReportTitleEditor } from '../base/ReportTitleEditor'
 import { InsightPanel } from '../InsightPanel'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
-import { LayoutDashboard, FileText, Columns, Rows, X } from 'lucide-react'
+import { Columns, Rows, X } from 'lucide-react'
 import { useProjectStore } from '@/stores/useProjectStore'
 
 interface ReportWidgetContainerProps {

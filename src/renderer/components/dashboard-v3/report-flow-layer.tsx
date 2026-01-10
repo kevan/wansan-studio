@@ -2,13 +2,12 @@ import React, { useMemo } from 'react'
 import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { ReportWidgetContainer } from '../viz/containers/ReportWidgetContainer'
 import { ReportSectionHeader, ReportKpiRow } from '../viz/containers/report-widgets'
-import { FileText, Calendar, User } from 'lucide-react'
+import { FileText, Calendar } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { cn } from '@/utils/cn'
 
 interface ReportFlowLayerProps {
-  width: number
-  scale: number
+  width?: number
+  scale?: number
 }
 
 type RenderBlock =
@@ -22,7 +21,7 @@ type SectionGroup = {
   items: RenderBlock[]
 }
 
-export function ReportFlowLayer({ width, scale }: ReportFlowLayerProps) {
+export function ReportFlowLayer(_props: ReportFlowLayerProps) {
   const { t } = useTranslation('common')
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const removeReport = useWorkbenchStore(state => state.removeReport)

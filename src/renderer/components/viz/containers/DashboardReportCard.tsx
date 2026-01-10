@@ -6,12 +6,10 @@ import {
   GripHorizontal,
   MoreVertical,
   FileImage,
-  Maximize2,
 } from 'lucide-react'
 import { toPng } from 'html-to-image'
 import { useToastStore } from '../../../stores/useToastStore'
 import { cn } from '@/utils/cn'
-import { useWorkbenchStore } from '../../../stores/useWorkbenchStore'
 import { useTranslation } from 'react-i18next'
 
 interface DashboardReportCardProps {
