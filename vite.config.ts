@@ -1,9 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
 import fs from 'fs'
 
-const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'))
+const _dirname = dirname(fileURLToPath(import.meta.url))
+const pkg = JSON.parse(fs.readFileSync(resolve(_dirname, 'package.json'), 'utf-8'))
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -15,7 +17,7 @@ export default defineConfig(({ mode }) => ({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'src/renderer/index.html')
+        main: resolve(_dirname, 'src/renderer/index.html')
       }
     }
   },
@@ -25,9 +27,9 @@ export default defineConfig(({ mode }) => ({
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src/renderer'),
-      '@shared': resolve(__dirname, 'src/shared'),
-      '@types': resolve(__dirname, 'src/types')
+      '@': resolve(_dirname, 'src/renderer'),
+      '@shared': resolve(_dirname, 'src/shared'),
+      '@types': resolve(_dirname, 'src/types')
     }
   },
   define: {

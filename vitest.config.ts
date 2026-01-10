@@ -1,5 +1,8 @@
 import { defineConfig } from 'vitest/config';
-import path from 'path';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const _dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   test: {
@@ -7,9 +10,9 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.{test,spec}.ts'],
     alias: {
-      '@': path.resolve(__dirname, 'src/renderer'),
-      '@shared': path.resolve(__dirname, 'src/shared'),
-      '@types': path.resolve(__dirname, 'src/types')
+      '@': resolve(_dirname, 'src/renderer'),
+      '@shared': resolve(_dirname, 'src/shared'),
+      '@types': resolve(_dirname, 'src/types')
     },
     testTimeout: 30000, // Extend timeout for AI calls
   },

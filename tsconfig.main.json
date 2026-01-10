@@ -23,6 +23,7 @@
     }
   },
   "include": [
+    "src/export-runtime/**/*",
     "src/main/**/*",
     "src/preload/**/*",
     "src/shared/**/*",
