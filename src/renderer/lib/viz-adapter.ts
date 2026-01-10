@@ -227,7 +227,7 @@ export function buildEChartsOption(
 ): EChartsOption {
   const x_axis = config?.x_axis
   const y_axis = config?.y_axis
-  const { series_name } = config || {}
+  const { series_name: _series_name } = config || {}
   const yAxes = Array.isArray(y_axis)
     ? y_axis.filter(Boolean)
     : y_axis

@@ -16,7 +16,7 @@ interface KpiGridProps {
 export function KpiGrid({
   reportData,
   widgets,
-  variant = 'chat',
+  variant: _variant = 'chat',
   className,
   highlightedItems = [],
 }: KpiGridProps) {

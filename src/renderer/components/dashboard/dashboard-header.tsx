@@ -12,7 +12,6 @@ import {
   Printer,
   Sparkles,
   Type,
-  LayoutDashboard,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -34,7 +33,6 @@ import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 import { PAGE_GAP_PX } from '@/components/dashboard-v3/page-layer'
 import { useTranslation } from 'react-i18next'
-import { cn } from '@/utils/cn'
 import { Analytics } from '../../services/analytics'
 import logo from '@/src/assets/logo.png'
 import { useExportWebReport } from '@/hooks/useIPC'

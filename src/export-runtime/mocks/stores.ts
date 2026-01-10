@@ -27,7 +27,7 @@ export const useWorkbenchStore = create((set) => ({
 }))
 
 // Mock Project Store
-export const useProjectStore = create((set) => ({
+export const useProjectStore = create((_set) => ({
   widgetRegistry: {},
   files: [],
   sessions: [],
@@ -36,30 +36,30 @@ export const useProjectStore = create((set) => ({
 }))
 
 // Mock UI Store
-export const useUIStore = create((set) => ({
+export const useUIStore = create((_set) => ({
   contentLayout: 'vertical',
   sidebarLayout: 'visible',
 }))
 
 // Mock Chat Store
-export const useChatStore = create((set) => ({
+export const useChatStore = create((_set) => ({
     messages: [],
     sendMessage: () => {},
     setReplyTo: () => {}
 }))
 
 // Mock Settings Store (needed for language)
-export const useSettingsStore = create((set) => ({
+export const useSettingsStore = create((_set) => ({
     language: 'en',
     isActivated: true, // Pretend pro for best view
 }))
 
-export const useSqlLabStore = create((set) => ({
+export const useSqlLabStore = create((_set) => ({
     session: null,
     open: () => {},
     close: () => {}
 }))
 
-export const useToastStore = create((set) => ({
+export const useToastStore = create((_set) => ({
     addToast: () => {}
 }))

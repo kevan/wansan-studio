@@ -3,8 +3,6 @@ import { ReportData, ReportWidget } from '@shared/types/dashboard'
 import type { Layout } from 'react-grid-layout'
 import type {
   AIAnalysisResult,
-  SyncStatus,
-  DomainRule,
   InsightResult,
 } from '@shared/types'
 import { useMemo } from 'react'

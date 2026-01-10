@@ -1,5 +1,5 @@
 import React from 'react'
-import { MoreVertical, Trash2, LayoutDashboard, FileText, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { KpiGrid } from '../base/KpiGrid'
 import { useTranslation } from 'react-i18next'
 import { ReportTitleEditor } from '../base/ReportTitleEditor'

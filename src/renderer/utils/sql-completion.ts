@@ -32,7 +32,6 @@ export function registerSqlCompletion(monaco: Monaco, files: FileNode[]) {
   return monaco.languages.registerCompletionItemProvider('sql', {
     triggerCharacters: ['.', ' '],
     provideCompletionItems: (model, position) => {
-      const lineContent = model.getLineContent(position.lineNumber)
       const word = model.getWordUntilPosition(position)
       const range = {
         startLineNumber: position.lineNumber,

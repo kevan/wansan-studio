@@ -80,7 +80,7 @@ const mockIPC: ElectronAPI = {
     tableName: string,
     sheetName?: string,
     columns?: ColumnSchema[],
-    readOptions?: Record<string, any>
+    _readOptions?: Record<string, any>
   ) => ({
     success: true,
     data: { lastModified: Date.now(), newColumns: columns || [] },

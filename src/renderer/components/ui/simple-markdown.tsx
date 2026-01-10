@@ -15,7 +15,7 @@ export function SimpleMarkdown({ content, className }: SimpleMarkdownProps) {
         remarkPlugins={[remarkGfm]}
         components={{
           // Override link handling to open in new tab
-          a: ({ node, ...props }) => (
+          a: ({ node: _node, ...props }) => (
             <a
               target="_blank"
               rel="noopener noreferrer"
@@ -24,29 +24,29 @@ export function SimpleMarkdown({ content, className }: SimpleMarkdownProps) {
             />
           ),
           // Custom styling for headers
-          h1: ({ node, ...props }) => (
+          h1: ({ node: _node, ...props }) => (
             <h1 className="text-xl font-bold mb-3 mt-4" {...props} />
           ),
-          h2: ({ node, ...props }) => (
+          h2: ({ node: _node, ...props }) => (
             <h2 className="text-lg font-semibold mb-2 mt-4" {...props} />
           ),
-          h3: ({ node, ...props }) => (
+          h3: ({ node: _node, ...props }) => (
             <h3 className="text-base font-semibold mb-2 mt-3" {...props} />
           ),
           // Clean paragraph spacing
-          p: ({ node, ...props }) => <p className="mb-2 leading-relaxed" {...props} />,
+          p: ({ node: _node, ...props }) => <p className="mb-2 leading-relaxed" {...props} />,
           // List styling
-          ul: ({ node, ...props }) => (
+          ul: ({ node: _node, ...props }) => (
             <ul className="list-disc list-outside ml-4 mb-3 space-y-1" {...props} />
           ),
-          ol: ({ node, ...props }) => (
+          ol: ({ node: _node, ...props }) => (
             <ol className="list-decimal list-outside ml-4 mb-3 space-y-1" {...props} />
           ),
-          li: ({ node, ...props }) => (
+          li: ({ node: _node, ...props }) => (
             <li className="text-zinc-600" {...props} />
           ),
           // Bold text styling
-          strong: ({ node, ...props }) => (
+          strong: ({ node: _node, ...props }) => (
             <strong className="font-semibold text-zinc-900" {...props} />
           ),
         }}
