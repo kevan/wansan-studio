@@ -27,6 +27,7 @@ import { useProGate } from '@/hooks/use-pro-gate'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { Button } from '@/components/ui/button'
 import { DataTable as ReportTable } from '../viz/base/DataTable'
+import { Analytics } from '../../services/analytics'
 
 export interface QueryPanelRef {
   runQuery: (bypassGate?: boolean) => Promise<boolean>
@@ -97,6 +98,10 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
           success = false
         } finally {
           setIsRunning(false)
+          Analytics.track('sqllab_executed', {
+            status: success ? 'success' : 'error',
+            duration: Math.round(performance.now() - startTime),
+          })
         }
       }
 

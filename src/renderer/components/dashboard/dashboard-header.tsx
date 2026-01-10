@@ -132,6 +132,7 @@ export function DashboardHeader() {
   }
 
   const handleLayoutChange = (value: CanvasLayout) => {
+    Analytics.track('layout_switched', { mode: value })
     updateConfig('layout', value)
     setLayoutScenario(value === 'a4' ? 'print' : 'default')
   }

@@ -25,6 +25,7 @@ import { cn } from '@/utils/cn'
 import { SimpleMarkdown } from '../ui/simple-markdown'
 import type { InsightResult } from '@shared/types/dashboard'
 import TextareaAutosize from 'react-textarea-autosize'
+import { Analytics } from '../../services/analytics'
 
 type InsightState = 'idle' | 'consent' | 'analyzing' | 'done' | 'error'
 
@@ -70,6 +71,7 @@ interface InsightPanelProps {
 
 export function InsightPanel({
   chartData,
+  chartType,
   insight,
   onGenerateInsight,
   className,
@@ -138,6 +140,7 @@ export function InsightPanel({
   const handleConfirmSend = useCallback(async () => {
     setState('analyzing')
     setError('')
+    const startTime = Date.now()
     try {
       const result = await onGenerateInsight(chartData)
       const data = typeof result === 'string' ? null : result
@@ -145,11 +148,17 @@ export function InsightPanel({
       setState('done')
       setInternalExpanded(true)
       onExpandChange?.(true)
+
+      Analytics.track('insight_generated', {
+        chart_type: chartType || 'unknown',
+        data_points: dataPointCount,
+        duration: Date.now() - startTime,
+      })
     } catch (err: any) {
       setError(err.message || 'Failed to generate insight')
       setState('error')
     }
-  }, [chartData, onGenerateInsight, onExpandChange])
+  }, [chartData, onGenerateInsight, onExpandChange, chartType, dataPointCount])
 
   const handleStartEdit = () => {
     setEditEditBuffer(JSON.parse(JSON.stringify(insightData || {
@@ -169,6 +178,9 @@ export function InsightPanel({
     if (editBuffer && onSave) {
       onSave(editBuffer)
       setInsightData(editBuffer)
+      Analytics.track('insight_edited', {
+        fields: Object.keys(editBuffer).filter(k => editBuffer[k as keyof InsightResult] !== insightData?.[k as keyof InsightResult])
+      })
     }
     setIsEditing(false)
   }
@@ -206,9 +218,10 @@ export function InsightPanel({
   const handleRegenerate = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation()
+      Analytics.track('insight_regenerated', { chart_type: chartType })
       handleConfirmSend()
     },
-    [handleConfirmSend]
+    [handleConfirmSend, chartType]
   )
 
   const handleRemove = useCallback(

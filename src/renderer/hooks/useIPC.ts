@@ -7,6 +7,7 @@ import {
   RunSQLResponse,
 } from '@shared/api-types'
 import { ElectronAPI } from '@shared/electron-api'
+import { Analytics } from '../services/analytics'
 import type {
   TableSchema,
   InsightResult,

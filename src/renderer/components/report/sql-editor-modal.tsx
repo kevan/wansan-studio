@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { QueryPanel, QueryPanelRef } from './query-panel'
+import { Analytics } from '../../services/analytics'
 
 interface SqlEditorModalProps {
   isOpen: boolean
@@ -46,8 +47,11 @@ export function SqlEditorModal({
     if (isOpen) {
       setSql(initialSql)
       setIsSaving(false)
+      Analytics.track('sqllab_opened', {
+        source: isCreateMode ? 'magic_input' : 'edit_chart',
+      })
     }
-  }, [isOpen, initialSql])
+  }, [isOpen, initialSql, isCreateMode])
 
   const handleSave = async () => {
     if (!onSave) return
@@ -65,6 +69,9 @@ export function SqlEditorModal({
 
       // 2. If OK, call parent save
       await onSave(sql)
+      if (isCreateMode) {
+        Analytics.track('sqllab_converted', {})
+      }
       onClose()
     } catch (e: any) {
       console.error('SQL validation failed during save:', e)
