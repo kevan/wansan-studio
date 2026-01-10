@@ -20,8 +20,11 @@ Wansan 采用一个统一的向导来处理所有数据集成需求。
     *   **Import**: 自动查重并修改表名。
     *   **Append**: 复合主键冲突预检，提供 Ignore/Replace 策略。
 
-### 1.2 Swiss Design
-采用 "Airy" 设计语言：大圆角 (`2.5rem`)、柔和阴影 (`shadow-2xl`)、极简边框，消除视觉压迫感。
+### 1.2 Swiss Design ("Wansan Airy")
+采用以 "空气感" 为核心的视觉语言：
+*   **Shape**: 大圆角 (`2.5rem` / `40px`)，以此构建温润的工具触感。
+*   **Depth**: 摒弃黑色硬边框，使用多层级柔和阴影 (`shadow-2xl` + `ring-1 ring-zinc-900/5`) 来定义层级。
+*   **Typography**: 降低字重，增加行高，使用 `Zinc-500` 作为次级文本色，减少视觉干扰。
 
 ---
 
@@ -33,9 +36,13 @@ Wansan 采用一个统一的向导来处理所有数据集成需求。
     *   **@ Mention**: 引用表名。
     *   **Slash (/)**: 快捷指令 (`/clear`, `/export`).
 
-### 2.2 Report Card
+### 2.2 Report Card Evolution
+卡片不再是静态图片，而是**可编辑的叙事单元**。
 *   **Chat Mode**: 侧重叙事 (Summary + Chart)。
-*   **Dashboard Mode**: 侧重视觉 (Full Chart)。
+*   **Report Mode**: 
+    *   **Direct Editing**: 点击标题或正文即可直接修改 (ContentEditable)。
+    *   **Drag & Drop**: 在 Continuous Flow 中自由长按拖拽排序。
+    *   **Hide/Show**: 可隐藏 Report 中的特定 Section（如仅保留图表，隐藏冗余的 AI 废话）。
 *   **SQL Lab**: 点击 `<Code />` 可查看并修改 AI 生成的 SQL，实时重绘图表。
 
 ---
@@ -55,7 +62,11 @@ Wansan 采用一个统一的向导来处理所有数据集成需求。
 1.  **A4 Mode (Print)**: 固定 `794px` 宽度，模拟物理纸张。支持分页导出 PDF。
 2.  **Screen Mode (Presentation)**: 100% 宽度，自适应大屏展示。
 
----
+### 3.3 Interactive KPI Grids
+新的 KPI 卡片组采用 **"Visual Anchoring"** 交互模式：
+*   **Hover**: 鼠标悬停在某个 KPI 上时，**其他所有 KPI 自动进入 Blur (模糊) 状态** (Opacity 0.3 + Blur 2px)。
+*   **Focus**: 当前 KPI 高亮显示，并自动关联下方图表中对应的 Series（如 Hover "Sales" 卡片，图表中的 Sales 线条高亮，Cost 线条变暗）。
+*   **Grouping**: KPI 自动按逻辑分组 (e.g. "Core Metrics" vs "Ratios")，视觉上通过微小的间距区分。
 
 ## 4. Export Pipeline (导出系统)
 

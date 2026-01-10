@@ -1,86 +1,96 @@
-# ⚡ Spec: v1.5 Master - Power & Reach
+# ⚡ Spec: v1.5 Release - Insight, Power & Reach
 
-> **Target Version**: v1.5.0
-> **Status**: In Progress (Power Done, Reach Todo)
-> **Core Value**: Empowering professional users with direct control and enabling the flow of insights.
+> **Release Version**: v1.5.0
+> **Status**: Implemented / Ready for QA
+> **Theme**: Bridging the gap between "Data Storytelling" (AI Insight) and "Professional Control" (SQL Lab), while enabling "Universal Sharing" (Web Export).
+
+---
 
 ## 1. Overview
 
-This release addresses the needs of two critical user personas:
-1.  **Power Users (Analysts/Devs)**: Who demand direct SQL access without AI interference. (**Power**)
-2.  **Report Consumers (Managers/Clients)**: Who need to view interactive dashboards without installing the software. (**Reach**)
+This milestone unifies three major capability upgrades:
+1.  **Insight (Deep understanding)**: Transforming charts into narratives with **AI Business Insight** and **Visual Anchoring**.
+2.  **Power (Expert control)**: Giving analysts direct, intelligent control via **Smart SQL Lab**.
+3.  **Reach (Sharing)**: Breaking the local silo with offline-capable **Web Report Export**.
 
 ---
 
-## 2. The "Power" Update: Smart SQL Lab (Completed)
+## 2. AI Business Insight (The "Why")
 
-### 2.1 Monaco Editor Integration
-*   **Kernel**: Replaced lightweight editor with `@monaco-editor/react`.
-*   **Capabilities**:
-    *   VS Code-grade syntax highlighting.
-    *   Intelligent Autocomplete (Keywords, Functions).
-    *   Formatting (Prettier-like SQL formatting).
-    *   Theme awareness (Dark/Light mode).
+### 2.1 The Insight Protocol
+*   **Privacy First**: Only aggregated chart data (e.g., the 10 bars in a bar chart) is sent to the LLM. No raw rows.
+*   **Structure**: AI returns structured JSON (`InsightResult`) containing:
+    *   `summary`: High-level conclusion.
+    *   `findings`: Array of observations with `sentiment` (positive/negative/warning).
+    *   `recommendation`: Actionable advice.
 
-### 2.2 Schema-Aware Intelligence
-*   **Dynamic Schema Injection**: The editor "knows" the local DuckDB schema.
-*   **Table Completion**: Auto-suggests table names from the current project.
-*   **Column Completion**: Context-aware column suggestions (e.g., typing `t_orders.` lists columns).
-*   **Security**: Auto-quotes identifiers to handle special characters/Chinese names safely.
+### 2.2 Visual Anchoring
+*   **Interaction**: Hovering over a text finding -> **Highlights** the related chart elements.
+*   **Mechanism**:
+    *   Findings contain `relatedItems: string[]` (e.g., `["East Region", "Q3"]`).
+    *   Chart engine receives these IDs and applies a **Focus/Blur** effect: Highlighted items stay opaque, others fade to 10% opacity.
 
-### 2.3 Direct SQL-to-Viz Workflow
-*   **Entry Point**: Magic Input Command `/sql`.
-*   **Modal Interface**: Full-screen SQL Editor with data preview.
-*   **Chat Integration**:
-    *   "Send to Chat" button executes the SQL.
-    *   Result injected as a native Chat Message.
-    *   Users can then use the existing `ChartFullView` to configure visualizations manually.
-*   **UX Detail**: `runOnMount` disabled for new queries to prevent errors.
+### 2.3 Interactive Verification (Human-in-the-Loop)
+*   **Edit Mode**: Users can manually correct AI hallucinations.
+    *   **Modify**: Edit markdown text for any finding.
+    *   **Anchor**: Manually add/remove `relatedItems` tags to fix visual linking.
+    *   **Sentiment**: Change sentiment classification.
 
 ---
 
-## 3. The "Reach" Update: Web Export (Planned)
+## 3. Smart SQL Lab (The "Power")
 
-### 3.1 Goal
-Export the current Dashboard/Report as a standalone, offline-capable HTML file that retains interactivity.
+### 3.1 Monaco Editor Integration
+*   **Core**: Replaced simple textarea with VS Code's editor engine (`monaco-editor`).
+*   **Features**: Syntax highlighting, auto-formatting, improved performance.
 
-### 3.2 Technical Strategy: "The Hydration Pack"
-Instead of server-side rendering, we will package a lightweight React runtime + ECharts into a single HTML file.
+### 3.2 Schema Intelligence
+*   **Context Awareness**: The editor "knows" the local DuckDB schema.
+*   **Autocomplete**:
+    *   `SELECT * FROM t_...` -> Suggests `t_sales`, `t_users`.
+    *   `t_sales.` -> Suggests `amount`, `region` (with types).
+*   **Safety**: Auto-quotes identifiers to handle Chinese table names safely.
 
-#### 3.2.1 Architecture
-1.  **Template**: A minimal `export-template.html` containing:
-    *   React + ReactDOM (UMD).
-    *   ECharts (UMD).
-    *   Tailwind CSS (inlined).
-    *   A simplified `DashboardRenderer` component.
-2.  **Data Injection**:
-    *   Serialize the current `ProjectStore` state (Report Data, Layouts) into a JSON string.
-    *   Inject it into a global `window.__WANSAN_DATA__` variable script tag.
-3.  **Hydration**:
-    *   The script reads `window.__WANSAN_DATA__`.
-    *   Hydrates the React component tree.
-    *   Renders charts using ECharts.
-
-### 3.3 Scope
-*   **Supported**: Charts (ECharts), KPIs, Tables, Layouts, Markdown text.
-*   **Not Supported**: AI interactions, SQL re-execution (no DuckDB), editing.
-
-### 3.4 User Experience
-*   **Trigger**: "Share" -> "Export as Web Report".
-*   **Output**: `My_Analysis_Report.html` (Single file).
-*   **Result**: Double-click to open in any browser. Fully interactive (Tooltip, Zoom, Legend toggle).
+### 3.3 Direct Viz Workflow
+*   **Flow**: Write SQL -> Run Preview -> "Send to Chat".
+*   **Result**: The query result becomes a standard Report Card, fully editable and interactive.
 
 ---
 
-## 4. Engineering Impact
+## 4. Report Evolution (The "Flow")
 
-### 4.1 Dependency Management
-*   **Added**: `monaco-editor`, `@monaco-editor/react`.
-*   **Removed**: `react-simple-code-editor`, `prismjs`.
+### 4.1 Continuous Report Mode
+*   **Concept**: A seamless, vertical document stream (breaking the "page" boundary).
+*   **Features**:
+    *   **Rich Text**: Direct usage of Markdown headers, lists, and quotes.
+    *   **Drag & Drop**: Reorder sections naturally.
+    *   **Auto-Height**: Cards expand to fit the narrative content.
 
-### 4.2 Bundle Size
-*   **Impact**: Increased main bundle size due to Monaco.
-*   **Mitigation**: Lazy loading of Monaco components via `React.lazy` or dynamic import in `MonacoSqlEditor`. (Already implemented via `@monaco-editor/react` loader).
+### 4.2 Interactive KPI Grids
+*   **Behavior**:
+    *   **Hover**: Hovering one KPI card blurs the others.
+    *   **Link**: Highlighting a KPI anchors to the relevant chart series.
 
-### 4.3 Future Proofing
-*   The "Web Export" engine can evolve into a "Cloud Publish" feature later by simply uploading the HTML to S3/R2 instead of saving to disk.
+### 4.3 Visualization 2.0
+*   **New Types**: Rose, Radar, Combo, Scatter (Smart Axis).
+*   **Design**: "Airy" theme (Glassmorphism, No Borders, Soft Shadows).
+
+---
+
+## 5. Web Export (The "Reach")
+
+### 5.1 The "Hydration Pack" Strategy
+Instead of server-side rendering, we package a lightweight React runtime into a single HTML file.
+
+*   **Output**: Standalone `.html` file.
+*   **Content**:
+    *   **Runtime**: React + ReactDOM + ECharts (UMD).
+    *   **Data**: JSON snapshot of the current Report state (`window.__WANSAN_SNAPSHOT__`).
+    *   **Logic**: A minified "Player" component that hydrates the JSON into a read-only Dashboard.
+
+### 5.2 Capabilities
+*   **Offline First**: Works without internet.
+*   **Interactive**: Tooltips, Legend Toggles, and Zooming still work.
+*   **Fidelity**: 100% visual match with the Desktop App.
+
+---

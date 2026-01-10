@@ -26,6 +26,10 @@
 *   **New Charts**: **Rose**, Radar, Combo, Scatter (Smart Axis).
 *   **Theme System**: "Airy" design, glassmorphism tooltips.
 *   **Interactive Drill-Down**: Context menu on chart elements (Filter, View Data, Breakdown).
+### 3. Report Evolution (v1.4.2)
+*   **Continuous Flow**: Seamless vertical narrative layout.
+*   **Rich Editing**: Click-to-edit text, drag-and-drop reorganization.
+*   **Interactive KPI Grids**: Hover-to-blur effects and chart linking.
 
 ---
 
@@ -37,19 +41,15 @@
 
 ---
 
-## ☁️ v1.5.0: The "Connectivity" Update (Next)
+## 🚀 v1.5.0: The "Power & Reach" Update (Release Candidate)
 
-**Goal**: Break the local silo. Share results and connect to live data.
+**See full spec: `docs/SPEC_V1_5_MASTER.md`**
 
-### 1. Sharing (Web Export)
-*   **Feature**: **Static Report Export**.
-    *   Export dashboard as a standalone `.html` file.
-    *   Include interactive charts (ECharts) and insights.
-
-### 2. Live Data (Connectors)
-*   **Feature**: **Database Connectors (MySQL/PostgreSQL)**.
-    *   Direct connection from Electron Main Process.
-    *   Real-time query execution.
+**Core Pillars**:
+1.  **AI Insight**: Interactive storytelling with Visual Anchoring.
+2.  **Smart SQL Lab**: Monaco editor with schema autocomplete.
+3.  **Web Export**: Offline-capable HTML reports.
+4.  **Report Evolution**: Continuous flow & Rich Editing.
 
 ---
 

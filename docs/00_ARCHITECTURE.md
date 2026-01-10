@@ -35,6 +35,7 @@
 ### 2.3 Frontend (渲染进程)
 *   **Framework**: **React 18** + **Vite**.
 *   **UI System**: **Tailwind CSS** + **Shadcn UI** (Radix Primitives).
+*   **Design Language**: **"Wansan Airy"**. 强调**零边框 (Zero-Border)**、**大圆角 (2.5rem)** 和 **高层级柔和阴影 (Shadow-2xl)**，移除所有非必要的视觉噪音（如 Grid Lines 或 Card Borders），让数据内容"悬浮"在画布上。
 *   **State Management**:
     *   **Zustand**: 全局应用状态 (UI, Layout, Metadata).
     *   **TanStack Query**: 异步任务管理 (AI Request, SQL Execution).
@@ -92,7 +93,8 @@ graph TD
 
 ### 4.2 View Modes
 1.  **Draft Mode (Chat Focused)**: 用户在中间栏探索数据，右侧看板可折叠。
-2.  **Dashboard Mode (Result Focused)**: 右侧看板全屏，中间栏折叠，用于演示或排版。
+2.  **Dashboard Mode (Result Focused)**: 右侧看板全屏，中间栏折叠，支持 Paged A4 分页。
+3.  **Report Mode (Narrative Focused)**: **New in v1.4**. 采用 "Continuous Flow" 布局，卡片垂直无缝排列，支持所见即所得的富文本编辑和拖拽排版，专为长篇叙事报告设计。
 
 ---
 
