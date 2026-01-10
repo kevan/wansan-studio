@@ -1310,8 +1310,11 @@ export const useProjectStore = create<ProjectState>()(
         }
       },
 
-      loadProject: (data: ProjectData) =>
-        set({ ...data, isProjectLoaded: true }),
+      loadProject: (data: ProjectData) => {
+        // Explicitly exclude transient UI states that shouldn't be loaded from file
+        const { editingReportId: _er, ...rest } = data as any
+        set({ ...rest, isProjectLoaded: true, editingReportId: null })
+      },
 
       cleanupZombieFiles: () =>
         set(state => ({
