@@ -13,7 +13,6 @@ import {
   Table2,
   X,
   Type,
-  LayoutTemplate,
   Columns,
   Rows,
 } from 'lucide-react'
@@ -32,6 +31,7 @@ import { adaptChartConfig } from '@/lib/viz-adapter'
 import { InsightPanel } from '../InsightPanel'
 import { useGenerateInsight } from '@/hooks/useIPC'
 import { CodeEditor } from '@/components/ui/CodeEditor'
+import TextareaAutosize from 'react-textarea-autosize'
 
 const chartTypeOptions: Array<{
   value: ChartType
@@ -87,6 +87,7 @@ export function ChartFullView() {
   const [localConfig, setLocalConfig] = useState<ReportData['vizConfig'] | null>(null)
   const [localTitle, setLocalTitle] = useState<string | null>(null)
   const [localContent, setLocalContent] = useState<string | null>(null)
+  const [localSummary, setLocalSummary] = useState<string | null>(null)
   const [localInsight, setLocalInsight] = useState<InsightResult | null>(null)
 
   // Derive effective values
@@ -94,6 +95,7 @@ export function ChartFullView() {
   const effectiveConfig = localConfig ?? report?.reportData.vizConfig
   const effectiveTitle = localTitle ?? report?.reportData.title ?? ''
   const effectiveContent = localContent ?? report?.reportData.content ?? ''
+  const effectiveSummary = localSummary ?? report?.reportData.summary ?? ''
   const effectiveInsight = localInsight ?? report?.reportData.insight
 
   // Reset local state when switching or closing reports
@@ -102,6 +104,7 @@ export function ChartFullView() {
     setLocalConfig(null)
     setLocalTitle(null)
     setLocalContent(null)
+    setLocalSummary(null)
     setLocalInsight(null)
   }, [editingReportId])
 
@@ -167,9 +170,9 @@ export function ChartFullView() {
     (action: 'focus' | 'view_data' | 'breakdown', payload: { name: string; dimension?: string }) => {
       setEditingReportId(null)
       if (report?.sourceMessageId) { useChatStore.getState().setReplyTo(report.sourceMessageId) }
-      // ... drill down implementation same as before
+      // sendMessage implementation would go here if needed in full view
     },
-    [effectiveConfig, report, setEditingReportId, t]
+    [report, setEditingReportId]
   )
 
   const handleSave = () => {
@@ -181,18 +184,12 @@ export function ChartFullView() {
         vizConfig: effectiveConfig,
         title: effectiveTitle.trim(),
         content: effectiveContent,
+        summary: effectiveSummary,
         insight: effectiveInsight
     }
 
     useProjectStore.getState().updateWidgetData(report.id, finalReportData)
     setEditingReportId(null)
-  }
-
-  const handleUpdateReportConfig = (updates: Partial<ReportWidget['reportConfig']>) => {
-    if (!report) return
-    updateReportConfig(report.id, {
-      reportConfig: { ...(report.reportConfig || { layoutType: 'flow', showInsight: true }), ...updates },
-    })
   }
 
   let displayMode = 'chart'
@@ -208,32 +205,52 @@ export function ChartFullView() {
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
       <div className={cn('relative flex h-[92vh] w-[94vw] rounded-xl border border-zinc-200 bg-white shadow-2xl overflow-hidden', modalMaxWidth)}>
         <div className="flex flex-1 flex-col min-w-0">
-          <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-3 shrink-0">
-            <input
-              className="w-full max-w-lg border-none text-lg font-semibold text-zinc-900 outline-none focus:ring-0"
-              value={effectiveTitle}
-              onChange={e => setLocalTitle(e.target.value)}
-            />
-            <div className="flex items-center gap-2">
-              <button onClick={() => setEditingReportId(null)} className="inline-flex items-center gap-2 rounded-md border border-zinc-200 px-3 py-1.5 text-sm text-zinc-600 hover:bg-zinc-100">
-                <X className="h-4 w-4" />{t('close')}
-              </button>
-              <button onClick={handleSave} className="inline-flex items-center gap-2 rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 transition-colors">
-                <Save className="h-4 w-4" />{t('save')}
-              </button>
+          
+          {/* 1. Header & Summary Area */}
+          <div className="flex flex-col border-b border-zinc-100 bg-white px-6 py-4 shrink-0 gap-2">
+            <div className="flex items-center justify-between gap-4">
+                <input
+                    className="flex-1 border-none text-2xl font-black text-zinc-900 outline-none focus:ring-0 p-0 tracking-tight"
+                    value={effectiveTitle}
+                    onChange={e => setLocalTitle(e.target.value)}
+                    placeholder="Untitled Report"
+                />
+                <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => setEditingReportId(null)} className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-2 text-sm font-bold text-zinc-600 hover:bg-zinc-50 transition-all">
+                        <X className="h-4 w-4" />{t('close')}
+                    </button>
+                    <button onClick={handleSave} className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-zinc-200 hover:bg-zinc-800 transition-all active:scale-95">
+                        <Save className="h-4 w-4" />{t('save')}
+                    </button>
+                </div>
             </div>
+            
+            {/* ReportData.summary Editor (Subtitle style) */}
+            {effectiveType !== 'text' && (
+                <div className="relative group">
+                    <TextareaAutosize
+                        value={effectiveSummary}
+                        onChange={e => setLocalSummary(e.target.value)}
+                        placeholder="Add a brief executive summary for this data..."
+                        className="w-full resize-none bg-transparent border-none p-0 text-sm text-zinc-500 font-medium focus:ring-0 outline-none leading-relaxed placeholder:text-zinc-300"
+                        minRows={1}
+                        maxRows={4}
+                    />
+                </div>
+            )}
           </div>
 
           <div className="flex flex-1 overflow-hidden">
-            <div className="flex-1 p-5 min-w-0 flex flex-col gap-4">
-              <div className="flex-1 min-h-0 rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 relative overflow-hidden">
+            <div className="flex-1 p-6 min-w-0 flex flex-col gap-6 overflow-y-auto bg-zinc-50/30">
+              {/* 2. Primary Visualization Area */}
+              <div className="flex-1 min-h-[400px] rounded-2xl border border-zinc-200 bg-white p-6 relative overflow-hidden shadow-sm shrink-0">
                 {displayMode === 'text' && (
-                  <div className="h-full w-full bg-white flex flex-col overflow-hidden relative">
-                    <CodeEditor
-                      value={effectiveContent}
-                      onChange={setLocalContent}
-                      className="h-full"
-                      language="markdown"
+                  <div className="h-full w-full bg-white rounded-lg overflow-hidden border border-zinc-50">
+                    <CodeEditor 
+                        value={effectiveContent} 
+                        onChange={setLocalContent} 
+                        language="markdown" 
+                        className="h-full" 
                     />
                   </div>
                 )}
@@ -255,13 +272,12 @@ export function ChartFullView() {
                 )}
               </div>
 
+              {/* 3. Business Insight Panel (Details Area) */}
               {displayMode !== 'text' && (
-                <div className="shrink-0">
+                <div className="shrink-0 pb-4">
                   <InsightPanel 
-                    title={effectiveTitle}
-                    chartType={effectiveType}
                     chartData={data} 
-                    config={effectiveConfig} // Pass config
+                    config={effectiveConfig}
                     insight={effectiveInsight} 
                     onGenerateInsight={handleGenerateInsight} 
                     onSave={setLocalInsight} 
@@ -273,14 +289,25 @@ export function ChartFullView() {
               )}
             </div>
 
-            <div className="w-[320px] border-l border-zinc-200 bg-zinc-50/30 p-4 overflow-y-auto shrink-0 flex flex-col gap-6">
+            {/* 4. Settings Sidebar */}
+            <div className="w-[340px] border-l border-zinc-200 bg-white p-6 overflow-y-auto shrink-0 flex flex-col gap-8">
               <div>
-                <div className="mb-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t('visualization')}</div>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="mb-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-1">{t('visualization')}</div>
+                <div className="grid grid-cols-5 gap-2.5">
                     {chartTypeOptions.map(option => {
                       const Icon = option.icon
+                      const isActive = effectiveType === option.value
                       return (
-                        <button key={option.value} onClick={() => handleChartTypeChange(option.value)} className={cn('flex flex-col items-center gap-1 rounded-xl border p-2 text-[10px] font-bold transition-all', effectiveType === option.value ? 'border-zinc-900 bg-zinc-900 text-white shadow-lg' : 'border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300 hover:bg-zinc-50')}>
+                        <button 
+                            key={option.value} 
+                            onClick={() => handleChartTypeChange(option.value)} 
+                            className={cn(
+                                'flex flex-col items-center gap-1.5 rounded-xl border p-2.5 text-[10px] font-bold transition-all duration-200', 
+                                isActive 
+                                    ? 'border-zinc-900 bg-zinc-900 text-white shadow-xl scale-105' 
+                                    : 'border-zinc-100 bg-zinc-50 text-zinc-400 hover:border-zinc-300 hover:bg-white hover:text-zinc-600'
+                            )}
+                        >
                           <Icon className="w-4 h-4" />{t(option.label)}
                         </button>
                       )
@@ -289,26 +316,40 @@ export function ChartFullView() {
               </div>
 
               {showAxisControls && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                <div className="space-y-6 animate-in slide-in-from-right-2">
+                  <div className="flex items-center justify-between text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-1">
                     <span>{t('axes')}</span>
-                    <button onClick={handleSwapAxes} className="p-1 hover:bg-zinc-200 rounded text-zinc-600 transition-colors"><ArrowUpDown className="w-3 h-3" /></button>
+                    <button onClick={handleSwapAxes} className="p-1.5 hover:bg-zinc-100 rounded-lg text-zinc-500 transition-colors border border-transparent hover:border-zinc-200"><ArrowUpDown className="w-3.5 h-3.5" /></button>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-zinc-500 ml-1 uppercase">{t('x_axis')}</label>
-                    <select value={effectiveConfig?.x_axis ?? ''} onChange={e => handleXAxisChange(e.target.value)} className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-indigo-100 outline-none">
+                  
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-500 ml-1 uppercase tracking-tight">{t('x_axis')}</label>
+                    <select value={effectiveConfig?.x_axis ?? ''} onChange={e => handleXAxisChange(e.target.value)} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-xs font-bold text-zinc-700 focus:ring-2 focus:ring-indigo-100 focus:bg-white outline-none transition-all cursor-pointer">
                       <option value="">{t('select_column')}</option>
                       {availableColumns.map(col => <option key={col} value={col}>{col}</option>)}
                     </select>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-zinc-500 ml-1 uppercase">{t('y_axis')}</label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {yAxisOptions.map(col => (
-                        <button key={col} onClick={() => handleYAxisToggle(col)} className={cn('px-2.5 py-1.5 text-[10px] font-bold rounded-lg border transition-all', yAxisValues.includes(col) ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300')}>
-                          {col}
-                        </button>
-                      ))}
+
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-zinc-500 ml-1 uppercase tracking-tight">{t('y_axis')}</label>
+                    <div className="flex flex-wrap gap-2">
+                      {yAxisOptions.map(col => {
+                        const isSelected = yAxisValues.includes(col)
+                        return (
+                            <button 
+                                key={col} 
+                                onClick={() => handleYAxisToggle(col)} 
+                                className={cn(
+                                    'px-3 py-2 text-[10px] font-bold rounded-xl border transition-all duration-200', 
+                                    isSelected 
+                                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100' 
+                                        : 'bg-zinc-50 border-zinc-100 text-zinc-500 hover:border-zinc-300 hover:bg-white'
+                                )}
+                            >
+                            {col}
+                            </button>
+                        )
+                      })}
                     </div>
                   </div>
                 </div>
