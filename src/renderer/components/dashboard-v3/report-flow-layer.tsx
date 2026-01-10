@@ -156,18 +156,19 @@ export function ReportFlowLayer({ width, scale }: ReportFlowLayerProps) {
               </div>
             ))
           ) : (
-          <div className="py-24 text-center">
-            <div className="inline-flex p-4 bg-zinc-100 rounded-full mb-4">
-              <FileText className="w-8 h-8 text-zinc-400" />
+            <div className="py-24 text-center">
+              <div className="inline-flex p-4 bg-zinc-100 rounded-full mb-4">
+                <FileText className="w-8 h-8 text-zinc-400" />
+              </div>
+              <p className="text-zinc-500">
+                {t(
+                  'no_pinned_reports',
+                  'Add charts to your dashboard to build a report.'
+                )}
+              </p>
             </div>
-            <p className="text-zinc-500">
-              {t(
-                'no_pinned_reports',
-                'Add charts to your dashboard to build a report.'
-              )}
-            </p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
