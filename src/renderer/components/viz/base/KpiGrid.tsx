@@ -124,7 +124,7 @@ export function KpiGrid({
           <div
             key={kpi.id}
             className={cn(
-              'bg-white border border-zinc-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 group flex flex-col items-center justify-center text-center relative overflow-hidden',
+              'bg-white border border-zinc-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 group/kpi flex flex-col items-center justify-center text-center relative overflow-hidden',
               count <= 2 ? 'min-h-[160px]' : 'min-h-[120px]',
               isHighlighted &&
                 'ring-2 ring-indigo-500 border-transparent shadow-xl scale-[1.02] z-10'
@@ -133,13 +133,13 @@ export function KpiGrid({
             <div
               className={cn(
                 'absolute top-0 left-0 w-1 h-full bg-indigo-500 transition-opacity',
-                isHighlighted ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                isHighlighted ? 'opacity-100' : 'opacity-0 group-hover/kpi:opacity-100'
               )}
             />
 
             <div
               className={cn(
-                'font-black text-indigo-600 mb-1 font-mono tracking-tight group-hover:scale-105 transition-transform duration-300',
+                'font-black text-indigo-600 mb-1 font-mono tracking-tight group-hover/kpi:scale-105 transition-transform duration-300',
                 styles.value
               )}
             >
