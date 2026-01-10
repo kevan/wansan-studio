@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { VizHeader } from './VizHeader'
 import { VizChart, DrillDownActionType } from './VizChart'
-import { KpiCard } from '../base/KpiCard'
+import { KpiGrid } from '../base/KpiGrid'
 import { cn } from '@/utils/cn'
 import { Lightbulb } from 'lucide-react'
 import { DataTable } from '../base/DataTable'
@@ -126,22 +126,10 @@ const VizRendererBase = ({
             />
           )}
 
-          {displayMode === 'bignumber' && tableData && (
+          {displayMode === 'bignumber' && (
             <div className="h-full w-full flex items-center justify-center">
-              <KpiCard
-                value={(() => {
-                  const yCol = Array.isArray(vizConfig?.y_axis)
-                    ? vizConfig.y_axis[0]
-                    : vizConfig?.y_axis
-                  const targetCol = yCol || Object.keys(tableData[0])[0]
-                  return tableData[0][targetCol]
-                })()}
-                label={(() => {
-                  const yCol = Array.isArray(vizConfig?.y_axis)
-                    ? vizConfig.y_axis[0]
-                    : vizConfig?.y_axis
-                  return yCol || Object.keys(tableData[0])[0]
-                })()}
+              <KpiGrid
+                reportData={{ title, chartType, tableData, vizConfig }}
                 variant={variant}
               />
             </div>
@@ -195,22 +183,10 @@ const VizRendererBase = ({
           </div>
         )}
 
-        {displayMode === 'bignumber' && tableData && (
-          <div className="h-full w-full flex items-center justify-center">
-            <KpiCard
-              value={(() => {
-                const yCol = Array.isArray(vizConfig?.y_axis)
-                  ? vizConfig.y_axis[0]
-                  : vizConfig?.y_axis
-                const targetCol = yCol || Object.keys(tableData[0])[0]
-                return tableData[0][targetCol]
-              })()}
-              label={(() => {
-                const yCol = Array.isArray(vizConfig?.y_axis)
-                  ? vizConfig.y_axis[0]
-                  : vizConfig?.y_axis
-                return yCol || Object.keys(tableData[0])[0]
-              })()}
+        {displayMode === 'bignumber' && (
+          <div className="w-full flex items-center justify-center py-4">
+            <KpiGrid
+              reportData={{ title, chartType, tableData, vizConfig }}
               variant={variant}
             />
           </div>

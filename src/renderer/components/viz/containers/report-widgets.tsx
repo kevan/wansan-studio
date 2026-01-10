@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { cn } from '@/utils/cn'
 import { ReportTitleEditor } from '../base/ReportTitleEditor'
+import { KpiGrid } from '../base/KpiGrid'
 import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -56,35 +57,8 @@ export function ReportSectionHeader({
 // --- KPI Row ---
 export function ReportKpiRow({ reports }: { reports: any[] }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-      {reports.map(report => {
-        const reportData = report.reportData
-        const tableData = reportData.tableData || []
-        const vizConfig = reportData.vizConfig
-        
-        // Extract Value logic same as KpiCard usage
-        const yCol = Array.isArray(vizConfig?.y_axis)
-            ? vizConfig.y_axis[0]
-            : vizConfig?.y_axis
-        const value = tableData[0] ? tableData[0][yCol || Object.keys(tableData[0])[0]] : '-'
-        const label = yCol || Object.keys(tableData[0] || {})[0] || 'Metric'
-
-        return (
-          <div key={report.id} className="bg-white border border-zinc-100 rounded-2xl p-6 shadow-sm flex flex-col items-center justify-center text-center hover:shadow-md transition-shadow group cursor-default">
-             <div className="text-3xl font-black text-indigo-600 mb-2 font-mono tracking-tight group-hover:scale-110 transition-transform duration-300">
-                {typeof value === 'number' ? value.toLocaleString() : value}
-             </div>
-             <div className="text-xs font-bold text-zinc-400 uppercase tracking-widest group-hover:text-indigo-400 transition-colors">
-                {reportData.title || label}
-             </div>
-             {reportData.summary && (
-                 <div className="mt-3 pt-3 border-t border-zinc-50 text-[10px] text-zinc-500 leading-tight">
-                     {reportData.summary}
-                 </div>
-             )}
-          </div>
-        )
-      })}
+    <div className="mb-16">
+      <KpiGrid widgets={reports} variant="dashboard" />
     </div>
   )
 }
