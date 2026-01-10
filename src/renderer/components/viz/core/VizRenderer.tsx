@@ -131,6 +131,7 @@ const VizRendererBase = ({
               <KpiGrid
                 reportData={{ title, chartType, tableData, vizConfig }}
                 variant={variant}
+                highlightedItems={highlightedItems}
               />
             </div>
           )}
@@ -188,6 +189,7 @@ const VizRendererBase = ({
             <KpiGrid
               reportData={{ title, chartType, tableData, vizConfig }}
               variant={variant}
+              highlightedItems={highlightedItems}
             />
           </div>
         )}
