@@ -260,6 +260,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
               setExpanded(false)
             }}
             onHighlight={setHighlightedItems}
+            readOnly={true}
           />
         </div>
       )}
