@@ -125,18 +125,24 @@ export function KpiGrid({
           <div
             key={kpi.id}
             className={cn(
-              'bg-white border border-zinc-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 group/kpi flex flex-col items-center justify-center text-center relative overflow-hidden',
+              'bg-white border border-zinc-100 rounded-2xl p-5 shadow-sm transition-all duration-300 group/kpi flex flex-col items-center justify-center text-center relative overflow-hidden',
               count <= 2 ? 'min-h-[160px]' : 'min-h-[120px]',
+              // Unified Style: Apply same effects for Hover and Anchoring
+              'hover:ring-2 hover:ring-indigo-500 hover:border-transparent hover:shadow-xl hover:scale-[1.02] hover:z-10',
               isHighlighted ? 'ring-2 ring-indigo-500 border-transparent shadow-xl scale-[1.02] z-10' : (isAnchoringActive && 'opacity-40 grayscale-[0.5]')
             )}
           >
             <div
-              className="absolute top-0 left-0 w-1 h-full bg-indigo-500 transition-opacity opacity-0 group-hover/kpi:opacity-100"
+              className={cn(
+                "absolute top-0 left-0 w-1 h-full bg-indigo-500 transition-opacity",
+                isHighlighted ? "opacity-100" : "opacity-0 group-hover/kpi:opacity-100"
+              )}
             />
 
             <div
               className={cn(
-                'font-black text-indigo-600 mb-1 font-mono tracking-tight group-hover/kpi:scale-105 transition-transform duration-300',
+                'font-black text-indigo-600 mb-1 font-mono tracking-tight transition-transform duration-300',
+                isHighlighted ? 'scale-105' : 'group-hover/kpi:scale-105',
                 styles.value
               )}
             >
