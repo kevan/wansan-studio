@@ -261,6 +261,7 @@ export function ChartFullView() {
                     title={effectiveTitle}
                     chartType={effectiveType}
                     chartData={data} 
+                    config={effectiveConfig} // Pass config
                     insight={effectiveInsight} 
                     onGenerateInsight={handleGenerateInsight} 
                     onSave={setLocalInsight} 

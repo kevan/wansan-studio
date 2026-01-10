@@ -46,6 +46,8 @@ interface InsightPanelProps {
   chartData: Array<Record<string, unknown>>
   /** Chart type for context */
   chartType?: string
+  /** Current chart configuration */
+  config?: any
   /** Existing insight text if available */
   insight?: string | InsightResult
   /** Called to request AI insight generation */
@@ -80,6 +82,7 @@ export function InsightPanel({
   onRemove,
   onHighlight,
   onSave,
+  config,
   readOnly = false,
 }: InsightPanelProps) {
   const { t, i18n } = useTranslation('common')
@@ -268,41 +271,26 @@ export function InsightPanel({
               <div key={f.id} className="bg-zinc-50 border border-zinc-200 rounded-xl p-3 relative group/finding">
                 <div className="flex gap-3">
                   {/* Icon Picker */}
-                  <div className="flex flex-col gap-2 pt-1">
-                    <div className="grid grid-cols-4 gap-1 p-1 bg-white border border-zinc-100 rounded-lg shadow-sm">
-                      {Object.entries(SENTIMENT_ICONS).map(([key, config]) => {
-                        const Icon = config.icon
-                        const isActive = f.sentiment === key
-                        return (
-                          <button
-                            key={key}
-                            onClick={() => updateFinding(f.id, { sentiment: key })}
-                            className={cn(
-                              'p-1.5 rounded transition-all',
-                              isActive ? 'bg-zinc-100 shadow-inner' : 'hover:bg-zinc-50 opacity-40 hover:opacity-100'
-                            )}
-                            title={config.label}
-                          >
-                            <Icon className={cn('w-3.5 h-3.5', config.color)} />
-                          </button>
-                        )
-                      })}
-                    </div>
+                  <div className="relative pt-1 shrink-0">
+                    <IconSelector 
+                        current={f.sentiment || 'neutral'} 
+                        onSelect={(key) => updateFinding(f.id, { sentiment: key })} 
+                    />
                   </div>
 
-                  <div className="flex-1 space-y-2">
+                  <div className="flex-1 space-y-2 min-w-0">
                     <TextareaAutosize
                       value={f.markdown}
                       onChange={e => updateFinding(f.id, { markdown: e.target.value })}
                       placeholder="Observation details..."
-                      className="w-full bg-transparent border-none p-0 text-sm focus:ring-0 outline-none resize-none"
+                      className="w-full bg-transparent border-none p-0 text-sm focus:ring-0 outline-none resize-none leading-relaxed"
                     />
                     
                     {/* Related Items Edit */}
                     <div className="flex flex-wrap gap-1.5 items-center">
                         <span className="text-[9px] font-bold text-zinc-400 uppercase mr-1">Anchors:</span>
                         {f.relatedItems?.map(item => (
-                            <div key={item} className="flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded border border-indigo-100">
+                            <div key={item} className="flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded border border-indigo-100 animate-in zoom-in-95">
                                 {item}
                                 <button 
                                     onClick={() => updateFinding(f.id, { relatedItems: f.relatedItems?.filter(i => i !== item) })}
@@ -313,7 +301,7 @@ export function InsightPanel({
                             </div>
                         ))}
                         <select 
-                            className="bg-transparent border-none text-[10px] text-zinc-400 focus:ring-0 outline-none cursor-pointer hover:text-indigo-600"
+                            className="bg-transparent border-none text-[10px] text-zinc-400 focus:ring-0 outline-none cursor-pointer hover:text-indigo-600 appearance-none font-bold"
                             onChange={(e) => {
                                 if (e.target.value && !f.relatedItems?.includes(e.target.value)) {
                                     updateFinding(f.id, { relatedItems: [...(f.relatedItems || []), e.target.value] })
@@ -322,9 +310,13 @@ export function InsightPanel({
                             }}
                         >
                             <option value="">+ Add Anchor</option>
-                            {Array.from(new Set(chartData.map(d => String(Object.values(d)[0])))).map(val => (
-                                <option key={val} value={val}>{val}</option>
-                            ))}
+                            {(() => {
+                                const xField = config?.x_axis || (chartData[0] ? Object.keys(chartData[0])[0] : null)
+                                if (!xField) return null
+                                return Array.from(new Set(chartData.map(d => String(d[xField])))).map(val => (
+                                    <option key={val} value={val}>{val}</option>
+                                ))
+                            })()}
                         </select>
                     </div>
                   </div>
@@ -420,7 +412,7 @@ export function InsightPanel({
         {/* Recommendation */}
         {recommendation && (
           <div className="flex items-start gap-3 p-3 bg-emerald-50/50 border border-emerald-100/50 rounded-lg">
-            <Lightbulb className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+            < Lightbulb className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-emerald-800 leading-relaxed font-medium">
               {recommendation}
             </div>
@@ -615,4 +607,51 @@ export function InsightPanel({
       {isExpanded && <div className="px-4 pb-4">{renderContent()}</div>}
     </div>
   )
+}
+
+function IconSelector({ current, onSelect }: { current: string, onSelect: (key: string) => void }) {
+    const [isOpen, setIsOpen] = useState(false)
+    const currentConfig = SENTIMENT_ICONS[current] || SENTIMENT_ICONS.neutral
+    const CurrentIcon = currentConfig.icon
+
+    return (
+        <div className="relative">
+            <button 
+                onClick={() => setIsOpen(!isOpen)}
+                className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-white border border-zinc-200 shadow-sm",
+                    isOpen ? "ring-2 ring-indigo-100 border-indigo-300" : "hover:border-indigo-200"
+                )}
+            >
+                <CurrentIcon className={cn("w-4 h-4", currentConfig.color)} />
+            </button>
+
+            {isOpen && (
+                <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+                    <div className="absolute left-0 top-full mt-1 bg-white border border-zinc-200 rounded-xl shadow-xl p-1.5 grid grid-cols-4 gap-1 z-50 animate-in fade-in zoom-in-95 duration-100 min-w-[140px]">
+                        {Object.entries(SENTIMENT_ICONS).map(([key, config]) => {
+                            const Icon = config.icon
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => {
+                                        onSelect(key)
+                                        setIsOpen(false)
+                                    }}
+                                    className={cn(
+                                        "p-2 rounded-lg transition-colors flex items-center justify-center",
+                                        current === key ? "bg-indigo-50" : "hover:bg-zinc-50"
+                                    )}
+                                    title={config.label}
+                                >
+                                    <Icon className={cn("w-4 h-4", config.color)} />
+                                </button>
+                            )
+                        })}
+                    </div>
+                </>
+            )}
+        </div>
+    )
 }
