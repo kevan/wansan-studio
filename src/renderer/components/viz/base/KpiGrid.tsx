@@ -97,9 +97,15 @@ export function KpiGrid({ reportData, widgets, variant = 'chat', className }: Kp
 
   // 2. Determine Font Scaling
   const getFontStyles = () => {
-    if (count >= 9) return { value: 'text-2xl', label: 'text-[9px]' }
-    if (count >= 5) return { value: 'text-3xl', label: 'text-[10px]' }
-    return { value: 'text-4xl', label: 'text-[11px]' }
+    const isDashboard = variant === 'dashboard'
+    
+    if (count >= 12) return { value: isDashboard ? 'text-lg' : 'text-xl', label: 'text-[8px]' }
+    if (count >= 9) return { value: isDashboard ? 'text-xl' : 'text-2xl', label: 'text-[9px]' }
+    if (count >= 5) return { value: isDashboard ? 'text-2xl' : 'text-3xl', label: 'text-[10px]' }
+    if (count >= 3) return { value: isDashboard ? 'text-3xl' : 'text-4xl', label: 'text-[11px]' }
+    
+    // 1-2 items: very prominent
+    return { value: isDashboard ? 'text-4xl' : 'text-5xl', label: 'text-[12px]' }
   }
 
   const styles = getFontStyles()
