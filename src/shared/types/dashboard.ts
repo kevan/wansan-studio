@@ -46,7 +46,15 @@ export interface InsightResult {
   findings: Array<{
     id: string
     markdown: string
-    sentiment?: 'positive' | 'negative' | 'neutral'
+    sentiment?:
+      | 'positive'
+      | 'negative'
+      | 'neutral'
+      | 'warning'
+      | 'growth'
+      | 'discovery'
+      | 'target'
+      | 'info'
     relatedItems?: string[]
   }>
   recommendation?: string

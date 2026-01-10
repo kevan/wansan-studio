@@ -13,12 +13,31 @@ import {
   TrendingDown,
   Minus,
   Lightbulb,
+  Rocket,
+  Target,
+  Info,
+  Plus,
+  Edit2,
+  Save,
+  X as CloseIcon,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { SimpleMarkdown } from '../ui/simple-markdown'
 import type { InsightResult } from '@shared/types/dashboard'
+import TextareaAutosize from 'react-textarea-autosize'
 
 type InsightState = 'idle' | 'consent' | 'analyzing' | 'done' | 'error'
+
+const SENTIMENT_ICONS: Record<string, { icon: any; color: string; label: string }> = {
+  positive: { icon: TrendingUp, color: 'text-emerald-500', label: 'Positive' },
+  negative: { icon: TrendingDown, color: 'text-rose-500', label: 'Negative' },
+  warning: { icon: AlertTriangle, color: 'text-amber-500', label: 'Warning' },
+  growth: { icon: Rocket, color: 'text-blue-500', label: 'Growth' },
+  discovery: { icon: Sparkles, color: 'text-purple-500', label: 'Discovery' },
+  target: { icon: Target, color: 'text-indigo-500', label: 'Target' },
+  info: { icon: Info, color: 'text-zinc-500', label: 'Info' },
+  neutral: { icon: Minus, color: 'text-zinc-400', label: 'Neutral' },
+}
 
 interface InsightPanelProps {
   /** Chart title for context */
@@ -41,16 +60,14 @@ interface InsightPanelProps {
   requestTrigger?: number
   onCancel?: () => void
   onRemove?: () => void
+  onSave?: (insight: InsightResult) => void
   /** Called when hovering over a finding to highlight chart elements */
   onHighlight?: (items: string[]) => void
-  /** If true, hides action buttons (Regenerate/Remove) */
   readOnly?: boolean
 }
 
 export function InsightPanel({
-  title = 'Chart',
   chartData,
-  chartType = 'bar',
   insight,
   onGenerateInsight,
   className,
@@ -62,31 +79,28 @@ export function InsightPanel({
   onCancel,
   onRemove,
   onHighlight,
+  onSave,
   readOnly = false,
 }: InsightPanelProps) {
   const { t, i18n } = useTranslation('common')
   const [state, setState] = useState<InsightState>(insight ? 'done' : 'idle')
   const [internalExpanded, setInternalExpanded] = useState(defaultExpanded)
-  const [insightData, setInsightData] = useState<string | InsightResult>(
-    insight || ''
+  const [insightData, setInsightData] = useState<InsightResult | null>(
+    typeof insight === 'string' ? null : (insight as InsightResult) || null
   )
   const [error, setError] = useState<string>('')
+  const [isEditing, setIsEditing] = useState(false)
+  const [editBuffer, setEditEditBuffer] = useState<InsightResult | null>(null)
 
   const isExpanded = expanded !== undefined ? expanded : internalExpanded
   const dataPointCount = chartData.length
 
   useEffect(() => {
-    if (insight) {
+    if (insight && typeof insight !== 'string') {
       setInsightData(insight)
       setState('done')
       if (expanded === undefined && !internalExpanded) {
         setInternalExpanded(true)
-      }
-    } else {
-      // If insight removed externally
-      if (state === 'done') {
-        setState('idle')
-        setInsightData('')
       }
     }
   }, [insight])
@@ -122,7 +136,8 @@ export function InsightPanel({
     setError('')
     try {
       const result = await onGenerateInsight(chartData)
-      setInsightData(result)
+      const data = typeof result === 'string' ? null : result
+      setInsightData(data)
       setState('done')
       setInternalExpanded(true)
       onExpandChange?.(true)
@@ -131,6 +146,58 @@ export function InsightPanel({
       setState('error')
     }
   }, [chartData, onGenerateInsight, onExpandChange])
+
+  const handleStartEdit = () => {
+    setEditEditBuffer(JSON.parse(JSON.stringify(insightData || {
+        summary: '',
+        findings: [],
+        recommendation: ''
+    })))
+    setIsEditing(true)
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditing(false)
+    setEditEditBuffer(null)
+  }
+
+  const handleSaveEdit = () => {
+    if (editBuffer && onSave) {
+      onSave(editBuffer)
+      setInsightData(editBuffer)
+    }
+    setIsEditing(false)
+  }
+
+  const updateFinding = (id: string, updates: any) => {
+    if (!editBuffer) return
+    setEditEditBuffer({
+      ...editBuffer,
+      findings: editBuffer.findings.map(f => (f.id === id ? { ...f, ...updates } : f)),
+    })
+  }
+
+  const addFinding = () => {
+    if (!editBuffer) return
+    const newFinding = {
+      id: crypto.randomUUID(),
+      markdown: '',
+      sentiment: 'neutral' as const,
+      relatedItems: [],
+    }
+    setEditEditBuffer({
+      ...editBuffer,
+      findings: [...editBuffer.findings, newFinding],
+    })
+  }
+
+  const removeFinding = (id: string) => {
+    if (!editBuffer) return
+    setEditEditBuffer({
+      ...editBuffer,
+      findings: editBuffer.findings.filter(f => f.id !== id),
+    })
+  }
 
   const handleRegenerate = useCallback(
     async (e: React.MouseEvent) => {
@@ -146,7 +213,7 @@ export function InsightPanel({
       if (onRemove) {
         onRemove()
         setState('idle')
-        setInsightData('')
+        setInsightData(null)
       }
     },
     [onRemove]
@@ -158,27 +225,159 @@ export function InsightPanel({
   }, [onCancel])
 
   const renderSentimentIcon = (sentiment?: string) => {
-    switch (sentiment) {
-      case 'positive':
-        return (
-          <TrendingUp className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-        )
-      case 'negative':
-        return (
-          <TrendingDown className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" />
-        )
-      default:
-        return <Minus className="w-4 h-4 text-zinc-400 mt-0.5 flex-shrink-0" />
-    }
+    const config = SENTIMENT_ICONS[sentiment || 'neutral'] || SENTIMENT_ICONS.neutral
+    const Icon = config.icon
+    return <Icon className={cn('w-4 h-4 mt-0.5 flex-shrink-0', config.color)} />
+  }
+
+  const renderEditForm = () => {
+    if (!editBuffer) return null
+    const language = i18n.language
+
+    return (
+      <div className="space-y-6 pt-2 pb-4">
+        {/* Summary Edit */}
+        <div className="space-y-2">
+          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">
+            {language === 'zh' ? '概览' : 'Summary'}
+          </label>
+          <TextareaAutosize
+            value={editBuffer.summary}
+            onChange={e => setEditEditBuffer({ ...editBuffer, summary: e.target.value })}
+            placeholder="Main conclusion..."
+            className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+          />
+        </div>
+
+        {/* Findings Edit */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between ml-1">
+            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+              {language === 'zh' ? '关键发现' : 'Key Findings'}
+            </label>
+            <button
+              onClick={addFinding}
+              className="p-1 hover:bg-indigo-50 text-indigo-600 rounded transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="space-y-3">
+            {editBuffer.findings.map(f => (
+              <div key={f.id} className="bg-zinc-50 border border-zinc-200 rounded-xl p-3 relative group/finding">
+                <div className="flex gap-3">
+                  {/* Icon Picker */}
+                  <div className="flex flex-col gap-2 pt-1">
+                    <div className="grid grid-cols-4 gap-1 p-1 bg-white border border-zinc-100 rounded-lg shadow-sm">
+                      {Object.entries(SENTIMENT_ICONS).map(([key, config]) => {
+                        const Icon = config.icon
+                        const isActive = f.sentiment === key
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => updateFinding(f.id, { sentiment: key })}
+                            className={cn(
+                              'p-1.5 rounded transition-all',
+                              isActive ? 'bg-zinc-100 shadow-inner' : 'hover:bg-zinc-50 opacity-40 hover:opacity-100'
+                            )}
+                            title={config.label}
+                          >
+                            <Icon className={cn('w-3.5 h-3.5', config.color)} />
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex-1 space-y-2">
+                    <TextareaAutosize
+                      value={f.markdown}
+                      onChange={e => updateFinding(f.id, { markdown: e.target.value })}
+                      placeholder="Observation details..."
+                      className="w-full bg-transparent border-none p-0 text-sm focus:ring-0 outline-none resize-none"
+                    />
+                    
+                    {/* Related Items Edit */}
+                    <div className="flex flex-wrap gap-1.5 items-center">
+                        <span className="text-[9px] font-bold text-zinc-400 uppercase mr-1">Anchors:</span>
+                        {f.relatedItems?.map(item => (
+                            <div key={item} className="flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded border border-indigo-100">
+                                {item}
+                                <button 
+                                    onClick={() => updateFinding(f.id, { relatedItems: f.relatedItems?.filter(i => i !== item) })}
+                                    className="hover:text-rose-500 ml-1"
+                                >
+                                    <CloseIcon className="w-2.5 h-2.5" />
+                                </button>
+                            </div>
+                        ))}
+                        <select 
+                            className="bg-transparent border-none text-[10px] text-zinc-400 focus:ring-0 outline-none cursor-pointer hover:text-indigo-600"
+                            onChange={(e) => {
+                                if (e.target.value && !f.relatedItems?.includes(e.target.value)) {
+                                    updateFinding(f.id, { relatedItems: [...(f.relatedItems || []), e.target.value] })
+                                }
+                                e.target.value = ''
+                            }}
+                        >
+                            <option value="">+ Add Anchor</option>
+                            {Array.from(new Set(chartData.map(d => String(Object.values(d)[0])))).map(val => (
+                                <option key={val} value={val}>{val}</option>
+                            ))}
+                        </select>
+                    </div>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => removeFinding(f.id)}
+                  className="absolute -right-2 -top-2 w-6 h-6 bg-white border border-zinc-200 rounded-full flex items-center justify-center text-zinc-400 hover:text-rose-500 shadow-sm opacity-0 group-hover/finding:opacity-100 transition-opacity"
+                >
+                  <CloseIcon className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Recommendation Edit */}
+        <div className="space-y-2">
+          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">
+            {language === 'zh' ? '建议' : 'Recommendation'}
+          </label>
+          <TextareaAutosize
+            value={editBuffer.recommendation}
+            onChange={e => setEditEditBuffer({ ...editBuffer, recommendation: e.target.value })}
+            placeholder="Actionable suggestion..."
+            className="w-full bg-emerald-50/30 border border-emerald-100/50 rounded-lg p-3 text-sm text-emerald-900 focus:ring-2 focus:ring-emerald-100 outline-none transition-all"
+          />
+        </div>
+
+        {/* Footer Actions */}
+        <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100 mt-4">
+            <button
+                onClick={handleCancelEdit}
+                className="px-3 py-1.5 text-xs font-bold text-zinc-500 hover:bg-zinc-100 rounded-lg transition-colors"
+            >
+                {t('cancel')}
+            </button>
+            <button
+                onClick={handleSaveEdit}
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100"
+            >
+                <Save className="w-3.5 h-3.5" />
+                {t('save')}
+            </button>
+        </div>
+      </div>
+    )
   }
 
   const renderContent = () => {
-    if (typeof insightData === 'string') {
-      return <SimpleMarkdown content={insightData} />
-    }
     if (!insightData) return null
+    if (isEditing) return renderEditForm()
 
-    const { summary, findings, recommendation } = insightData as InsightResult
+    const { summary, findings, recommendation } = insightData
     const language = i18n.language
 
     return (
@@ -328,7 +527,8 @@ export function InsightPanel({
     <div
       className={cn(
         'border border-indigo-100 bg-gradient-to-br from-indigo-50/30 to-white rounded-xl overflow-hidden',
-        className
+        className,
+        isEditing && 'ring-2 ring-indigo-500 border-transparent shadow-2xl'
       )}
     >
       {/* Header */}
@@ -344,8 +544,20 @@ export function InsightPanel({
         </div>
 
         <div className="flex items-center gap-1">
-          {isExpanded && !readOnly && (
+          {isExpanded && !isEditing && (
             <>
+              {!readOnly && (
+                <button
+                  onClick={e => {
+                    e.stopPropagation()
+                    handleStartEdit()
+                  }}
+                  className="p-1.5 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded bg-transparent transition-colors"
+                  title={t('edit') || 'Edit'}
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+              )}
               <button
                 onClick={handleRegenerate}
                 className="p-1.5 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded bg-transparent transition-colors"
