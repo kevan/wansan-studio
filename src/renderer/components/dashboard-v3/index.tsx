@@ -26,6 +26,7 @@ export function DashboardCanvasV3({
   const layoutScenario = useWorkbenchStore(state => state.layoutScenario)
   const setLayoutScenario = useWorkbenchStore(state => state.setLayoutScenario)
   const pageCount = useWorkbenchStore(state => state.pageCount)
+  const editingReportId = useWorkbenchStore(state => state.editingReportId)
   // const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const contentLayout = useUIStore(s => s.contentLayout)
   const sidebarLayout = useUIStore(s => s.sidebarLayout)
@@ -175,7 +176,8 @@ export function DashboardCanvasV3({
   const gridWidth = isA4 ? PAGE_WIDTH_PX : SCREEN_WIDTH_PX
   const isReportMode = canvasConfig.layout === 'report'
   // Allow zooming in dashboard/a4 modes, but force 1.0 in Presentation or Report Mode
-  const activeScale = isPresentationMode || isReportMode ? 1.0 : zoom / 100
+  const activeScale = isPresentationMode ? 1.0 : zoom / 100
+  const editingReportId = useWorkbenchStore(state => state.editingReportId)
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
@@ -240,7 +242,7 @@ export function DashboardCanvasV3({
           </div>
         </div>
 
-        <ChartFullView />
+        <ChartFullView key={editingReportId || 'closed'} />
       </div>
     </div>
   )
