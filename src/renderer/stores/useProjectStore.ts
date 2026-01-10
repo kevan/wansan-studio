@@ -83,9 +83,8 @@ export interface ProjectState extends ProjectData {
     update: Partial<ReportWidget> | ((w: ReportWidget) => ReportWidget)
   ) => void
   updateWidgetData: (id: string, update: Partial<ReportData>) => void
-  updateRegistryEntry: (widgetId: string, updates: Partial<ReportData>) => void
+  updateRegistryByWidgetId: (widgetId: string, updates: Partial<ReportData>) => void
   updateLayout: (layout: Layout[]) => void
-  updateReportTitle: (id: string, title: string) => void
   setCanvasConfig: (config: any) => void
   setLayoutScenario: (scenario: LayoutScenario) => void
   setEditingReportId: (id: string | null) => void
@@ -657,7 +656,7 @@ export const useProjectStore = create<ProjectState>()(
           }
         }),
 
-      updateRegistryEntry: (widgetId, updates) =>
+      updateRegistryByWidgetId: (widgetId, updates) =>
         set(state => {
           const currentData = state.widgetRegistry[widgetId]
           if (!currentData) return state
@@ -701,30 +700,7 @@ export const useProjectStore = create<ProjectState>()(
           return state
         }),
 
-      updateReportTitle: (id: string, title: string) =>
-        set(state => {
-          // Need to update Registry
-          const session = state.sessions.find(
-            s => s.id === state.activeSessionId
-          )
-          if (!session) return state
-          const widget = session.dashboard.widgets.find(w => w.id === id)
-          if (!widget || !widget.widgetId) return state
 
-          const oldData = state.widgetRegistry[widget.widgetId] || {}
-
-          return {
-            widgetRegistry: {
-              ...state.widgetRegistry,
-              [widget.widgetId]: { ...oldData, title },
-            },
-            sessions: state.sessions.map(s =>
-              s.id === state.activeSessionId
-                ? { ...s, lastModified: Date.now() }
-                : s
-            ),
-          }
-        }),
 
       setCanvasConfig: (config: any) =>
         set(state => ({
@@ -1351,9 +1327,8 @@ export const useProjectStore = create<ProjectState>()(
           removeWidget: _removeWidget,
           updateWidget: _updateWidget,
           updateWidgetData: _updateWidgetData,
-          updateRegistryEntry: _updateRegistryEntry,
+          updateRegistryByWidgetId: _updateRegistryByWidgetId,
           updateLayout: _updateLayout,
-          updateReportTitle: _updateReportTitle,
           setCanvasConfig: _setCanvasConfig,
           setLayoutScenario: _setLayoutScenario,
           setEditingReportId: _setEditingReportId,

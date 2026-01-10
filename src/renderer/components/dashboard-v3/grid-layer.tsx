@@ -8,6 +8,7 @@ import {
 
 import { DashboardReportCard as ReportCard } from '@/components/viz/containers/DashboardReportCard'
 import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
+import { useProjectStore } from '@/stores/useProjectStore'
 import {
   GRID_MARGIN_Y,
   GRID_ROW_HEIGHT,
@@ -55,7 +56,6 @@ function PageGrid({
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const updateLayout = useWorkbenchStore(state => state.updateLayout)
   const removeReport = useWorkbenchStore(state => state.removeReport)
-  const updateReportTitle = useWorkbenchStore(state => state.updateReportTitle)
   const moveWidgetToPage = useWorkbenchStore(state => state.moveWidgetToPage)
 
   const pageReports = useMemo(
@@ -127,7 +127,7 @@ function PageGrid({
                     report={report}
                     onRemove={() => removeReport(report.id)}
                     onTitleChange={newTitle =>
-                      updateReportTitle(report.id, newTitle)
+                      useProjectStore.getState().updateWidgetData(report.id, { title: newTitle })
                     }
                     className="h-full w-full"
                   />
@@ -161,7 +161,6 @@ function ScreenGrid({ width, scale }: { width: number; scale: number }) {
     state => state.updateGlobalLayout
   )
   const removeReport = useWorkbenchStore(state => state.removeReport)
-  const updateReportTitle = useWorkbenchStore(state => state.updateReportTitle)
 
   // Flatten reports: Convert (pageIndex, localY) -> globalY
   const flatReports = useMemo(() => {
@@ -234,7 +233,7 @@ function ScreenGrid({ width, scale }: { width: number; scale: number }) {
             <ReportCard
               report={report}
               onRemove={() => removeReport(report.id)}
-              onTitleChange={newTitle => updateReportTitle(report.id, newTitle)}
+              onTitleChange={newTitle => useProjectStore.getState().updateWidgetData(report.id, { title: newTitle })}
               className="h-full w-full"
             />
           </div>

@@ -1,9 +1,8 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AreaChart,
   ArrowUpDown,
   BarChart3,
-  Check,
   Gauge,
   LineChart,
   PieChart,
@@ -12,11 +11,7 @@ import {
   ScatterChart,
   Table2,
   X,
-  Type,
-  Columns,
-  Rows,
 } from 'lucide-react'
-import { createPortal } from 'react-dom'
 import type { DenormalizedReportWidget } from '@/stores/useWorkbenchStore'
 import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { useProjectStore } from '@/stores/useProjectStore'
@@ -25,7 +20,11 @@ import { VizChart } from '../core/VizChart'
 import { DataTable } from '../base/DataTable'
 import { KpiGrid } from '../base/KpiGrid'
 import { cn } from '@/utils/cn'
-import type { ChartType, ReportData, ReportWidget, InsightResult } from '@shared/types/dashboard'
+import type {
+  ChartType,
+  InsightResult,
+  ReportData,
+} from '@shared/types/dashboard'
 import { useTranslation } from 'react-i18next'
 import { adaptChartConfig } from '@/lib/viz-adapter'
 import { InsightPanel } from '../InsightPanel'
@@ -47,7 +46,7 @@ const chartTypeOptions: Array<{
   { value: 'radar', label: 'chart_radar', icon: Radar },
   { value: 'table', label: 'chart_table', icon: Table2 },
   { value: 'kpi', label: 'chart_kpi', icon: Gauge },
-  { value: 'text', label: 'chart_text', icon: Type },
+  // { value: 'text', label: 'chart_text', icon: Type },
 ]
 
 export function ChartFullView() {
@@ -56,10 +55,6 @@ export function ChartFullView() {
     state => state.setEditingReportId
   )
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
-  const updateReportConfig = useWorkbenchStore(
-    state => state.updateReportConfig
-  )
-  const updateReportTitle = useWorkbenchStore(state => state.updateReportTitle)
   const widgetRegistry = useProjectStore(state => state.widgetRegistry)
   const { t, i18n } = useTranslation('common')
   const generateInsight = useGenerateInsight()
@@ -83,8 +78,12 @@ export function ChartFullView() {
     return undefined
   }, [editingReportId, pinnedReports, widgetRegistry])
 
-  const [localType, setLocalType] = useState<ReportData['chartType'] | null>(null)
-  const [localConfig, setLocalConfig] = useState<ReportData['vizConfig'] | null>(null)
+  const [localType, setLocalType] = useState<ReportData['chartType'] | null>(
+    null
+  )
+  const [localConfig, setLocalConfig] = useState<
+    ReportData['vizConfig'] | null
+  >(null)
   const [localTitle, setLocalTitle] = useState<string | null>(null)
   const [localContent, setLocalContent] = useState<string | null>(null)
   const [localSummary, setLocalSummary] = useState<string | null>(null)
@@ -121,7 +120,12 @@ export function ChartFullView() {
   // Data extraction
   const data = report?.reportData.tableData || []
   const columnFields = report?.reportData.columnFields || []
-  const columns = columnFields.length > 0 ? columnFields.map(f => f.name) : (data[0] ? Object.keys(data[0]) : [])
+  const columns =
+    columnFields.length > 0
+      ? columnFields.map(f => f.name)
+      : data[0]
+        ? Object.keys(data[0])
+        : []
 
   const availableColumns = columns
   const yAxisValues = useMemo(() => {
@@ -137,27 +141,49 @@ export function ChartFullView() {
   )
 
   const handleChartTypeChange = (type: ChartType) => {
-    const adapted = adaptChartConfig(type as any, effectiveType as any, effectiveConfig, data || [])
+    const adapted = adaptChartConfig(
+      type as any,
+      effectiveType as any,
+      effectiveConfig,
+      data || []
+    )
     setLocalType(adapted.type as ChartType)
-    setLocalConfig(prev => ({ ...(prev || effectiveConfig || {}), ...adapted.config }))
+    setLocalConfig(prev => ({
+      ...(prev || effectiveConfig || {}),
+      ...adapted.config,
+    }))
   }
 
   const handleXAxisChange = (value: string) => {
-    setLocalConfig(prev => ({ ...(prev || effectiveConfig || {}), x_axis: value || null }))
+    setLocalConfig(prev => ({
+      ...(prev || effectiveConfig || {}),
+      x_axis: value || null,
+    }))
   }
 
   const handleYAxisToggle = (value: string) => {
     const isSelected = yAxisValues.includes(value)
-    const nextY = isSelected ? yAxisValues.filter(v => v !== value) : [...yAxisValues, value]
-    setLocalConfig(prev => ({ ...(prev || effectiveConfig || {}), y_axis: nextY.length > 0 ? nextY : null }))
+    const nextY = isSelected
+      ? yAxisValues.filter(v => v !== value)
+      : [...yAxisValues, value]
+    setLocalConfig(prev => ({
+      ...(prev || effectiveConfig || {}),
+      y_axis: nextY.length > 0 ? nextY : null,
+    }))
   }
 
   const handleSwapAxes = () => {
     if (!effectiveConfig?.x_axis || yAxisValues.length === 0) return
-    setLocalConfig(prev => ({ ...(prev || effectiveConfig || {}), x_axis: yAxisValues[0], y_axis: [effectiveConfig.x_axis!, ...yAxisValues.slice(1)] }))
+    setLocalConfig(prev => ({
+      ...(prev || effectiveConfig || {}),
+      x_axis: yAxisValues[0],
+      y_axis: [effectiveConfig.x_axis!, ...yAxisValues.slice(1)],
+    }))
   }
 
-  const handleGenerateInsight = async (chartData: Array<Record<string, unknown>>) => {
+  const handleGenerateInsight = async (
+    chartData: Array<Record<string, unknown>>
+  ) => {
     const result = await generateInsight.mutateAsync({
       chartTitle: effectiveTitle,
       chartType: effectiveType,
@@ -169,9 +195,14 @@ export function ChartFullView() {
   }
 
   const handleDrillDown = useCallback(
-    (action: 'focus' | 'view_data' | 'breakdown', payload: { name: string; dimension?: string }) => {
+    (
+      action: 'focus' | 'view_data' | 'breakdown',
+      payload: { name: string; dimension?: string }
+    ) => {
       setEditingReportId(null)
-      if (report?.sourceMessageId) { useChatStore.getState().setReplyTo(report.sourceMessageId) }
+      if (report?.sourceMessageId) {
+        useChatStore.getState().setReplyTo(report.sourceMessageId)
+      }
       // sendMessage implementation would go here if needed in full view
     },
     [report, setEditingReportId]
@@ -179,18 +210,41 @@ export function ChartFullView() {
 
   const handleSave = () => {
     if (!report) return
-    
+
     // Save everything to Registry / Workbench
     const finalReportData: Partial<ReportData> = {
-        chartType: effectiveType as any,
-        vizConfig: effectiveConfig,
-        title: effectiveTitle.trim(),
-        content: effectiveContent,
-        summary: effectiveSummary,
-        insight: effectiveInsight
+      chartType: effectiveType as any,
+      vizConfig: effectiveConfig,
+      title: effectiveTitle.trim(),
+      content: effectiveContent,
+      summary: effectiveSummary,
+      insight: effectiveInsight,
     }
 
-    useProjectStore.getState().updateWidgetData(report.id, finalReportData)
+    // 获取 widgetId:
+    // - 如果是 pinnedReport,从 session.dashboard.widgets 查找原始 widget 获取 widgetId
+    // - 如果是未固定的,editingReportId 本身就是 widgetId
+    let widgetId: string | undefined
+    const pinned = pinnedReports.find(r => r.id === editingReportId)
+    if (pinned) {
+      // 从 session.dashboard.widgets 查找原始 widget
+      const session = useProjectStore
+        .getState()
+        .sessions.find(s => s.id === useProjectStore.getState().activeSessionId)
+      const widget = session?.dashboard.widgets.find(w => w.id === report.id)
+      widgetId = widget?.widgetId
+    } else {
+      // 未固定的情况,editingReportId 就是 widgetId
+      widgetId = editingReportId || undefined
+    }
+
+    if (!widgetId) return
+
+    // 直接通过 widgetId 更新 widgetRegistry (单一数据源)
+    useProjectStore
+      .getState()
+      .updateRegistryByWidgetId(widgetId, finalReportData)
+
     setEditingReportId(null)
   }
 
@@ -203,44 +257,57 @@ export function ChartFullView() {
   const showAxisControls =
     (displayMode === 'chart' || displayMode === 'bignumber') &&
     availableColumns.length > 0
-  const modalMaxWidth = displayMode === 'table' ? 'max-w-[95vw]' : 'max-w-[1600px]'
+  const modalMaxWidth =
+    displayMode === 'table' ? 'max-w-[95vw]' : 'max-w-[1600px]'
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
-      <div className={cn('relative flex h-[92vh] w-[94vw] rounded-xl border border-zinc-200 bg-white shadow-2xl overflow-hidden', modalMaxWidth)}>
+      <div
+        className={cn(
+          'relative flex h-[92vh] w-[94vw] rounded-xl border border-zinc-200 bg-white shadow-2xl overflow-hidden',
+          modalMaxWidth
+        )}
+      >
         <div className="flex flex-1 flex-col min-w-0">
-          
           {/* 1. Header & Summary Area */}
           <div className="flex flex-col border-b border-zinc-100 bg-white px-6 py-4 shrink-0 gap-2">
             <div className="flex items-center justify-between gap-4">
-                <input
-                    className="flex-1 border-none text-2xl font-black text-zinc-900 outline-none focus:ring-0 p-0 tracking-tight"
-                    value={effectiveTitle}
-                    onChange={e => setLocalTitle(e.target.value)}
-                    placeholder="Untitled Report"
-                />
-                <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => setEditingReportId(null)} className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-2 text-sm font-bold text-zinc-600 hover:bg-zinc-50 transition-all">
-                        <X className="h-4 w-4" />{t('close')}
-                    </button>
-                    <button onClick={handleSave} className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-zinc-200 hover:bg-zinc-800 transition-all active:scale-95">
-                        <Save className="h-4 w-4" />{t('save')}
-                    </button>
-                </div>
+              <input
+                className="flex-1 border-none text-2xl font-black text-zinc-900 outline-none focus:ring-0 p-0 tracking-tight"
+                value={effectiveTitle}
+                onChange={e => setLocalTitle(e.target.value)}
+                placeholder="Untitled Report"
+              />
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setEditingReportId(null)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-2 text-sm font-bold text-zinc-600 hover:bg-zinc-50 transition-all"
+                >
+                  <X className="h-4 w-4" />
+                  {t('close')}
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-zinc-200 hover:bg-zinc-800 transition-all active:scale-95"
+                >
+                  <Save className="h-4 w-4" />
+                  {t('save')}
+                </button>
+              </div>
             </div>
-            
+
             {/* ReportData.summary Editor (Subtitle style) */}
             {effectiveType !== 'text' && (
-                <div className="relative group">
-                    <TextareaAutosize
-                        value={effectiveSummary}
-                        onChange={e => setLocalSummary(e.target.value)}
-                        placeholder="Add a brief executive summary for this data..."
-                        className="w-full resize-none bg-transparent border-none p-0 text-sm text-zinc-500 font-medium focus:ring-0 outline-none leading-relaxed placeholder:text-zinc-300"
-                        minRows={1}
-                        maxRows={4}
-                    />
-                </div>
+              <div className="relative group">
+                <TextareaAutosize
+                  value={effectiveSummary}
+                  onChange={e => setLocalSummary(e.target.value)}
+                  placeholder="Add a brief executive summary for this data..."
+                  className="w-full resize-none bg-transparent border-none p-0 text-sm text-zinc-500 font-medium focus:ring-0 outline-none leading-relaxed placeholder:text-zinc-300"
+                  minRows={1}
+                  maxRows={4}
+                />
+              </div>
             )}
           </div>
 
@@ -250,11 +317,11 @@ export function ChartFullView() {
               <div className="flex-1 min-h-[400px] rounded-2xl border border-zinc-200 bg-white p-6 relative overflow-hidden shadow-sm shrink-0">
                 {displayMode === 'text' && (
                   <div className="h-full w-full bg-white rounded-lg overflow-hidden border border-zinc-50">
-                    <CodeEditor 
-                        value={effectiveContent} 
-                        onChange={setLocalContent} 
-                        language="markdown" 
-                        className="h-full" 
+                    <CodeEditor
+                      value={effectiveContent}
+                      onChange={setLocalContent}
+                      language="markdown"
+                      className="h-full"
                     />
                   </div>
                 )}
@@ -275,30 +342,47 @@ export function ChartFullView() {
                 )}
 
                 {displayMode === 'chart' && (
-                  <VizChart type={effectiveType} title={effectiveTitle} data={data} config={effectiveConfig} className="h-full w-full" highlightedItems={highlightedItems} onDrillDownAction={handleDrillDown} />
+                  <VizChart
+                    type={effectiveType}
+                    title={effectiveTitle}
+                    data={data}
+                    config={effectiveConfig}
+                    className="h-full w-full"
+                    highlightedItems={highlightedItems}
+                    onDrillDownAction={handleDrillDown}
+                  />
                 )}
 
                 {displayMode === 'table' && (
-                  <div className="h-full w-full overflow-auto"><DataTable data={data} columnFields={columnFields} variant="dashboard" /></div>
+                  <div className="h-full w-full overflow-auto">
+                    <DataTable
+                      data={data}
+                      columnFields={columnFields}
+                      variant="dashboard"
+                    />
+                  </div>
                 )}
 
                 {displayMode === 'empty' && (
-                  <div className="flex h-full items-center justify-center text-sm text-zinc-500">{t('no_data')}</div>
+                  <div className="flex h-full items-center justify-center text-sm text-zinc-500">
+                    {t('no_data')}
+                  </div>
                 )}
               </div>
 
               {/* 3. Business Insight Panel (Details Area) */}
               {displayMode !== 'text' && (
                 <div className="shrink-0 pb-4">
-                  <InsightPanel 
-                    chartData={data} 
+                  <InsightPanel
+                    chartData={data}
                     config={effectiveConfig}
-                    insight={effectiveInsight} 
-                    onGenerateInsight={handleGenerateInsight} 
-                    onSave={setLocalInsight} 
-                    onHighlight={setHighlightedItems} 
-                    defaultExpanded={true} 
+                    insight={effectiveInsight}
+                    onGenerateInsight={handleGenerateInsight}
+                    onSave={setLocalInsight}
+                    onHighlight={setHighlightedItems}
+                    defaultExpanded={true}
                     readOnly={false}
+                    onRemove={() => setLocalInsight(null)}
                   />
                 </div>
               )}
@@ -307,26 +391,29 @@ export function ChartFullView() {
             {/* 4. Settings Sidebar */}
             <div className="w-[340px] border-l border-zinc-200 bg-white p-6 overflow-y-auto shrink-0 flex flex-col gap-8">
               <div>
-                <div className="mb-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-1">{t('visualization')}</div>
+                <div className="mb-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-1">
+                  {t('visualization')}
+                </div>
                 <div className="grid grid-cols-5 gap-2.5">
-                    {chartTypeOptions.map(option => {
-                      const Icon = option.icon
-                      const isActive = effectiveType === option.value
-                      return (
-                        <button 
-                            key={option.value} 
-                            onClick={() => handleChartTypeChange(option.value)} 
-                            className={cn(
-                                'flex flex-col items-center gap-1.5 rounded-xl border p-2.5 text-[10px] font-bold transition-all duration-200', 
-                                isActive 
-                                    ? 'border-zinc-900 bg-zinc-900 text-white shadow-xl scale-105' 
-                                    : 'border-zinc-100 bg-zinc-50 text-zinc-400 hover:border-zinc-300 hover:bg-white hover:text-zinc-600'
-                            )}
-                        >
-                          <Icon className="w-4 h-4" />{t(option.label)}
-                        </button>
-                      )
-                    })}
+                  {chartTypeOptions.map(option => {
+                    const Icon = option.icon
+                    const isActive = effectiveType === option.value
+                    return (
+                      <button
+                        key={option.value}
+                        onClick={() => handleChartTypeChange(option.value)}
+                        className={cn(
+                          'flex flex-col items-center gap-1.5 rounded-xl border p-2.5 text-[10px] font-bold transition-all duration-200',
+                          isActive
+                            ? 'border-zinc-900 bg-zinc-900 text-white shadow-xl scale-105'
+                            : 'border-zinc-100 bg-zinc-50 text-zinc-400 hover:border-zinc-300 hover:bg-white hover:text-zinc-600'
+                        )}
+                      >
+                        <Icon className="w-4 h-4" />
+                        {t(option.label)}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -334,35 +421,52 @@ export function ChartFullView() {
                 <div className="space-y-6 animate-in slide-in-from-right-2">
                   <div className="flex items-center justify-between text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-1">
                     <span>{t('axes')}</span>
-                    <button onClick={handleSwapAxes} className="p-1.5 hover:bg-zinc-100 rounded-lg text-zinc-500 transition-colors border border-transparent hover:border-zinc-200"><ArrowUpDown className="w-3.5 h-3.5" /></button>
+                    <button
+                      onClick={handleSwapAxes}
+                      className="p-1.5 hover:bg-zinc-100 rounded-lg text-zinc-500 transition-colors border border-transparent hover:border-zinc-200"
+                    >
+                      <ArrowUpDown className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 ml-1 uppercase tracking-tight">{t('x_axis')}</label>
-                    <select value={effectiveConfig?.x_axis ?? ''} onChange={e => handleXAxisChange(e.target.value)} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-xs font-bold text-zinc-700 focus:ring-2 focus:ring-indigo-100 focus:bg-white outline-none transition-all cursor-pointer">
+                    <label className="text-[10px] font-black text-zinc-500 ml-1 uppercase tracking-tight">
+                      {t('x_axis')}
+                    </label>
+                    <select
+                      value={effectiveConfig?.x_axis ?? ''}
+                      onChange={e => handleXAxisChange(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-xs font-bold text-zinc-700 focus:ring-2 focus:ring-indigo-100 focus:bg-white outline-none transition-all cursor-pointer"
+                    >
                       <option value="">{t('select_column')}</option>
-                      {availableColumns.map(col => <option key={col} value={col}>{col}</option>)}
+                      {availableColumns.map(col => (
+                        <option key={col} value={col}>
+                          {col}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-zinc-500 ml-1 uppercase tracking-tight">{t('y_axis')}</label>
+                    <label className="text-[10px] font-black text-zinc-500 ml-1 uppercase tracking-tight">
+                      {t('y_axis')}
+                    </label>
                     <div className="flex flex-wrap gap-2">
                       {yAxisOptions.map(col => {
                         const isSelected = yAxisValues.includes(col)
                         return (
-                            <button 
-                                key={col} 
-                                onClick={() => handleYAxisToggle(col)} 
-                                className={cn(
-                                    'px-3 py-2 text-[10px] font-bold rounded-xl border transition-all duration-200', 
-                                    isSelected 
-                                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100' 
-                                        : 'bg-zinc-50 border-zinc-100 text-zinc-500 hover:border-zinc-300 hover:bg-white'
-                                )}
-                            >
+                          <button
+                            key={col}
+                            onClick={() => handleYAxisToggle(col)}
+                            className={cn(
+                              'px-3 py-2 text-[10px] font-bold rounded-xl border transition-all duration-200',
+                              isSelected
+                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100'
+                                : 'bg-zinc-50 border-zinc-100 text-zinc-500 hover:border-zinc-300 hover:bg-white'
+                            )}
+                          >
                             {col}
-                            </button>
+                          </button>
                         )
                       })}
                     </div>

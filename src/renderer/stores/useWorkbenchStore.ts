@@ -48,7 +48,6 @@ interface WorkbenchState {
     widgetId?: string
   ) => void
   removeReport: (reportId: string) => void
-  updateReportTitle: (reportId: string, newTitle: string) => void
   updateReportConfig: (
     reportId: string,
     updates: {
@@ -370,20 +369,6 @@ export const useWorkbenchStore = <T = WorkbenchState>(
 
     pinReport,
     removeReport: id => useProjectStore.getState().removeWidget(id),
-    updateReportTitle: (id, title) => {
-      const { dashboard, projectState } = getSessionState()
-      const widget = dashboard?.widgets.find(w => w.id === id)
-
-      if (widget) {
-        useProjectStore.getState().updateReportTitle(id, title)
-      } else {
-        // Try registry
-        const currentData = projectState.widgetRegistry[id]
-        if (currentData) {
-          useProjectStore.getState().updateRegistryEntry(id, { title })
-        }
-      }
-    },
     updateReportConfig: (id, updates) => {
       const { projectState } = getSessionState()
       const widget = getSessionState().dashboard?.widgets.find(w => w.id === id)
@@ -422,7 +407,7 @@ export const useWorkbenchStore = <T = WorkbenchState>(
               ? { ...currentData.vizConfig, ...updates.config }
               : currentData.vizConfig
 
-          useProjectStore.getState().updateRegistryEntry(id, {
+          useProjectStore.getState().updateRegistryByWidgetId(id, {
             chartType: updates.type ?? currentData.chartType,
             vizConfig: nextVizConfig,
             insight: updates.insight ?? currentData.insight,
@@ -479,8 +464,6 @@ useWorkbenchStore.getState = () => {
     language: useSettingsStore.getState().language,
     pinReport,
     removeReport: id => useProjectStore.getState().removeWidget(id),
-    updateReportTitle: (id, title) =>
-      useProjectStore.getState().updateReportTitle(id, title),
     updateReportConfig: (id, updates) => {
       const projectState = useProjectStore.getState()
       const session = projectState.sessions.find(

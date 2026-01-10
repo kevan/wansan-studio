@@ -15,6 +15,7 @@ import {
   useWorkbenchStore,
 } from '../../../stores/useWorkbenchStore'
 import { useChatStore } from '@/stores/useChatStore.ts'
+import { useProjectStore } from '@/stores/useProjectStore.ts'
 import { useSqlLabStore } from '@/stores/useSqlLabStore.ts'
 import { useToastStore } from '@/stores/useToastStore.ts'
 import { cn } from '@/utils/cn.ts'
@@ -22,6 +23,7 @@ import type { ChatMessage } from '../../ChatInterface'
 import { useTranslation } from 'react-i18next'
 import { ExpandableAction } from '../../ui/expandable-action'
 import { useGenerateInsight } from '@/hooks/useIPC'
+
 
 interface ChatReportCardProps {
   messageId: string
@@ -34,7 +36,7 @@ interface ChatReportCardProps {
 export const ChatReportCard = React.memo(function ChatReportCard({
   messageId,
   message,
-  reportData,
+  reportData: fallbackReportData,
   className,
   onConfigure,
 }: ChatReportCardProps) {
@@ -58,6 +60,13 @@ export const ChatReportCard = React.memo(function ChatReportCard({
 
   const generateInsight = useGenerateInsight()
   const language = i18n.language === 'zh' ? 'zh' : 'en'
+
+  // 🔥 从 widgetRegistry 读取最新数据,实现响应式更新
+  const widgetRegistry = useProjectStore(state => state.widgetRegistry)
+  const reportData = message.widgetId && widgetRegistry[message.widgetId]
+    ? widgetRegistry[message.widgetId]
+    : fallbackReportData
+
 
   const handleDrillDown = useCallback(
     (
@@ -254,12 +263,6 @@ export const ChatReportCard = React.memo(function ChatReportCard({
               setManualActive(false)
               setExpanded(false)
             }}
-            onRemove={() => {
-              updateMessageInsight(messageId, undefined as any)
-              setManualActive(false)
-              setExpanded(false)
-            }}
-            onHighlight={setHighlightedItems}
             readOnly={true}
           />
         </div>

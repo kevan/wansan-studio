@@ -67,11 +67,23 @@ export function Chart({
     const instance = instanceRef.current
     if (!instance) return
 
-    // Always reset downplay first to ensure clean state
-    // We target seriesIndex 0 as most of our charts are single-series or shared axis
+    // Get current series to determine indices to target
+    const currentOption = instance.getOption() as EChartsOption
+    const seriesCount = Array.isArray(currentOption.series)
+      ? currentOption.series.length
+      : currentOption.series
+        ? 1
+        : 0
+    
+    if (seriesCount === 0) return
+
+    // Create an array of all series indices [0, 1, 2, ...]
+    const seriesIndices = Array.from({ length: seriesCount }, (_, i) => i)
+
+    // Always reset downplay first to ensure clean state across all series
     instance.dispatchAction({
       type: 'downplay',
-      seriesIndex: 0,
+      seriesIndex: seriesIndices,
     })
 
     if (highlightedItems.length === 0) {
@@ -81,18 +93,15 @@ export function Chart({
       return
     }
 
-    // Highlight specific items by name (X-axis category or Pie sector name)
+    // Highlight specific items by name across all series
     instance.dispatchAction({
       type: 'highlight',
-      seriesIndex: 0,
+      seriesIndex: seriesIndices,
       name: highlightedItems,
     })
 
     // Note: We intentionally DO NOT trigger 'showTip' here.
     // The Insight Panel already provides the textual context.
-    // The chart's role is purely visual anchoring (highlighting "Where").
-    // Forcing a tooltip often occludes the chart or causes overlap issues.
-    // The user can still hover the chart manually if they want to see the tooltip.
   }, [highlightedItems])
 
   return <div ref={chartRef} className={className} style={style} />
