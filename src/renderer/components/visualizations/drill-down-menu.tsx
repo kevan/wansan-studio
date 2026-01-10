@@ -104,7 +104,7 @@ export function DrillDownMenu({
           <button className={`${menuItemClass} justify-between`}>
             <div className="flex items-center gap-2.5">
               <Layers className="w-4 h-4 text-amber-500" />
-              <span>{t('breakdown_by') || 'Breakdown by...'}</span>
+              <span>{t('breakdown_by')}</span>
             </div>
             <ChevronRight className="w-4 h-4 text-zinc-400" />
           </button>
@@ -143,7 +143,7 @@ export function DrillDownMenu({
           className={`${menuItemClass} text-indigo-600 hover:bg-indigo-50`}
         >
           <Sparkles className="w-4 h-4" />
-          <span>{t('ai_insight') || 'Explain with AI'}</span>
+          <span>{t('ai_insight')}</span>
         </button>
       )}
     </div>

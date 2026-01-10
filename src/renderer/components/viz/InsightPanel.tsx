@@ -85,7 +85,7 @@ export function InsightPanel({
   config,
   readOnly = false,
 }: InsightPanelProps) {
-  const { t, i18n } = useTranslation('common')
+  const { t } = useTranslation('common')
   const [state, setState] = useState<InsightState>(insight ? 'done' : 'idle')
   const [internalExpanded, setInternalExpanded] = useState(defaultExpanded)
   const [insightData, setInsightData] = useState<InsightResult | null>(
@@ -236,19 +236,18 @@ export function InsightPanel({
 
   const renderEditForm = () => {
     if (!editBuffer) return null
-    const language = i18n.language
 
     return (
       <div className="space-y-6 pt-2 pb-4">
         {/* Summary Edit */}
         <div className="space-y-2">
           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">
-            {language === 'zh' ? '概览' : 'Summary'}
+            {t('insight_summary')}
           </label>
           <TextareaAutosize
             value={editBuffer.summary}
             onChange={e => setEditEditBuffer({ ...editBuffer, summary: e.target.value })}
-            placeholder="Main conclusion..."
+            placeholder={t('placeholder_summary')}
             className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
           />
         </div>
@@ -257,7 +256,7 @@ export function InsightPanel({
         <div className="space-y-3">
           <div className="flex items-center justify-between ml-1">
             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-              {language === 'zh' ? '关键发现' : 'Key Findings'}
+              {t('insight_findings')}
             </label>
             <button
               onClick={addFinding}
@@ -282,13 +281,13 @@ export function InsightPanel({
                     <TextareaAutosize
                       value={f.markdown}
                       onChange={e => updateFinding(f.id, { markdown: e.target.value })}
-                      placeholder="Observation details..."
+                      placeholder={t('placeholder_finding')}
                       className="w-full bg-transparent border-none p-0 text-sm focus:ring-0 outline-none resize-none leading-relaxed"
                     />
                     
                     {/* Related Items Edit */}
                     <div className="flex flex-wrap gap-1.5 items-center">
-                        <span className="text-[9px] font-bold text-zinc-400 uppercase mr-1">Anchors:</span>
+                        <span className="text-[9px] font-bold text-zinc-400 uppercase mr-1">{t('insight_anchors')}:</span>
                         {f.relatedItems?.map(item => (
                             <div key={item} className="flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded border border-indigo-100 animate-in zoom-in-95">
                                 {item}
@@ -309,7 +308,7 @@ export function InsightPanel({
                                 e.target.value = ''
                             }}
                         >
-                            <option value="">+ Add Anchor</option>
+                            <option value="">+ {t('add_anchor')}</option>
                             {(() => {
                                 const xField = config?.x_axis || (chartData[0] ? Object.keys(chartData[0])[0] : null)
                                 if (!xField) return null
@@ -336,12 +335,12 @@ export function InsightPanel({
         {/* Recommendation Edit */}
         <div className="space-y-2">
           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">
-            {language === 'zh' ? '建议' : 'Recommendation'}
+            {t('insight_recommendation')}
           </label>
           <TextareaAutosize
             value={editBuffer.recommendation}
             onChange={e => setEditEditBuffer({ ...editBuffer, recommendation: e.target.value })}
-            placeholder="Actionable suggestion..."
+            placeholder={t('placeholder_recommendation')}
             className="w-full bg-emerald-50/30 border border-emerald-100/50 rounded-lg p-3 text-sm text-emerald-900 focus:ring-2 focus:ring-emerald-100 outline-none transition-all"
           />
         </div>
@@ -371,7 +370,6 @@ export function InsightPanel({
     if (isEditing) return renderEditForm()
 
     const { summary, findings, recommendation } = insightData
-    const language = i18n.language
 
     return (
       <div className="space-y-4 pt-1">
@@ -386,7 +384,7 @@ export function InsightPanel({
         {findings && findings.length > 0 && (
           <div className="space-y-2">
             <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider ml-1">
-              {language === 'zh' ? '关键发现' : 'Key Findings'}
+              {t('insight_findings')}
             </div>
             <ul className="space-y-1">
               {findings.map((item, idx) => (
@@ -434,7 +432,7 @@ export function InsightPanel({
         )}
       >
         <Sparkles className="w-4 h-4" />
-        <span>{t('ai_insight') || 'AI Insight'}</span>
+        <span>{t('ai_insight')}</span>
       </button>
     )
   }
@@ -451,11 +449,10 @@ export function InsightPanel({
           <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <div className="text-sm font-medium text-amber-800">
-              {t('insight_consent_title') || 'Send Data to AI?'}
+              {t('insight_consent_title')}
             </div>
             <div className="text-xs text-amber-700 mt-1">
-              {t('insight_consent_desc', { count: dataPointCount }) ||
-                `This will send ${dataPointCount} aggregated data points to generate insights. No raw data rows will be transmitted.`}
+              {t('insight_consent_desc', { count: dataPointCount })}
             </div>
 
             <div className="flex gap-2 mt-3">
@@ -464,13 +461,13 @@ export function InsightPanel({
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 transition-colors"
               >
                 <Check className="w-3.5 h-3.5" />
-                {t('confirm_send') || 'Send & Analyze'}
+                {t('confirm_send')}
               </button>
               <button
                 onClick={handleCancel}
                 className="px-3 py-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-800 hover:bg-zinc-100 rounded-lg transition-colors"
               >
-                {t('cancel') || 'Cancel'}
+                {t('cancel')}
               </button>
             </div>
           </div>
@@ -489,7 +486,7 @@ export function InsightPanel({
       >
         <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
         <span className="text-sm text-indigo-700">
-          {t('analyzing') || 'Analyzing data...'}
+          {t('analyzing')}
         </span>
       </div>
     )
@@ -509,7 +506,7 @@ export function InsightPanel({
           onClick={handleCancel}
           className="ml-auto text-xs text-red-600 hover:text-red-800"
         >
-          {t('dismiss') || 'Dismiss'}
+          {t('dismiss')}
         </button>
       </div>
     )
@@ -532,7 +529,7 @@ export function InsightPanel({
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-indigo-500" />
           <span className="text-sm font-medium text-indigo-700">
-            {t('ai_insight') || 'AI Insight'}
+            {t('ai_insight')}
           </span>
         </div>
 
@@ -570,7 +567,7 @@ export function InsightPanel({
                       handleStartEdit()
                     }}
                     className="p-1.5 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded bg-transparent transition-colors"
-                    title={t('edit') || 'Edit'}
+                    title={t('edit')}
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
@@ -579,7 +576,7 @@ export function InsightPanel({
                   <button
                     onClick={handleRegenerate}
                     className="p-1.5 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded bg-transparent transition-colors"
-                    title={t('regenerate') || 'Regenerate'}
+                    title={t('regenerate')}
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                   </button>
@@ -588,7 +585,7 @@ export function InsightPanel({
                   <button
                     onClick={handleRemove}
                     className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded bg-transparent transition-colors"
-                    title={t('remove') || 'Remove'}
+                    title={t('remove')}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

@@ -279,7 +279,7 @@ export function ChartFullView() {
                 className="flex-1 border-none text-2xl font-black text-zinc-900 outline-none focus:ring-0 p-0 tracking-tight"
                 value={effectiveTitle}
                 onChange={e => setLocalTitle(e.target.value)}
-                placeholder="Untitled Report"
+                placeholder={t('untitled_report')}
               />
               <div className="flex items-center gap-2 shrink-0">
                 <button
@@ -305,7 +305,7 @@ export function ChartFullView() {
                 <TextareaAutosize
                   value={effectiveSummary}
                   onChange={e => setLocalSummary(e.target.value)}
-                  placeholder="Add a brief executive summary for this data..."
+                  placeholder={t('placeholder_report_summary')}
                   className="w-full resize-none bg-transparent border-none p-0 text-sm text-zinc-500 font-medium focus:ring-0 outline-none leading-relaxed placeholder:text-zinc-300"
                   minRows={1}
                   maxRows={4}

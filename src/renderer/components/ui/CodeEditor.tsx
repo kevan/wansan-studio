@@ -3,6 +3,7 @@ import Editor, { Monaco } from '@monaco-editor/react'
 import { registerSqlCompletion } from '@/utils/sql-completion'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { Loader2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface CodeEditorProps {
   value: string
@@ -23,6 +24,7 @@ export function CodeEditor({
   readOnly = false,
   language = 'sql',
 }: CodeEditorProps) {
+  const { t } = useTranslation('common')
   const files = useProjectStore(s => s.files)
   const monacoRef = useRef<Monaco | null>(null)
   const completionProviderRef = useRef<any>(null)
@@ -72,7 +74,7 @@ export function CodeEditor({
         loading={
           <div className="flex items-center justify-center h-full gap-2 text-zinc-400">
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-xs font-medium uppercase tracking-wider">Loading Editor...</span>
+            <span className="text-xs font-medium uppercase tracking-wider">{t('loading_editor')}</span>
           </div>
         }
         options={{
