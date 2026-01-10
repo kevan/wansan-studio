@@ -24,6 +24,7 @@
     }
   },
   "include": [
+    "src/export-runtime/**/*",
     "src/renderer/**/*",
     "src/shared/**/*",
     "src/types/**/*",

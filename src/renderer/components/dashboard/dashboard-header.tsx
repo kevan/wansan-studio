@@ -51,10 +51,21 @@ export function DashboardHeader() {
   const { checkGate, gateNode } = useProGate()
 
   const handleExportWeb = async () => {
+    const { pinnedReports, canvasConfig } = useWorkbenchStore.getState()
+
+    // 1. Check if in Report Mode
+    if (canvasConfig.layout !== 'report') {
+      addToast({
+        title: t('warning'),
+        description: t('export_web_report_hint', 'Web Export is only available in Report Mode. Please switch view first.'),
+        type: 'warning',
+      })
+      return
+    }
+
     Analytics.track('export_clicked', { format: 'html' })
     setIsExportingWeb(true)
     try {
-      const { pinnedReports, canvasConfig } = useWorkbenchStore.getState()
       await exportWebReport({
         widgets: pinnedReports,
         config: {

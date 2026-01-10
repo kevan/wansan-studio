@@ -22,6 +22,7 @@
   "command_sql": "Write SQL",
   "command_refresh": "Refresh Data",
   "sql_query_submitted": "SQL Query Submitted.",
+  "manual_query_title": "Manual Query",
   "restoring_session": "Restoring data connections & analysis state...",
   "export_success_title": "Export Successful",
   "export_failed_title": "Export Failed",

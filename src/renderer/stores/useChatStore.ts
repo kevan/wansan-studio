@@ -922,7 +922,7 @@ const addManualSqlMessage = async (sql: string) => {
       status: undefined,
       metadata: { aiLatency: 0, dbLatency, latency: dbLatency },
       reportData: {
-        title: 'Manual Query',
+        title: i18n.t('manual_query_title', { ns: 'chat' }),
         sql: sql,
         chartType: 'table', // Default to table for manual queries
         tableData: data,
