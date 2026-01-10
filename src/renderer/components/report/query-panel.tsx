@@ -4,7 +4,7 @@ import React, {
   useImperativeHandle,
   forwardRef,
 } from 'react'
-import { MonacoSqlEditor } from '../ui/MonacoSqlEditor'
+import { CodeEditor } from '../ui/CodeEditor'
 import {
   Check,
   ChevronDown,
@@ -292,7 +292,7 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
                   </p>
                 </div>
               )}
-              <MonacoSqlEditor
+              <CodeEditor
                 value={sql}
                 onChange={onChange}
                 readOnly={!isActivated}

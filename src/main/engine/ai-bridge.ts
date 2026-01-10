@@ -280,6 +280,7 @@ CONSTRAINTS:
 - Focus on trends, anomalies, and actionable recommendations.
 - Write content in ${languageNote}.
 - **CRITICAL**: For each finding, identify the EXACT X-axis category names from the data that support the finding (e.g., specific months, regions).
+- **Sentiment**: Use one of the following specific types: 'positive', 'negative', 'neutral', 'warning' (for risks), 'growth' (for opportunities), 'discovery' (for insights), 'target' (for goals), 'info'.
 
 OUTPUT FORMAT (JSON):
 {

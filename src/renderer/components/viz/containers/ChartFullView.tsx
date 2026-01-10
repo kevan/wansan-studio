@@ -31,7 +31,7 @@ import { useTranslation } from 'react-i18next'
 import { adaptChartConfig } from '@/lib/viz-adapter'
 import { InsightPanel } from '../InsightPanel'
 import { useGenerateInsight } from '@/hooks/useIPC'
-import { MonacoSqlEditor } from '@/components/ui/MonacoSqlEditor'
+import { CodeEditor } from '@/components/ui/CodeEditor'
 
 const chartTypeOptions: Array<{
   value: ChartType
@@ -228,12 +228,12 @@ export function ChartFullView() {
             <div className="flex-1 p-5 min-w-0 flex flex-col gap-4">
               <div className="flex-1 min-h-0 rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 relative overflow-hidden">
                 {displayMode === 'text' && (
-                  <div className="h-full w-full bg-white rounded-lg shadow-inner overflow-hidden border border-zinc-100">
-                    <MonacoSqlEditor 
-                        value={effectiveContent} 
-                        onChange={setLocalContent} 
-                        language="markdown" 
-                        className="h-full" 
+                  <div className="h-full w-full bg-white flex flex-col overflow-hidden relative">
+                    <CodeEditor
+                      value={effectiveContent}
+                      onChange={setLocalContent}
+                      className="h-full"
+                      language="markdown"
                     />
                   </div>
                 )}

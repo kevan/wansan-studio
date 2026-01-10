@@ -24,7 +24,7 @@ import { cn } from '@/utils/cn'
 import { getJoinedColumnName } from '@shared/naming-utils'
 import { DuckDBViewManager } from '../../lib/duckdb-view-manager'
 import { useTranslation } from 'react-i18next'
-import { MonacoSqlEditor } from '../ui/MonacoSqlEditor'
+import { CodeEditor } from '../ui/CodeEditor'
 
 interface MetricEditorModalProps {
   isOpen: boolean
@@ -317,7 +317,7 @@ export function MetricEditorModal({
                   </Button>
                 </div>
                 <div className="flex-1 overflow-hidden relative">
-                  <MonacoSqlEditor
+                  <CodeEditor
                     value={expression}
                     onChange={setExpression}
                     onMount={editor => (editorRef.current = editor)}

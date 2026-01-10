@@ -1463,12 +1463,14 @@ export const useProjectStore = create<ProjectState>()(
             )
           })
 
-          // 3. Set restoring state
-          // DEPRECATED: Don't auto-set restoring. Wait for project load.
-          // const hasFilesToRestore = state.files.some(
-          //   f => f.status === 'ready' && f.tableName
-          // )
-          // state.setRestoring(hasFilesToRestore)
+          // 3. Reset Transient UI States
+          // Even though partialize excludes them, we reset here to be safe against stale storage
+          state.editingReportId = null
+          state.smartFilterRequest = null
+          state.pendingReplace = null
+          state.showRefreshConfirm = false
+          state.isRestoring = false
+          state.isRefreshing = false
         }
       },
     }
