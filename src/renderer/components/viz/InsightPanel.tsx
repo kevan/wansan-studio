@@ -120,6 +120,7 @@ export function InsightPanel({
   }, [expanded])
 
   const toggleExpanded = () => {
+    if (isEditing) return
     const next = !isExpanded
     if (onExpandChange) {
       onExpandChange(next)
@@ -544,38 +545,63 @@ export function InsightPanel({
         </div>
 
         <div className="flex items-center gap-1">
-          {isExpanded && !isEditing && (
+          {isEditing ? (
             <>
-              {!readOnly && (
-                <button
-                  onClick={e => {
-                    e.stopPropagation()
-                    handleStartEdit()
-                  }}
-                  className="p-1.5 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded bg-transparent transition-colors"
-                  title={t('edit') || 'Edit'}
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                </button>
-              )}
               <button
-                onClick={handleRegenerate}
-                className="p-1.5 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded bg-transparent transition-colors"
-                title={t('regenerate') || 'Regenerate'}
+                onClick={e => {
+                  e.stopPropagation()
+                  handleSaveEdit()
+                }}
+                className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded bg-transparent transition-colors"
+                title={t('save')}
               >
-                <RefreshCw className="w-3.5 h-3.5" />
+                <Check className="w-4 h-4" />
               </button>
-              {onRemove && (
-                <button
-                  onClick={handleRemove}
-                  className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded bg-transparent transition-colors"
-                  title={t('remove') || 'Remove'}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              )}
-              <div className="w-[1px] h-3 bg-zinc-200 mx-1" />
+              <button
+                onClick={e => {
+                  e.stopPropagation()
+                  handleCancelEdit()
+                }}
+                className="p-1.5 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 rounded bg-transparent transition-colors"
+                title={t('cancel')}
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
             </>
+          ) : (
+            isExpanded && (
+              <>
+                {!readOnly && (
+                  <button
+                    onClick={e => {
+                      e.stopPropagation()
+                      handleStartEdit()
+                    }}
+                    className="p-1.5 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded bg-transparent transition-colors"
+                    title={t('edit') || 'Edit'}
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <button
+                  onClick={handleRegenerate}
+                  className="p-1.5 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded bg-transparent transition-colors"
+                  title={t('regenerate') || 'Regenerate'}
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+                {onRemove && (
+                  <button
+                    onClick={handleRemove}
+                    className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded bg-transparent transition-colors"
+                    title={t('remove') || 'Remove'}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <div className="w-[1px] h-3 bg-zinc-200 mx-1" />
+              </>
+            )
           )}
           {isExpanded ? (
             <ChevronUp className="w-4 h-4 text-indigo-400" />

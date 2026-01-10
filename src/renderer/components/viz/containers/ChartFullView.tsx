@@ -312,18 +312,6 @@ export function ChartFullView() {
                   </div>
                 </div>
               )}
-
-              <div className="pt-6 mt-auto border-t border-zinc-200/50">
-                <div className="mb-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t('report_layout')}</div>
-                <div className="flex bg-zinc-200/50 p-1 rounded-xl">
-                    <button onClick={() => handleUpdateReportConfig({ layoutType: 'flow' })} className={cn('flex-1 flex items-center justify-center gap-1.5 py-2 text-[10px] font-bold rounded-lg transition-all', (report?.reportConfig?.layoutType || 'flow') === 'flow' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500')}>
-                        <Rows className="w-3 h-3" />{t('layout_flow', 'Flow')}
-                    </button>
-                    <button onClick={() => handleUpdateReportConfig({ layoutType: 'split' })} className={cn('flex-1 flex items-center justify-center gap-1.5 py-2 text-[10px] font-bold rounded-lg transition-all', report?.reportConfig?.layoutType === 'split' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500')}>
-                        <Columns className="w-3 h-3" />{t('layout_split', 'Split')}
-                    </button>
-                </div>
-              </div>
             </div>
           </div>
         </div>
