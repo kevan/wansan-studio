@@ -92,30 +92,30 @@ export function ReportFlowLayer({ width, scale }: ReportFlowLayerProps) {
 
   return (
     <div className="w-full min-h-screen bg-[#fbfbfa] pb-24 overflow-y-auto">
-      {/* 1. Report Cover (Compacted) */}
-      <div className="max-w-[1200px] mx-auto pt-8 pb-8 px-6">
-        <div className="bg-white border border-zinc-200 rounded-3xl p-8 lg:p-10 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50/50 rounded-full -translate-y-1/2 translate-x-1/3 -z-0"></div>
+      {/* 1. Report Cover (Ultra-Compacted) */}
+      <div className="max-w-[1200px] mx-auto pt-4 pb-4 px-6">
+        <div className="bg-white border border-zinc-200 rounded-2xl p-6 lg:p-8 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-50/50 rounded-full -translate-y-1/2 translate-x-1/3 -z-0"></div>
 
-          <div className="relative z-10 space-y-6">
-            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-bold uppercase tracking-widest">
-              <FileText className="w-3 h-3" />
+          <div className="relative z-10 space-y-4">
+            <div className="inline-flex items-center gap-2 px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[9px] font-bold uppercase tracking-widest">
+              <FileText className="w-2.5 h-2.5" />
               {t('analysis_report', 'Business Analysis Report')}
             </div>
 
-            <h1 className="text-3xl lg:text-4xl font-black text-zinc-900 leading-tight tracking-tight">
+            <h1 className="text-2xl lg:text-3xl font-black text-zinc-900 leading-tight tracking-tight">
               {canvasConfig.title || t('default_report_title')}
             </h1>
 
-            <div className="flex flex-wrap items-center gap-6 pt-4 border-t border-zinc-100">
-              <div className="flex items-center gap-2 text-zinc-500 text-xs">
-                <Calendar className="w-3.5 h-3.5" />
+            <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-zinc-100">
+              <div className="flex items-center gap-1.5 text-zinc-400 text-[11px]">
+                <Calendar className="w-3 h-3" />
                 <span className="font-medium">
                   {new Date().toLocaleDateString()}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-zinc-500 text-xs">
-                <User className="w-3.5 h-3.5" />
+              <div className="flex items-center gap-1.5 text-zinc-400 text-[11px]">
+                <User className="w-3 h-3" />
                 <span className="font-medium">Wansan Studio</span>
               </div>
             </div>
@@ -123,13 +123,13 @@ export function ReportFlowLayer({ width, scale }: ReportFlowLayerProps) {
         </div>
       </div>
 
-      {/* 2. Main Content Flow (Streamlined) */}
+      {/* 2. Main Content Flow (Dense) */}
       <div className="w-full">
         {groups.some(g => g.items.length > 0 || g.header) ? (
           groups.map((group) => (
             <div 
                 key={group.id} 
-                className="py-8 border-b border-zinc-100 last:border-0"
+                className="py-4 border-b border-zinc-50 last:border-0"
             >
                 <div className="max-w-[1200px] mx-auto px-6">
                     {group.header && (
@@ -139,7 +139,7 @@ export function ReportFlowLayer({ width, scale }: ReportFlowLayerProps) {
                         />
                     )}
                     
-                    <div className="space-y-8">
+                    <div className="space-y-6">
                         {group.items.map((block, idx) => {
                             if (block.type === 'kpi-row') {
                                 return <ReportKpiRow key={`${group.id}-kpi-${idx}`} reports={block.items} />
