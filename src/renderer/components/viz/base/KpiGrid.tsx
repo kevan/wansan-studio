@@ -127,9 +127,9 @@ export function KpiGrid({
             className={cn(
               'bg-white border border-zinc-100 rounded-2xl p-5 shadow-sm transition-all duration-300 group/kpi flex flex-col items-center justify-center text-center relative overflow-hidden',
               count <= 2 ? 'min-h-[160px]' : 'min-h-[120px]',
-              // Unified Style: Apply same effects for Hover and Anchoring
-              'hover:ring-2 hover:ring-indigo-500 hover:border-transparent hover:shadow-xl hover:scale-[1.02] hover:z-10',
-              isHighlighted ? 'ring-2 ring-indigo-500 border-transparent shadow-xl scale-[1.02] z-10' : (isAnchoringActive && 'opacity-40 grayscale-[0.5]')
+              // Unified Style: Remove ring, keep shadow, scaling and z-index
+              'hover:shadow-xl hover:scale-[1.02] hover:z-10',
+              isHighlighted ? 'shadow-xl scale-[1.02] z-10' : (isAnchoringActive && 'opacity-40 grayscale-[0.5]')
             )}
           >
             <div
