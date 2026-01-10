@@ -159,6 +159,7 @@ const createNewSession = (): Session => ({
 const initialProjectState: ProjectData & {
   currentProjectPath: string | null
   isProjectLoaded: boolean
+  editingReportId: string | null
 } = {
   meta: {
     id: crypto.randomUUID(),
@@ -174,6 +175,7 @@ const initialProjectState: ProjectData & {
   widgetRegistry: {},
   currentProjectPath: null,
   isProjectLoaded: false,
+  editingReportId: null,
 }
 
 export const useProjectStore = create<ProjectState>()(
@@ -182,7 +184,6 @@ export const useProjectStore = create<ProjectState>()(
       ...initialProjectState,
       abortControllers: {},
       layoutScenario: 'default',
-      editingReportId: null,
       pendingReplace: null,
       showRefreshConfirm: false,
       sidebarMode: 'sessions',
@@ -191,7 +192,6 @@ export const useProjectStore = create<ProjectState>()(
       isRestoring: false,
       isRefreshing: false,
       smartFilterRequest: null,
-      currentProjectPath: null,
 
       setSidebarMode: mode =>
         set(_state => {
@@ -1408,7 +1408,6 @@ export const useProjectStore = create<ProjectState>()(
     }),
     {
       name: 'wansan-project-v2',
-      // ... rest ...
       storage: createBigIntStorage(),
       partialize: state => {
         // Exclude transient/runtime state from persistence
@@ -1428,7 +1427,20 @@ export const useProjectStore = create<ProjectState>()(
           ...rest
         } = state
 
-        return rest as unknown as ProjectState
+        return rest
+      },
+      merge: (persistedState: any, currentState) => {
+        // Force transient fields to null/default even if they exist in storage
+        return {
+          ...currentState,
+          ...(persistedState as object),
+          editingReportId: null, // ALWAYS start with no editor
+          isProjectLoaded: false,
+          isRestoring: false,
+          isRefreshing: false,
+          smartFilterRequest: null,
+          pendingReplace: null,
+        }
       },
       onRehydrateStorage: () => state => {
         if (state) {
