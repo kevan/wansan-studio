@@ -267,6 +267,7 @@ export function ChartFullView() {
                         vizConfig: effectiveConfig,
                       }}
                       variant="dashboard"
+                      highlightedItems={highlightedItems}
                     />
                   </div>
                 )}
