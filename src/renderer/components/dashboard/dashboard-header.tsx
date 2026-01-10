@@ -3,14 +3,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  FileImage,
   FileText,
   Lock,
   Minus,
   Monitor,
   Plus,
   Printer,
-  Sparkles,
   Type,
 } from 'lucide-react'
 
@@ -19,10 +17,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { CanvasLayout, useWorkbenchStore } from '@/stores/useWorkbenchStore'
@@ -37,10 +33,6 @@ import { Analytics } from '../../services/analytics'
 import logo from '@/src/assets/logo.png'
 import { useExportWebReport } from '@/hooks/useIPC'
 import { ExportLoadingModal } from '../modals/ExportLoadingModal'
-import {
-  type ExportConfig,
-  ExportConfigModal,
-} from '../modals/ExportConfigModal'
 import { useProGate } from '@/hooks/use-pro-gate'
 
 export function DashboardHeader() {
@@ -56,17 +48,20 @@ export function DashboardHeader() {
   const addWidget = useProjectStore(state => state.addWidget)
   const { mutateAsync: exportWebReport } = useExportWebReport()
   const [isExportingWeb, setIsExportingWeb] = useState(false)
-  const [isConfigOpen, setIsConfigOpen] = useState(false)
   const { checkGate, gateNode } = useProGate()
 
-  const handleConfirmExport = async (config: ExportConfig) => {
-    setIsConfigOpen(false)
+  const handleExportWeb = async () => {
+    Analytics.track('export_clicked', { format: 'html' })
     setIsExportingWeb(true)
     try {
       const { pinnedReports, canvasConfig } = useWorkbenchStore.getState()
       await exportWebReport({
         widgets: pinnedReports,
-        config: { ...config, language: language as 'en' | 'zh' },
+        config: {
+          title: canvasConfig.title || t('default_report_title'),
+          theme: 'minimal',
+          language: language as 'en' | 'zh',
+        },
         fullSnapshot: { workbench: { canvasConfig } },
       })
       addToast({
@@ -293,12 +288,6 @@ export function DashboardHeader() {
     <div className="h-14 border-b bg-white flex items-center px-4 justify-between shrink-0 z-20 relative">
       {gateNode}
       <ExportLoadingModal isOpen={isExportingWeb} />
-      <ExportConfigModal
-        isOpen={isConfigOpen}
-        onClose={() => setIsConfigOpen(false)}
-        onConfirm={handleConfirmExport}
-        defaultTitle={canvasConfig.title || t('default_report_title')}
-      />
       {/* LEFT: Actions */}
       <div className="flex items-center gap-2 w-[200px]">
         <Button
@@ -309,7 +298,9 @@ export function DashboardHeader() {
           className="h-8 gap-2 bg-white hover:bg-zinc-50 border-zinc-200 shadow-sm"
         >
           <Type className="w-4 h-4 text-zinc-500" />
-          <span className="text-zinc-700 text-xs">{t('insert_section', 'New Section')}</span>
+          <span className="text-zinc-700 text-xs">
+            {t('insert_section', 'New Section')}
+          </span>
         </Button>
       </div>
 
@@ -378,9 +369,13 @@ export function DashboardHeader() {
         {/* Layout Switcher (Primary Control) */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 gap-2 text-xs border-zinc-200 shadow-sm">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-2 text-xs border-zinc-200 shadow-sm"
+            >
               {canvasConfig.layout === 'report' ? (
-                <FileText className="h-3.5 w-3.5 text-indigo-600" />
+                <FileText className="h-3.5 w-3.5 text-zinc-500" />
               ) : canvasConfig.layout === 'a4' ? (
                 <Printer className="h-3.5 w-3.5 text-zinc-500" />
               ) : (
@@ -396,22 +391,17 @@ export function DashboardHeader() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>{t('view_mode', 'View Mode')}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
             <DropdownMenuRadioGroup
               value={canvasConfig.layout}
               onValueChange={val => handleLayoutChange(val as CanvasLayout)}
             >
-              <DropdownMenuRadioItem value="report" className="gap-2">
-                <FileText className="h-4 w-4 text-indigo-600" />
+              <DropdownMenuRadioItem value="report">
                 {t('view_report')}
               </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="screen" className="gap-2">
-                <Monitor className="h-4 w-4 text-zinc-500" />
+              <DropdownMenuRadioItem value="screen">
                 {t('view_dashboard')}
               </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="a4" className="gap-2">
-                <Printer className="h-4 w-4 text-zinc-500" />
+              <DropdownMenuRadioItem value="a4">
                 {t('layout_print')}
               </DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
@@ -433,31 +423,26 @@ export function DashboardHeader() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>{t('export_options')}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
             <DropdownMenuItem
               onSelect={() =>
                 checkGate(t('export_pdf'), () => handleExport('pdf'))
               }
             >
-              <FileText className="mr-2 h-4 w-4" /> {t('export_pdf')}
+              {t('export_pdf')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={() =>
                 checkGate(t('export_png'), () => handleExport('png'))
               }
             >
-              <FileImage className="mr-2 h-4 w-4" /> {t('export_png')}
+              {t('export_png')}
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem
-              className="text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50"
               disabled={isExportingWeb}
               onSelect={() =>
-                checkGate(t('export_web_report'), () => setIsConfigOpen(true))
+                checkGate(t('export_web_report'), handleExportWeb)
               }
             >
-              <Sparkles className="mr-2 h-4 w-4" />
               {t('export_web_report')}
             </DropdownMenuItem>
           </DropdownMenuContent>
