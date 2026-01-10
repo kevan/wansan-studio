@@ -241,7 +241,9 @@ export function DashboardCanvasV3({
           </div>
         </div>
 
-        <ChartFullView key={editingReportId || 'closed'} />
+        {editingReportId && (
+          <ChartFullView key={editingReportId} />
+        )}
       </div>
     </div>
   )
