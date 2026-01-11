@@ -10,7 +10,7 @@ import {
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import { formatForDisplay } from '@shared/serialization'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import { Button } from '../../ui/button'
 
 interface ReportTableProps {
@@ -106,8 +106,8 @@ export function DataTable({
         <table className="w-full text-[13px] border-separate border-spacing-0">
           <thead
             className={cn(
-              'sticky top-0 z-20',
-              isCard ? 'bg-white/95 backdrop-blur-sm' : 'bg-zinc-100 shadow-sm'
+              'sticky top-0 z-20 transition-all',
+              isCard ? 'bg-white/80 backdrop-blur-md' : 'bg-zinc-50/90 backdrop-blur-md shadow-sm'
             )}
           >
             {table.getHeaderGroups().map(headerGroup => (
@@ -118,33 +118,42 @@ export function DataTable({
                     <th
                       key={header.id}
                       className={cn(
-                        'h-9 px-3 text-left transition-colors whitespace-nowrap',
+                        'h-10 px-4 text-left transition-all whitespace-nowrap group/th relative',
                         isCard
-                          ? 'text-[10px] font-bold text-zinc-400 tracking-widest border-b border-zinc-100'
-                          : 'font-bold text-zinc-600 tracking-wider border-r border-b border-zinc-300 last:border-r-0',
+                          ? 'text-[11px] font-bold text-zinc-600 uppercase tracking-wider border-b border-zinc-100 bg-transparent'
+                          : 'font-bold text-zinc-700 tracking-wide border-r border-b border-zinc-200 last:border-r-0 bg-transparent',
                         header.column.getCanSort()
-                          ? 'cursor-pointer select-none hover:bg-zinc-50'
-                          : ''
+                          ? 'cursor-pointer select-none hover:bg-zinc-50/50'
+                          : '',
+                        sorted && 'text-indigo-600 bg-indigo-50/20'
                       )}
                       onClick={header.column.getToggleSortingHandler()}
                     >
-                      <div className="flex items-center gap-1.5">
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
+                      <div className="flex items-center gap-1.5 py-1">
+                        <span className={cn(
+                          "transition-colors",
+                          sorted ? "text-indigo-600" : "group-hover/th:text-zinc-800"
+                        )}>
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                        </span>
+                        
+                        {header.column.getCanSort() && (
+                          <div className={cn(
+                            "flex items-center justify-center transition-all duration-200",
+                            sorted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1 group-hover/th:opacity-40 group-hover/th:translate-y-0"
+                          )}>
+                            {sorted === 'asc' && <ArrowUp className="w-3.5 h-3.5 text-indigo-600" />}
+                            {sorted === 'desc' && <ArrowDown className="w-3.5 h-3.5 text-indigo-600" />}
+                            {!sorted && <ArrowUpDown className="w-3.5 h-3.5 text-zinc-400" />}
+                          </div>
                         )}
-                        <div className="w-3">
-                          {sorted === 'asc' && (
-                            <span className="text-[10px] text-indigo-600">
-                              ▲
-                            </span>
-                          )}
-                          {sorted === 'desc' && (
-                            <span className="text-[10px] text-indigo-600">
-                              ▼
-                            </span>
-                          )}
-                        </div>
+                        
+                        {sorted && (
+                          <div className="absolute bottom-0 left-0 w-full h-[2px] bg-indigo-500 animate-in fade-in slide-in-from-bottom-1" />
+                        )}
                       </div>
                     </th>
                   )
@@ -182,9 +191,9 @@ export function DataTable({
                       <td
                         key={cell.id}
                         className={cn(
-                          'px-3 py-1.5 truncate max-w-[250px]',
+                          'px-4 py-2 truncate max-w-[250px]',
                           !isCard && 'border-r border-zinc-100 last:border-r-0',
-                          isNum && 'font-mono text-right text-indigo-600/90'
+                          isNum && 'font-mono text-right text-indigo-600/90 tracking-tight'
                         )}
                         title={String(val)}
                       >
