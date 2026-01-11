@@ -1,6 +1,5 @@
-import React from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import React, { useMemo } from 'react'
+import MarkdownIt from 'markdown-it'
 import { cn } from '@/utils/cn'
 
 interface SimpleMarkdownProps {
@@ -8,51 +7,65 @@ interface SimpleMarkdownProps {
   className?: string
 }
 
+/**
+ * Robust Markdown renderer using markdown-it.
+ */
 export function SimpleMarkdown({ content, className }: SimpleMarkdownProps) {
+  const md = useMemo(() => {
+    const instance = new MarkdownIt({
+      html: false, // Disable HTML tags for security
+      breaks: true, // Convert \n to <br>
+      linkify: true, // Autoconvert URL-like text to links
+      typographer: true,
+    })
+    
+    // Custom renderer for links to open in new tab
+    const defaultRender = instance.renderer.rules.link_open || function(tokens, idx, options, env, self) {
+      return self.renderToken(tokens, idx, options);
+    };
+
+    instance.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+      // Add target="_blank"
+      const aIndex = tokens[idx].attrIndex('target');
+      if (aIndex < 0) {
+        tokens[idx].attrPush(['target', '_blank']);
+      } else {
+        // @ts-ignore
+        tokens[idx].attrs[aIndex][1] = '_blank';
+      }
+      
+      // Add rel="noopener noreferrer"
+      const relIndex = tokens[idx].attrIndex('rel');
+      if (relIndex < 0) {
+        tokens[idx].attrPush(['rel', 'noopener noreferrer']);
+      } else {
+        // @ts-ignore
+        tokens[idx].attrs[relIndex][1] = 'noopener noreferrer';
+      }
+
+      return defaultRender(tokens, idx, options, env, self);
+    };
+
+    return instance
+  }, [])
+
+  if (!content) return null
+
+  const htmlContent = md.render(content)
+
   return (
-    <div className={cn('prose prose-sm prose-zinc max-w-none', className)}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          // Override link handling to open in new tab
-          a: ({ node: _node, ...props }) => (
-            <a
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-indigo-600 hover:text-indigo-800 underline"
-              {...props}
-            />
-          ),
-          // Custom styling for headers
-          h1: ({ node: _node, ...props }) => (
-            <h1 className="text-xl font-bold mb-3 mt-4" {...props} />
-          ),
-          h2: ({ node: _node, ...props }) => (
-            <h2 className="text-lg font-semibold mb-2 mt-4" {...props} />
-          ),
-          h3: ({ node: _node, ...props }) => (
-            <h3 className="text-base font-semibold mb-2 mt-3" {...props} />
-          ),
-          // Clean paragraph spacing
-          p: ({ node: _node, ...props }) => <p className="mb-2 leading-relaxed" {...props} />,
-          // List styling
-          ul: ({ node: _node, ...props }) => (
-            <ul className="list-disc list-outside ml-4 mb-3 space-y-1" {...props} />
-          ),
-          ol: ({ node: _node, ...props }) => (
-            <ol className="list-decimal list-outside ml-4 mb-3 space-y-1" {...props} />
-          ),
-          li: ({ node: _node, ...props }) => (
-            <li className="text-zinc-600" {...props} />
-          ),
-          // Bold text styling
-          strong: ({ node: _node, ...props }) => (
-            <strong className="font-semibold text-zinc-900" {...props} />
-          ),
-        }}
-      >
-        {content}
-      </ReactMarkdown>
-    </div>
+    <div 
+      className={cn(
+        'prose prose-sm prose-zinc max-w-none text-sm',
+        // Explicitly enforce list styles
+        '[&>ul]:list-disc [&>ul]:pl-5 [&>ul]:ml-1',
+        '[&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:ml-1',
+        '[&_li]:marker:text-zinc-400 [&_li]:pl-1',
+        // Link styles
+        'prose-a:text-indigo-600 prose-a:no-underline hover:prose-a:underline',
+        className
+      )}
+      dangerouslySetInnerHTML={{ __html: htmlContent }} 
+    />
   )
 }

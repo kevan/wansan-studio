@@ -1,6 +1,6 @@
 import React from 'react'
 import { DashboardCanvasV3 } from "@/components/dashboard-v3"
-import { DashboardHeader } from './mocks/MockDashboardHeader'
+import { DashboardHeader } from './mocks/MockNullComponent'
 
 export function App() {
   return (

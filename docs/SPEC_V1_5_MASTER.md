@@ -31,8 +31,11 @@ This milestone unifies three major capability upgrades:
     *   Chart engine receives these IDs and applies a **Focus/Blur** effect: Highlighted items stay opaque, others fade to 10% opacity.
 
 ### 2.3 Interactive Verification (Human-in-the-Loop)
-*   **Edit Mode**: Users can manually correct AI hallucinations.
-    *   **Modify**: Edit markdown text for any finding.
+*   **WYSIWYG Editing**: Upgraded from raw textareas to a rich **Markdown Editor** (MDXEditor).
+    *   **Experience**: Users see bolding, lists, and formatting directly while editing.
+    *   **Interaction**: Implemented **Click-to-Edit** pattern—findings display as static text until clicked, reducing visual clutter and improving performance.
+*   **Correction**:
+    *   **Modify**: Edit the narrative directly.
     *   **Anchor**: Manually add/remove `relatedItems` tags to fix visual linking.
     *   **Sentiment**: Change sentiment classification.
 
@@ -87,6 +90,7 @@ Instead of server-side rendering, we package a lightweight React runtime into a 
     *   **Runtime**: React + ReactDOM + ECharts (UMD).
     *   **Data**: JSON snapshot of the current Report state (`window.__WANSAN_SNAPSHOT__`).
     *   **Logic**: A minified "Player" component that hydrates the JSON into a read-only Dashboard.
+*   **Optimization**: Heavy components (like the Markdown Editor) are **Mocked** out of the export bundle, ensuring the final HTML remains lightweight (~2MB).
 
 ### 5.2 Capabilities
 *   **Offline First**: Works without internet.

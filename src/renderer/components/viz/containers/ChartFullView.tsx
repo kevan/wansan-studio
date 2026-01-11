@@ -397,7 +397,7 @@ export function ChartFullView() {
                 <div className="mb-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-1">
                   {t('visualization')}
                 </div>
-                <div className="grid grid-cols-5 gap-2.5">
+                <div className="grid grid-cols-3 gap-2.5">
                   {chartTypeOptions.map(option => {
                     const Icon = option.icon
                     const isActive = effectiveType === option.value
@@ -406,14 +406,16 @@ export function ChartFullView() {
                         key={option.value}
                         onClick={() => handleChartTypeChange(option.value)}
                         className={cn(
-                          'flex flex-col items-center gap-1.5 rounded-xl border p-2.5 text-[10px] font-bold transition-all duration-200',
+                          'flex flex-col items-center gap-2 rounded-xl border p-3 text-[10px] font-bold transition-all duration-200',
                           isActive
-                            ? 'border-zinc-900 bg-zinc-900 text-white shadow-xl scale-105'
+                            ? 'border-zinc-900 bg-zinc-900 text-white shadow-xl scale-105 z-10'
                             : 'border-zinc-100 bg-zinc-50 text-zinc-400 hover:border-zinc-300 hover:bg-white hover:text-zinc-600'
                         )}
                       >
                         <Icon className="w-4 h-4" />
-                        {t(option.label)}
+                        <span className="w-full truncate text-center whitespace-nowrap">
+                          {t(option.label)}
+                        </span>
                       </button>
                     )
                   })}

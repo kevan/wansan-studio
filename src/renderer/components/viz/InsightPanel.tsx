@@ -24,6 +24,7 @@ import {
 import { cn } from '@/utils/cn'
 import { SimpleMarkdown } from '../ui/simple-markdown'
 import type { InsightResult } from '@shared/types/dashboard'
+import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import TextareaAutosize from 'react-textarea-autosize'
 import { Analytics } from '../../services/analytics'
 
@@ -96,6 +97,7 @@ export function InsightPanel({
   const [error, setError] = useState<string>('')
   const [isEditing, setIsEditing] = useState(false)
   const [editBuffer, setEditEditBuffer] = useState<InsightResult | null>(null)
+  const [activeFindingId, setActiveFindingId] = useState<string | null>(null)
 
   const isExpanded = expanded !== undefined ? expanded : internalExpanded
   const dataPointCount = chartData.length
@@ -167,11 +169,13 @@ export function InsightPanel({
         recommendation: ''
     })))
     setIsEditing(true)
+    setActiveFindingId(null)
   }
 
   const handleCancelEdit = () => {
     setIsEditing(false)
     setEditEditBuffer(null)
+    setActiveFindingId(null)
   }
 
   const handleSaveEdit = () => {
@@ -183,6 +187,7 @@ export function InsightPanel({
       })
     }
     setIsEditing(false)
+    setActiveFindingId(null)
   }
 
   const updateFinding = (id: string, updates: any) => {
@@ -205,6 +210,7 @@ export function InsightPanel({
       ...editBuffer,
       findings: [...editBuffer.findings, newFinding],
     })
+    setActiveFindingId(newFinding.id) // Auto-focus new finding
   }
 
   const removeFinding = (id: string) => {
@@ -213,6 +219,7 @@ export function InsightPanel({
       ...editBuffer,
       findings: editBuffer.findings.filter(f => f.id !== id),
     })
+    if (activeFindingId === id) setActiveFindingId(null)
   }
 
   const handleRegenerate = useCallback(
@@ -291,12 +298,28 @@ export function InsightPanel({
                   </div>
 
                   <div className="flex-1 space-y-2 min-w-0">
-                    <TextareaAutosize
-                      value={f.markdown}
-                      onChange={e => updateFinding(f.id, { markdown: e.target.value })}
-                      placeholder={t('placeholder_finding')}
-                      className="w-full bg-transparent border-none p-0 text-sm focus:ring-0 outline-none resize-none leading-relaxed"
-                    />
+                    {activeFindingId === f.id ? (
+                        <MarkdownEditor
+                          value={f.markdown}
+                          onChange={val => updateFinding(f.id, { markdown: val })}
+                          placeholder={t('placeholder_finding')}
+                          className="min-h-[60px]"
+                        />
+                    ) : (
+                        <div 
+                            onClick={() => setActiveFindingId(f.id)}
+                            className="min-h-[40px] p-2 rounded-lg border border-transparent hover:bg-white hover:border-zinc-200 hover:shadow-sm cursor-text transition-all group/preview"
+                        >
+                            {f.markdown ? (
+                                <SimpleMarkdown 
+                                    content={f.markdown} 
+                                    className="prose-p:my-0 prose-p:leading-relaxed pointer-events-none" 
+                                /> 
+                            ) : (
+                                <span className="text-zinc-400 italic text-xs">{t('placeholder_finding')}</span>
+                            )}
+                        </div>
+                    )}
                     
                     {/* Related Items Edit */}
                     <div className="flex flex-wrap gap-1.5 items-center">
@@ -424,8 +447,8 @@ export function InsightPanel({
         {recommendation && (
           <div className="flex items-start gap-3 p-3 bg-emerald-50/50 border border-emerald-100/50 rounded-lg">
             < Lightbulb className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-emerald-800 leading-relaxed font-medium">
-              {recommendation}
+            <div className="text-sm text-emerald-800 leading-relaxed font-medium w-full">
+              <SimpleMarkdown content={recommendation} className="prose-p:my-0 prose-p:leading-relaxed text-emerald-800" />
             </div>
           </div>
         )}
