@@ -19,6 +19,7 @@ interface ReportTableProps {
   columns?: string[] // Legacy support
   columnTypes?: Record<string, string> // Legacy support
   variant: 'chat' | 'dashboard' | 'preview' | 'fullscreen' | 'report'
+  highlightedItems?: string[]
 }
 
 export function DataTable({
@@ -27,6 +28,7 @@ export function DataTable({
   columns = [],
   columnTypes = {},
   variant = 'chat',
+  highlightedItems = [],
 }: ReportTableProps) {
   const { t } = useTranslation('common')
   const safeData = data || []
@@ -152,19 +154,25 @@ export function DataTable({
           </thead>
           <tbody className="text-zinc-700">
             {rowModel.rows.length ? (
-              rowModel.rows.map((row, i) => (
-                <tr
-                  key={row.id}
-                  className={cn(
-                    'group transition-colors',
-                    isCard
-                      ? 'border-b border-zinc-50 hover:bg-zinc-50/50'
-                      : i % 2 === 0
-                        ? 'bg-white hover:bg-indigo-50/40'
-                        : 'bg-zinc-50/50 hover:bg-indigo-50/40',
-                    !isCard && 'border-b border-zinc-100'
-                  )}
-                >
+              rowModel.rows.map((row, i) => {
+                const rowValues = Object.values(row.original).map(v => String(v))
+                const isHighlighted = highlightedItems.some(item => rowValues.includes(item))
+                const isAnchoringActive = highlightedItems.length > 0
+
+                return (
+                  <tr
+                    key={row.id}
+                    className={cn(
+                      'group transition-all duration-300',
+                      isCard
+                        ? 'border-b border-zinc-50 hover:bg-zinc-50/50'
+                        : i % 2 === 0
+                          ? 'bg-white hover:bg-indigo-50/40'
+                          : 'bg-zinc-50/50 hover:bg-indigo-50/40',
+                      !isCard && 'border-b border-zinc-100',
+                      isHighlighted ? 'bg-indigo-50/60 shadow-[inset_4px_0_0_0_#6366f1]' : (isAnchoringActive && 'opacity-40 grayscale-[0.5]')
+                    )}
+                  >
                   {row.getVisibleCells().map(cell => {
                     const val = cell.getValue()
                     const isNum =
@@ -187,8 +195,9 @@ export function DataTable({
                       </td>
                     )
                   })}
-                </tr>
-              ))
+                  </tr>
+                )
+              })
             ) : (
               <tr>
                 <td

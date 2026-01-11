@@ -140,6 +140,7 @@ const VizRendererBase = ({
                 columns={columns}
                 columnTypes={columnTypes}
                 variant="dashboard"
+                highlightedItems={highlightedItems}
               />
             </div>
           )}
@@ -209,6 +210,7 @@ const VizRendererBase = ({
               columns={columns}
               columnTypes={columnTypes}
               variant={variant}
+              highlightedItems={highlightedItems}
             />
           </div>
         )}
