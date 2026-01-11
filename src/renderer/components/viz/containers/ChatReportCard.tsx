@@ -243,6 +243,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
             messageId={messageId}
             highlightedItems={highlightedItems}
             onDrillDownAction={handleDrillDown}
+            className="p-5 bg-white"
           />
         )}
       </div>

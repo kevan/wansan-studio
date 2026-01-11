@@ -195,7 +195,7 @@ export const DashboardReportCard = forwardRef<
               {...report.reportData}
               variant={isReport ? 'report' : 'dashboard'}
               timestamp={report.reportData.timestamp}
-              className="flex-1 min-h-0 w-full"
+              className="flex-1 min-h-0 w-full p-4"
             />
           )}
         </div>

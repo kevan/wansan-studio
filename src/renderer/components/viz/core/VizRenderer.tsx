@@ -23,7 +23,7 @@ interface VizRendererProps {
   vizConfig?: ReportData['vizConfig']
   timestamp?: number
   className?: string
-  variant?: 'chat' | 'dashboard'
+  variant?: 'chat' | 'dashboard' | 'report'
   messageId?: string
   highlightedItems?: string[]
   onDrillDownAction?: (
@@ -58,7 +58,7 @@ const VizRendererBase = ({
 
   if (variant === 'dashboard') {
     return (
-      <div className={cn('flex flex-col h-full p-4 bg-white', className)}>
+      <div className={cn('flex flex-col h-full', className)}>
         {!hideHeader && (
           <VizHeader
             title={title}
@@ -149,16 +149,21 @@ const VizRendererBase = ({
   }
 
   return (
-    <div className={cn('flex flex-col h-full p-5 bg-white', className)}>
-      <VizHeader
-        title={title}
-        subtitle={subtitle}
-        className="mb-5"
-        timestamp={timestamp}
-        showTimestamp={false}
-      />
+    <div className={cn('flex flex-col', variant !== 'report' && 'h-full', className)}>
+      {!hideHeader && (
+        <VizHeader
+          title={title}
+          subtitle={subtitle}
+          className="mb-5"
+          timestamp={timestamp}
+          showTimestamp={false}
+        />
+      )}
 
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-6 pr-2">
+      <div className={cn(
+        'flex-1 min-h-0 pr-2',
+        variant === 'chat' ? 'overflow-y-auto space-y-6' : 'space-y-4'
+      )}>
         {summary && (
           <div className="text-sm text-zinc-600 leading-relaxed mb-4">
             {summary}
@@ -166,7 +171,10 @@ const VizRendererBase = ({
         )}
 
         {displayMode === 'chart' && (
-          <div className="h-[250px] w-full pb-4 pt-2">
+          <div className={cn(
+            "w-full pb-4 pt-2",
+            variant === 'chat' ? "h-[250px]" : "h-full min-h-[300px]"
+          )}>
             <VizChart
               type={chartType}
               title={chartTitle}
@@ -200,7 +208,7 @@ const VizRendererBase = ({
               columnFields={columnFields}
               columns={columns}
               columnTypes={columnTypes}
-              variant="chat"
+              variant={variant}
             />
           </div>
         )}

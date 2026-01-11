@@ -190,7 +190,8 @@ export function DashboardCanvasV3({
       <div
         ref={containerRef}
         className={cn(
-          'flex w-full flex-1 overflow-auto bg-zinc-100/60 p-6 dark:bg-zinc-900',
+          'flex w-full flex-1 overflow-auto bg-zinc-100/60 dark:bg-zinc-900',
+          isReportMode ? 'p-0' : 'p-6',
           !isReportMode &&
             isSpacePressed &&
             (isDragging ? 'cursor-grabbing' : 'cursor-grab')

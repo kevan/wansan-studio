@@ -93,8 +93,8 @@ export function ReportFlowLayer({ width, scale, readOnly }: ReportFlowLayerProps
   return (
     <div className="w-full min-h-screen bg-[#fbfbfa] pb-2 overflow-y-auto">
       {/* 1. Report Cover (Ultra-Compacted) */}
-      <div className="max-w-[1200px] mx-auto pt-2 pb-2 px-6">
-        <div className="bg-white border border-zinc-200 rounded-xl p-4 lg:p-5 shadow-sm relative overflow-hidden">
+      <div className="max-w-[1200px] mx-auto pt-2 pb-2 px-2 sm:px-4 lg:px-6">
+        <div className="bg-white border border-zinc-200 rounded-xl p-2 sm:p-3 md:p-4 lg:p-5 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/50 rounded-full -translate-y-1/2 translate-x-1/3 -z-0"></div>
 
           <div className="relative z-10 space-y-2">
@@ -103,7 +103,7 @@ export function ReportFlowLayer({ width, scale, readOnly }: ReportFlowLayerProps
               {t('analysis_report', 'Business Analysis Report')}
             </div>
 
-            <h1 className="text-xl lg:text-2xl font-black text-zinc-900 leading-tight tracking-tight">
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-black text-zinc-900 leading-tight tracking-tight">
               {canvasConfig.title || t('default_report_title')}
             </h1>
 
@@ -120,7 +120,7 @@ export function ReportFlowLayer({ width, scale, readOnly }: ReportFlowLayerProps
       </div>
 
       {/* 2. Main Content Flow (Continuous) */}
-      <div className="w-full max-w-[1200px] mx-auto px-6">
+      <div className="w-full max-w-[1200px] mx-auto px-2 sm:px-4 lg:px-6">
         <div className="space-y-1">
           {groups.some(g => g.items.length > 0 || g.header) ? (
             groups.map((group) => (

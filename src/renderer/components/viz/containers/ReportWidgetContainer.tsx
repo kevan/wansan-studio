@@ -6,6 +6,7 @@ import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import { Columns, Rows, X } from 'lucide-react'
 import { useProjectStore } from '@/stores/useProjectStore'
+import { getDisplayMode } from '@/utils/viz-logic'
 
 interface ReportWidgetContainerProps {
   report: any
@@ -31,6 +32,7 @@ export function ReportWidgetContainer({
   // Local state for layout to support "Export/ReadOnly" mode (where updateWidget might not persist or exist)
   const [layoutType, setLayoutType] = useState<'flow' | 'split'>(reportConfig.layoutType || 'flow')
   const isSplit = layoutType === 'split'
+  const displayMode = getDisplayMode(reportData.chartType, reportData.tableData || [], reportData.vizConfig)
 
   // Skip system title widgets (usually the first one) to avoid duplication with Report Cover
   if (isTextWidget && report.sourceMessageId === 'system') {
@@ -118,22 +120,31 @@ export function ReportWidgetContainer({
           )}
         >
           {/* 2.1 Visual Area */}
-          <div className="p-6 lg:p-8 flex flex-col justify-center">
+          <div className={cn(
+            "flex flex-col",
+            displayMode === 'chart' && "justify-center",
+            displayMode === 'chart' ? "p-3 sm:p-4 md:p-6 lg:p-8" : "p-3 sm:p-4 md:p-5"
+          )}>
             <VizRenderer
               {...reportData}
               hideHeader={true}
-              variant="dashboard"
+              variant="report"
               highlightedItems={highlightedItems}
               className={cn(
                 'w-full',
-                isSplit ? 'aspect-video min-h-[400px]' : 'h-[400px]'
+                displayMode === 'chart' 
+                  ? (isSplit ? 'aspect-video min-h-[300px] sm:min-h-[400px]' : 'h-[300px] sm:h-[400px]')
+                  : 'h-auto min-h-0'
               )}
             />
           </div>
 
           {/* 2.2 Insight Area */}
           {reportData.insight && reportConfig.showInsight !== false && (
-            <div className="p-6 lg:p-8 bg-zinc-50/30 flex flex-col justify-center">
+            <div className={cn(
+               "bg-zinc-50/30 flex flex-col justify-center",
+               displayMode === 'chart' ? "p-3 sm:p-4 md:p-6 lg:p-8" : "p-3 sm:p-4 md:p-5"
+            )}>
               <InsightPanel
                 title={reportData.title}
                 chartType={reportData.chartType}

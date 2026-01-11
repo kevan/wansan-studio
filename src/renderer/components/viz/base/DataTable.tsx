@@ -18,7 +18,7 @@ interface ReportTableProps {
   columnFields?: Array<{ name: string; type: string }>
   columns?: string[] // Legacy support
   columnTypes?: Record<string, string> // Legacy support
-  variant: 'chat' | 'dashboard' | 'preview' | 'fullscreen'
+  variant: 'chat' | 'dashboard' | 'preview' | 'fullscreen' | 'report'
 }
 
 export function DataTable({
@@ -52,7 +52,7 @@ export function DataTable({
 
   const [sorting, setSorting] = React.useState<SortingState>([])
 
-  const isCard = variant === 'chat' || variant === 'dashboard'
+  const isCard = variant === 'chat' || variant === 'dashboard' || variant === 'report'
   const isModal = variant === 'preview' || variant === 'fullscreen'
 
   const columnDefs: ColumnDef<Record<string, any>>[] =
@@ -88,10 +88,14 @@ export function DataTable({
   const rowModel = table.getRowModel()
 
   return (
-    <div className="flex flex-col h-full w-full">
+    <div className={cn(
+      'flex flex-col w-full',
+      (variant === 'dashboard' || isModal) ? 'h-full' : 'h-auto'
+    )}>
       <div
         className={cn(
-          'flex-1 overflow-auto relative transition-all',
+          'relative transition-all',
+          (variant === 'dashboard' || isModal) ? 'flex-1 overflow-auto' : 'overflow-x-auto',
           isCard
             ? 'border-0 bg-transparent'
             : 'rounded-lg border border-zinc-200 bg-white shadow-sm'

@@ -39,6 +39,7 @@ export function KpiGrid({
     if (data.length > 1 && xAxis) {
       // Dimension Expansion: One card per row, showing the first Y-axis
       const targetY = yAxes[0]
+      // PC: 12 items, Mobile: 8 items (controlled via CSS)
       data.slice(0, 12).forEach((row, idx) => {
         kpis.push({
           id: `row-${idx}`,
@@ -102,22 +103,27 @@ export function KpiGrid({
     return 'grid-cols-1'
   }
 
-  // 2. Determine Font Scaling
+  // 2. Determine Font Scaling (Responsive + Compact for many items)
   const getFontStyles = () => {
-    if (count >= 12) return { value: 'text-xl', label: 'text-[8px]' }
-    if (count >= 9) return { value: 'text-2xl', label: 'text-[9px]' }
-    if (count >= 5) return { value: 'text-3xl', label: 'text-[10px]' }
-    if (count >= 3) return { value: 'text-4xl', label: 'text-[11px]' }
+    if (count >= 12) return { value: 'text-base sm:text-lg', label: 'text-[6px] sm:text-[7px]' }
+    if (count >= 9) return { value: 'text-lg sm:text-xl', label: 'text-[7px] sm:text-[8px]' }
+    if (count >= 6) return { value: 'text-lg sm:text-xl md:text-2xl', label: 'text-[8px] sm:text-[9px]' }
+    if (count >= 4) return { value: 'text-xl sm:text-2xl md:text-3xl', label: 'text-[9px] sm:text-[10px]' }
+    if (count >= 3) return { value: 'text-2xl sm:text-3xl md:text-4xl', label: 'text-[10px] sm:text-[11px]' }
 
     // 1-2 items: very prominent
-    return { value: 'text-5xl', label: 'text-[12px]' }
+    return { value: 'text-3xl sm:text-4xl md:text-5xl', label: 'text-[11px] sm:text-[12px]' }
   }
 
   const styles = getFontStyles()
 
   return (
-    <div className={cn('grid gap-4 w-full', getGridCols(), className)}>
-      {kpis.map(kpi => {
+    <div className={cn(
+      'grid gap-1.5 sm:gap-2 md:gap-3 w-full',
+      getGridCols(),
+      className
+    )}>
+      {kpis.map((kpi, idx) => {
         const isHighlighted = highlightedItems.includes(kpi.label)
         const isAnchoringActive = highlightedItems.length > 0
         
@@ -125,11 +131,13 @@ export function KpiGrid({
           <div
             key={kpi.id}
             className={cn(
-              'bg-white border border-zinc-100 rounded-2xl p-5 shadow-sm transition-all duration-300 group/kpi flex flex-col items-center justify-center text-center relative overflow-hidden',
-              count <= 2 ? 'min-h-[160px]' : 'min-h-[120px]',
-              // Unified Style: Remove ring, keep shadow, scaling and z-index
-              'hover:shadow-xl hover:scale-[1.02] hover:z-10',
-              isHighlighted ? 'shadow-xl scale-[1.02] z-10' : (isAnchoringActive && 'opacity-40 grayscale-[0.5]')
+              'bg-white border border-zinc-100 rounded-lg sm:rounded-xl p-1.5 sm:p-2 md:p-3 shadow-sm transition-all duration-300 group/kpi flex flex-col items-center justify-center text-center relative overflow-hidden',
+              count <= 2 ? 'py-3 sm:py-4 md:py-6' : count <= 4 ? 'py-2 sm:py-3 md:py-4' : 'py-1.5 sm:py-2 md:py-3',
+              // Hover effect with scale
+              'hover:shadow-lg hover:scale-[1.02] hover:z-10',
+              isHighlighted ? 'shadow-lg scale-[1.02] z-10' : (isAnchoringActive && 'opacity-40 grayscale-[0.5]'),
+              // Hide items 9-12 on mobile (index >= 8)
+              idx >= 8 && 'hidden sm:flex'
             )}
           >
             <div
@@ -141,8 +149,8 @@ export function KpiGrid({
 
             <div
               className={cn(
-                'font-black text-indigo-600 mb-1 font-mono tracking-tight transition-transform duration-300',
-                isHighlighted ? 'scale-105' : 'group-hover/kpi:scale-105',
+                'font-black text-indigo-600 mb-1 font-mono tracking-tight transition-transform duration-200',
+                isHighlighted && 'scale-105',
                 styles.value
               )}
             >

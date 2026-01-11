@@ -19,9 +19,9 @@ export function ReportSectionHeader({
 
   return (
     <div className="group relative mt-2 mb-4 border-b border-indigo-50 pb-2">
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3 sm:gap-4">
         {/* Section Number/Icon */}
-        <div className="shrink-0 w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xl font-black shadow-lg shadow-indigo-200 select-none mt-1">
+        <div className="shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg sm:text-xl font-black shadow-lg shadow-indigo-200 select-none mt-1">
           #
         </div>
         
@@ -31,7 +31,7 @@ export function ReportSectionHeader({
               id={report.id} 
               content={reportData.content || ''} 
               readOnly={readOnly} // Dynamic readOnly
-              className="text-3xl font-black text-zinc-900 tracking-tight leading-none"
+              className="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight leading-none"
            />
         </div>
 
