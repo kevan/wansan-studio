@@ -32,6 +32,7 @@ export const useProjectStore = create((_set) => ({
   files: [],
   sessions: [],
   domainRules: [],
+  updateWidget: () => {}, // Mock action
   // ... add actions if needed
 }))
 

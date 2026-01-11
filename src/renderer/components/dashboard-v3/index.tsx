@@ -226,7 +226,7 @@ export function DashboardCanvasV3({
             }
           >
             {isReportMode ? (
-              <ReportFlowLayer width={gridWidth} scale={activeScale} />
+              <ReportFlowLayer width={gridWidth} scale={activeScale} readOnly={isPresentationMode} />
             ) : (
               <>
                 <PageLayer isA4={isA4} pageCount={pageCount} />

@@ -11,12 +11,14 @@ interface ReportWidgetContainerProps {
   report: any
   className?: string
   onRemove?: () => void
+  readOnly?: boolean
 }
 
 export function ReportWidgetContainer({
   report,
   className,
   onRemove,
+  readOnly,
 }: ReportWidgetContainerProps) {
   const { t } = useTranslation('common')
   const updateWidget = useProjectStore(state => state.updateWidget)
@@ -26,20 +28,28 @@ export function ReportWidgetContainer({
   const isTextWidget = reportData.chartType === 'text'
   const [highlightedItems, setHighlightedItems] = useState<string[]>([])
 
+  // Local state for layout to support "Export/ReadOnly" mode (where updateWidget might not persist or exist)
+  const [layoutType, setLayoutType] = useState<'flow' | 'split'>(reportConfig.layoutType || 'flow')
+  const isSplit = layoutType === 'split'
+
   // Skip system title widgets (usually the first one) to avoid duplication with Report Cover
   if (isTextWidget && report.sourceMessageId === 'system') {
       return null
   }
 
-  const isSplit = reportConfig.layoutType === 'split'
-
   const toggleLayout = () => {
-      updateWidget(report.id, {
-          reportConfig: {
-              ...reportConfig,
-              layoutType: isSplit ? 'flow' : 'split'
-          }
-      })
+      const next = isSplit ? 'flow' : 'split'
+      setLayoutType(next)
+      
+      // Attempt to persist if not read-only (and function exists)
+      if (!readOnly && updateWidget) {
+          updateWidget(report.id, {
+              reportConfig: {
+                  ...reportConfig,
+                  layoutType: next
+              }
+          })
+      }
   }
 
   if (isTextWidget) {
@@ -82,7 +92,7 @@ export function ReportWidgetContainer({
             </button>
             
             {/* Remove Button */}
-            {onRemove && (
+            {onRemove && !readOnly && (
                 <button
                     onClick={(e) => {
                         e.stopPropagation()
@@ -114,7 +124,10 @@ export function ReportWidgetContainer({
               hideHeader={true}
               variant="dashboard"
               highlightedItems={highlightedItems}
-              className="w-full aspect-video min-h-[400px]"
+              className={cn(
+                'w-full',
+                isSplit ? 'aspect-video min-h-[400px]' : 'h-[400px]'
+              )}
             />
           </div>
 

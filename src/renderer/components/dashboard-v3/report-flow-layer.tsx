@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 interface ReportFlowLayerProps {
   width?: number
   scale?: number
+  readOnly?: boolean
 }
 
 type RenderBlock =
@@ -21,7 +22,7 @@ type SectionGroup = {
   items: RenderBlock[]
 }
 
-export function ReportFlowLayer(_props: ReportFlowLayerProps) {
+export function ReportFlowLayer({ width, scale, readOnly }: ReportFlowLayerProps) {
   const { t } = useTranslation('common')
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const removeReport = useWorkbenchStore(state => state.removeReport)
@@ -113,10 +114,6 @@ export function ReportFlowLayer(_props: ReportFlowLayerProps) {
                   {new Date().toLocaleDateString()}
                 </span>
               </div>
-              {/*<div className="flex items-center gap-1.5 text-zinc-400 text-[11px]">*/}
-              {/*  <User className="w-3 h-3" />*/}
-              {/*  <span className="font-medium">Wansan Studio</span>*/}
-              {/*</div>*/}
             </div>
           </div>
         </div>
@@ -132,6 +129,7 @@ export function ReportFlowLayer(_props: ReportFlowLayerProps) {
                       <ReportSectionHeader
                           report={group.header}
                           onRemove={() => removeReport(group.header.id)}
+                          readOnly={readOnly}
                       />
                   )}
 
@@ -146,6 +144,7 @@ export function ReportFlowLayer(_props: ReportFlowLayerProps) {
                                       key={block.data.id}
                                       report={block.data}
                                       onRemove={() => removeReport(block.data.id)}
+                                      readOnly={readOnly}
                                   />
                               )
                           }

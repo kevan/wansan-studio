@@ -7,10 +7,12 @@ import { ReportTitleEditor } from '../base/ReportTitleEditor'
 // --- Section Header (Interactive) ---
 export function ReportSectionHeader({ 
   report, 
-  onRemove 
+  onRemove,
+  readOnly
 }: { 
   report: any
-  onRemove?: () => void 
+  onRemove?: () => void
+  readOnly?: boolean
 }) {
   const { t } = useTranslation('common')
   const reportData = report.reportData
@@ -28,14 +30,14 @@ export function ReportSectionHeader({
            <ReportTitleEditor 
               id={report.id} 
               content={reportData.content || ''} 
-              readOnly={false} // Allow editing
+              readOnly={readOnly} // Dynamic readOnly
               className="text-3xl font-black text-zinc-900 tracking-tight leading-none"
            />
         </div>
 
         {/* Controls */}
         <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity">
-            {onRemove && (
+            {onRemove && !readOnly && (
                 <button
                     onClick={(e) => {
                         e.stopPropagation()
