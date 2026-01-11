@@ -119,7 +119,7 @@ export function KpiGrid({
 
   return (
     <div className={cn(
-      'grid gap-1.5 sm:gap-2 md:gap-3 w-full',
+      'grid gap-1.5 sm:gap-2 md:gap-3 w-full p-1',
       getGridCols(),
       className
     )}>

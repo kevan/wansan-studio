@@ -190,7 +190,7 @@ const VizRendererBase = ({
         )}
 
         {displayMode === 'bignumber' && (
-          <div className="w-full flex items-center justify-center py-4">
+          <div className="w-full flex items-center justify-center py-4 px-2">
             <KpiGrid
               reportData={{ title, chartType, tableData, vizConfig }}
               variant={variant}

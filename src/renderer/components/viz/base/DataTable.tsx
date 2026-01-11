@@ -82,7 +82,7 @@ export function DataTable({
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       pagination: {
-        pageSize: isModal ? 10 : 5,
+        pageSize: 10,
       },
     },
   })
@@ -139,7 +139,7 @@ export function DataTable({
                             header.getContext()
                           )}
                         </span>
-                        
+
                         {header.column.getCanSort() && (
                           <div className={cn(
                             "flex items-center justify-center transition-all duration-200",
@@ -150,7 +150,7 @@ export function DataTable({
                             {!sorted && <ArrowUpDown className="w-3.5 h-3.5 text-zinc-400" />}
                           </div>
                         )}
-                        
+
                         {sorted && (
                           <div className="absolute bottom-0 left-0 w-full h-[2px] bg-indigo-500 animate-in fade-in slide-in-from-bottom-1" />
                         )}

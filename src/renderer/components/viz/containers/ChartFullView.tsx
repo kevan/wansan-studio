@@ -362,6 +362,7 @@ export function ChartFullView() {
                       data={data}
                       columnFields={columnFields}
                       variant="dashboard"
+                      highlightedItems={highlightedItems}
                     />
                   </div>
                 )}
