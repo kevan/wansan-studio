@@ -66,7 +66,7 @@ export function DashboardHeader() {
     Analytics.track('export_clicked', { format: 'html' })
     setIsExportingWeb(true)
     try {
-      await exportWebReport({
+      const filePath = await exportWebReport({
         widgets: pinnedReports,
         config: {
           title: canvasConfig.title || t('default_report_title'),
@@ -77,10 +77,16 @@ export function DashboardHeader() {
       })
       addToast({
         title: t('export_success', 'Web Report Generated'),
+        description: filePath,
         type: 'success',
+        action: {
+          label: t('open_folder', 'Open Folder'),
+          onClick: () => window.electronAPI.showItemInFolder(filePath),
+        },
       })
     } catch (e) {
       console.error(e)
+      if (String(e).includes('Cancelled')) return
       addToast({ title: t('export_failed', 'Export Failed'), type: 'error' })
     } finally {
       setIsExportingWeb(false)
@@ -219,10 +225,23 @@ export function DashboardHeader() {
           ctx.fillText('Created with Wansan Studio', textX, textY)
         }
 
-        await window.electronAPI?.saveImage(
+        const result = await window.electronAPI?.saveImage(
           canvas.toDataURL('image/png'),
           fileName
         )
+        
+        if (result.success && result.data) {
+          const filePath = result.data as string
+          addToast({
+            title: t('image_saved', 'Image Saved'),
+            description: filePath,
+            type: 'success',
+            action: {
+              label: t('open_folder', 'Open Folder'),
+              onClick: () => window.electronAPI.showItemInFolder(filePath),
+            },
+          })
+        }
         return
       }
 

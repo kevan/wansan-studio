@@ -42,11 +42,15 @@ export async function exportDebugLog() {
   const content = JSON.stringify(report, null, 2)
 
   if (window.electronAPI?.saveFile) {
-    await window.electronAPI.saveFile(
+    const result = await window.electronAPI.saveFile(
       content,
       'json',
       `wansan-debug-${Date.now()}.json`
     )
+    if (result.success && result.data) {
+        return result.data as string
+    }
+    return null
   } else {
     const blob = new Blob([content], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -55,7 +59,6 @@ export async function exportDebugLog() {
     a.download = `wansan-debug-${Date.now()}.json`
     a.click()
     URL.revokeObjectURL(url)
+    return 'browser-download'
   }
-
-  return true
 }

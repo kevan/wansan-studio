@@ -7,10 +7,28 @@ import App from './App'
 import './styles/globals.css'
 import './i18n'
 import { enableFetchLogger } from './utils/fetch-logger'
+import { useLogStore } from './stores/useLogStore'
 
 // Enable fetch logging in development
 if (import.meta.env.DEV) {
   enableFetchLogger()
+}
+
+// Global Error Handlers
+window.onerror = (message, source, lineno, colno, error) => {
+  useLogStore.getState().addLog({
+    type: 'error',
+    message: String(message),
+    stack: error?.stack || `${source}:${lineno}:${colno}`,
+  })
+}
+
+window.onunhandledrejection = (event) => {
+  useLogStore.getState().addLog({
+    type: 'error',
+    message: `Unhandled Rejection: ${event.reason}`,
+    stack: event.reason?.stack,
+  })
 }
 
 // 确保 DOM 元素存在

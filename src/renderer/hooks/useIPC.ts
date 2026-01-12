@@ -142,10 +142,14 @@ const mockIPC: ElectronAPI = {
     _content: string,
     _extension: string,
     _name: string
-  ): Promise<IPCResponse<boolean>> => {
-    return { success: true, data: true }
+  ): Promise<IPCResponse<string>> => {
+    return { success: true, data: '/mock/path/file.txt' }
   },
   openExternal: async (_url: string): Promise<IPCResponse> => {
+    return { success: true }
+  },
+  showItemInFolder: async (_path: string): Promise<IPCResponse> => {
+    console.log('Mock showItemInFolder', _path)
     return { success: true }
   },
   setLanguage: async (_lang: 'en' | 'zh'): Promise<IPCResponse> => {

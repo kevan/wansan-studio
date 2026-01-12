@@ -97,7 +97,7 @@ export interface ElectronAPI {
     content: string,
     extension: string,
     name: string
-  ) => Promise<IPCResponse<boolean>>
+  ) => Promise<IPCResponse<string>>
   getPathForFile: (file: File) => string
 
   // Database Operations
@@ -171,6 +171,7 @@ export interface ElectronAPI {
   secureGet: (key: string) => Promise<IPCResponse<string | null>>
   validateLicense: (key: string) => Promise<IPCResponse<boolean>>
   openExternal: (url: string) => Promise<IPCResponse>
+  showItemInFolder: (path: string) => Promise<IPCResponse>
   setLanguage: (lang: 'en' | 'zh') => Promise<IPCResponse>
 
   // Environment

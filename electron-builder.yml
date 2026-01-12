@@ -10,6 +10,9 @@ files:
   - "node_modules/**/*"
   - "!**/*.map"
 
+extraResources:
+  - from: dist/export
+    to: export
 
 # [CRITICAL] Unpack Native modules to avoid ASAR issues
 asarUnpack:

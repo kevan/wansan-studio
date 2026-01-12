@@ -47,6 +47,29 @@ export function setupIPC(
     }
   })
 
+  ipcMain.handle('show-item-in-folder', async (_event, filePath: string) => {
+    try {
+      if (typeof filePath !== 'string' || !filePath.trim()) {
+        return { success: false, error: 'Invalid file path' }
+      }
+
+      // Basic security check: prevent opening system root or clearly invalid paths
+      // though showItemInFolder is generally safe as it only reveals, not executes.
+      if (!fs.existsSync(filePath)) {
+        return { success: false, error: 'File does not exist' }
+      }
+
+      shell.showItemInFolder(filePath)
+      return { success: true }
+    } catch (error) {
+      console.error('Show item in folder error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  })
+
   // 文件解析
   ipcMain.handle('parse-file', async (event, filePath: string) => {
     try {
@@ -643,7 +666,7 @@ export function setupIPC(
         if (filePath) {
           const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '')
           await fs.writeFile(filePath, base64Data, 'base64')
-          return { success: true }
+          return { success: true, data: filePath }
         }
         return { success: false, error: 'Cancelled' }
       } catch (error) {
@@ -668,7 +691,7 @@ export function setupIPC(
 
         if (filePath) {
           await fs.writeFile(filePath, content, 'utf-8')
-          return { success: true, filePath }
+          return { success: true, data: filePath }
         }
         return { success: false, error: 'Cancelled' }
       } catch (error) {

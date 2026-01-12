@@ -158,12 +158,16 @@ export function MagicInput({
           fileName
         )
 
-        if (result.success) {
+        if (result.success && result.data) {
+          const filePath = result.data as string
           addToast({
             title: t('export_success_title'),
-            // @ts-expect-error filePath exists on success result
-            description: `Saved to ${result.filePath}`,
+            description: filePath,
             type: 'success',
+            action: {
+              label: tCommon('open_folder', 'Open Folder'),
+              onClick: () => window.electronAPI.showItemInFolder(filePath),
+            },
           })
         } else if (result.error !== 'Cancelled') {
           throw new Error(result.error)
@@ -395,8 +399,20 @@ export function MagicInput({
           handleExportMarkdown()
         }
         if (cmd === 'debug') {
-          await exportDebugLog()
-          addToast({ title: t('debug_export_success_toast'), type: 'success' })
+          const debugPath = await exportDebugLog()
+          if (debugPath && debugPath !== 'browser-download') {
+              addToast({ 
+                  title: t('debug_export_success_toast'), 
+                  description: debugPath,
+                  type: 'success',
+                  action: {
+                      label: tCommon('open_folder', 'Open Folder'),
+                      onClick: () => window.electronAPI.showItemInFolder(debugPath)
+                  }
+              })
+          } else {
+              addToast({ title: t('debug_export_success_toast'), type: 'success' })
+          }
         }
         setValue('')
         setInputDraft('')

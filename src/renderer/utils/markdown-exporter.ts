@@ -1,22 +1,24 @@
 import { ChatMessage } from '../components/ChatInterface'
 import { format } from 'sql-formatter'
+import i18n from '../i18n' // Ensure i18n instance is imported
 
 export function generateMarkdown(messages: ChatMessage[]): string {
+  const t = (key: string) => i18n.t(`common:${key}`)
   const lines: string[] = []
 
-  lines.push(`# Chat Export - ${new Date().toLocaleString()}`)
+  lines.push(`# ${t('export_md_title')} - ${new Date().toLocaleString()}`)
   lines.push('')
 
   for (const msg of messages) {
     const timestamp = new Date(msg.timestamp).toLocaleString()
 
     if (msg.type === 'user') {
-      lines.push(`## User (${timestamp})`)
+      lines.push(`## ${t('export_md_user')} (${timestamp})`)
       lines.push('')
       lines.push(msg.content)
       lines.push('')
     } else {
-      lines.push(`## Assistant (${timestamp})`)
+      lines.push(`## ${t('export_md_assistant')} (${timestamp})`)
       lines.push('')
 
       // 1. Content (Skip if it duplicates summary)
@@ -30,7 +32,7 @@ export function generateMarkdown(messages: ChatMessage[]): string {
       // 2. SQL Plan (Skip if we have the final Executed SQL in reportData)
       const hasExecutedSql = !!(msg.reportData && msg.reportData.sql)
       if (msg.planSql && !hasExecutedSql) {
-        lines.push('### SQL Plan')
+        lines.push(`### ${t('export_md_sql_plan')}`)
         lines.push('```sql')
         try {
           lines.push(format(msg.planSql, { language: 'postgresql' }))
@@ -42,17 +44,17 @@ export function generateMarkdown(messages: ChatMessage[]): string {
       }
 
       if (msg.reportData) {
-        lines.push(`### Report: ${msg.reportData.title}`)
+        lines.push(`### ${t('export_md_report')}: ${msg.reportData.title}`)
         lines.push('')
 
         if (msg.reportData.summary) {
-          lines.push('#### Summary')
+          lines.push(`#### ${t('export_md_summary')}`)
           lines.push(msg.reportData.summary)
           lines.push('')
         }
 
         if (msg.reportData.sql) {
-          lines.push('#### Executed SQL')
+          lines.push(`#### ${t('export_md_executed_sql')}`)
           lines.push('```sql')
           try {
             lines.push(format(msg.reportData.sql, { language: 'postgresql' }))
@@ -65,7 +67,7 @@ export function generateMarkdown(messages: ChatMessage[]): string {
 
         // [NEW] Export Data Table
         if (msg.reportData.tableData && msg.reportData.tableData.length > 0) {
-          lines.push('#### Data Result')
+          lines.push(`#### ${t('export_md_data_result')}`)
           const data = msg.reportData.tableData
           const columns =
             msg.reportData.columnFields?.map(c => c.name) ||
@@ -89,13 +91,49 @@ export function generateMarkdown(messages: ChatMessage[]): string {
             lines.push(`| ${rowStr} |`)
           }
           lines.push('')
-          lines.push(`*Total Rows: ${data.length}*`)
+          lines.push(`*${t('export_md_total_rows')}: ${data.length}*`)
           lines.push('')
+        }
+
+        // [NEW] Export AI Business Insight
+        if (msg.reportData.insight) {
+          const insight = msg.reportData.insight
+          lines.push(`### ${t('export_md_insights')}`)
+          lines.push('')
+
+          if (insight.summary) {
+            lines.push(`#### ${t('export_md_overview')}`)
+            lines.push(insight.summary)
+            lines.push('')
+          }
+
+          if (insight.findings && insight.findings.length > 0) {
+            lines.push(`#### ${t('export_md_key_findings')}`)
+            for (const finding of insight.findings) {
+              // Ensure each finding starts with a dash for list formatting
+              // Check for common markdown list markers followed by space
+              const cleanFinding = finding.markdown.trim()
+              const isAlreadyList = /^([-*+]\s|\d+\.\s)/.test(cleanFinding)
+              
+              if (isAlreadyList) {
+                 lines.push(cleanFinding)
+              } else {
+                 lines.push(`- ${cleanFinding}`)
+              }
+            }
+            lines.push('')
+          }
+
+          if (insight.recommendation) {
+            lines.push(`#### ${t('export_md_recommendations')}`)
+            lines.push(insight.recommendation)
+            lines.push('')
+          }
         }
       }
 
       if (msg.status === 'error' && msg.error) {
-        lines.push('### Error')
+        lines.push(`### ${t('export_md_error')}`)
         lines.push(`> ${msg.error}`)
         lines.push('')
       }
