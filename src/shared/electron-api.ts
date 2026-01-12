@@ -167,6 +167,7 @@ export interface ElectronAPI {
   getUserInfo: () => Promise<IPCResponse<{ username: string }>>
   getPath: (name: string) => Promise<IPCResponse<string>>
   getAppVersion: () => Promise<IPCResponse<string>>
+  getMainLogs: () => Promise<IPCResponse<any[]>>
   secureSet: (key: string, value: string) => Promise<IPCResponse<boolean>>
   secureGet: (key: string) => Promise<IPCResponse<string | null>>
   validateLicense: (key: string) => Promise<IPCResponse<boolean>>

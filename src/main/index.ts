@@ -14,6 +14,7 @@ import { registerProjectHandlers } from './ipc/project-ipc'
 import { createApplicationMenu } from './config/menu'
 import { authService } from './services/auth-service'
 import { setupFetchLogger } from './utils/fetch-logger'
+import { setupLogger } from './utils/logger'
 import type { AppConfig } from '../shared/types'
 
 class WansanApp {
@@ -29,6 +30,9 @@ class WansanApp {
   }
 
   private async init() {
+    // Initialize Logger first
+    setupLogger()
+
     // 加载环境变量 (仅开发模式)
     if (isDev()) {
       setupFetchLogger()

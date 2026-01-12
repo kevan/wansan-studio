@@ -164,6 +164,9 @@ const mockIPC: ElectronAPI = {
   getAppVersion: async (): Promise<IPCResponse<string>> => {
     return { success: true, data: '0.3.2' }
   },
+  getMainLogs: async (): Promise<IPCResponse<any[]>> => {
+    return { success: true, data: [{ level: 'info', message: 'Mock Main Log' }] }
+  },
   getPathForFile: (file: File) => file.name, // Mock
   windowControl: (
     _action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'

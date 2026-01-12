@@ -117,6 +117,7 @@ const electronAPI: ElectronAPI = {
   getUserInfo: () => ipcRenderer.invoke('get-user-info'),
   getPath: (name: string) => ipcRenderer.invoke('get-path', name),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  getMainLogs: () => ipcRenderer.invoke('get-main-logs'),
   secureSet: (key: string, value: string) =>
     ipcRenderer.invoke('secure-set', key, value),
   secureGet: (key: string) => ipcRenderer.invoke('secure-get', key),

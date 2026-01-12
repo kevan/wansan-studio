@@ -9,6 +9,14 @@ export async function exportDebugLog() {
 
   const chats = useChatStore.getState().messages
   const logs = await useLogStore.getState().getAllLogs()
+  
+  let mainLogs: any[] = []
+  if (window.electronAPI?.getMainLogs) {
+      const resp = await window.electronAPI.getMainLogs()
+      if (resp.success) {
+          mainLogs = resp.data || []
+      }
+  }
 
   const report = {
     timestamp: new Date().toISOString(),
@@ -35,7 +43,8 @@ export async function exportDebugLog() {
         error: m.error,
         sql: m.reportData?.sql || m.planSql,
       })),
-    system_logs: logs, // CRITICAL ADDITION
+    system_logs: logs,
+    main_process_logs: mainLogs, // CRITICAL ADDITION
   }
 
   // Convert to String

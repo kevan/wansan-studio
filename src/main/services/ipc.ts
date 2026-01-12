@@ -12,6 +12,7 @@ import fs from 'fs-extra'
 import os from 'os'
 import Store from 'electron-store'
 import { authService } from './auth-service'
+import { getMainLogs } from '../utils/logger'
 import type {
   TableSchema,
   ColumnSchema,
@@ -465,6 +466,10 @@ export function setupIPC(
   // 获取应用版本
   ipcMain.handle('get-app-version', async () => {
     return { success: true, data: app.getVersion() }
+  })
+
+  ipcMain.handle('get-main-logs', async () => {
+    return { success: true, data: getMainLogs() }
   })
 
   // 检查文件一致性
