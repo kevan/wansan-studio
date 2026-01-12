@@ -306,8 +306,23 @@ export function MagicInput({
           setValue('')
           setInputDraft('')
           valueRef.current = ''
-          await exportDebugLog()
-          addToast({ title: t('debug_export_success_toast'), type: 'success' })
+          const debugPath = await exportDebugLog()
+          if (debugPath && debugPath !== 'browser-download') {
+            addToast({
+              title: tCommon('debug_export_success_toast'),
+              description: debugPath,
+              type: 'success',
+              action: {
+                label: tCommon('open_folder', 'Open Folder'),
+                onClick: () => window.electronAPI.showItemInFolder(debugPath),
+              },
+            })
+          } else {
+            addToast({
+              title: tCommon('debug_export_success_toast'),
+              type: 'success',
+            })
+          }
         },
       },
     ]

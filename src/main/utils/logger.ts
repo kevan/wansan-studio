@@ -16,6 +16,8 @@ function formatArgs(args: any[]) {
 }
 
 export function captureLog(level: 'info' | 'warn' | 'error', message: any, ...args: any[]) {
+  if (level !== 'error') return
+
   const entry: LogEntry = {
     timestamp: new Date().toISOString(),
     level,
@@ -32,21 +34,9 @@ export function getMainLogs() {
 }
 
 // Intercept console
-const originalConsoleLog = console.log
-const originalConsoleWarn = console.warn
 const originalConsoleError = console.error
 
 export function setupLogger() {
-    console.log = (message?: any, ...optionalParams: any[]) => {
-        originalConsoleLog(message, ...optionalParams)
-        captureLog('info', message, ...optionalParams)
-    }
-
-    console.warn = (message?: any, ...optionalParams: any[]) => {
-        originalConsoleWarn(message, ...optionalParams)
-        captureLog('warn', message, ...optionalParams)
-    }
-
     console.error = (message?: any, ...optionalParams: any[]) => {
         originalConsoleError(message, ...optionalParams)
         captureLog('error', message, ...optionalParams)

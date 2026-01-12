@@ -14,23 +14,6 @@ if (import.meta.env.DEV) {
   enableFetchLogger()
 }
 
-// Global Error Handlers
-window.onerror = (message, source, lineno, colno, error) => {
-  useLogStore.getState().addLog({
-    type: 'error',
-    message: String(message),
-    stack: error?.stack || `${source}:${lineno}:${colno}`,
-  })
-}
-
-window.onunhandledrejection = (event) => {
-  useLogStore.getState().addLog({
-    type: 'error',
-    message: `Unhandled Rejection: ${event.reason}`,
-    stack: event.reason?.stack,
-  })
-}
-
 // 确保 DOM 元素存在
 const container = document.getElementById('root')
 if (!container) {

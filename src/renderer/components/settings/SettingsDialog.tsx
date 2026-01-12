@@ -50,6 +50,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
   const settings = useSettingsStore()
   const addToast = useToastStore(state => state.addToast)
   const { t, i18n } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
 
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>('idle')
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null)
@@ -599,7 +600,26 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={exportDebugLog}
+                  onClick={async () => {
+                    const debugPath = await exportDebugLog()
+                    if (debugPath && debugPath !== 'browser-download') {
+                      addToast({
+                        title: tCommon('debug_export_success_toast'),
+                        description: debugPath,
+                        type: 'success',
+                        action: {
+                          label: tCommon('open_folder'),
+                          onClick: () =>
+                            window.electronAPI.showItemInFolder(debugPath),
+                        },
+                      })
+                    } else {
+                      addToast({
+                        title: tCommon('debug_export_success_toast'),
+                        type: 'success',
+                      })
+                    }
+                  }}
                   className="mt-4 gap-2"
                 >
                   <Bug className="w-4 h-4" /> {t('debug_export_button')}

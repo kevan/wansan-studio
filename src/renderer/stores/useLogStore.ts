@@ -21,6 +21,8 @@ const MAX_LOGS = 200 // Hard Limit
 
 export const useLogStore = create<LogStore>(() => ({
   addLog: async entry => {
+    if (entry.type !== 'error') return
+
     const fullEntry: LogEntry = {
       timestamp: new Date().toISOString(),
       ...entry,
