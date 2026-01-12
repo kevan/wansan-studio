@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { ReportWidgetContainer } from '../viz/containers/ReportWidgetContainer'
-import { ReportSectionHeader, ReportKpiRow } from '../viz/containers/report-widgets'
+import { ReportSectionHeader } from '../viz/containers/report-widgets'
 import { FileText, Calendar } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -14,7 +14,6 @@ interface ReportFlowLayerProps {
 type RenderBlock =
   | { type: 'widget'; data: any }
   | { type: 'section'; data: any }
-  | { type: 'kpi-row'; items: any[] }
 
 type SectionGroup = {
   id: string
@@ -47,27 +46,10 @@ export function ReportFlowLayer({ width, scale, readOnly }: ReportFlowLayerProps
     const result: SectionGroup[] = []
     let currentGroup: SectionGroup = { id: 'default', items: [] }
 
-    let kpiBuffer: any[] = []
-    const flushKpiBuffer = () => {
-      if (kpiBuffer.length > 0) {
-        currentGroup.items.push({ type: 'kpi-row', items: [...kpiBuffer] })
-        kpiBuffer = []
-      }
-    }
-
     sortedReports.forEach(report => {
       const type = report.reportData.chartType
-      const data = report.reportData.tableData || []
-      const yAxes = Array.isArray(report.reportData.vizConfig?.y_axis)
-        ? report.reportData.vizConfig.y_axis
-        : [report.reportData.vizConfig?.y_axis].filter(Boolean)
-
-      // A KPI is "combinable" only if it has 1 row and 1 metric.
-      // Otherwise, it needs its own space to expand into a grid.
-      const isSimpleKpi = type === 'kpi' && data.length <= 1 && yAxes.length <= 1
 
       if (type === 'text') {
-        flushKpiBuffer()
         // Push the completed group before starting a new one
         if (currentGroup.items.length > 0 || currentGroup.header) {
           result.push(currentGroup)
@@ -77,14 +59,10 @@ export function ReportFlowLayer({ width, scale, readOnly }: ReportFlowLayerProps
           header: report,
           items: [],
         }
-      } else if (isSimpleKpi) {
-        kpiBuffer.push(report)
       } else {
-        flushKpiBuffer()
         currentGroup.items.push({ type: 'widget', data: report })
       }
     })
-    flushKpiBuffer()
     result.push(currentGroup)
 
     return result
@@ -135,9 +113,6 @@ export function ReportFlowLayer({ width, scale, readOnly }: ReportFlowLayerProps
 
                   <div className="space-y-1.5">
                       {group.items.map((block, idx) => {
-                          if (block.type === 'kpi-row') {
-                              return <ReportKpiRow key={`${group.id}-kpi-${idx}`} reports={block.items} />
-                          }
                           if (block.type === 'widget') {
                               return (
                                   <ReportWidgetContainer

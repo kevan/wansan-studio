@@ -1,6 +1,5 @@
 import React from 'react'
 import { X } from 'lucide-react'
-import { KpiGrid } from '../base/KpiGrid'
 import { useTranslation } from 'react-i18next'
 import { ReportTitleEditor } from '../base/ReportTitleEditor'
 
@@ -51,15 +50,6 @@ export function ReportSectionHeader({
             )}
         </div>
       </div>
-    </div>
-  )
-}
-
-// --- KPI Row ---
-export function ReportKpiRow({ reports }: { reports: any[] }) {
-  return (
-    <div className="mb-4 pb-4 border-b border-zinc-100 last:border-0">
-      <KpiGrid widgets={reports} variant="dashboard" />
     </div>
   )
 }
