@@ -481,7 +481,78 @@ export function InsightPanel({
     )
   }
 
+  const ConsentForm = () => (
+    <div className="flex items-start gap-3">
+      <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0 border border-indigo-100">
+        <Sparkles className="w-4 h-4 text-indigo-500" />
+      </div>
+      <div className="flex-1 w-full min-w-0">
+        <div className="text-sm font-bold text-zinc-800">
+          {t('insight_consent_title')}
+        </div>
+        <div className="text-xs text-zinc-500 mt-1 leading-relaxed">
+          {t('insight_consent_desc', { count: dataPointCount })}
+        </div>
+
+        <div className="mt-3 w-full">
+          <TextareaAutosize
+            value={instructions}
+            onChange={e => setInstructions(e.target.value)}
+            placeholder={
+              t('insight_instruction_placeholder') ||
+              'Any specific requirements? (Optional)'
+            }
+            className="w-full bg-white border border-zinc-200 rounded-lg p-2.5 text-xs text-zinc-700 placeholder:text-zinc-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-200 outline-none transition-all resize-none shadow-sm"
+            minRows={2}
+            maxRows={5}
+          />
+        </div>
+
+        <div className="flex gap-2 mt-3">
+          <button
+            onClick={handleConfirmSend}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            {t('confirm_send')}
+          </button>
+          <button
+            onClick={handleCancel}
+            className="px-3 py-1.5 text-xs font-bold text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors"
+          >
+            {t('cancel')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
   if (state === 'consent') {
+    // If regenerating (we have previous data), overlay the consent form on top of the skeleton
+    // This prevents layout collapse from Done -> Consent
+    if (insightData) {
+      return (
+        <div
+          className={cn(
+            'relative rounded-xl overflow-hidden border border-indigo-100 shadow-sm',
+            className
+          )}
+        >
+          {/* Background: Skeleton to maintain height */}
+          <div className="opacity-50 blur-[1px]">
+            <InsightSkeleton className="border-0 shadow-none" />
+          </div>
+
+          {/* Overlay: Consent Form */}
+          <div className="absolute inset-0 z-10 flex items-center justify-center p-4 bg-white/60 backdrop-blur-[1px]">
+            <div className="w-full bg-white border border-indigo-100 rounded-xl p-4 shadow-xl animate-in zoom-in-95 fade-in duration-200">
+              <ConsentForm />
+            </div>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div
         className={cn(
@@ -489,64 +560,13 @@ export function InsightPanel({
           className
         )}
       >
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0 border border-indigo-100">
-             <Sparkles className="w-4 h-4 text-indigo-500" />
-          </div>
-          <div className="flex-1 w-full min-w-0">
-            <div className="text-sm font-bold text-zinc-800">
-              {t('insight_consent_title')}
-            </div>
-            <div className="text-xs text-zinc-500 mt-1 leading-relaxed">
-              {t('insight_consent_desc', { count: dataPointCount })}
-            </div>
-            
-            <div className="mt-3 w-full">
-                <TextareaAutosize
-                    value={instructions}
-                    onChange={(e) => setInstructions(e.target.value)}
-                    placeholder={t('insight_instruction_placeholder') || "Any specific requirements? (Optional)"}
-                    className="w-full bg-white border border-zinc-200 rounded-lg p-2.5 text-xs text-zinc-700 placeholder:text-zinc-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-200 outline-none transition-all resize-none shadow-sm"
-                    minRows={2}
-                    maxRows={5}
-                />
-            </div>
-
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={handleConfirmSend}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                {t('confirm_send')}
-              </button>
-              <button
-                onClick={handleCancel}
-                className="px-3 py-1.5 text-xs font-bold text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors"
-              >
-                {t('cancel')}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConsentForm />
       </div>
     )
   }
 
   if (state === 'analyzing') {
-    return (
-      <div
-        className={cn(
-          'flex items-center gap-3 px-4 py-3 bg-indigo-50/50 border border-indigo-100 rounded-xl',
-          className
-        )}
-      >
-        <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
-        <span className="text-sm text-indigo-700">
-          {t('analyzing')}
-        </span>
-      </div>
-    )
+    return <InsightSkeleton className={className} />
   }
 
   if (state === 'error') {
@@ -710,4 +730,57 @@ function IconSelector({ current, onSelect }: { current: string, onSelect: (key: 
             )}
         </div>
     )
+}
+
+function InsightSkeleton({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        'border border-indigo-100 bg-white rounded-xl overflow-hidden shadow-sm',
+        className
+      )}
+    >
+      {/* Header Skeleton */}
+      <div className="w-full flex items-center justify-between px-4 py-3 border-b border-zinc-50/50">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded bg-indigo-100 animate-pulse" />
+          <div className="h-4 w-24 bg-indigo-100 rounded animate-pulse" />
+        </div>
+      </div>
+
+      {/* Content Skeleton */}
+      <div className="p-4 space-y-6">
+        {/* Summary */}
+        <div className="space-y-2">
+          <div className="h-4 w-full bg-zinc-100 rounded animate-pulse" />
+          <div className="h-4 w-3/4 bg-zinc-100 rounded animate-pulse" />
+        </div>
+
+        {/* Findings */}
+        <div className="space-y-3">
+          <div className="h-3 w-20 bg-zinc-100 rounded animate-pulse mb-2" />
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex gap-3 px-1">
+              <div className="w-4 h-4 rounded bg-zinc-100 shrink-0 animate-pulse mt-1" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-full bg-zinc-100 rounded animate-pulse" />
+                <div className="h-3 w-5/6 bg-zinc-100 rounded animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Recommendation */}
+        <div className="p-3 bg-emerald-50/30 rounded-lg border border-emerald-50">
+          <div className="flex gap-3">
+            <div className="w-4 h-4 rounded-full bg-emerald-100 animate-pulse shrink-0" />
+            <div className="flex-1 space-y-2 py-0.5">
+              <div className="h-3 w-full bg-emerald-100/50 rounded animate-pulse" />
+              <div className="h-3 w-2/3 bg-emerald-100/50 rounded animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
