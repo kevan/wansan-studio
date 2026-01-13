@@ -1,75 +1,79 @@
 # Wansan Studio (万三) - Developer Context
 
-## Project Overview
-**Wansan Studio** is a local-first, privacy-focused Business Intelligence (BI) desktop application. It empowers users (SME owners, finance, operations) to generate visualizations and reports from Excel/CSV data using natural language, without uploading their sensitive data to the cloud.
+## 1. Project Vision & Principles
+**Wansan Studio** is a **Local-First**, privacy-focused Business Intelligence (BI) desktop application. It empowers users to generate professional-grade visual reports from Excel/CSV data using natural language, without uploading sensitive row data to the cloud.
 
-*   **Core Philosophy:** "Data into Wealth, Privately."
-*   **Key Mechanism:** Data is loaded into a local **DuckDB** instance. The AI (OpenAI) is *only* sent the table **schema** to generate SQL queries. The SQL is executed locally, and results are rendered via **ECharts**.
+*   **Privacy First**: Raw data rows remain locally on the user's device. Only schema metadata is sent to the AI.
+*   **Zero Latency**: Leverages local compute (DuckDB Native) for instant analysis of large datasets.
+*   **Ownership**: Users own their data, API keys, and generated report files.
 
-## Tech Stack
+## 2. Tech Stack (v1.5)
 
-### Core
-*   **Runtime:** Electron (Main + Renderer architecture)
-*   **Language:** TypeScript
-*   **Build Tool:** Vite (Renderer) + tsup (Main)
+### 2.1 Core & Backend
+*   **Runtime**: Electron (Main + Renderer + Utility Process architecture).
+*   **Language**: TypeScript.
+*   **Database**: **DuckDB Native** (`@duckdb/node-api`) running in a separate Utility Process.
+*   **Ingestion**: `ExcelJS` (Streaming) + `fs-extra` + DuckDB `read_csv_auto`.
+*   **Build**: `electron-builder` (ASAR unpack enabled for native modules).
 
-### Frontend (Renderer)
-*   **Framework:** React 19
-*   **State Management:** Zustand + TanStack Query v5
-*   **Routing:** TanStack Router
-*   **UI System:** Tailwind CSS v4 + ShadcnUI (Radix Primitives) + Lucide Icons
-*   **Visualization:** ECharts (echarts-for-react)
-*   **Data Grid:** TanStack Table v8
+### 2.2 Frontend (Renderer)
+*   **Framework**: React 18 + Vite.
+*   **State**: Zustand (Global Store) + TanStack Query (Async Ops).
+*   **UI System**: Tailwind CSS v4 + Shadcn UI.
+*   **Design Language**: **"Wansan Airy"** (Zero-border, Large Radius, Soft Shadows).
+*   **Visualization**: Apache ECharts (Canvas).
+*   **Editors**:
+    *   **SQL**: `monaco-editor` (VS Code engine).
+    *   **Rich Text**: `MDXEditor` (Markdown).
 
-### Backend (Main Process)
-*   **Database:** DuckDB (Node.js bindings) - Embedded OLAP database
-*   **File I/O:** fs-extra
-*   **IPC:** Secure context bridge pattern
-
-## Architecture & Data Flow
+## 3. Architecture & Data Flow
 
 ```mermaid
 graph TD
-    User[User Input] -->|Chat| Renderer
-    Renderer -->|IPC: Ask AI| Main
-    Main -->|Schema Only| OpenAI
-    OpenAI -->|SQL + Config| Main
-    Main -->|Execute SQL| DuckDB[(Local DuckDB)]
-    DuckDB -->|Result Rows| Main
+    User[User Input] -->|Chat/Edit| Renderer
+    Renderer -->|IPC: Command| Main
+    Main -->|Schema Context| OpenAI[(Cloud LLM)]
+    OpenAI -->|Analysis Plan| Main
+    Main -->|MessagePort| DB_Service[Utility Process: DuckDB]
+    DB_Service -->|Result Rows| Main
     Main -->|Data + Config| Renderer
-    Renderer -->|Render| ECharts
+    Renderer -->|Render| ECharts/Monaco
 ```
 
-### Key Directories
-*   `src/main/`: Electron main process (DB logic, file handling, window management).
-*   `src/renderer/`: React frontend application.
-    *   `components/`: Reusable UI components.
-    *   `stores/`: Zustand stores (`useChatStore`, `useWorkbenchStore`).
-    *   `hooks/`: Custom hooks (`useAI`, `useIPC`).
-*   `src/preload/`: Context bridge scripts.
-*   `src/shared/`: Types and utilities shared between processes.
+### Key Patterns
+*   **Sidecar Pattern**: Heavy database operations run in a dedicated Utility Process to keep the UI responsive.
+*   **Lazy Ingestion**: Files are previewed via lightweight CSV conversion and only ingested into the DB upon confirmation with type enforcement.
+*   **Project Bundles**: Data is persisted in `.wansan` folders containing `source.duckdb` (Data) and `wansan.json` (Metadata).
 
-## Development Workflow
+## 4. Key Features
 
-### Scripts
-*   **Start Dev Server:** `npm run dev` (Starts Vite and Electron concurrently)
-*   **Build Production:** `npm run build`
-*   **Package App:** `npm run dist` (Uses electron-builder)
-*   **Lint:** `npm run lint`
-*   **Format:** `npm run format` (Prettier)
+### 4.1 AI Kernel
+*   **Schema-Only Protocol**: Only table names and column types are sent to the LLM.
+*   **Smart Metrics**: User-defined logic (e.g., `profit = sales - cost`) is baked into DuckDB Views (`v_sales`), forcing the AI to use correct formulas.
+*   **Auto-Fix Loop**: If SQL fails, the system automatically feeds the error back to the AI for self-correction.
 
-### Conventions
-*   **Styling:** Use Tailwind CSS utility classes. Avoid CSS files unless global.
-*   **State:** Use `zustand` for global app state (user prefs, file list), `TanStack Query` for async data (SQL results).
-*   **Async/IPC:** All main process communication goes through `window.electron` API defined in `preload/index.ts`.
-*   **I18n:** Support English (`en`) and Chinese (`zh`) via `i18next`.
+### 4.2 Interactive Storytelling
+*   **AI Insight**: Generates structured narratives (Summary, Findings, Recommendations) from aggregated data.
+*   **Visual Anchoring**: Hovering over text findings highlights the corresponding chart elements (Series/Axis).
+*   **Smart SQL Lab**: Context-aware SQL editor with schema autocomplete and safety quoting.
 
-## Privacy Rules (CRITICAL)
-1.  **NEVER** send row data (values) to the LLM. Only send column names (schema) and types.
+### 4.3 Reporting & Export
+*   **Continuous Flow**: Vertical, seamless report layout supporting drag-and-drop organization.
+*   **Web Export**: Generates a standalone, offline-capable `.html` file containing a lightweight React runtime and data snapshot.
+
+## 5. Engineering Standards
+
+### 5.1 Privacy Rules (CRITICAL)
+1.  **NEVER** send row data (values) to the LLM.
 2.  **NEVER** log raw SQL results to external services.
-3.  **Local Execution:** All data processing happens in the embedded DuckDB instance.
+3.  **Local Execution**: All data processing happens in the embedded DuckDB instance.
 
-## The "Wansan Workflow" (MANDATORY)
+### 5.2 Development Guidelines
+*   **I18n**: Use `i18next` with namespaces (`common`, `analysis`, `settings`).
+*   **Type Safety**: All IPC payloads must be typed in `src/shared/electron-api.ts`.
+*   **Temp Files**: Strict lifecycle management via `TempFileManager` to prevent disk bloat.
+
+## 6. The "Wansan Workflow" (MANDATORY)
 
 You MUST follow this strict **Dual-Mode Protocol**. Do not write code unless asked.
 
@@ -85,9 +89,3 @@ You MUST follow this strict **Dual-Mode Protocol**. Do not write code unless ask
     *   **Track 2: Direct (Simple)** -> Output a specific code block instruction for the Code Agent.
 
 **Crucial Rule**: When executing a Spec, do NOT paste the whole spec content. Instead, say: *"Context: Read `docs/SPEC_NAME.md` and implement..."*
-
-## Current Status (MVP)
-*   Supports Excel/CSV upload.
-*   Chat interface for "Text-to-SQL".
-*   Basic Dashboard/Report generation.
-*   PDF Export.

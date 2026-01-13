@@ -58,3 +58,17 @@ v1.3 移除了 WASM 复杂性，转向 Native Node Modules。
 ### 4.2 Type Safety
 *   **Rule**: All IPC payloads must be typed in `src/shared/electron-api.ts`.
 *   **Strictness**: No `any` in core logic. Use `zod` for AI response validation.
+
+---
+
+## 5. Engine Tuning & Limits (性能治理)
+
+基于企业级 SaaS 的经验 (`SPEC_DUCKDB_REPORT.md`)，我们在本地引擎中实施以下限制以保护用户设备。
+
+### 5.1 Memory Governance
+*   **Limit**: DuckDB operates on off-heap memory. We should set `SET memory_limit='75%'` (of system RAM) on startup to prevent OS freezing.
+*   **Spilling**: Ensure `temp_directory` points to a valid, writable disk path. This allows DuckDB to process datasets larger than RAM by spilling intermediate results to disk.
+
+### 5.2 Resilience
+*   **Timeout**: Queries should have a soft timeout (e.g., 600s) to allow users to cancel runaway analytical queries without restarting the app.
+*   **Big Result**: Queries returning >1M rows should trigger a warning or switch to "Export Mode" instead of trying to render in the UI.

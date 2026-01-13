@@ -74,3 +74,26 @@ v1.3 从 WASM 迁移至 **Native DuckDB (`@duckdb/node-api`)**，通过独立的
 
 ### 4.2 Self-Healing
 如果 `.duckdb` 文件丢失或损坏，`useDataRehydrate` 会检测到表缺失，并利用源文件路径和保存的 Schema 自动重建数据表，实现无感恢复。
+
+---
+
+## 5. Advanced Data Standards (Future Ready)
+
+为了迎接 v1.6+ 的云同步与 Parquet 支持，我们采用企业级的数据交换标准（参考 `SPEC_DUCKDB_REPORT.md`）。
+
+### 5.1 Parquet Storage Spec
+*   **Format**: Parquet 2.0+ with **Snappy** compression (Balance of speed/size).
+*   **Structure**: Hive-Partitioning style for optimal Cloud OLAP performance.
+    *   `dataset={name}/snapshot_date={yyyy-MM-dd}/part-{uuid}.parquet`
+*   **Benefits**: Allows DuckDB to perform **Partition Pruning** automatically when querying historical data.
+
+### 5.2 Robust Type Mapping
+Strict mapping rules to prevent precision loss during Import/Export.
+
+| Business Type | DuckDB / Parquet Physical | Note |
+| :--- | :--- | :--- |
+| **ID / Key** | `INT64` / `VARCHAR` | Avoid `DOUBLE`. IDs are not math. |
+| **Money / Price** | `DECIMAL(18, 4)` | **CRITICAL**. Never use `DOUBLE` for currency to avoid floating point errors (e.g. 0.1 + 0.2). |
+| **Timestamp** | `TIMESTAMP` (INT64 Micors) | Always store as UTC. Frontend handles Timezone display. |
+| **Date** | `DATE` (INT32 Days) | For simple dates without time component. |
+| **JSON / List** | `VARCHAR` | Complex structures are serialized to JSON strings. |
