@@ -1,5 +1,6 @@
 import { Monaco } from '@monaco-editor/react'
 import { FileNode } from '@shared/types'
+import { getJoinedColumnName } from '@shared/naming-utils'
 
 /**
  * Common DuckDB Keywords
@@ -119,6 +120,62 @@ export function registerSqlCompletion(monaco: Monaco, files: FileNode[]) {
               })
             }
           })
+        }
+
+        // 7. Wide Views (v_*) & their columns
+        if (file.smartMetrics && file.smartMetrics.length > 0) {
+          const viewName = `v_${file.tableName}`
+          suggestions.push({
+            label: viewName,
+            detail: `Wide View for ${file.name}`,
+            kind: monaco.languages.CompletionItemKind.Interface,
+            insertText: `"${viewName}"`,
+            range,
+            documentation: {
+              value: `View containing native columns, joined columns, and smart metrics.`
+            }
+          })
+
+          // View Columns: Native
+          file.columns.forEach(col => {
+            suggestions.push({
+              label: col.name,
+              detail: `Column in ${viewName}`,
+              kind: monaco.languages.CompletionItemKind.Field,
+              insertText: `"${col.name}"`,
+              range
+            })
+          })
+
+          // View Columns: Smart Metrics
+          file.smartMetrics.forEach(metric => {
+            suggestions.push({
+              label: metric.name,
+              detail: `Metric in ${viewName}`,
+              kind: monaco.languages.CompletionItemKind.Field,
+              insertText: `"${metric.name}"`,
+              range
+            })
+          })
+
+          // View Columns: Joined
+          if (file.relations) {
+            file.relations.forEach(rel => {
+              const targetFile = files.find(f => f.id === rel.targetFileId)
+              if (targetFile) {
+                targetFile.columns.forEach(targetCol => {
+                  const joinedName = getJoinedColumnName(rel.sourceColumn, targetCol.name)
+                  suggestions.push({
+                    label: joinedName,
+                    detail: `Joined Column (${targetFile.tableName}) in ${viewName}`,
+                    kind: monaco.languages.CompletionItemKind.Field,
+                    insertText: `"${joinedName}"`,
+                    range
+                  })
+                })
+              }
+            })
+          }
         }
       })
 
