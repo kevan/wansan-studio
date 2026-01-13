@@ -255,12 +255,9 @@ export function buildEChartsOption(
     })
 
   const getSeriesName = (index: number) => {
-    const override = Array.isArray(_series_name)
-      ? _series_name[index]
-      : index === 0
-        ? _series_name
-        : undefined
-    return override || yAxes[index]
+    // Always use the actual y-axis column name for correct tooltip display
+    // The series_name config is often misleading or generic
+    return yAxes[index]
   }
 
   const baseSeries: echarts.SeriesOption[] =
