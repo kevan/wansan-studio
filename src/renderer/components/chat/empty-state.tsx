@@ -5,10 +5,12 @@ import {
   PieChart,
   TrendingUp,
   Lightbulb,
+  RefreshCw,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { useProjectStore } from '../../stores/useProjectStore'
 import { useTranslation } from 'react-i18next'
+import { useAutoLink } from '../../hooks/useAutoLink'
 
 interface EmptyStateProps {
   onSelectPrompt: (text: string) => void
@@ -64,14 +66,16 @@ export function EmptyState({
   isRestoring,
 }: EmptyStateProps) {
   const suggestedPrompts = useProjectStore(state => state.suggestedPrompts)
-  const { t } = useTranslation('chat')
+  const files = useProjectStore(state => state.files)
+  const { t } = useTranslation(['chat', 'common'])
+  const { checkAutoLink, isAnalyzing } = useAutoLink()
+
+  const hasData = files.length > 0
 
   const promptsToShow =
     suggestedPrompts && suggestedPrompts.length > 0
       ? suggestedPrompts.map((prompt, idx) => {
-          const style = STYLES[idx % STYLES.length]
           return {
-            ...style,
             title: 'ai_suggestion_title',
             prompt,
             isAi: true,
@@ -80,56 +84,61 @@ export function EmptyState({
       : STARTER_PROMPTS
 
   return (
-    <div className="flex flex-col items-center justify-center h-full max-w-4xl mx-auto px-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Icon & Title */}
+    <div className="flex flex-col items-center justify-center h-full max-w-4xl mx-auto px-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* 1. Minimal Header */}
       <div className="text-center mb-10">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-100 to-orange-50 mb-6 shadow-sm ring-1 ring-orange-100/50">
-          <Sparkles className="w-8 h-8 text-orange-500" />
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-50 mb-6 shadow-sm border border-indigo-100">
+          <Sparkles className="w-6 h-6 text-indigo-500" />
         </div>
-        <h2 className="text-2xl font-semibold text-zinc-900 mb-2">
-          {t('empty_title')}
+        <h2 className="text-2xl font-bold text-zinc-900 tracking-tight mb-2">
+          {t('chat:empty_title')}
         </h2>
-        <p className="text-znic-500 max-w-md mx-auto">{t('empty_subtitle')}</p>
+        <p className="text-zinc-500 max-w-md mx-auto text-sm font-medium opacity-80 leading-relaxed">
+          {t('chat:empty_subtitle')}
+        </p>
       </div>
 
-      {/* Prompts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">
-        {promptsToShow.map((item, idx) => (
-          <button
-            key={idx}
-            onClick={() => {
-              if (!isChatLoading && !isRestoring) {
-                const text = item.isAi ? item.prompt : t(item.prompt)
-                onSelectPrompt(text)
-              }
-            }}
-            disabled={isChatLoading || isRestoring}
-            className={cn(
-              'group flex items-start gap-4 p-4 rounded-xl border transition-all duration-200 text-left',
-              isChatLoading || isRestoring
-                ? 'border-zinc-100 bg-white cursor-not-allowed'
-                : 'border-zinc-200 bg-white hover:border-orange-200 hover:shadow-md'
-            )}
-          >
-            <div
+      {/* 2. Simplified Pill Prompts Grid - Single Column */}
+      <div className="w-full max-w-md px-4 flex flex-col gap-3">
+        <div className="grid grid-cols-1 gap-2.5">
+          {promptsToShow.map((item, idx) => (
+            <button
+              key={idx}
+              onClick={() => {
+                if (!isChatLoading && !isRestoring && !isAnalyzing) {
+                  const text = item.isAi ? item.prompt : t(`chat:${item.prompt}`)
+                  onSelectPrompt(text)
+                }
+              }}
+              disabled={isChatLoading || isRestoring || isAnalyzing}
               className={cn(
-                'p-2 rounded-lg shrink-0 transition-colors',
-                item.bg,
-                'group-hover:bg-white'
+                'group flex items-center gap-3 px-4 py-3 rounded-2xl bg-white border border-zinc-200 text-zinc-600 text-[12px] font-medium shadow-sm transition-all text-left overflow-hidden',
+                (isChatLoading || isRestoring || isAnalyzing)
+                  ? 'opacity-50 cursor-not-allowed border-zinc-100'
+                  : 'hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/30 hover:shadow-md active:scale-95'
               )}
             >
-              <item.icon className={cn('w-5 h-5', item.color)} />
+              <div className="w-1.5 h-1.5 rounded-full bg-zinc-300 group-hover:bg-indigo-400 transition-colors shrink-0" />
+              <span className="truncate flex-1">
+                  {item.isAi ? item.prompt : t(`chat:${item.prompt}`)}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Regenerate Button - Only show if we have data and AI prompts */}
+        {hasData && suggestedPrompts.length > 0 && (
+            <div className="flex justify-center mt-2">
+                <button 
+                    onClick={() => checkAutoLink()}
+                    disabled={isChatLoading || isRestoring || isAnalyzing}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-zinc-400 hover:text-indigo-600 transition-colors disabled:opacity-50"
+                >
+                    <RefreshCw className={cn("w-3 h-3", isAnalyzing && "animate-spin")} />
+                    {t('common:regenerate')}
+                </button>
             </div>
-            <div>
-              <h3 className="font-medium text-zinc-900 mb-1 group-hover:text-orange-600 transition-colors">
-                {t(item.title)}
-              </h3>
-              <p className="text-sm text-zinc-500 line-clamp-2">
-                {item.isAi ? item.prompt : t(item.prompt)}
-              </p>
-            </div>
-          </button>
-        ))}
+        )}
       </div>
     </div>
   )

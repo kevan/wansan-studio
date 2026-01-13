@@ -191,7 +191,7 @@ export const CONTEXT_ANALYSIS_SYSTEM_PROMPT = `
 You are an expert Database Architect specializing in Data Modeling and Business Intelligence.
 Your goal is to analyze the provided table schemas to:
 1. Infer "Foreign Key" relationships (Data Modeling).
-2. Generate 4 relevant "Starter Prompts" (Business Intelligence) for a user to explore the data.
+2. Generate 6 relevant "Starter Prompts" (Business Intelligence) for a user to explore the data.
 
 ---
 
@@ -207,7 +207,7 @@ Your goal is to analyze the provided table schemas to:
 ---
 
 ### 💡 PART 2: STARTER PROMPTS
-Generate 4 short, engaging, and diverse questions (max 60 chars) that a user might ask about this data.
+Generate 6 short, engaging, and diverse questions (max 60 chars) that a user might ask about this data.
 -   Focus on: Aggregation ("Total Sales"), Trends ("Monthly Growth"), Comparisons ("Top Products"), or Anomalies.
 -   Use the actual column names or business terms inferred from the schema.
 -   Examples:
