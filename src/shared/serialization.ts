@@ -188,12 +188,12 @@ export function formatDateValue(
       if (typeHint === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
         return val
       }
-      // If it's an ISO-like string (YYYY-MM-DDTHH:mm:ss...) and we want display format
+      // If it's an ISO-like string (YYYY-MM-DDTHH:mm:ss...) or SQL-like (YYYY-MM-DD HH:mm:ss)
       if (
         (typeHint === 'timestamp' || typeHint === 'date') &&
-        /^\d{4}-\d{2}-\d{2}T/.test(val)
+        /^\d{4}-\d{2}-\d{2}[T ]/.test(val)
       ) {
-        if (typeHint === 'date') return val.split('T')[0]
+        if (typeHint === 'date') return val.split(/[T ]/)[0]
         return val.replace('T', ' ').split('.')[0]
       }
 
@@ -205,11 +205,27 @@ export function formatDateValue(
   }
 
   if (dateObj && !isNaN(dateObj.getTime())) {
-    const iso = dateObj.toISOString()
+    const isNumeric = typeof val === 'number' || typeof val === 'bigint'
 
-    if (typeHint === 'date') return iso.split('T')[0] // YYYY-MM-DD
-    if (typeHint === 'time') return iso.split('T')[1].split('.')[0] // HH:mm:ss
-    return iso.replace('T', ' ').split('.')[0] // YYYY-MM-DD HH:mm:ss
+    if (isNumeric) {
+      // Numeric: Treat as UTC to preserve DuckDB naive timestamp value
+      const iso = dateObj.toISOString()
+      if (typeHint === 'date') return iso.split('T')[0]
+      if (typeHint === 'time') return iso.split('T')[1].split('.')[0]
+      return iso.replace('T', ' ').split('.')[0]
+    } else {
+      // String/Date Object: Treat as Local to preserve literal value
+      const year = dateObj.getFullYear()
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0')
+      const day = String(dateObj.getDate()).padStart(2, '0')
+      const hours = String(dateObj.getHours()).padStart(2, '0')
+      const minutes = String(dateObj.getMinutes()).padStart(2, '0')
+      const seconds = String(dateObj.getSeconds()).padStart(2, '0')
+
+      if (typeHint === 'date') return `${year}-${month}-${day}`
+      if (typeHint === 'time') return `${hours}:${minutes}:${seconds}`
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+    }
   }
   return null
 }
