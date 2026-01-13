@@ -123,7 +123,8 @@ export interface ElectronAPI {
     relations: RelationSuggestion[],
     context?: { lastSql: string; lastQuery: string },
     language?: 'en' | 'zh',
-    domainRules?: DomainRule[]
+    domainRules?: DomainRule[],
+    suggestionCount?: number
   ) => Promise<AskAIResponse>
   fixSQL: (
     originalSql: string,

@@ -143,6 +143,7 @@ export function VizChart({
         style={{ height: '100%', width: '100%', ...style }}
         onChartClick={handleChartClick}
         highlightedItems={highlightedItems}
+        showLabels={config?.show_labels}
       />
       {!isRenderable && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-zinc-500">

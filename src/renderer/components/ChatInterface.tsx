@@ -25,6 +25,12 @@ import { AnalysisTemplateCard } from './chat/analysis-template-card'
 import { FilterParam } from '@shared/schemas/analysis'
 import { VizSummary } from './viz/core/VizSummary'
 import type { Message } from '@shared/types/chat'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 export type ChatMessage = Message
 
@@ -318,19 +324,19 @@ function MessageSuggestions({
 
   return (
     <div className="flex flex-col gap-3 pt-3 animate-in fade-in slide-in-from-top-1">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 pl-1">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className={cn(
-            'flex items-center gap-1.5 px-2 py-1 rounded-md transition-all outline-none border group',
+            'flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all outline-none border group',
             isExpanded
-              ? 'bg-indigo-50 border-indigo-100 text-indigo-600'
+              ? 'bg-indigo-50 border-indigo-100 text-indigo-600 shadow-sm'
               : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:bg-zinc-100 hover:border-zinc-300'
           )}
         >
           <Sparkles
             className={cn(
-              'w-3 h-3 transition-transform duration-300',
+              'w-3.5 h-3.5 transition-transform duration-300',
               isExpanded ? 'fill-current scale-110' : 'group-hover:rotate-12'
             )}
           />
@@ -339,42 +345,50 @@ function MessageSuggestions({
           </span>
           <ChevronDown
             className={cn(
-              'w-3 h-3 transition-transform duration-300',
+              'w-3.5 h-3.5 transition-transform duration-300',
               isExpanded ? 'rotate-180' : 'opacity-50'
             )}
           />
         </button>
 
         {!isExpanded && (
-          <span className="text-[10px] text-zinc-400 font-mono bg-zinc-100/50 px-1.5 py-0.5 rounded border border-zinc-100">
+          <span className="text-[10px] text-zinc-400 font-bold bg-zinc-100/50 px-2 py-0.5 rounded-md border border-zinc-100">
             {suggestions.length}
           </span>
         )}
       </div>
 
       {isExpanded && (
-        <div className="flex flex-wrap items-center gap-2 animate-in fade-in slide-in-from-top-1 zoom-in-95 duration-200">
-          {suggestions.map((suggestion, idx) => (
-            <button
-              key={idx}
-              onClick={() => {
-                if (!isChatLoading && !isRestoring) {
-                  onSelect(suggestion)
-                  setIsExpanded(false)
-                }
-              }}
-              disabled={isChatLoading || isRestoring}
-              className={cn(
-                'px-3 py-1.5 rounded-full bg-white border border-zinc-200 text-zinc-600 text-xs shadow-sm transition-all',
-                isChatLoading || isRestoring
-                  ? 'opacity-50 cursor-not-allowed'
-                  : 'hover:border-indigo-200 hover:text-indigo-600 hover:shadow-md hover:shadow-indigo-500/10 active:scale-95'
-              )}
-            >
-              {suggestion}
-            </button>
-          ))}
-        </div>
+        <TooltipProvider>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-1 animate-in fade-in slide-in-from-top-1 zoom-in-95 duration-200">
+            {suggestions.map((suggestion, idx) => (
+              <Tooltip key={idx}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => {
+                      if (!isChatLoading && !isRestoring) {
+                        onSelect(suggestion)
+                      }
+                    }}
+                    disabled={isChatLoading || isRestoring}
+                    className={cn(
+                      'group/item flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white border border-zinc-200 text-zinc-600 text-[12px] font-medium shadow-sm transition-all text-left overflow-hidden',
+                      isChatLoading || isRestoring
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/30 hover:shadow-md active:scale-95'
+                    )}
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-300 group-hover/item:bg-indigo-400 transition-colors shrink-0" />
+                    <span className="truncate">{suggestion}</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[300px] break-words">
+                  {suggestion}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        </TooltipProvider>
       )}
     </div>
   )

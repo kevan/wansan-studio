@@ -1,5 +1,6 @@
 import { OpenAI } from 'openai'
 import {
+  AIAnalysisContext,
   ContextAnalysisResult,
   DomainRule,
   RelationSuggestion,
@@ -21,6 +22,7 @@ import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources'
 import { parse, safeStringify } from '@shared/serialization.ts'
 import { extractJSON } from '@shared/utils/json-utils'
 import { autospaceInsight } from '@shared/utils/autospace'
+import { InsightGenerationContext } from '@shared/types/dashboard'
 
 function getModelToUse(preferredModel?: string) {
   const envModel = process.env.OPENAI_MODEL
@@ -36,20 +38,25 @@ function getModelToUse(preferredModel?: string) {
 
 export async function generateAnalysis(
   openai: OpenAI,
-  userQuery: string,
-  schemas: TableSchema[],
-  relations: RelationSuggestion[],
-  context?: { lastSql: string; lastQuery: string },
-  model?: string,
-  language: 'en' | 'zh' = 'en',
-  domainRules: DomainRule[] = []
+  context: AIAnalysisContext,
+  model?: string
 ): Promise<AnalysisResult> {
+  const {
+    userQuery,
+    schemas,
+    relations,
+    prevContext,
+    language = 'en',
+    domainRules = [],
+    suggestionCount = 3
+  } = context
+
   if (isDev()) {
     console.log(
       'generateAnalysis pre request - schemas:',
       safeStringify(schemas, 2)
     )
-    console.log('generateAnalysis context:', context)
+    console.log('generateAnalysis context:', prevContext)
   }
   const schemaContext = serializeSchemas(schemas)
   const currentDate = new Date().toISOString().split('T')[0]
@@ -65,11 +72,11 @@ export async function generateAnalysis(
       : 'No specific relationships defined. Infer joins if necessary based on column names.'
 
   let contextSection = ''
-  if (context && context.lastSql && context.lastQuery) {
+  if (prevContext && prevContext.lastSql && prevContext.lastQuery) {
     contextSection = `
 ### 🕒 PREVIOUS CONTEXT
-Last Query: "${context.lastQuery}"
-Last SQL: "${context.lastSql.replace(/\s+/g, ' ').trim()}"`
+Last Query: "${prevContext.lastQuery}"
+Last SQL: "${prevContext.lastSql.replace(/\s+/g, ' ').trim()}"`
   }
 
   const userPrompt = `### 📅 CONTEXT
@@ -96,7 +103,7 @@ ${relationsContext}${contextSection}
     messages: [
       {
         role: 'system',
-        content: `${getSystemPrompt(domainRules, language)}
+        content: `${getSystemPrompt(domainRules, language, suggestionCount)}
 
 OUTPUT RULE:
 1. The "summary", "title", "reasoning", and "suggestions" fields MUST be in ${languageNote}.
@@ -258,8 +265,6 @@ Fix the SQL. Ensure all table/column names are double-quoted and match the schem
   }
 }
 
-import { InsightGenerationContext } from '@shared/types/dashboard'
-
 /**
  * Generate a natural language insight/explanation from aggregated chart data.
  * This function receives ONLY aggregated data (not raw rows) after user consent.
@@ -339,18 +344,23 @@ ${chartType}`
   }
 
   if (sql) {
-    userPrompt += `\n\n### SQL Query (Context)
-${sql}`
+    userPrompt += `\n\n### SQL Query (Context)\n${sql}`
   }
 
-  userPrompt += `\n\n### Aggregated Data (${aggregatedData.length} points)
-${dataStr}`
+  userPrompt += `\n\n### Aggregated Data (${aggregatedData.length} points)\n${dataStr}`
 
   if (userInstructions && userInstructions.trim()) {
-    userPrompt += `\n\n### 💡 SPECIFIC INSTRUCTIONS\nThe user has provided the following guidance for this analysis:\n"${userInstructions}"\nPlease prioritize these instructions.`
+    userPrompt += `
+
+### 💡 SPECIFIC INSTRUCTIONS
+The user has provided the following guidance for this analysis:
+"${userInstructions}"
+Please prioritize these instructions.`
   }
 
-  userPrompt += `\n\n### Your Analysis (JSON)`
+  userPrompt += `
+
+### Your Analysis (JSON)`
 
   const body: ChatCompletionCreateParamsNonStreaming = {
     model: getModelToUse(model),

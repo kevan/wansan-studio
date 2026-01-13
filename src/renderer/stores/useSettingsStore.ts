@@ -31,6 +31,8 @@ export interface SettingsState {
   recentProjectPaths: string[]
   isSpecialChannel: boolean
   isExpired: boolean
+  showChartLabels: boolean
+  suggestionCount: number
   setProvider: (provider: AIProviderKey) => void
   activateLicense: (code: string) => Promise<boolean>
   loadSensitiveData: () => Promise<void>
@@ -123,6 +125,8 @@ const initialSettingsState: Omit<
   recentProjectPaths: [],
   isSpecialChannel: false,
   isExpired: false,
+  showChartLabels: false,
+  suggestionCount: 3,
 }
 
 export const SETTINGS_STORAGE_KEY = 'wansan-settings-v1'
@@ -308,6 +312,8 @@ export const useSettingsStore = create<SettingsState>()(
           baseUrl: state.baseUrl,
           model: state.model,
           dismissedAnnouncementId: state.dismissedAnnouncementId,
+          showChartLabels: false,
+          suggestionCount: 3,
         }))
       },
     }),

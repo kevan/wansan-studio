@@ -2,7 +2,8 @@ import { DomainRule, TableSchema } from '@shared/types.ts'
 
 export const getSystemPrompt = (
   userRules: DomainRule[] = [],
-  language: 'en' | 'zh' = 'en'
+  language: 'en' | 'zh' = 'en',
+  suggestionCount: number = 3
 ) => {
   console.log('getSystemPrompt', userRules)
   const activeRules = userRules.filter(r => r.isEnabled)
@@ -152,7 +153,7 @@ Return a **raw JSON object**. Do not wrap in markdown code blocks.
   "error": "Explanation of why the metric cannot be calculated"
 }
 
-Instruction for 'suggestions': Generate 3 short, analytical follow-up questions based on the query result to help the user dive deeper.
+Instruction for 'suggestions': Generate ${suggestionCount} short, analytical follow-up questions based on the query result to help the user dive deeper.
 
 ---
 

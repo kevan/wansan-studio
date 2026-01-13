@@ -75,7 +75,7 @@ export interface ProjectState extends ProjectData {
   ) => void
   deleteMessage: (id: string) => void
   setReplyTo: (messageId: string | null) => void
-  setInputDraft: (draft: string) => void
+  setInputDraft: (draft: string, sessionId?: string) => void
   setAbortController: (ac: AbortController | null) => void
   addWidget: (widget: ReportWidget | any) => void
   removeWidget: (id: string) => void
@@ -510,12 +510,16 @@ export const useProjectStore = create<ProjectState>()(
           ),
         })),
 
-      setInputDraft: draft =>
-        set(state => ({
-          sessions: state.sessions.map(s =>
-            s.id === state.activeSessionId ? { ...s, inputDraft: draft } : s
-          ),
-        })),
+      setInputDraft: (draft, sessionId) =>
+        set(state => {
+          const targetId = sessionId || state.activeSessionId
+          if (!targetId) return state
+          return {
+            sessions: state.sessions.map(s =>
+              s.id === targetId ? { ...s, inputDraft: draft } : s
+            ),
+          }
+        }),
 
       setAbortController: (controller: AbortController | null) =>
         set(state => {

@@ -33,6 +33,16 @@ export interface TableSchema {
   readOptions?: Record<string, any> // Options used to read the file (e.g. { encoding: 'GBK' })
 }
 
+export interface AIAnalysisContext {
+  userQuery: string
+  schemas: TableSchema[]
+  relations: RelationSuggestion[]
+  prevContext?: { lastSql: string; lastQuery: string }
+  language?: 'en' | 'zh'
+  domainRules?: DomainRule[]
+  suggestionCount?: number
+}
+
 export interface AIAnalysisResult {
   status: 'success' | 'error'
   data?: any[] // Raw rows from DuckDB

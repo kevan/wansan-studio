@@ -217,17 +217,19 @@ export function setupIPC(
       relations: RelationSuggestion[],
       context?: { lastSql: string; lastQuery: string },
       language?: 'en' | 'zh',
-      domainRules: DomainRule[] = []
+      domainRules: DomainRule[] = [],
+      suggestionCount?: number
     ) => {
       try {
-        const result = await aiService.generatePlan(
+        const result = await aiService.generatePlan({
           userQuery,
           schemas,
           relations,
-          context,
+          prevContext: context,
           language,
-          domainRules
-        )
+          domainRules,
+          suggestionCount,
+        })
         return { success: true, data: result }
       } catch (error) {
         console.error('Generate analysis error:', error)

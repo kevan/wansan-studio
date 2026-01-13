@@ -44,7 +44,11 @@
     "language_label": "语言",
     "language_zh": "中文",
     "language_en": "English",
-    "select_language_placeholder": "选择语言"
+    "select_language_placeholder": "选择语言",
+    "chart_labels_label": "数值标签",
+    "chart_labels_desc": "在图表上直接显示数值",
+    "suggestion_count_label": "建议数量",
+    "suggestion_count_desc": "AI 分析后的后续提问建议数"
   },
   "license": {
     "title": "授权状态",

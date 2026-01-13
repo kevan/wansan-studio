@@ -66,13 +66,31 @@ export function MagicInput({
     valueRef.current = value
   }, [value])
 
-  // 3. Sync to store ONLY on unmount or session switch
+  // 3. Sync to store on unmount, session switch, or when window loses focus/visibility
   useEffect(() => {
+    // Capture the session ID this effect instance is tied to
+    const capturedSessionId = activeSessionId;
+
+    const syncDraft = () => {
+      if (valueRef.current !== undefined && capturedSessionId) {
+        // Don't save a single '/' or '@' as a meaningful draft if user hasn't typed more
+        const cleanValue = valueRef.current.trim()
+        const valueToSave = (cleanValue === '/' || cleanValue === '@') ? '' : valueRef.current
+        
+        // Use the captured ID to ensure we save to the correct session during a switch
+        useProjectStore.getState().setInputDraft(valueToSave, capturedSessionId)
+      }
+    }
+
+    // Handle background/blur events
+    window.addEventListener('blur', syncDraft)
+    window.addEventListener('visibilitychange', syncDraft)
+
     return () => {
       // Save draft when switching sessions or unmounting the component
-      if (valueRef.current !== undefined) {
-        useProjectStore.getState().setInputDraft(valueRef.current)
-      }
+      syncDraft()
+      window.removeEventListener('blur', syncDraft)
+      window.removeEventListener('visibilitychange', syncDraft)
     }
   }, [activeSessionId])
 
@@ -443,27 +461,30 @@ export function MagicInput({
   }
 
   const handleToggleCommands = () => {
-    let newValue = value
     if (value.startsWith('/')) {
-      newValue = value.slice(1)
+      const next = value.slice(1)
+      setValue(next)
+      valueRef.current = next
+      // We don't necessarily need to sync to store immediately here, useEffect will handle it on blur/switch
     } else {
-      newValue = '/' + value
+      const next = '/' + value
+      setValue(next)
+      valueRef.current = next
+      setTriggerType('command')
+      setPopoverOpen(true)
     }
-    setValue(newValue)
-    setInputDraft(newValue)
-    valueRef.current = newValue
     textareaRef.current?.focus()
   }
 
   const handleToggleMention = () => {
-    // If already in mention mode (last char is @), do nothing or close?
-    // Usually, we want to insert @ if not present
     if (value.endsWith('@')) return
     
-    const newValue = value + (value && !value.endsWith(' ') ? ' @' : '@')
-    setValue(newValue)
-    setInputDraft(newValue)
-    valueRef.current = newValue
+    const insertion = (value && !value.endsWith(' ') ? ' @' : '@')
+    const next = value + insertion
+    setValue(next)
+    valueRef.current = next
+    setTriggerType('table')
+    setPopoverOpen(true)
     textareaRef.current?.focus()
   }
 
@@ -542,26 +563,35 @@ export function MagicInput({
   }
 
   useEffect(() => {
+    const isFocused = document.activeElement === textareaRef.current
     const nextMention = detectMention(value, cursorPosition)
     setMention(nextMention)
     setMentionIndex(0)
 
     const lastChar = value[value.length - 1]
 
-    if (lastChar === '@' || nextMention.active) {
-      setTriggerType('table')
-      setPopoverOpen(true)
-      return
+    // Only auto-open popover if the input is focused (user is actively typing)
+    if (isFocused) {
+        if (lastChar === '@' || nextMention.active) {
+            setTriggerType('table')
+            setPopoverOpen(true)
+            return
+        }
+
+        if (value.startsWith('/')) {
+            setTriggerType('command')
+            setPopoverOpen(true)
+            return
+        }
     }
 
-    if (value.startsWith('/')) {
-      setTriggerType('command')
-      setPopoverOpen(true)
-      return
+    // If not focused or no trigger condition met, we only keep it open if it was already open 
+    // (e.g. user clicked the button which might briefly blur the input)
+    // But for safety on app start, if value is empty or doesn't match trigger, close it.
+    if (!value.startsWith('/') && !nextMention.active && lastChar !== '@') {
+        setTriggerType(null)
+        setPopoverOpen(false)
     }
-
-    setTriggerType(null)
-    setPopoverOpen(false)
   }, [value, cursorPosition])
 
   // Force re-calculation of textarea height when container resizes
@@ -665,15 +695,15 @@ export function MagicInput({
                       <button
                         key={prompt}
                         className={cn(
-                          'w-full text-left px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors',
+                          'w-full text-left px-3 py-2 rounded-md text-sm flex items-start gap-2 transition-colors',
                           realIdx === mentionIndex
                             ? 'bg-indigo-50 text-indigo-900'
                             : 'hover:bg-zinc-50 text-zinc-700'
                         )}
                         onClick={() => insertPrompt(prompt)}
                       >
-                        <Sparkles className="w-4 h-4 text-indigo-500 flex-shrink-0" />
-                        <span className="truncate">{prompt}</span>
+                        <Sparkles className="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" />
+                        <span className="leading-relaxed">{prompt}</span>
                       </button>
                     )
                   })}

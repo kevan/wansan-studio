@@ -43,6 +43,7 @@ export interface ReportData {
     x_axis?: string | null
     y_axis?: string | string[] | null
     series_name?: string | string[]
+    show_labels?: boolean
   }
   timestamp?: number
   is_template?: boolean

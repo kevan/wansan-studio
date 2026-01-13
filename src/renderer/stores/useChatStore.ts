@@ -358,6 +358,7 @@ const sendMessage = async (
     const globalRules = useSettingsStore.getState().domainRules || []
     const projectRules = useProjectStore.getState().domainRules || []
     const combinedRules = [...globalRules, ...projectRules]
+    const suggestionCount = useSettingsStore.getState().suggestionCount
 
     const aiStartTime = Date.now()
     const planResponse = await window.electronAPI.askAI(
@@ -366,7 +367,8 @@ const sendMessage = async (
       resolvedRelations,
       context,
       language,
-      combinedRules
+      combinedRules,
+      suggestionCount
     )
     const aiLatency = Date.now() - aiStartTime
 
@@ -594,6 +596,7 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
     const globalRules = useSettingsStore.getState().domainRules || []
     const projectRules = useProjectStore.getState().domainRules || []
     const combinedRules = [...globalRules, ...projectRules]
+    const suggestionCount = useSettingsStore.getState().suggestionCount
 
     const aiStartTime = Date.now()
     const planResponse = await window.electronAPI.askAI(
@@ -602,7 +605,8 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
       relations,
       context,
       language,
-      combinedRules
+      combinedRules,
+      suggestionCount
     )
     const aiLatency = Date.now() - aiStartTime
 

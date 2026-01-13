@@ -155,7 +155,10 @@ export function getItemTooltipFormatter(isDark: boolean) {
   }
 }
 
-export function applyWansanTheme(option: EChartsOption): EChartsOption {
+export function applyWansanTheme(
+  option: EChartsOption,
+  showLabels: boolean = false
+): EChartsOption {
   const isDark = document.documentElement.classList.contains('dark')
 
   // Theme Colors
@@ -189,6 +192,15 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
               shadowBlur: 8,
               shadowOffsetY: 2,
               ...s.itemStyle,
+            },
+            label: {
+              show: showLabels,
+              position: 'top',
+              fontSize: 10,
+              fontWeight: '600',
+              color: textColor,
+              formatter: (params: any) => getDisplayValue(params.value),
+              ...s.label,
             },
             barMaxWidth: 48,
             emphasis: {
@@ -226,11 +238,21 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
             symbolSize: 8, // Larger size for better interaction target
 
             itemStyle: {
-              opacity: 0, // Hidden by default
+              opacity: showLabels ? 1 : 0, // Visible if labels are shown
               color: baseColor,
               borderColor: '#fff',
               borderWidth: 2,
               ...s.itemStyle,
+            },
+
+            label: {
+              show: showLabels,
+              position: 'top',
+              fontSize: 10,
+              fontWeight: '600',
+              color: textColor,
+              formatter: (params: any) => getDisplayValue(params.value),
+              ...s.label,
             },
 
             lineStyle: {
@@ -287,10 +309,14 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
               ...s.itemStyle,
             },
             label: {
-              show: false, // Cleaner look normally
+              show: showLabels, // User preference
+              position: showLabels ? 'outside' : 'inside',
+              formatter: '{b}: {d}%',
+              ...s.label
             },
             labelLine: {
-              show: false,
+              show: showLabels,
+              ...s.labelLine
             },
             labelLayout: {
               hideOverlap: true, // Critical: Automatically hide overlapping labels
@@ -305,24 +331,6 @@ export function applyWansanTheme(option: EChartsOption): EChartsOption {
                 shadowColor: 'rgba(0,0,0,0.2)',
                 borderColor: '#fff',
                 borderWidth: 3,
-              },
-              label: {
-                show: true, // Re-enable labels
-                margin: 20,
-                fontSize: 12,
-                fontWeight: '600',
-                color: isDark ? '#fff' : '#18181b',
-                formatter: '{b}: {d}%',
-              },
-              labelLine: {
-                show: true,
-                length: 15,
-                length2: 0,
-                smooth: true,
-                lineStyle: {
-                  width: 1.5,
-                  color: splitLineColor,
-                },
               },
             },
             blur: {

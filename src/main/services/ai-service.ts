@@ -6,6 +6,7 @@ import crypto from 'crypto'
 import { secureGet, secureSet } from './secure-storage'
 import type {
   TableSchema,
+  AIAnalysisContext,
   AIAnalysisResult,
   RelationSuggestion,
   ContextAnalysisResult,
@@ -177,25 +178,9 @@ export class AIService {
     }
   }
 
-  async generatePlan(
-    userQuery: string,
-    schemas: TableSchema[],
-    relations: RelationSuggestion[],
-    context?: { lastSql: string; lastQuery: string },
-    language: 'en' | 'zh' = 'en',
-    domainRules: DomainRule[] = []
-  ): Promise<AIAnalysisResult> {
+  async generatePlan(context: AIAnalysisContext): Promise<AIAnalysisResult> {
     const client = this.requireOpenAI()
-    const aiResult = await generateAnalysis(
-      client,
-      userQuery,
-      schemas,
-      relations,
-      context,
-      this.model,
-      language,
-      domainRules
-    )
+    const aiResult = await generateAnalysis(client, context, this.model)
     return {
       status: 'success',
       ...aiResult,

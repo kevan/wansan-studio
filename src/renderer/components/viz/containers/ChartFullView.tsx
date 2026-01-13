@@ -32,6 +32,8 @@ import { InsightPanel } from '../InsightPanel'
 import { useGenerateInsight } from '@/hooks/useIPC'
 import { CodeEditor } from '@/components/ui/CodeEditor'
 import TextareaAutosize from 'react-textarea-autosize'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 
 const chartTypeOptions: Array<{
   value: ChartType
@@ -57,9 +59,10 @@ export function ChartFullView() {
   )
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const widgetRegistry = useProjectStore(state => state.widgetRegistry)
-  const { t, i18n } = useTranslation('common')
+  const { t, i18n } = useTranslation(['common', 'settings'])
   const generateInsight = useGenerateInsight()
   const language = i18n.language === 'zh' ? 'zh' : 'en'
+  const globalShowLabels = useSettingsStore(state => state.showChartLabels)
 
   const [highlightedItems, setHighlightedItems] = useState<string[]>([])
 
@@ -425,6 +428,31 @@ export function ChartFullView() {
                       </button>
                     )
                   })}
+                </div>
+              </div>
+
+              {/* Display Options */}
+              <div className="space-y-4">
+                <div className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ml-1">
+                  {t('settings:tabs.general')}
+                </div>
+                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-zinc-100 bg-zinc-50/50">
+                  <Label 
+                    htmlFor="show-labels-toggle"
+                    className="text-xs font-bold text-zinc-600 cursor-pointer select-none"
+                  >
+                    {t('settings:general.chart_labels_label')}
+                  </Label>
+                  <Checkbox 
+                    id="show-labels-toggle"
+                    checked={effectiveConfig?.show_labels ?? globalShowLabels}
+                    onChange={(e) => {
+                      setLocalConfig(prev => ({
+                        ...(prev || effectiveConfig || {}),
+                        show_labels: e.target.checked
+                      }))
+                    }}
+                  />
                 </div>
               </div>
 

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
 import type { EChartsOption, EChartsType } from 'echarts'
 import { applyWansanTheme } from '../../../lib/echarts-theme'
+import { useSettingsStore } from '@/stores/useSettingsStore'
 
 interface ReportChartProps {
   option: EChartsOption
@@ -9,6 +10,7 @@ interface ReportChartProps {
   style?: React.CSSProperties
   onChartClick?: (params: any) => void
   highlightedItems?: string[]
+  showLabels?: boolean
 }
 
 export function Chart({
@@ -17,9 +19,13 @@ export function Chart({
   style,
   onChartClick,
   highlightedItems = [],
+  showLabels: localShowLabels,
 }: ReportChartProps) {
   const chartRef = useRef<HTMLDivElement | null>(null)
   const instanceRef = useRef<EChartsType | null>(null)
+  const globalShowLabels = useSettingsStore(state => state.showChartLabels)
+
+  const showChartLabels = localShowLabels !== undefined ? localShowLabels : globalShowLabels
 
   useEffect(() => {
     const el = chartRef.current
@@ -58,9 +64,9 @@ export function Chart({
 
   useEffect(() => {
     if (!instanceRef.current) return
-    const themedOption = applyWansanTheme(option)
+    const themedOption = applyWansanTheme(option, showChartLabels)
     instanceRef.current.setOption(themedOption, { notMerge: true })
-  }, [option])
+  }, [option, showChartLabels])
 
   // Handle Highlights
   useEffect(() => {
