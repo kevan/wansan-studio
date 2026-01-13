@@ -7,6 +7,7 @@ import {
   LineChart,
   PieChart,
   Radar,
+  RotateCcw,
   Save,
   ScatterChart,
   Table2,
@@ -437,12 +438,29 @@ export function ChartFullView() {
                   {t('settings:tabs.general')}
                 </div>
                 <div className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-zinc-100 bg-zinc-50/50">
-                  <Label 
-                    htmlFor="show-labels-toggle"
-                    className="text-xs font-bold text-zinc-600 cursor-pointer select-none"
-                  >
-                    {t('settings:general.chart_labels_label')}
-                  </Label>
+                  <div className="flex items-center gap-2 h-5">
+                    <Label 
+                      htmlFor="show-labels-toggle"
+                      className="text-xs font-bold text-zinc-600 cursor-pointer select-none"
+                    >
+                      {t('settings:general.chart_labels_label')}
+                    </Label>
+                    {effectiveConfig?.show_labels !== undefined && (
+                      <button 
+                        onClick={() => {
+                          setLocalConfig(prev => {
+                            const next = { ...(prev || effectiveConfig || {}) }
+                            delete next.show_labels
+                            return next
+                          })
+                        }}
+                        title={t('reset')}
+                        className="p-1 rounded-md text-zinc-400 hover:text-indigo-600 hover:bg-zinc-200/50 transition-colors"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                   <Checkbox 
                     id="show-labels-toggle"
                     checked={effectiveConfig?.show_labels ?? globalShowLabels}

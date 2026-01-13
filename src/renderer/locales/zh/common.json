@@ -290,6 +290,7 @@
   "export_step_1": "设计版面布局",
   "export_step_2": "编写网页代码",
   "export_step_3": "准备注入数据",
+  "reset": "重置",
   "reset_confirm": "确定要重置所有应用状态吗？此操作无法撤销。",
   "reset_nuking": "正在重置应用状态...",
   "start_analysis": "开始分析",
