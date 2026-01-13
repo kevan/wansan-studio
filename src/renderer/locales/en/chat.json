@@ -28,7 +28,7 @@
   "export_failed_title": "Export Failed",
   "export_markdown": "Export Chat (Markdown)",
   "debug_export_command": "Export Debug Log",
-  "input_hint": "Enter to send • Shift+Enter newline • @ to insert tables",
+  "input_hint": "Enter to send • / commands • @ tables",
   "table_count": "{{count}} tables",
   "empty_title": "Ready to analyze your data?",
   "empty_subtitle": "I can help you build reports, analyze trends, and surface insights. Try a quick prompt below or tell me what you want to explore.",
