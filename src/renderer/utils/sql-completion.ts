@@ -96,6 +96,30 @@ export function registerSqlCompletion(monaco: Monaco, files: FileNode[]) {
             })
           })
         }
+
+        // 6. Relations (JOIN Snippets)
+        if (file.relations) {
+          file.relations.forEach(rel => {
+            const targetFile = files.find(f => f.id === rel.targetFileId)
+            if (targetFile) {
+              const joinType = rel.joinType || 'LEFT'
+              const label = `${joinType} JOIN ${targetFile.tableName}`
+              const insertText = `${joinType} JOIN "${targetFile.tableName}" ON "${file.tableName}"."${rel.sourceColumn}" = "${targetFile.tableName}"."${rel.targetColumn}"`
+              
+              suggestions.push({
+                label: label,
+                detail: `Relation: ${file.tableName} -> ${targetFile.tableName}`,
+                kind: monaco.languages.CompletionItemKind.Snippet,
+                insertText: insertText,
+                insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                range,
+                documentation: {
+                  value: `Auto-generated JOIN based on relationship:\n${file.tableName}.${rel.sourceColumn} = ${targetFile.tableName}.${rel.targetColumn}`
+                }
+              })
+            }
+          })
+        }
       })
 
       return { suggestions }
