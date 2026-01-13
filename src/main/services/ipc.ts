@@ -21,6 +21,7 @@ import type {
   DomainRule,
   AIConfig,
 } from '@shared/types.ts'
+import { InsightGenerationContext } from '@shared/types/dashboard'
 
 export function setupIPC(
   databaseService: NativeDatabaseService,
@@ -310,24 +311,9 @@ export function setupIPC(
   // AI Insight Generation (Chart Data -> Natural Language)
   ipcMain.handle(
     'ai:generate-insight',
-    async (
-      _event,
-      options: {
-        chartTitle: string
-        chartType: string
-        aggregatedData: Array<Record<string, unknown>>
-        language?: 'en' | 'zh'
-        domainRules?: DomainRule[]
-      }
-    ) => {
+    async (_event, context: InsightGenerationContext) => {
       try {
-        const result = await aiService.generateChartInsight(
-          options.chartTitle,
-          options.chartType,
-          options.aggregatedData,
-          options.language || 'en',
-          options.domainRules || []
-        )
+        const result = await aiService.generateChartInsight(context)
         return { success: true, data: result }
       } catch (error) {
         console.error('Generate insight error:', error)

@@ -1,5 +1,6 @@
 import type { Layout } from 'react-grid-layout'
 import type { FilterParam } from '../schemas/analysis'
+import type { DomainRule } from '../types'
 
 export type ChartType =
   | 'bar'
@@ -13,6 +14,18 @@ export type ChartType =
   | 'combo'
   | 'kpi'
   | 'text'
+
+export interface InsightGenerationContext {
+  chartTitle: string
+  chartType: string
+  aggregatedData: Array<Record<string, unknown>>
+  vizConfig?: any
+  sql?: string
+  summary?: string
+  language?: 'en' | 'zh'
+  domainRules?: DomainRule[]
+  userInstructions?: string
+}
 
 export interface ReportData {
   title: string

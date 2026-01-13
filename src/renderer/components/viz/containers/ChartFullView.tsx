@@ -183,15 +183,20 @@ export function ChartFullView() {
   }
 
   const handleGenerateInsight = async (
-    chartData: Array<Record<string, unknown>>
+    chartData: Array<Record<string, unknown>>,
+    instructions?: string
   ) => {
     const domainRules = useSettingsStore.getState().domainRules || []
     const result = await generateInsight.mutateAsync({
       chartTitle: effectiveTitle,
       chartType: effectiveType,
       aggregatedData: chartData,
+      vizConfig: effectiveConfig,
+      sql: report?.reportData.sql, // Use SQL from report data
+      summary: effectiveSummary,
       language,
       domainRules,
+      userInstructions: instructions
     })
     setLocalInsight(result as InsightResult)
     return result

@@ -54,7 +54,8 @@ interface InsightPanelProps {
   insight?: string | InsightResult
   /** Called to request AI insight generation */
   onGenerateInsight: (
-    data: Array<Record<string, unknown>>
+    data: Array<Record<string, unknown>>,
+    instructions?: string
   ) => Promise<InsightResult | string>
   className?: string
   expanded?: boolean
@@ -98,6 +99,7 @@ export function InsightPanel({
   const [isEditing, setIsEditing] = useState(false)
   const [editBuffer, setEditEditBuffer] = useState<InsightResult | null>(null)
   const [activeFindingId, setActiveFindingId] = useState<string | null>(null)
+  const [instructions, setInstructions] = useState('')
 
   const isExpanded = expanded !== undefined ? expanded : internalExpanded
   const dataPointCount = chartData.length
@@ -144,7 +146,7 @@ export function InsightPanel({
     setError('')
     const startTime = Date.now()
     try {
-      const result = await onGenerateInsight(chartData)
+      const result = await onGenerateInsight(chartData, instructions)
       const data = typeof result === 'string' ? null : result
       setInsightData(data)
       setState('done')
@@ -155,12 +157,13 @@ export function InsightPanel({
         chart_type: chartType || 'unknown',
         data_points: dataPointCount,
         duration: Date.now() - startTime,
+        has_instructions: !!instructions,
       })
     } catch (err: any) {
       setError(err.message || 'Failed to generate insight')
       setState('error')
     }
-  }, [chartData, onGenerateInsight, onExpandChange, chartType, dataPointCount])
+  }, [chartData, onGenerateInsight, onExpandChange, chartType, dataPointCount, instructions])
 
   const handleStartEdit = () => {
     setEditEditBuffer(JSON.parse(JSON.stringify(insightData || {
@@ -225,10 +228,10 @@ export function InsightPanel({
   const handleRegenerate = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation()
-      Analytics.track('insight_regenerated', { chart_type: chartType })
-      handleConfirmSend()
+      Analytics.track('insight_regenerate_click', { chart_type: chartType })
+      setState('consent')
     },
-    [handleConfirmSend, chartType]
+    [chartType]
   )
 
   const handleRemove = useCallback(
@@ -238,15 +241,20 @@ export function InsightPanel({
         onRemove()
         setState('idle')
         setInsightData(null)
+        setInstructions('')
       }
     },
     [onRemove]
   )
 
   const handleCancel = useCallback(() => {
-    setState('idle')
-    onCancel?.()
-  }, [onCancel])
+    if (insightData) {
+      setState('done')
+    } else {
+      setState('idle')
+      onCancel?.()
+    }
+  }, [onCancel, insightData])
 
   const renderSentimentIcon = (sentiment?: string) => {
     const config = SENTIMENT_ICONS[sentiment || 'neutral'] || SENTIMENT_ICONS.neutral
@@ -477,31 +485,44 @@ export function InsightPanel({
     return (
       <div
         className={cn(
-          'border border-amber-200 bg-amber-50/50 rounded-xl p-4',
+          'border border-indigo-100 bg-gradient-to-br from-white to-indigo-50/20 rounded-xl p-4 shadow-sm',
           className
         )}
       >
         <div className="flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <div className="text-sm font-medium text-amber-800">
+          <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0 border border-indigo-100">
+             <Sparkles className="w-4 h-4 text-indigo-500" />
+          </div>
+          <div className="flex-1 w-full min-w-0">
+            <div className="text-sm font-bold text-zinc-800">
               {t('insight_consent_title')}
             </div>
-            <div className="text-xs text-amber-700 mt-1">
+            <div className="text-xs text-zinc-500 mt-1 leading-relaxed">
               {t('insight_consent_desc', { count: dataPointCount })}
+            </div>
+            
+            <div className="mt-3 w-full">
+                <TextareaAutosize
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
+                    placeholder={t('insight_instruction_placeholder') || "Any specific requirements? (Optional)"}
+                    className="w-full bg-white border border-zinc-200 rounded-lg p-2.5 text-xs text-zinc-700 placeholder:text-zinc-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-200 outline-none transition-all resize-none shadow-sm"
+                    minRows={2}
+                    maxRows={5}
+                />
             </div>
 
             <div className="flex gap-2 mt-3">
               <button
                 onClick={handleConfirmSend}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100"
               >
-                <Check className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5" />
                 {t('confirm_send')}
               </button>
               <button
                 onClick={handleCancel}
-                className="px-3 py-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-800 hover:bg-zinc-100 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-xs font-bold text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors"
               >
                 {t('cancel')}
               </button>

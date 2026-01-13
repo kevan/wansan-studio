@@ -307,6 +307,7 @@
   "ai_insight": "Business Insight",
   "insight_consent_title": "Send Data to AI?",
   "insight_consent_desc": "This will send {{count}} aggregated data points to generate insights. No raw data rows will be transmitted.",
+  "insight_instruction_placeholder": "Any specific requirements? (Optional)",
   "confirm_send": "Send & Analyze",
   "analyzing": "Analyzing data...",
   "dismiss": "Dismiss",

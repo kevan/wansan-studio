@@ -8,6 +8,7 @@ import {
   AIConfig,
   FileNode,
 } from './types'
+import { InsightGenerationContext } from './types/dashboard'
 import {
   IPCResponse,
   RunSQLResponse,
@@ -139,13 +140,7 @@ export interface ElectronAPI {
     columns: Array<{ name: string; type: string }>
     mode: 'generate' | 'refine'
   }) => Promise<IPCResponse<string>>
-  generateInsight: (options: {
-    chartTitle: string
-    chartType: string
-    aggregatedData: Array<Record<string, unknown>>
-    language?: 'en' | 'zh'
-    domainRules?: DomainRule[]
-  }) => Promise<IPCResponse<string>>
+  generateInsight: (context: InsightGenerationContext) => Promise<IPCResponse<string>>
 
   // AI Config
   getAIConfig: () => Promise<AIConfigResponse>

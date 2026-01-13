@@ -12,6 +12,7 @@ import type {
   AIConfig,
   DomainRule,
 } from '@shared/types.ts'
+import { InsightGenerationContext } from '@shared/types/dashboard'
 
 // --- Security Config (Must match obfuscate-tool.js) ---
 const MASTER_SALT = 'wansan-studio-2025-special-security-salt'
@@ -337,23 +338,15 @@ CRITICAL SYNTAX RULES:
    * Generate natural language insight from aggregated chart data.
    * This is part of the AI Insight feature with explicit user consent.
    */
-  async generateChartInsight(
-    chartTitle: string,
-    chartType: string,
-    aggregatedData: Array<Record<string, unknown>>,
-    language: 'en' | 'zh' = 'en',
-    domainRules: DomainRule[] = []
-  ): Promise<any> {
+  async generateChartInsight(context: InsightGenerationContext): Promise<any> {
     const client = this.requireOpenAI()
-    return await generateInsight(
-      client,
-      chartTitle,
-      chartType,
-      aggregatedData,
-      this.model,
-      language,
-      domainRules
-    )
+    // Ensure default values if not provided in context (though Interface defines them as optional, engine handles them)
+    const enrichedContext = {
+        ...context,
+        language: context.language || 'en',
+        domainRules: context.domainRules || []
+    }
+    return await generateInsight(client, enrichedContext, this.model)
   }
 
   clearConfig() {

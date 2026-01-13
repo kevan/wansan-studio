@@ -256,19 +256,29 @@ Fix the SQL. Ensure all table/column names are double-quoted and match the schem
   }
 }
 
+import { InsightGenerationContext } from '@shared/types/dashboard'
+
 /**
  * Generate a natural language insight/explanation from aggregated chart data.
  * This function receives ONLY aggregated data (not raw rows) after user consent.
  */
 export async function generateInsight(
   openai: OpenAI,
-  chartTitle: string,
-  chartType: string,
-  aggregatedData: Array<Record<string, unknown>>,
-  model?: string,
-  language: 'en' | 'zh' = 'en',
-  domainRules: DomainRule[] = []
+  context: InsightGenerationContext,
+  model?: string
 ): Promise<any> {
+  const {
+    chartTitle,
+    chartType,
+    aggregatedData,
+    language = 'en',
+    domainRules = [],
+    userInstructions,
+    sql,
+    vizConfig,
+    summary
+  } = context
+
   const languageNote = language === 'zh' ? 'Chinese (Simplified)' : 'English'
 
   // Convert data to a compact representation
@@ -303,16 +313,42 @@ OUTPUT FORMAT (JSON):
   "recommendation": "One actionable suggestion (optional)"
 }`
 
-  const userPrompt = `### Chart Title
+  let userPrompt = `### Chart Title
 ${chartTitle}
 
 ### Visualization Type
-${chartType}
+${chartType}`
 
-### Aggregated Data (${aggregatedData.length} points)
-${dataStr}
+  if (summary) {
+    userPrompt += `\n\n### Analysis Summary (Context)\n${summary}`
+  }
 
-### Your Analysis (JSON)`
+  if (vizConfig) {
+    const { x_axis, y_axis, series_name } = vizConfig
+    const configDesc = [
+      x_axis ? `- X-Axis (Dimension): ${x_axis}` : '',
+      y_axis ? `- Y-Axis (Metric): ${Array.isArray(y_axis) ? y_axis.join(', ') : y_axis}` : '',
+      series_name ? `- Series: ${series_name}` : ''
+    ].filter(Boolean).join('\n')
+    
+    if (configDesc) {
+      userPrompt += `\n\n### Visualization Config\n${configDesc}`
+    }
+  }
+
+  if (sql) {
+    userPrompt += `\n\n### SQL Query (Context)
+${sql}`
+  }
+
+  userPrompt += `\n\n### Aggregated Data (${aggregatedData.length} points)
+${dataStr}`
+
+  if (userInstructions && userInstructions.trim()) {
+    userPrompt += `\n\n### 💡 SPECIFIC INSTRUCTIONS\nThe user has provided the following guidance for this analysis:\n"${userInstructions}"\nPlease prioritize these instructions.`
+  }
+
+  userPrompt += `\n\n### Your Analysis (JSON)`
 
   const body: ChatCompletionCreateParamsNonStreaming = {
     model: getModelToUse(model),

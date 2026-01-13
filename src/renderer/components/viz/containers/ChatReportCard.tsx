@@ -161,15 +161,20 @@ export const ChatReportCard = React.memo(function ChatReportCard({
   }
 
   const handleGenerateInsight = async (
-    chartData: Array<Record<string, unknown>>
+    chartData: Array<Record<string, unknown>>,
+    instructions?: string
   ) => {
     const domainRules = useSettingsStore.getState().domainRules || []
     const result = await generateInsight.mutateAsync({
       chartTitle: reportData.title || t('chat:analysis_result'),
       chartType: reportData.chartType || 'bar',
       aggregatedData: chartData,
+      vizConfig: reportData.vizConfig,
+      sql: reportData.sql,
+      summary: reportData.summary,
       language,
       domainRules,
+      userInstructions: instructions
     })
     updateMessageInsight(messageId, result)
     return result

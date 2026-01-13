@@ -7,15 +7,14 @@ import {
   RunSQLResponse,
 } from '@shared/api-types'
 import { ElectronAPI } from '@shared/electron-api'
-import { Analytics } from '../services/analytics'
 import type {
-  TableSchema,
-  InsightResult,
-  FileNode,
-  ColumnSchema,
   AIConfig,
-  DomainRule,
+  ColumnSchema,
+  FileNode,
+  InsightResult,
+  TableSchema,
 } from '@shared/types'
+import { InsightGenerationContext } from '@shared/types/dashboard.ts'
 
 /**
  * Mock IPC implementation for development/testing when electronAPI is not available.
@@ -165,7 +164,10 @@ const mockIPC: ElectronAPI = {
     return { success: true, data: '0.3.2' }
   },
   getMainLogs: async (): Promise<IPCResponse<any[]>> => {
-    return { success: true, data: [{ level: 'info', message: 'Mock Main Log' }] }
+    return {
+      success: true,
+      data: [{ level: 'info', message: 'Mock Main Log' }],
+    }
   },
   getPathForFile: (file: File) => file.name, // Mock
   windowControl: (
@@ -398,14 +400,10 @@ export function useCheckFilesConsistency() {
 
 export function useGenerateInsight() {
   return useMutation({
-    mutationFn: async (options: {
-      chartTitle: string
-      chartType: string
-      aggregatedData: Array<Record<string, unknown>>
-      language?: 'en' | 'zh'
-      domainRules?: DomainRule[]
-    }): Promise<InsightResult> => {
-      const response = await getIpc().generateInsight(options)
+    mutationFn: async (
+      context: InsightGenerationContext
+    ): Promise<InsightResult> => {
+      const response = await getIpc().generateInsight(context)
       if (!response.success) {
         throw new Error(response.error || 'Failed to generate insight')
       }
