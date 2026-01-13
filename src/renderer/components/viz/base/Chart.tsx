@@ -75,16 +75,16 @@ export function Chart({
 
     // Get current series to determine indices to target
     const currentOption = instance.getOption() as EChartsOption
-    const seriesCount = Array.isArray(currentOption.series)
-      ? currentOption.series.length
+    const series = Array.isArray(currentOption.series)
+      ? currentOption.series
       : currentOption.series
-        ? 1
-        : 0
-    
-    if (seriesCount === 0) return
+        ? [currentOption.series]
+        : []
+
+    if (series.length === 0) return
 
     // Create an array of all series indices [0, 1, 2, ...]
-    const seriesIndices = Array.from({ length: seriesCount }, (_, i) => i)
+    const seriesIndices = Array.from({ length: series.length }, (_, i) => i)
 
     // Always reset downplay first to ensure clean state across all series
     instance.dispatchAction({
@@ -99,12 +99,63 @@ export function Chart({
       return
     }
 
-    // Highlight specific items by name across all series
-    instance.dispatchAction({
-      type: 'highlight',
-      seriesIndex: seriesIndices,
-      name: highlightedItems,
-    })
+    // --- Fuzzy Match Logic ---
+    // AI might return partial keys (e.g. "Aug" instead of "2025-08-01")
+    // We search for the indices of matching items to perform a more reliable highlight.
+    const targetIndices: number[] = []
+
+    const isMatch = (val: any) => {
+      if (val === null || val === undefined) return false
+      const strVal = String(val).toLowerCase()
+      return highlightedItems.some(highlight => {
+        const hLower = String(highlight).toLowerCase()
+        return (
+          strVal === hLower ||
+          strVal.includes(hLower) ||
+          hLower.includes(strVal)
+        )
+      })
+    }
+
+    // A. Check xAxis (Category)
+    const xAxis = Array.isArray(currentOption.xAxis)
+      ? currentOption.xAxis[0]
+      : currentOption.xAxis
+    
+    const xAxisData = (xAxis as any)?.data
+    
+    if (xAxis && (xAxis.type === 'category' || !xAxis.type) && Array.isArray(xAxisData)) {
+      xAxisData.forEach((d: any, idx: number) => {
+        const val = (typeof d === 'object' && d !== null && 'value' in d) ? d.value : d
+        if (isMatch(val)) {
+          targetIndices.push(idx)
+        }
+      })
+    }
+    // B. Check Series Data (e.g. Pie chart names)
+    else {
+      series.forEach((s: any) => {
+        if (Array.isArray(s.data)) {
+          s.data.forEach((d: any, idx: number) => {
+            const name = (typeof d === 'object' && d !== null && 'name' in d) ? d.name : null
+            if (name && isMatch(name)) {
+              targetIndices.push(idx)
+            }
+          })
+        }
+      })
+    }
+
+    const uniqueIndices = Array.from(new Set(targetIndices))
+
+    if (uniqueIndices.length > 0) {
+      // Highlight specific items by index across all series
+      instance.dispatchAction({
+        type: 'highlight',
+        seriesIndex: seriesIndices,
+        dataIndex: uniqueIndices,
+      })
+    }
 
     // Note: We intentionally DO NOT trigger 'showTip' here.
     // The Insight Panel already provides the textual context.
