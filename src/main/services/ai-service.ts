@@ -307,9 +307,11 @@ export class AIService {
 CRITICAL SYNTAX RULES:
 1. **ALWAYS** wrap column names in DOUBLE QUOTES ( ").
 2. For SQLite/DuckDB compatibility, use standard SQL operators.
+3. **ONLY** generate ROW-LEVEL expressions (e.g., "A" + "B", "A" * 0.1).
+4. **NEVER** use aggregate functions like SUM(), AVG(), COUNT(), MAX(), MIN(), etc.
 `
 
-    const systemPrompt = `You are a DuckDB expert. Convert user natural language into a valid SQL expression fragment for a SELECT clause.
+    const systemPrompt = `You are a DuckDB expert. Convert user natural language into a valid ROW-LEVEL SQL expression fragment for a SELECT clause.
     Available columns in the current context:
     ${columnList}
     

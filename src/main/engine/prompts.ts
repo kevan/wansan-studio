@@ -143,7 +143,7 @@ Return a **raw JSON object**. Do not wrap in markdown code blocks.
     "y_axis": "column_name_for_y" or ["col1", "col2"],
     "series_name": "Label for the data" or ["Label1", "Label2"]
   },
-  "reasoning": "String (Briefly explain which columns you used and why)",
+  "reasoning": "String (Briefly explain which columns you used and why. DO NOT mention 'Smart Filter' or internal implementation details here)",
   "suggestions": ["String (Question 1)", "String (Question 2)", "String (Question 3)"]
 }
 

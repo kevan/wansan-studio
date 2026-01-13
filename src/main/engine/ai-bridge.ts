@@ -98,7 +98,9 @@ ${relationsContext}${contextSection}
         role: 'system',
         content: `${getSystemPrompt(domainRules, language)}
 
-OUTPUT RULE: The "summary", "title", "reasoning", and "suggestions" fields MUST be in ${languageNote}.`,
+OUTPUT RULE:
+1. The "summary", "title", "reasoning", and "suggestions" fields MUST be in ${languageNote}.
+2. **CRITICAL**: DO NOT mention "Smart Filter" or any technical internal mechanisms in the "reasoning" field. Focus on business logic and data interpretation for the end user.`,
       },
       { role: 'user', content: userPrompt },
     ],
