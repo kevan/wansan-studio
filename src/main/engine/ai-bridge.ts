@@ -301,6 +301,7 @@ Your task is to analyze aggregated chart data and provide actionable business in
 
 CONSTRAINTS:
 - Be concise and professional.
+- **Balanced Analysis**: Actively look for BOTH **positive anomalies** (e.g., spikes, rapid growth, exceeding targets) AND **negative anomalies** (e.g., drops, underperformance, risks). Do not focus only on problems.
 - Focus on trends, anomalies, and actionable recommendations.
 - Write content in ${languageNote}.
 - **CRITICAL**: For each finding, identify the EXACT X-axis category names from the data that support the finding (e.g., specific months, regions).
@@ -312,6 +313,12 @@ OUTPUT FORMAT (JSON):
   "findings": [
     {
       "id": "1",
+      "markdown": "**March** traffic surged by 30%...",
+      "sentiment": "growth",
+      "relatedItems": ["Mar"] // Must match data keys exactly
+    },
+    {
+      "id": "2",
       "markdown": "**February** sales dropped by 15%...",
       "sentiment": "negative",
       "relatedItems": ["Feb"] // Must match data keys exactly
@@ -337,7 +344,7 @@ ${chartType}`
       y_axis ? `- Y-Axis (Metric): ${Array.isArray(y_axis) ? y_axis.join(', ') : y_axis}` : '',
       series_name ? `- Series: ${series_name}` : ''
     ].filter(Boolean).join('\n')
-    
+
     if (configDesc) {
       userPrompt += `\n\n### Visualization Config\n${configDesc}`
     }
