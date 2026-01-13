@@ -145,6 +145,13 @@ export function ChartFullView() {
     [availableColumns, effectiveConfig?.x_axis]
   )
 
+  const seriesNames = useMemo(() => {
+    const raw = effectiveConfig?.series_name
+    if (Array.isArray(raw)) return raw
+    if (typeof raw === 'string') return [raw]
+    return []
+  }, [effectiveConfig?.series_name])
+
   const handleChartTypeChange = (type: ChartType) => {
     const adapted = adaptChartConfig(
       type as any,
@@ -174,6 +181,18 @@ export function ChartFullView() {
     setLocalConfig(prev => ({
       ...(prev || effectiveConfig || {}),
       y_axis: nextY.length > 0 ? nextY : null,
+    }))
+  }
+
+  const handleSeriesNameChange = (index: number, value: string) => {
+    const nextNames = yAxisValues.map((col, i) => {
+      if (i === index) return value
+      return seriesNames[i] || col
+    })
+
+    setLocalConfig(prev => ({
+      ...(prev || effectiveConfig || {}),
+      series_name: nextNames,
     }))
   }
 
@@ -528,6 +547,32 @@ export function ChartFullView() {
                       })}
                     </div>
                   </div>
+
+                  {yAxisValues.length > 0 && (
+                    <div className="space-y-3 pt-2">
+                      <label className="text-[10px] font-black text-zinc-500 ml-1 uppercase tracking-tight">
+                        {t('series_labels')}
+                      </label>
+                      <div className="space-y-2">
+                        {yAxisValues.map((col, index) => (
+                          <div key={col} className="flex flex-col gap-1">
+                            <span className="text-[9px] text-zinc-400 font-medium ml-1 truncate">
+                              {col}
+                            </span>
+                            <input
+                              type="text"
+                              value={seriesNames[index] || col}
+                              onChange={e =>
+                                handleSeriesNameChange(index, e.target.value)
+                              }
+                              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-bold text-zinc-700 focus:ring-2 focus:ring-indigo-100 focus:bg-white outline-none transition-all"
+                              placeholder={col}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
