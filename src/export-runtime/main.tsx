@@ -5,6 +5,7 @@ import '@/styles/globals.css'
 import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { useUIStore } from '@/stores/useUIStore'
+import { useSettingsStore } from '@/stores/useSettingsStore'
 import './mocks/i18n'
 import i18n from './mocks/i18n'
 
@@ -13,6 +14,7 @@ interface WansanSnapshot {
   workbench: any
   project: any
   ui: any
+  settings?: any
   lang?: 'en' | 'zh'
 }
 
@@ -36,6 +38,10 @@ if (snapshot) {
 
   if (snapshot.ui) {
       ;(useUIStore as any).setState(snapshot.ui)
+  }
+
+  if (snapshot.settings) {
+    ;(useSettingsStore as any).setState(snapshot.settings)
   }
 }
 

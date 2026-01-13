@@ -73,7 +73,12 @@ export function DashboardHeader() {
           theme: 'minimal',
           language: language as 'en' | 'zh',
         },
-        fullSnapshot: { workbench: { canvasConfig } },
+        fullSnapshot: {
+          workbench: { canvasConfig },
+          settings: {
+            showChartLabels: useSettingsStore.getState().showChartLabels,
+          },
+        },
       })
       addToast({
         title: t('export_success', 'Web Report Generated'),

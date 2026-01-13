@@ -56,6 +56,9 @@ export async function exportWebReport(
       sidebarLayout: 'visible',
       ...(fullSnapshot?.ui || {}),
     },
+    settings: {
+      ...(fullSnapshot?.settings || {}),
+    },
   }
 
   // 3. Inject Data
