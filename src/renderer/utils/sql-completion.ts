@@ -23,6 +23,18 @@ const SQL_FUNCTIONS = [
 ]
 
 /**
+ * Simple alias generator (e.g. "sales_data" -> "sd")
+ */
+function generateAlias(tableName: string): string {
+  if (!tableName) return 't'
+  const parts = tableName.split('_').filter(Boolean)
+  if (parts.length > 1) {
+    return parts.map(p => p[0]).join('').toLowerCase()
+  }
+  return tableName.slice(0, 2).toLowerCase()
+}
+
+/**
  * Registers Wansan-specific SQL completion items (Tables, Columns, Metrics)
  */
 export function registerSqlCompletion(monaco: Monaco, files: FileNode[]) {
@@ -66,11 +78,14 @@ export function registerSqlCompletion(monaco: Monaco, files: FileNode[]) {
 
       // 3. Tables (Files)
       files.forEach(file => {
+        const tableAlias = generateAlias(file.tableName)
+        
         suggestions.push({
           label: file.tableName,
           detail: `Table: ${file.name}`,
           kind: monaco.languages.CompletionItemKind.Class,
-          insertText: `"${file.tableName}"`,
+          insertText: `"${file.tableName}" AS \${1:${tableAlias}}`,
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
           range,
         })
 
@@ -105,7 +120,12 @@ export function registerSqlCompletion(monaco: Monaco, files: FileNode[]) {
             if (targetFile) {
               const joinType = rel.joinType || 'LEFT'
               const label = `${joinType} JOIN ${targetFile.tableName}`
-              const insertText = `${joinType} JOIN "${targetFile.tableName}" ON "${file.tableName}"."${rel.sourceColumn}" = "${targetFile.tableName}"."${rel.targetColumn}"`
+              
+              const sourceAlias = generateAlias(file.tableName)
+              const targetAlias = generateAlias(targetFile.tableName)
+              
+              // Use snippets for aliases: ${1:targetAlias} and ${2:sourceAlias}
+              const insertText = `${joinType} JOIN "${targetFile.tableName}" AS \${1:${targetAlias}} ON "\${2:${sourceAlias}}"."${rel.sourceColumn}" = "\${1:${targetAlias}}"."${rel.targetColumn}"`
               
               suggestions.push({
                 label: label,
