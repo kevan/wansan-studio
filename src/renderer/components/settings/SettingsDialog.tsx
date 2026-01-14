@@ -441,9 +441,73 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
             className="flex-1 overflow-y-auto px-6 py-4"
           >
             <div className="space-y-8">
-              {/* 1. PREFERENCES */}
+              {/* 1. LICENSE SECTION */}
               <section>
-                <h4 className="text-base font-semibold text-foreground mb-4">
+                <h4 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <Key className="h-5 w-5 text-indigo-500" />
+                  {t('license.title')}
+                </h4>
+
+                <div className="p-5 rounded-2xl bg-zinc-50 border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
+                  <div className="flex items-center justify-between mb-4">
+                    <span
+                      className={cn(
+                        'text-xs font-mono font-bold px-2 py-1 rounded',
+                        settings.isActivated
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                      )}
+                    >
+                      {settings.isActivated
+                        ? t('license.pro_active')
+                        : t('license.trial_mode')}
+                    </span>
+                  </div>
+
+                  {!settings.isActivated && (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder={t('license.enter_code_placeholder')}
+                        value={licenseCode}
+                        onChange={e => setLicenseCode(e.target.value)}
+                        className="bg-white h-9"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={async () => {
+                          const success =
+                            await settings.activateLicense(licenseCode)
+                          if (success) {
+                            addToast({
+                              title: t('license.activated_success_title'),
+                              type: 'success',
+                            })
+                          } else {
+                            addToast({
+                              title: t('license.invalid_code_title'),
+                              type: 'error',
+                            })
+                          }
+                        }}
+                      >
+                        {t('license.activate_button')}
+                      </Button>
+                    </div>
+                  )}
+                  {settings.isActivated && (
+                    <p className="text-xs text-zinc-500 font-medium">
+                      {t('license.thanks_msg')}
+                    </p>
+                  )}
+                </div>
+              </section>
+
+              <Separator />
+
+              {/* 2. PREFERENCES */}
+              <section>
+                <h4 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <Settings2 className="h-5 w-5 text-zinc-500" />
                   {t('settings.section_app')}
                 </h4>
                 <div className="space-y-4">
@@ -487,9 +551,9 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                     </div>
                     <Checkbox
                       checked={settings.showChartLabels}
-                      onChange={e =>
+                      onCheckedChange={checked =>
                         settings.updateSettings({
-                          showChartLabels: e.target.checked,
+                          showChartLabels: !!checked,
                         })
                       }
                     />
@@ -531,97 +595,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
 
               <Separator />
 
-              {/* 2. LICENSE SECTION */}
-              <section className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
-                <h4 className="font-semibold mb-3 flex items-center gap-2 text-sm">
-                  <Key className="h-4 w-4 text-indigo-500" />
-                  {t('license.title')}
-                </h4>
-
-                <div className="flex items-center justify-between mb-4">
-                  <span
-                    className={cn(
-                      'text-xs font-mono font-bold px-2 py-1 rounded',
-                      settings.isActivated
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                    )}
-                  >
-                    {settings.isActivated
-                      ? t('license.pro_active')
-                      : t('license.trial_mode')}
-                  </span>
-                </div>
-
-                {!settings.isActivated && (
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder={t('license.enter_code_placeholder')}
-                      value={licenseCode}
-                      onChange={e => setLicenseCode(e.target.value)}
-                      className="bg-white"
-                    />
-                    <Button
-                      onClick={async () => {
-                        const success =
-                          await settings.activateLicense(licenseCode)
-                        if (success) {
-                          addToast({
-                            title: t('license.activated_success_title'),
-                            type: 'success',
-                          })
-                        } else {
-                          addToast({
-                            title: t('license.invalid_code_title'),
-                            type: 'error',
-                          })
-                        }
-                      }}
-                    >
-                      {t('license.activate_button')}
-                    </Button>
-                  </div>
-                )}
-                {settings.isActivated && (
-                  <p className="text-xs text-zinc-500">
-                    {t('license.thanks_msg')}
-                  </p>
-                )}
-              </section>
-
-              <Separator />
-
-              {/* 3. DATA MANAGEMENT */}
-              <section>
-                <h4 className="text-base font-semibold text-foreground mb-4">
-                  {t('tabs.data')}
-                </h4>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-sm text-zinc-500">
-                      {t('data.placeholder')}
-                    </p>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        settings.resetPreferences()
-                        useUIStore.getState().resetLayout()
-                        addToast({
-                          title: t('data.reset_title'),
-                          description: t('data.reset_desc'),
-                          type: 'info',
-                        })
-                      }}
-                    >
-                      {t('data.reset_button')}
-                    </Button>
-                  </div>
-                </div>
-              </section>
-
-              <Separator />
-
-              {/* 4. ABOUT */}
+              {/* 3. ABOUT */}
               <section className="text-center py-4">
                 <div className="font-semibold text-sm">Wansan Studio</div>
                 <div className="text-xs text-muted-foreground">
