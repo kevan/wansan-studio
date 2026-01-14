@@ -85,6 +85,7 @@ export function SqlEditorModal({
       <DialogContent
         className="max-w-[1600px] w-[94vw] h-[92vh] flex flex-col p-0 gap-0 overflow-hidden"
         onPointerDownOutside={e => e.preventDefault()}
+        onEscapeKeyDown={e => e.preventDefault()}
       >
         {gateNode}
         <DialogHeader className="px-6 py-4 border-b flex flex-row items-center justify-between shrink-0">
