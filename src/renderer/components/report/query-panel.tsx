@@ -11,6 +11,7 @@ import {
   ChevronUp,
   Code,
   Copy,
+  Download,
   Loader2,
   Lock,
   Play,
@@ -28,6 +29,8 @@ import { useProjectStore } from '@/stores/useProjectStore'
 import { Button } from '@/components/ui/button'
 import { DataTable as ReportTable } from '../viz/base/DataTable'
 import { Analytics } from '../../services/analytics'
+import { dataToCSV } from '@/utils/export-utils'
+import { useToastStore } from '@/stores/useToastStore'
 
 export interface QueryPanelRef {
   runQuery: (bypassGate?: boolean) => Promise<boolean>
@@ -70,6 +73,7 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
     const [copied, setCopied] = useState(false)
     const [showReasoning, setShowReasoning] = useState(true)
     const { isActivated, checkGate, gateNode } = useProGate()
+    const addToast = useToastStore(s => s.addToast)
 
     const handleRunPreview = async (queryToRun: string, bypassGate = false) => {
       if (isRestoring || !queryToRun.trim()) return false
@@ -116,6 +120,25 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
         })
       }
       return success
+    }
+
+    const handleExportCSV = async () => {
+      if (!previewData || previewData.length === 0) return
+
+      const csvContent = dataToCSV(previewData)
+      const res = await window.electronAPI.saveFile(
+        csvContent,
+        'csv',
+        'query_result.csv'
+      )
+
+      if (res.success) {
+        addToast({
+          title: t('export_success', { ns: 'common' }),
+          description: res.data,
+          type: 'success',
+        })
+      }
     }
 
     useImperativeHandle(ref, () => ({
@@ -332,6 +355,14 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
                     {Object.keys(previewData[0] || {}).length}{' '}
                     {t('field_name', { ns: 'common' })}
                   </span>
+                  <span className="w-px h-3 bg-zinc-200" />
+                  <button
+                    onClick={handleExportCSV}
+                    className="hover:text-zinc-600 transition-colors flex items-center gap-1"
+                    title={t('export', { ns: 'common' })}
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                  </button>
                 </>
               )}
             </div>

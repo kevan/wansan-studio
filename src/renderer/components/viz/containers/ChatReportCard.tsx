@@ -1,6 +1,9 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useRef } from 'react'
 import {
   Code,
+  Download,
+  FileText,
+  Image,
   Pin,
   RefreshCw,
   Settings2,
@@ -24,7 +27,15 @@ import type { ChatMessage } from '../../ChatInterface'
 import { useTranslation } from 'react-i18next'
 import { ExpandableAction } from '../../ui/expandable-action'
 import { useGenerateInsight } from '@/hooks/useIPC'
-
+import { dataToCSV } from '@/utils/export-utils'
+import { toPng } from 'html-to-image'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Button } from '@/components/ui/button'
 
 interface ChatReportCardProps {
   messageId: string
@@ -58,16 +69,17 @@ export const ChatReportCard = React.memo(function ChatReportCard({
   const [manualActive, setManualActive] = useState(false)
   const [triggerCount, setTriggerCount] = useState(0)
   const [highlightedItems, setHighlightedItems] = useState<string[]>([])
+  const cardRef = useRef<HTMLDivElement>(null)
 
   const generateInsight = useGenerateInsight()
   const language = i18n.language === 'zh' ? 'zh' : 'en'
 
   // 🔥 从 widgetRegistry 读取最新数据,实现响应式更新
   const widgetRegistry = useProjectStore(state => state.widgetRegistry)
-  const reportData = message.widgetId && widgetRegistry[message.widgetId]
-    ? widgetRegistry[message.widgetId]
-    : fallbackReportData
-
+  const reportData =
+    message.widgetId && widgetRegistry[message.widgetId]
+      ? widgetRegistry[message.widgetId]
+      : fallbackReportData
 
   const handleDrillDown = useCallback(
     (
@@ -174,7 +186,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
       summary: reportData.summary,
       language,
       domainRules,
-      userInstructions: instructions
+      userInstructions: instructions,
     })
     updateMessageInsight(messageId, result)
     return result
@@ -230,10 +242,43 @@ export const ChatReportCard = React.memo(function ChatReportCard({
     })
   }
 
+  const handleExportCSV = async () => {
+    if (!reportData?.tableData) return
+    const csv = dataToCSV(reportData.tableData)
+    const res = await window.electronAPI.saveFile(
+      csv,
+      'csv',
+      `${reportData.title || 'export'}.csv`
+    )
+    if (res.success) {
+      addToast({ type: 'success', title: t('common:export_success') })
+    }
+  }
+
+  const handleExportPNG = async () => {
+    if (!cardRef.current) return
+    try {
+      const dataUrl = await toPng(cardRef.current, {
+        backgroundColor: '#ffffff',
+      })
+      const res = await window.electronAPI.saveImage(
+        dataUrl,
+        `${reportData.title || 'chart'}.png`
+      )
+      if (res.success) {
+        addToast({ type: 'success', title: t('common:export_success') })
+      }
+    } catch (e) {
+      console.error(e)
+      addToast({ type: 'error', title: t('common:export_failed') })
+    }
+  }
+
   const rowCount = reportData?.tableData?.length || 0
 
   return (
     <div
+      ref={cardRef}
       className={cn(
         'flex flex-col border border-zinc-200 rounded-xl bg-white shadow-sm transition-all overflow-hidden h-full group',
         className
@@ -313,6 +358,33 @@ export const ChatReportCard = React.memo(function ChatReportCard({
             label={t('common:inspect_code')}
             onClick={handleOpenSqlLab}
           />
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="group relative flex items-center justify-center overflow-hidden transition-all duration-300 ease-out h-8 border border-transparent w-8 hover:w-auto hover:px-3 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50"
+              >
+                <span className="shrink-0 flex items-center justify-center">
+                  <Download className="h-3.5 w-3.5" />
+                </span>
+                <span className="whitespace-nowrap overflow-hidden text-xs font-medium transition-all duration-300 ease-out w-0 opacity-0 ml-0 group-hover:w-auto group-hover:opacity-100 group-hover:ml-2">
+                  {t('common:export')}
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportCSV} className="gap-2">
+                <FileText className="w-4 h-4" />
+                <span>CSV</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPNG} className="gap-2">
+                <Image className="w-4 h-4" />
+                <span>PNG</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <ExpandableAction
             icon={
