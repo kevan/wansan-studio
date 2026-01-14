@@ -248,6 +248,7 @@
   "schema_mismatch_detail": "依赖这些列的图表将出现错误。",
   "proceed_anyway": "仍要继续",
   "cancel": "取消",
+  "confirm": "确定",
   "relationship_removed": "关联已移除",
   "type_changed": "类型已改为 {{type}}",
   "rename_feature": "重命名功能",

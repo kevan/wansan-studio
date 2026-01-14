@@ -249,6 +249,7 @@
   "schema_mismatch_detail": "Charts relying on these columns will appear as errors.",
   "proceed_anyway": "Proceed Anyway",
   "cancel": "Cancel",
+  "confirm": "Confirm",
   "relationship_removed": "Relationship Removed",
   "type_changed": "Type changed to {{type}}",
   "rename_feature": "Rename Feature",
