@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { FileSelectionStep } from './steps/FileSelectionStep'
 import { DataPreviewStep } from './steps/DataPreviewStep'
 import { FinalizeStep } from './steps/FinalizeStep'
-import { Loader2 } from 'lucide-react'
+import { AlertCircle, Loader2 } from 'lucide-react'
 import { useAutoLink } from '@/hooks/useAutoLink.ts'
 import { useMemo, useState } from 'react'
 import { useToastStore } from '../../stores/useToastStore'
@@ -264,6 +264,10 @@ export function DataIngestionWizard() {
   }
 
   const [isValidating, setIsValidating] = useState(false)
+  const [validationError, setValidationError] = useState<{
+    title: string
+    message: string
+  } | null>(null)
 
   const parseDuckDBError = (error: string) => {
     // Standard DuckDB Conversion Error: "Conversion Error: Could not convert string 'abc' to INT64"
@@ -310,16 +314,11 @@ export function DataIngestionWizard() {
               displayDesc = t('wizard.type_conversion_error', {
                 column: possibleCol,
                 value: parsed.value,
-                type: parsed.type
+                type: parsed.type,
               })
             }
 
-            toast.addToast({
-              title: displayTitle,
-              description: displayDesc,
-              type: 'error',
-              duration: 6000,
-            })
+            setValidationError({ title: displayTitle, message: displayDesc })
             setIsValidating(false)
             return // Block navigation
           }
@@ -478,6 +477,34 @@ export function DataIngestionWizard() {
           </div>
         </div>
       </DialogContent>
+
+      {/* Type Validation Error Confirmation Dialog */}
+      <Dialog
+        open={!!validationError}
+        onOpenChange={open => !open && setValidationError(null)}
+      >
+        <DialogContent className="max-w-md p-6">
+          <div className="flex flex-col items-center text-center gap-4 py-4">
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-600">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold text-zinc-900">
+                {validationError?.title}
+              </h3>
+              <p className="text-sm text-zinc-500 leading-relaxed">
+                {validationError?.message}
+              </p>
+            </div>
+            <Button
+              className="mt-2 w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold"
+              onClick={() => setValidationError(null)}
+            >
+              {t('confirm')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }
