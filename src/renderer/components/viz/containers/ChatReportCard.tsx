@@ -250,8 +250,17 @@ export const ChatReportCard = React.memo(function ChatReportCard({
       'csv',
       `${reportData.title || 'export'}.csv`
     )
-    if (res.success) {
-      addToast({ type: 'success', title: t('common:export_success') })
+    if (res.success && res.data) {
+      const filePath = res.data as string
+      addToast({
+        type: 'success',
+        title: t('common:export_success'),
+        description: filePath,
+        action: {
+          label: t('common:open_folder'),
+          onClick: () => window.electronAPI.showItemInFolder(filePath),
+        },
+      })
     }
   }
 
@@ -265,8 +274,17 @@ export const ChatReportCard = React.memo(function ChatReportCard({
         dataUrl,
         `${reportData.title || 'chart'}.png`
       )
-      if (res.success) {
-        addToast({ type: 'success', title: t('common:export_success') })
+      if (res.success && res.data) {
+        const filePath = res.data as string
+        addToast({
+          type: 'success',
+          title: t('common:image_saved'),
+          description: filePath,
+          action: {
+            label: t('common:open_folder'),
+            onClick: () => window.electronAPI.showItemInFolder(filePath),
+          },
+        })
       }
     } catch (e) {
       console.error(e)

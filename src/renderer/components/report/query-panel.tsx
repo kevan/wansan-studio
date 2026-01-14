@@ -132,11 +132,16 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
         'query_result.csv'
       )
 
-      if (res.success) {
+      if (res.success && res.data) {
+        const filePath = res.data as string
         addToast({
           title: t('export_success', { ns: 'common' }),
-          description: res.data,
+          description: filePath,
           type: 'success',
+          action: {
+            label: t('open_folder', { ns: 'common' }),
+            onClick: () => window.electronAPI.showItemInFolder(filePath),
+          },
         })
       }
     }
