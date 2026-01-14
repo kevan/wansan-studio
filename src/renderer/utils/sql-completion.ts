@@ -55,14 +55,34 @@ export function registerSqlCompletion(monaco: Monaco, files: FileNode[]) {
 
       const suggestions: any[] = []
 
-      // 1. Keywords
+      // 1. Keywords & Snippets
       SQL_KEYWORDS.forEach(kw => {
-        suggestions.push({
-          label: kw,
-          kind: monaco.languages.CompletionItemKind.Keyword,
-          insertText: `${kw} `, // Auto-append space
-          range,
-        })
+        if (kw === 'SELECT') {
+          suggestions.push({
+            label: 'SELECT',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: 'SELECT ${1:*} FROM "${2:table}" AS ${3:t}',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            range,
+            detail: 'SELECT * FROM table AS alias'
+          })
+        } else if (kw === 'FROM') {
+          suggestions.push({
+            label: 'FROM',
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: 'FROM "${1:table}" AS ${2:t}',
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            range,
+            detail: 'FROM table AS alias'
+          })
+        } else {
+          suggestions.push({
+            label: kw,
+            kind: monaco.languages.CompletionItemKind.Keyword,
+            insertText: `${kw} `, // Auto-append space
+            range,
+          })
+        }
       })
 
       // 2. Functions
@@ -145,11 +165,14 @@ export function registerSqlCompletion(monaco: Monaco, files: FileNode[]) {
         // 7. Wide Views (v_*) & their columns
         if (file.smartMetrics && file.smartMetrics.length > 0) {
           const viewName = `v_${file.tableName}`
+          const viewAlias = `v${tableAlias}`
+          
           suggestions.push({
             label: viewName,
             detail: `Wide View for ${file.name}`,
             kind: monaco.languages.CompletionItemKind.Interface,
-            insertText: `"${viewName}"`,
+            insertText: `"${viewName}" AS \${1:${viewAlias}}`,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
             range,
             documentation: {
               value: `View containing native columns, joined columns, and smart metrics.`
