@@ -31,7 +31,7 @@
     "build:export": "vite build --config vite.export.config.ts"
   },
   "dependencies": {
-    "@duckdb/node-api": "^1.4.3-r.1",
+    "@duckdb/node-api": "^1.4.3-r.3",
     "electron-store": "^11.0.2",
     "electron-updater": "^6.1.7",
     "exceljs": "^4.4.0",
