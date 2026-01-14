@@ -81,11 +81,11 @@ export function DashboardHeader() {
         },
       })
       addToast({
-        title: t('export_success', 'Web Report Generated'),
+        title: t('web_report_generated'),
         description: filePath,
         type: 'success',
         action: {
-          label: t('open_folder', 'Open Folder'),
+          label: t('open_folder'),
           onClick: () => window.electronAPI.showItemInFolder(filePath),
         },
       })
