@@ -415,11 +415,11 @@ export const ChatReportCard = React.memo(function ChatReportCard({
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={handleExportCSV} className="gap-2">
                 <FileText className="w-4 h-4" />
-                <span>CSV</span>
+                <span>{t('common:export_csv')}</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportPNG} className="gap-2">
                 <Image className="w-4 h-4" />
-                <span>PNG</span>
+                <span>{t('common:export_image')}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

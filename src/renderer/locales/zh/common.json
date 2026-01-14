@@ -177,6 +177,8 @@
   "export_options": "导出选项",
   "export_pdf": "PDF 文档",
   "export_png": "图片（PNG）",
+  "export_csv": "数据（CSV）",
+  "export_image": "图片（PNG）",
   "generated_time": "生成时间",
   "generated_by": "生成者",
   "last_updated": "最后更新",
