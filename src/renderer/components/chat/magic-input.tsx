@@ -635,7 +635,7 @@ export function MagicInput({
       {gateNode}
       <div ref={containerRef} className="relative w-full max-w-2xl">
         {replyToId && replyMessage && (
-          <div className="absolute -top-10 left-4 right-4 bg-zinc-50 border border-b-0 rounded-t-xl px-3 py-1.5 text-xs flex items-center justify-between z-[55] shadow-sm">
+          <div className="absolute top-0 left-4 right-4 -translate-y-full bg-zinc-50 border border-b-0 rounded-t-xl px-3 py-2 text-xs flex items-center justify-between z-[55] shadow-sm animate-in slide-in-from-bottom-2 duration-300">
             <div className="flex items-center gap-2 text-zinc-600 min-w-0">
               <CornerDownRight className="h-3 w-3" />
               <span className="text-[10px] font-bold uppercase tracking-tight text-zinc-500">
