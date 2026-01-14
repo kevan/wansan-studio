@@ -81,7 +81,7 @@ export function ChatInterface({
       className={`flex flex-col h-full min-h-0 relative bg-gradient-to-b from-indigo-50/20 via-white/50 to-white ${className}`}
     >
       {/* 聊天消息区域 */}
-      <div className="flex-1 overflow-y-auto p-4 pb-16 space-y-6 scroll-smooth">
+      <div className="flex-1 overflow-y-auto p-4 pb-4 space-y-6 scroll-smooth">
         {messages.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center pb-0">
             <EmptyState
