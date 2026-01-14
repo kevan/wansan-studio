@@ -230,8 +230,8 @@ export function MagicInput({
 
   const replyMessage = messages.find(m => m.id === replyToId)
   const replyPreview =
-    replyMessage?.content ||
     replyMessage?.reportData?.title ||
+    replyMessage?.content ||
     replyMessage?.reportData?.summary ||
     (replyMessage ? t('reply_fallback') : '')
 
@@ -641,7 +641,7 @@ export function MagicInput({
               <span className="text-[10px] font-bold uppercase tracking-tight text-zinc-500">
                 {t('refining')}
               </span>
-              <span className="truncate max-w-[240px] italic text-zinc-600">
+              <span className="truncate flex-1 min-w-0 italic text-zinc-600">
                 {replyPreview}
               </span>
             </div>
