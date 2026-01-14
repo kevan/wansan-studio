@@ -360,7 +360,9 @@
   "pro_benefit_sql": "Advanced SQL Editor",
   "enter_license": "Enter License Key",
   "import_failed": "Import Failed",
-  "invalid_metadata_table": "Invalid file metadata: Missing table name",
+  "type_validation_failed": "Field Type Mismatch",
+  "type_conversion_error": "Column '{{column}}' contains values that cannot be converted to {{type}}: '{{value}}'. Please check and adjust the column type.",
+  "invalid_metadata_table": "Invalid file metadata: missing table name",
   "sidebar": {
     "electron_api_unavailable": "Electron API unavailable",
     "uploading": "Uploading...",

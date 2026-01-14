@@ -90,6 +90,8 @@
     "merge_success": "数据修正成功",
     "processed_files": "已处理 {{count}} 个文件",
     "ingestion_failed": "导入失败",
+    "type_validation_failed": "字段类型不匹配",
+    "type_conversion_error": "列 '{{column}}' 中存在无法转换为 {{type}} 的值：'{{value}}'。请检查并修改该列的类型设置。",
     "summary": {
       "import_type": "新建导入",
       "append_type": "追加数据",

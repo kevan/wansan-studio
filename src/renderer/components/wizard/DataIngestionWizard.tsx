@@ -265,6 +265,21 @@ export function DataIngestionWizard() {
 
   const [isValidating, setIsValidating] = useState(false)
 
+  const parseDuckDBError = (error: string) => {
+    // Standard DuckDB Conversion Error: "Conversion Error: Could not convert string 'abc' to INT64"
+    // Note: DuckDB doesn't always provide the column name in the error string directly for simple CAST queries
+    // but sometimes it does like "Column 'col' ...". 
+    // Here we try to extract the value and type at least.
+    const convertMatch = error.match(/Could not convert (?:string|value) '(.*)' to (\w+)/i)
+    if (convertMatch) {
+      return {
+        value: convertMatch[1],
+        type: convertMatch[2]
+      }
+    }
+    return null
+  }
+
   const handleNext = async () => {
     // Multi-task navigation within a step
     if (step === 'preview') {
@@ -283,20 +298,27 @@ export function DataIngestionWizard() {
           })
 
           if (!res.success || !res.data?.valid) {
-            const errorMsg =
-              res.error ||
-              res.data?.error ||
-              'Type mismatch detected. Please check column types.'
-            // Clean up error message (DuckDB errors can be verbose)
-            const displayMsg = errorMsg.includes('Could not convert')
-              ? errorMsg.split('\n')[0]
-              : errorMsg
+            const rawError = res.error || res.data?.error || ''
+            const parsed = parseDuckDBError(rawError)
+            
+            let displayTitle = t('wizard.type_validation_failed')
+            let displayDesc = rawError.split('\n')[0]
+
+            if (parsed) {
+              // Try to find which column caused this (heuristic: check types)
+              const possibleCol = currentTask.columns.find(c => c.type.includes(parsed.type))?.name || '?'
+              displayDesc = t('wizard.type_conversion_error', {
+                column: possibleCol,
+                value: parsed.value,
+                type: parsed.type
+              })
+            }
 
             toast.addToast({
-              title: t('sidebar.parse_failed'), // "Parse Failed" - reasonably close
-              description: displayMsg,
+              title: displayTitle,
+              description: displayDesc,
               type: 'error',
-              duration: 5000,
+              duration: 6000,
             })
             setIsValidating(false)
             return // Block navigation
