@@ -114,6 +114,7 @@
   "debug_export_command": "导出调试日志",
   "debug_export_success_toast": "调试日志导出成功",
   "modify_parameters": "修改参数",
+  "refining": "正在微调：",
   "analysis_cancelled": "分析已取消",
   "analysis_cancelled_title": "分析已取消",
   "analysis_cancelled_desc": "您取消了智能过滤筛选。",

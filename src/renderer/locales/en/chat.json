@@ -115,6 +115,7 @@
   "debug_export_command": "Export Debug Log",
   "debug_export_success_toast": "Debug log exported successfully",
   "modify_parameters": "Modify Parameters",
+  "refining": "Refining:",
   "analysis_cancelled": "Analysis cancelled",
   "analysis_cancelled_title": "Analysis Cancelled",
   "analysis_cancelled_desc": "You cancelled the smart filter selection.",

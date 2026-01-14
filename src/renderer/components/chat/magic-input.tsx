@@ -108,6 +108,7 @@ export function MagicInput({
   const [popoverOpen, setPopoverOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const autoAttachedIdRef = useRef<string | null>(null)
 
   const replyToId = useChatStore(state => state.replyToId)
   const setReplyTo = useChatStore(state => state.setReplyTo)
@@ -128,6 +129,27 @@ export function MagicInput({
   const { checkGate, gateNode } = useProGate()
   const openSqlLab = useSqlLabStore(state => state.open)
   const addManualSqlMessage = useChatStore(state => state.addManualSqlMessage)
+
+  // Auto-set refinement context to the last assistant response
+  useEffect(() => {
+    if (messages.length === 0) {
+      autoAttachedIdRef.current = null
+      return
+    }
+
+    // Find the latest assistant message that has a report (SQL) and is finished (no status)
+    const lastValidContext = [...messages]
+      .reverse()
+      .find(m => m.type === 'assistant' && m.reportData?.sql && !m.status)
+
+    if (!lastValidContext) return
+
+    // If we haven't auto-attached to this specific message yet AND there's no current replyToId
+    if (!replyToId && autoAttachedIdRef.current !== lastValidContext.id) {
+      setReplyTo(lastValidContext.id)
+      autoAttachedIdRef.current = lastValidContext.id
+    }
+  }, [messages, replyToId, setReplyTo])
 
   const handleStop = () => {
     stopGeneration()
@@ -617,7 +639,7 @@ export function MagicInput({
             <div className="flex items-center gap-2 text-zinc-600 min-w-0">
               <CornerDownRight className="h-3 w-3" />
               <span className="text-[10px] font-bold uppercase tracking-tight text-zinc-500">
-                Refining:
+                {t('refining')}
               </span>
               <span className="truncate max-w-[240px] italic text-zinc-600">
                 {replyPreview}
