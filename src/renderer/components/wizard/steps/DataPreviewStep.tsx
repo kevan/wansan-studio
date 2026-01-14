@@ -224,10 +224,9 @@ export function DataPreviewStep() {
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto bg-white">
-        <div className="overflow-x-auto">
-          <Table className="min-w-full border-collapse">
-            <TableHeader className="sticky top-0 z-20 bg-zinc-50 shadow-sm border-b">
+      <div className="flex-1 min-h-0 bg-white border-t border-zinc-200">
+        <Table className="min-w-full border-collapse" containerClassName="h-full">
+          <TableHeader className="sticky top-0 z-20 bg-zinc-50 shadow-sm border-b">
               <TableRow>
                 {(mode === 'append' || mode === 'merge') && targetFile
                   ? targetFile.columns.map(targetCol => (
@@ -292,7 +291,6 @@ export function DataPreviewStep() {
               ))}
             </TableBody>
           </Table>
-        </div>
       </div>
     </div>
   )

@@ -227,6 +227,69 @@ export class FileService {
     }
   }
 
+  async validateColumnTypes(params: {
+    filePath: string
+    tempFilePath?: string
+    columns: Array<{ name: string; type: string }>
+    readOptions?: Record<string, any>
+  }): Promise<{ valid: boolean; error?: string }> {
+    const { filePath, tempFilePath, columns, readOptions } = params
+
+    // Determine which file to read (prefer cached temp file)
+    const targetPath =
+      tempFilePath && fs.existsSync(tempFilePath) ? tempFilePath : filePath
+    if (!fs.existsSync(targetPath)) {
+      return { valid: false, error: 'File not found' }
+    }
+
+    const ext = extname(targetPath).toLowerCase()
+    const safePath = targetPath.replace(/\\/g, '/')
+
+    // Helper to format extra options
+    const formatReadOptions = (opts?: Record<string, any>) => {
+      if (!opts) return ''
+      return Object.entries(opts)
+        .map(([k, v]) => {
+          if (typeof v === 'boolean') return `${k}=${v}`
+          if (typeof v === 'string') return `${k}='${v}'`
+          return `${k}=${v}`
+        })
+        .join(', ')
+    }
+    const extraOptions = formatReadOptions(readOptions)
+    const optionsPrefix = extraOptions ? `, ${extraOptions}` : ''
+
+    let readSql = ''
+    if (ext === '.csv') {
+      // For temp files (from Excel), we know they have headers.
+      // For user CSVs, we assume headers for now or auto-detect.
+      // auto_detect=true usually handles headers well.
+      readSql = `read_csv_auto('${safePath}', SAMPLE_SIZE=-1, auto_detect=true${optionsPrefix})`
+    } else if (ext === '.json') {
+      readSql = `read_json_auto('${safePath}', format='auto', auto_detect=true)`
+    } else {
+      // Excel files should have been converted to CSV temp files by now
+      return {
+        valid: false,
+        error: `Cannot validate raw ${ext} file directly. Please ensure file is parsed first.`,
+      }
+    }
+
+    const castExpressions = columns
+      .map(col => `CAST("${col.name}" AS ${col.type})`)
+      .join(', ')
+
+    try {
+      // Try to read and cast a sample of rows
+      await this.databaseService.query(
+        `SELECT ${castExpressions} FROM ${readSql} LIMIT 1000`
+      )
+      return { valid: true }
+    } catch (e: any) {
+      return { valid: false, error: e.message || String(e) }
+    }
+  }
+
   async reIngestFile(
     filePath: string,
     tableName: string,

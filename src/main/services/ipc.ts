@@ -477,6 +477,19 @@ export function setupIPC(
     }
   )
 
+  ipcMain.handle('validate-column-types', async (_event, params: any) => {
+    try {
+      const result = await fileService.validateColumnTypes(params)
+      return { success: true, data: result }
+    } catch (error) {
+      console.error('Validate column types error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  })
+
   ipcMain.handle('ingest:create-table', async (_event, params: any) => {
     try {
       const result = await fileService.createTableFromSource(params)

@@ -74,6 +74,7 @@ const mockIPC: ElectronAPI = {
     console.log('Mock checkFilesConsistency', files)
     return { success: true }
   },
+  validateColumnTypes: async () => ({ success: true, data: { valid: true } }),
   reIngestFile: async (
     fileId: string,
     filePath: string,

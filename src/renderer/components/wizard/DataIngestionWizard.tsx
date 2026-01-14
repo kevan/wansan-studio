@@ -9,7 +9,7 @@ import { DataPreviewStep } from './steps/DataPreviewStep'
 import { FinalizeStep } from './steps/FinalizeStep'
 import { Loader2 } from 'lucide-react'
 import { useAutoLink } from '@/hooks/useAutoLink.ts'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useToastStore } from '../../stores/useToastStore'
 import { useSettingsStore } from '../../stores/useSettingsStore'
 import { Analytics } from '../../services/analytics'
@@ -263,9 +263,52 @@ export function DataIngestionWizard() {
     }
   }
 
-  const handleNext = () => {
+  const [isValidating, setIsValidating] = useState(false)
+
+  const handleNext = async () => {
     // Multi-task navigation within a step
     if (step === 'preview') {
+      const currentTask = tasks[currentTaskIndex]
+      if (currentTask) {
+        setIsValidating(true)
+        try {
+          const res = await window.electronAPI.validateColumnTypes({
+            filePath: currentTask.filePath,
+            tempFilePath: currentTask.tempFilePath,
+            columns: currentTask.columns.map(c => ({
+              name: c.name,
+              type: c.type,
+            })),
+            readOptions: currentTask.readOptions,
+          })
+
+          if (!res.success || !res.data?.valid) {
+            const errorMsg =
+              res.error ||
+              res.data?.error ||
+              'Type mismatch detected. Please check column types.'
+            // Clean up error message (DuckDB errors can be verbose)
+            const displayMsg = errorMsg.includes('Could not convert')
+              ? errorMsg.split('\n')[0]
+              : errorMsg
+
+            toast.addToast({
+              title: t('sidebar.parse_failed'), // "Parse Failed" - reasonably close
+              description: displayMsg,
+              type: 'error',
+              duration: 5000,
+            })
+            setIsValidating(false)
+            return // Block navigation
+          }
+        } catch (e) {
+          console.error(e)
+          setIsValidating(false)
+          return
+        }
+        setIsValidating(false)
+      }
+
       const isLastTask = currentTaskIndex === tasks.length - 1
       if (!isLastTask) {
         nextTask()
@@ -279,7 +322,7 @@ export function DataIngestionWizard() {
     } else if (step === 'preview') {
       setStep('finalize')
     } else if (step === 'finalize') {
-      handleFinish()
+      await handleFinish()
     }
   }
 
@@ -390,9 +433,12 @@ export function DataIngestionWizard() {
             </Button>
             <Button
               onClick={handleNext}
-              disabled={isNextDisabled}
+              disabled={isNextDisabled || isValidating}
               className="bg-black hover:bg-zinc-800 text-white px-8 font-bold"
             >
+              {isValidating && (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              )}
               {step === 'finalize'
                 ? mode === 'append'
                   ? t('wizard.append_now')

@@ -61,6 +61,13 @@ export interface CreateTableParams {
   readOptions?: Record<string, any>
 }
 
+export interface ValidateColumnTypesParams {
+  filePath: string
+  tempFilePath?: string
+  columns: Array<{ name: string; type: string }>
+  readOptions?: Record<string, any>
+}
+
 export interface ElectronAPI {
   // Generic invoke (keep for flexibility, but usage should be minimized)
   invoke: (channel: string, ...args: unknown[]) => Promise<IPCResponse>
@@ -71,6 +78,9 @@ export interface ElectronAPI {
   selectDirectory: () => Promise<IPCResponse<string>>
   parseFile: (filePath: string) => Promise<ParseFileResponse>
   checkFilesConsistency: (files: FileNode[]) => Promise<IPCResponse>
+  validateColumnTypes: (
+    params: ValidateColumnTypesParams
+  ) => Promise<IPCResponse<{ valid: boolean; error?: string }>>
   reIngestFile: (
     fileId: string,
     filePath: string,
