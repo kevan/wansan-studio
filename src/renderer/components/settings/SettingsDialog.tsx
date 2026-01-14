@@ -551,9 +551,9 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                     </div>
                     <Checkbox
                       checked={settings.showChartLabels}
-                      onCheckedChange={checked =>
+                      onChange={e =>
                         settings.updateSettings({
-                          showChartLabels: !!checked,
+                          showChartLabels: e.target.checked,
                         })
                       }
                     />

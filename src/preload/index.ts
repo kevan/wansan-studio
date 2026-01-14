@@ -34,7 +34,8 @@ const electronAPI: ElectronAPI = {
     relations: any[],
     context?: { lastSql: string; lastQuery: string },
     language?: 'en' | 'zh',
-    domainRules?: any[]
+    domainRules?: any[],
+    suggestionCount?: number
   ) =>
     ipcRenderer.invoke(
       'ask-ai',
@@ -43,7 +44,8 @@ const electronAPI: ElectronAPI = {
       relations,
       context,
       language,
-      domainRules
+      domainRules,
+      suggestionCount
     ),
   fixSQL: (
     originalSql: string,
@@ -59,13 +61,8 @@ const electronAPI: ElectronAPI = {
     columns: Array<{ name: string; type: string }>
     mode: 'generate' | 'refine'
   }) => ipcRenderer.invoke('ai:generate-metric-expression', options),
-  generateInsight: (options: {
-    chartTitle: string
-    chartType: string
-    aggregatedData: Array<Record<string, unknown>>
-    language?: 'en' | 'zh'
-    domainRules?: DomainRule[]
-  }) => ipcRenderer.invoke('ai:generate-insight', options),
+  generateInsight: (context: any) =>
+    ipcRenderer.invoke('ai:generate-insight', context),
   getAIConfig: () => ipcRenderer.invoke('get-ai-config'),
   setAIConfig: (config: any) => ipcRenderer.invoke('set-ai-config', config),
   clearAIConfig: () => ipcRenderer.invoke('clear-ai-config'),
@@ -75,6 +72,8 @@ const electronAPI: ElectronAPI = {
   // 文件同步
   checkFilesConsistency: (files: any[]) =>
     ipcRenderer.invoke('check-files-consistency', files),
+  validateColumnTypes: (params: any) =>
+    ipcRenderer.invoke('validate-column-types', params),
   reIngestFile: (
     fileId: string,
     filePath: string,
