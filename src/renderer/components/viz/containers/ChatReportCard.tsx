@@ -264,11 +264,25 @@ export const ChatReportCard = React.memo(function ChatReportCard({
     }
   }
 
+  const [isExporting, setIsExporting] = useState(false)
+
   const handleExportPNG = async () => {
     if (!cardRef.current) return
+    
+    // 1. Prepare State for Export
+    const wasExpanded = expanded
+    if (hasInsight && !wasExpanded) {
+      setExpanded(true)
+    }
+    setIsExporting(true)
+
+    // 2. Wait for UI updates (and expansion animation)
+    await new Promise(resolve => setTimeout(resolve, 600))
+
     try {
       const dataUrl = await toPng(cardRef.current, {
         backgroundColor: '#ffffff',
+        filter: (node) => !node.classList?.contains('hide-on-export')
       })
       const res = await window.electronAPI.saveImage(
         dataUrl,
@@ -289,6 +303,12 @@ export const ChatReportCard = React.memo(function ChatReportCard({
     } catch (e) {
       console.error(e)
       addToast({ type: 'error', title: t('common:export_failed') })
+    } finally {
+      // 3. Restore State
+      setIsExporting(false)
+      if (hasInsight && !wasExpanded) {
+        setExpanded(false)
+      }
     }
   }
 
@@ -341,7 +361,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
         </div>
       )}
 
-      <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-50 bg-white">
+      <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-50 bg-white hide-on-export">
         {/* Left: AI Insight Trigger */}
         <div>
           {!hasInsight && !manualActive && (
@@ -440,7 +460,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
         </div>
       </div>
 
-      <div className="px-4 py-1.5 border-t border-zinc-50 bg-zinc-50/30 text-[10px] text-zinc-500 flex justify-between items-center select-none font-medium">
+      <div className="px-4 py-1.5 border-t border-zinc-50 bg-zinc-50/30 text-[10px] text-zinc-500 flex justify-between items-center select-none font-medium hide-on-export">
         <div className="flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
           <span>{t('chat:lineage_engine')}</span>
