@@ -63,6 +63,8 @@
     "Identify best customers by profit"
   ],
   "stop_generation": "Stop generation",
+  "rerun": "Rerun",
+  "refine": "Refine",
   "delete_message": "Delete message",
   "interrupted_retry": "Interrupted - Please retry",
   "error_analysis_failed": "Analysis Failed",

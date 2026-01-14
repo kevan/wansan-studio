@@ -450,7 +450,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
                 )}
               />
             }
-            label={isPinned ? t('chat:pinned') : t('chat:pin')}
+            label={isPinned ? t('common:pinned') : t('common:pin')}
             onClick={handlePinToggle}
             active={isPinned}
             className={
