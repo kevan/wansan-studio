@@ -65,7 +65,7 @@ export function DataTable({
         const value = info.getValue()
         const display = formatForDisplay(value, field.type)
         return (
-          <span className="truncate" title={display}>
+          <span className="truncate block min-w-[100px]" title={display}>
             {display}
           </span>
         )
@@ -91,7 +91,7 @@ export function DataTable({
 
   return (
     <div className={cn(
-      'flex flex-col w-full',
+      'flex flex-col w-full overflow-hidden',
       (variant === 'dashboard' || isModal) ? 'h-full' : 'h-auto'
     )}>
       <div
@@ -103,7 +103,7 @@ export function DataTable({
             : 'rounded-lg border border-zinc-200 bg-white shadow-sm'
         )}
       >
-        <table className="w-full text-[13px] border-separate border-spacing-0">
+        <table className="min-w-full text-[13px] border-separate border-spacing-0 table-auto">
           <thead
             className={cn(
               'sticky top-0 z-20 transition-all',
@@ -118,7 +118,7 @@ export function DataTable({
                     <th
                       key={header.id}
                       className={cn(
-                        'h-10 px-4 text-left transition-all whitespace-nowrap group/th relative',
+                        'h-10 px-4 text-left transition-all whitespace-nowrap group/th relative min-w-[120px]',
                         isCard
                           ? 'text-[11px] font-bold text-zinc-600 uppercase tracking-wider border-b border-zinc-100 bg-transparent'
                           : 'font-bold text-zinc-700 tracking-wide border-r border-b border-zinc-200 last:border-r-0 bg-transparent',
