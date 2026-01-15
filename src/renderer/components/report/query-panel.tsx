@@ -176,6 +176,9 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
             tabWidth: 2,
             keywordCase: 'upper',
             indentStyle: 'tabularLeft',
+            logicalOperatorNewline: 'before',
+            expressionWidth: 80,
+            denseOperators: true,
           })
           // Only update if different to avoid loop if parent updates prop
           if (formatted !== sql) {
@@ -210,6 +213,9 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
           tabWidth: 2,
           keywordCase: 'upper',
           indentStyle: 'tabularLeft',
+          logicalOperatorNewline: 'before',
+          expressionWidth: 80,
+          denseOperators: true,
         })
         onChange(formatted)
       } catch (e) {
