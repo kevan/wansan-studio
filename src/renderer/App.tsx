@@ -542,7 +542,7 @@ function App() {
                   collapsedSize={0}
                   onCollapse={() => setIsChatCollapsed(true)}
                   onExpand={() => setIsChatCollapsed(false)}
-                  className={`bg-white dark:bg-zinc-950 transition-all duration-500 ${isPresentationMode ? 'min-w-0 border-none' : ''}`}
+                  className={`bg-white dark:bg-zinc-950 transition-all duration-500 pr-0.5 ${isPresentationMode ? 'min-w-0 border-none' : ''}`}
                 >
                   <main className="wansan-canvas h-full flex flex-col relative bg-white dark:bg-zinc-950 transition-colors">
                     < MainContent />
