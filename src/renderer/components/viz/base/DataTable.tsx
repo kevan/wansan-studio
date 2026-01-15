@@ -91,13 +91,13 @@ export function DataTable({
 
   return (
     <div className={cn(
-      'flex flex-col w-full overflow-hidden',
+      'flex flex-col w-full max-w-full min-w-0',
       (variant === 'dashboard' || isModal) ? 'h-full' : 'h-auto'
     )}>
       <div
         className={cn(
-          'relative transition-all',
-          (variant === 'dashboard' || isModal) ? 'flex-1 overflow-auto' : 'overflow-x-auto',
+          'relative transition-all scrollbar-thin scrollbar-thumb-zinc-300 scrollbar-track-transparent hover:scrollbar-thumb-zinc-400',
+          (variant === 'dashboard' || isModal) ? 'flex-1 overflow-auto' : 'overflow-x-auto overflow-y-hidden',
           isCard
             ? 'border-0 bg-transparent'
             : 'rounded-lg border border-zinc-200 bg-white shadow-sm'

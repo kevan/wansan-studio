@@ -200,7 +200,7 @@ const VizRendererBase = ({
         )}
 
         {displayMode === 'table' && (
-          <div>
+          <div className="w-full overflow-hidden">
             <h4 className="text-sm font-semibold text-zinc-800 mb-2">
               {t('data_detail')}
             </h4>
