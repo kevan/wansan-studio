@@ -1,6 +1,7 @@
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useWizardStore } from '../../stores/useWizardStore'
 import { useProjectStore } from '../../stores/useProjectStore'
+import { useUIStore } from '../../stores/useUIStore'
 import { Steps } from './Steps'
 import { Button } from '../ui/button'
 import { useTranslation } from 'react-i18next'
@@ -251,13 +252,13 @@ export function DataIngestionWizard() {
       })
 
       close()
-    } catch (e) {
+    } catch (e: any) {
       console.error('Final ingestion failed', e)
-      toast.addToast({
-        title: `${t('wizard.ingestion_failed')}: ${e instanceof Error ? e.message : 'Unknown error'}`,
-        type: 'error',
-        duration: 5000,
-      })
+      useUIStore.getState().showError(
+        t('wizard.ingestion_failed'),
+        t('chat:error_processing_request'),
+        e.stack || String(e)
+      )
     } finally {
       setProcessing(false)
     }

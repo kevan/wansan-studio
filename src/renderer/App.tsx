@@ -50,6 +50,7 @@ import { useMigrationStore } from './stores/useMigrationStore'
 import { AutoSaveStatus, useAutoSave } from './hooks/useAutoSave'
 import { ProjectLauncher } from './components/launcher/ProjectLauncher'
 import { DataIngestionWizard } from './components/wizard/DataIngestionWizard'
+import { ErrorDetailModal } from './components/system/ErrorDetailModal'
 
 function App() {
   useBootSequence()
@@ -352,6 +353,7 @@ function App() {
           <SettingsDialog />
           <DataIngestionWizard />
           <GlobalSqlLab />
+          <ErrorDetailModal />
           {/* Global Window Header */}
           <header
             className="h-12 border-b border-zinc-200 flex items-center justify-between px-4 shrink-0 bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur draggable z-50"

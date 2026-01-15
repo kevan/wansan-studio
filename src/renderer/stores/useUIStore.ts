@@ -11,16 +11,24 @@ interface UIState {
     total: number
     message: string
   }
+  errorModal: {
+    isOpen: boolean
+    title: string
+    message: string
+    details?: string
+  }
   setSidebarLayout: (layout: number[]) => void
   setContentLayout: (layout: number[]) => void
   setLastContentSplit: (layout: number[]) => void
   setMigrationState: (state: Partial<UIState['migrationState']>) => void
+  showError: (title: string, message: string, details?: string) => void
+  closeError: () => void
   resetLayout: () => void
 }
 
 export const useUIStore = create<UIState>()(
   persist(
-    set => ({
+    (set, get) => ({
       sidebarLayout: [20, 80],
       contentLayout: [40, 60],
       lastContentSplit: [40, 60],
@@ -30,11 +38,20 @@ export const useUIStore = create<UIState>()(
         total: 0,
         message: '',
       },
+      errorModal: {
+        isOpen: false,
+        title: '',
+        message: '',
+      },
       setSidebarLayout: layout => set({ sidebarLayout: layout }),
       setContentLayout: layout => set({ contentLayout: layout }),
       setLastContentSplit: layout => set({ lastContentSplit: layout }),
       setMigrationState: state =>
         set(prev => ({ migrationState: { ...prev.migrationState, ...state } })),
+      showError: (title, message, details) =>
+        set({ errorModal: { isOpen: true, title, message, details } }),
+      closeError: () =>
+        set({ errorModal: { ...get().errorModal, isOpen: false } }),
       resetLayout: () =>
         set({
           sidebarLayout: [20, 80],

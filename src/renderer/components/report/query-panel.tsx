@@ -26,6 +26,7 @@ import { cn } from '@/utils/cn'
 import { format } from 'sql-formatter'
 import { useProGate } from '@/hooks/use-pro-gate'
 import { useProjectStore } from '@/stores/useProjectStore'
+import { useUIStore } from '@/stores/useUIStore'
 import { Button } from '@/components/ui/button'
 import { DataTable as ReportTable } from '../viz/base/DataTable'
 import { Analytics } from '../../services/analytics'
@@ -125,24 +126,32 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
     const handleExportCSV = async () => {
       if (!previewData || previewData.length === 0) return
 
-      const csvContent = dataToCSV(previewData)
-      const res = await window.electronAPI.saveFile(
-        csvContent,
-        'csv',
-        'query_result.csv'
-      )
+      try {
+        const csvContent = dataToCSV(previewData)
+        const res = await window.electronAPI.saveFile(
+          csvContent,
+          'csv',
+          'query_result.csv'
+        )
 
-      if (res.success && res.data) {
-        const filePath = res.data as string
-        addToast({
-          title: t('export_success', { ns: 'common' }),
-          description: filePath,
-          type: 'success',
-          action: {
-            label: t('open_folder', { ns: 'common' }),
-            onClick: () => window.electronAPI.showItemInFolder(filePath),
-          },
-        })
+        if (res.success && res.data) {
+          const filePath = res.data as string
+          addToast({
+            title: t('export_success', { ns: 'common' }),
+            description: filePath,
+            type: 'success',
+            action: {
+              label: t('open_folder', { ns: 'common' }),
+              onClick: () => window.electronAPI.showItemInFolder(filePath),
+            },
+          })
+        }
+      } catch (e: any) {
+        useUIStore.getState().showError(
+          t('export_failed', { ns: 'common' }),
+          t('error_processing_request', { ns: 'chat' }),
+          e.stack || String(e)
+        )
       }
     }
 

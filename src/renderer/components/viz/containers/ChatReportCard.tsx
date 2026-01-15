@@ -19,6 +19,7 @@ import {
 } from '../../../stores/useWorkbenchStore'
 import { useChatStore } from '@/stores/useChatStore.ts'
 import { useProjectStore } from '@/stores/useProjectStore.ts'
+import { useUIStore } from '@/stores/useUIStore.ts'
 import { useSqlLabStore } from '@/stores/useSqlLabStore.ts'
 import { useToastStore } from '@/stores/useToastStore.ts'
 import { useSettingsStore } from '@/stores/useSettingsStore.ts'
@@ -300,9 +301,13 @@ export const ChatReportCard = React.memo(function ChatReportCard({
           },
         })
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e)
-      addToast({ type: 'error', title: t('common:export_failed') })
+      useUIStore.getState().showError(
+        t('common:export_failed'),
+        t('chat:error_processing_request'),
+        e.stack || String(e)
+      )
     } finally {
       // 3. Restore State
       setIsExporting(false)

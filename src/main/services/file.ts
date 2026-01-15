@@ -280,9 +280,9 @@ export class FileService {
       .join(', ')
 
     try {
-      // Try to read and cast a sample of rows
+      // Try to read and cast a sample of rows (increased to 50k to catch late-appearing errors)
       await this.databaseService.query(
-        `SELECT ${castExpressions} FROM ${readSql} LIMIT 1000`
+        `SELECT ${castExpressions} FROM ${readSql} LIMIT 50000`
       )
       return { valid: true }
     } catch (e: any) {
