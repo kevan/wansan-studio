@@ -6,6 +6,8 @@ import {
   Sparkles,
   Settings,
   KeyRound,
+  Copy,
+  Check,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { Button } from '../ui/button'
@@ -22,12 +24,21 @@ interface ErrorCardProps {
 
 export function ErrorCard({ message }: ErrorCardProps) {
   const [isFixing, setIsFixing] = useState(false)
+  const [copied, setCopied] = useState(false)
   const autoFixMessage = useChatStore(state => state.autoFixMessage)
   const updateMessageData = useChatStore(state => state.updateMessageData)
   const apiKey = useSettingsStore(state => state.apiKey)
   const messages = useChatStore(state => state.messages)
   const retryMessage = useChatStore(state => state.retryMessage)
   const { t } = useTranslation('chat')
+
+  const errorMessage = message.error || message.content || t('error_unknown')
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(errorMessage)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   useEffect(() => {
     if (message.error === 'ERR_NO_API_KEY' && apiKey) {
@@ -44,7 +55,6 @@ export function ErrorCard({ message }: ErrorCardProps) {
     }
   }, [apiKey, message.error, message.id, messages, retryMessage])
 
-  const errorMessage = message.error || message.content || t('error_unknown')
   const hasSql = !!message.reportData?.sql || !!message.planSql
   const originalQuery = message.originalQuery
   const originalSql = message.reportData?.sql || message.planSql
@@ -122,86 +132,83 @@ export function ErrorCard({ message }: ErrorCardProps) {
   }
 
   return (
-    <div className="border border-red-200 bg-red-50/70 rounded-lg p-4 my-3">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h3 className="font-semibold text-sm text-red-800">
-              {t('error_analysis_failed')}
-            </h3>
-            <p className="text-xs text-red-600 mt-1">
-              {t('error_processing_request')}
-            </p>
-          </div>
+    <div className="border border-red-100 bg-red-50/30 rounded-xl overflow-hidden my-4 shadow-sm">
+      {/* Header Section */}
+      <div className="px-5 py-4 flex items-start gap-4 border-b border-red-100/50 bg-red-50/50">
+        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0 shadow-sm">
+          <AlertCircle className="w-6 h-6" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="font-black text-sm uppercase tracking-tight text-red-900">
+            {t('error_analysis_failed')}
+          </h3>
+          <p className="text-xs font-medium text-red-700/70 leading-relaxed">
+            {t('error_processing_request')}
+          </p>
         </div>
       </div>
 
-      {/* Error Details */}
-      <div className="mb-3">
-        <div className="bg-white/70 border border-red-100 rounded-md p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-red-700">
+      <div className="p-5 space-y-4 bg-white/40">
+        {/* Error Details - Terminal Style */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <div className="text-[10px] font-black uppercase tracking-widest text-red-400/80">
               {t('error_details')}
-            </span>
-          </div>
-          <pre className="text-xs text-red-800 font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
-            {errorMessage}
-          </pre>
-        </div>
-      </div>
-
-      {/* Original SQL (if available) */}
-      {hasSql && (
-        <div className="mb-3">
-          <div className="bg-white/70 border border-zinc-200 rounded-md p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-zinc-700">
-                {t('error_generated_sql')}
-              </span>
             </div>
-            <pre className="text-xs text-zinc-600 font-mono whitespace-pre-wrap max-h-40 overflow-y-auto bg-zinc-50 p-2 rounded">
-              <code>{originalSql}</code>
+            <button
+              onClick={handleCopy}
+              className="text-zinc-400 hover:text-red-500 transition-colors"
+              title="Copy error"
+            >
+              {copied ? (
+                <Check className="w-3.5 h-3.5 text-green-500" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </div>
+          <div className="rounded-xl bg-zinc-950 p-3.5 border border-zinc-800 shadow-inner group/log relative">
+            <pre className="text-[11px] font-mono text-rose-300/90 leading-relaxed overflow-x-auto max-h-48 whitespace-pre-wrap scrollbar-thin">
+              {errorMessage}
             </pre>
           </div>
         </div>
-      )}
 
-      {/* Action Buttons */}
-      <div className="flex items-center gap-2">
-        <Button
-          onClick={handleAutoFix}
-          disabled={isFixing}
-          size="sm"
-          className={cn(
-            'bg-orange-500 hover:bg-orange-600 text-white text-xs h-7 px-3',
-            isFixing && 'opacity-60 cursor-not-allowed'
-          )}
-        >
-          {isFixing ? (
-            <>
-              <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-              {t('error_auto_fixing')}
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-3 w-3 mr-1" />✨ {t('error_auto_fix')}
-            </>
-          )}
-        </Button>
-
-        {hasSql && (
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 pt-1">
           <Button
-            onClick={handleEditSql}
+            onClick={handleAutoFix}
+            disabled={isFixing}
             size="sm"
-            variant="outline"
-            className="text-xs h-7 px-3"
+            className={cn(
+              'bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold h-9 px-4 rounded-xl shadow-lg shadow-orange-100 transition-all active:scale-95',
+              isFixing && 'opacity-60 cursor-not-allowed'
+            )}
           >
-            <Code className="h-3 w-3 mr-1" />
-            {t('error_edit_sql')}
+            {isFixing ? (
+              <>
+                <RefreshCw className="h-3.5 w-3.5 mr-2 animate-spin" />
+                {t('error_auto_fixing')}
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-3.5 w-3.5 mr-2" /> {t('error_auto_fix')}
+              </>
+            )}
           </Button>
-        )}
+
+          {hasSql && (
+            <Button
+              onClick={handleEditSql}
+              size="sm"
+              variant="outline"
+              className="text-xs font-bold h-9 px-4 rounded-xl bg-white border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 transition-all active:scale-95"
+            >
+              <Code className="h-3.5 w-3.5 mr-2 text-zinc-500" />
+              {t('error_edit_sql')}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   )
