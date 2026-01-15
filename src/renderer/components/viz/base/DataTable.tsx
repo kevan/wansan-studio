@@ -96,8 +96,8 @@ export function DataTable({
     )}>
       <div
         className={cn(
-          'relative transition-all scrollbar-thin scrollbar-thumb-zinc-300 scrollbar-track-transparent hover:scrollbar-thumb-zinc-400',
-          (variant === 'dashboard' || isModal) ? 'flex-1 overflow-auto' : 'overflow-x-auto overflow-y-hidden',
+          'relative transition-all w-full',
+          (variant === 'dashboard' || isModal) ? 'flex-1 overflow-x-auto overflow-y-auto' : 'overflow-x-auto overflow-y-hidden',
           isCard
             ? 'border-0 bg-transparent'
             : 'rounded-lg border border-zinc-200 bg-white shadow-sm'
