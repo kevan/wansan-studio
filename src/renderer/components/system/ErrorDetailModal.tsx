@@ -9,15 +9,23 @@ import {
 import { Button } from '@/components/ui/button'
 import { useUIStore } from '@/stores/useUIStore'
 import { useTranslation } from 'react-i18next'
-import { AlertCircle, ChevronDown, ChevronUp, Terminal } from 'lucide-react'
+import { AlertCircle, ChevronDown, ChevronUp, Terminal, Copy, Check } from 'lucide-react'
 import { cn } from '@/utils/cn'
 
 export function ErrorDetailModal() {
   const { errorModal, closeError } = useUIStore()
   const { t } = useTranslation('common')
-  const [showDetails, setShowDetails] = useState(false)
+  const [showDetails, setShowDetails] = useState(true)
+  const [copied, setCopied] = useState(false)
 
   if (!errorModal.isOpen) return null
+
+  const handleCopy = () => {
+    if (!errorModal.details) return
+    navigator.clipboard.writeText(errorModal.details)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <Dialog open={errorModal.isOpen} onOpenChange={open => !open && closeError()}>
@@ -48,10 +56,28 @@ export function ErrorDetailModal() {
               </button>
               
               {showDetails && (
-                <div className="rounded-xl bg-zinc-950 p-4 border border-zinc-800 animate-in slide-in-from-top-2 duration-300">
-                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-zinc-800">
-                    <Terminal className="w-3 h-3 text-zinc-500" />
-                    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Error Log</span>
+                <div className="rounded-xl bg-zinc-950 p-4 border border-zinc-800 animate-in slide-in-from-top-2 duration-300 relative group/log">
+                  <div className="flex items-center justify-between mb-2 pb-2 border-b border-zinc-800">
+                    <div className="flex items-center gap-2">
+                      <Terminal className="w-3 h-3 text-zinc-500" />
+                      <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Error Log</span>
+                    </div>
+                    <button
+                      onClick={handleCopy}
+                      className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 transition-all flex items-center gap-1.5"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-3 h-3 text-green-500" />
+                          <span className="text-[9px] font-bold uppercase text-green-500">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span className="text-[9px] font-bold uppercase">Copy</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                   <pre className="text-[11px] font-mono text-zinc-300 leading-relaxed overflow-x-auto max-h-48 whitespace-pre-wrap scrollbar-thin">
                     {errorModal.details}
