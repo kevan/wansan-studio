@@ -373,7 +373,7 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
             </div>
           </div>
 
-          <div className="flex-1 overflow-auto p-0 min-h-0">
+          <div className="flex-1 flex flex-col p-0 min-h-0 overflow-hidden">
             {previewError ? (
               <div className="p-4 text-red-600 font-mono text-sm bg-red-50/30 h-full overflow-auto">
                 <div className="flex items-center gap-2 mb-2 font-bold">
