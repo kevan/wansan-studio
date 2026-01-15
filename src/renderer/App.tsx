@@ -517,7 +517,9 @@ function App() {
               </div>
             </Panel>
 
-            <PanelResizeHandle className="w-1 bg-zinc-100 hover:bg-zinc-300 transition-colors" />
+            <PanelResizeHandle className="w-2 flex justify-center bg-transparent hover:bg-zinc-50 transition-colors cursor-col-resize group focus:outline-none z-10">
+              <div className="w-px h-full bg-zinc-200 group-hover:bg-zinc-300 transition-colors" />
+            </PanelResizeHandle>
 
             {/* Main Content Wrapper (Chat + Dashboard) */}
             <Panel minSize={30}>
@@ -543,11 +545,13 @@ function App() {
                   className={`bg-white dark:bg-zinc-950 transition-all duration-500 ${isPresentationMode ? 'min-w-0 border-none' : ''}`}
                 >
                   <main className="wansan-canvas h-full flex flex-col relative bg-white dark:bg-zinc-950 transition-colors">
-                    <MainContent />
+                    < MainContent />
                   </main>
                 </Panel>
 
-                <PanelResizeHandle className="w-1 bg-zinc-100 hover:bg-zinc-300 transition-colors" />
+                <PanelResizeHandle className="w-2 flex justify-center bg-transparent hover:bg-zinc-50 transition-colors cursor-col-resize group focus:outline-none z-10">
+              <div className="w-px h-full bg-zinc-200 group-hover:bg-zinc-300 transition-colors" />
+            </PanelResizeHandle>
 
                 {/* 右侧 Report Canvas */}
                 <Panel
