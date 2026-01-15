@@ -48,7 +48,7 @@ export function CodeEditor({
 
   const handleEditorDidMount = (editor: any, monaco: Monaco) => {
     monacoRef.current = monaco
-    
+
     // Register initial completion
     if (completionProviderRef.current) {
       completionProviderRef.current.dispose()
@@ -74,15 +74,17 @@ export function CodeEditor({
         loading={
           <div className="flex items-center justify-center h-full gap-2 text-zinc-400">
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-xs font-medium uppercase tracking-wider">{t('loading_editor')}</span>
+            <span className="text-xs font-medium uppercase tracking-wider">
+              {t('loading_editor')}
+            </span>
           </div>
         }
         options={{
-          minimap: { 
+          minimap: {
             enabled: true,
             renderCharacters: false,
             scale: 1,
-            side: 'right'
+            side: 'right',
           },
           fontSize: 13,
           fontFamily: '"Fira Code", "Fira Mono", monospace',
@@ -97,8 +99,8 @@ export function CodeEditor({
           showFoldingControls: 'mouseover',
           stickyScroll: {
             enabled: true,
-            maxLineCount: 5,
-            defaultModel: 'outlineModel'
+            maxLineCount: 3,
+            defaultModel: 'indentationModel',
           },
         }}
       />

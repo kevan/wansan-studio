@@ -175,9 +175,9 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
             language: 'postgresql',
             tabWidth: 2,
             keywordCase: 'upper',
-            indentStyle: 'tabularLeft',
+            indentStyle: 'standard',
             logicalOperatorNewline: 'before',
-            expressionWidth: 80,
+            expressionWidth: 120,
             denseOperators: true,
           })
           // Only update if different to avoid loop if parent updates prop
@@ -212,9 +212,9 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
           language: 'postgresql',
           tabWidth: 2,
           keywordCase: 'upper',
-          indentStyle: 'tabularLeft',
+          indentStyle: 'standard',
           logicalOperatorNewline: 'before',
-          expressionWidth: 80,
+          expressionWidth: 120,
           denseOperators: true,
         })
         onChange(formatted)
