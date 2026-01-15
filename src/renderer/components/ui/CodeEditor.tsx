@@ -78,16 +78,28 @@ export function CodeEditor({
           </div>
         }
         options={{
-          minimap: { enabled: false },
+          minimap: { 
+            enabled: true,
+            renderCharacters: false,
+            scale: 1,
+            side: 'right'
+          },
           fontSize: 13,
           fontFamily: '"Fira Code", "Fira Mono", monospace',
-          scrollBeyondLastLine: false,
+          scrollBeyondLastLine: true,
           automaticLayout: true,
           readOnly,
           lineNumbers: 'on',
           renderLineHighlight: 'all',
           padding: { top: 12, bottom: 12 },
-          fixedOverflowWidgets: true, // Crucial for completion list in small containers
+          fixedOverflowWidgets: true,
+          folding: true,
+          showFoldingControls: 'mouseover',
+          stickyScroll: {
+            enabled: true,
+            maxLineCount: 5,
+            defaultModel: 'outlineModel'
+          },
         }}
       />
     </div>
