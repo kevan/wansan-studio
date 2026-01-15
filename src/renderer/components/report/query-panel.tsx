@@ -14,6 +14,8 @@ import {
   Download,
   Loader2,
   Lock,
+  Maximize2,
+  Minimize2,
   Play,
   RotateCcw,
   Sparkles,
@@ -62,6 +64,7 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
   ) => {
     const { t } = useTranslation('analysis')
     const [isRunning, setIsRunning] = useState(false)
+    const [isMaximized, setIsMaximized] = useState(false)
     const isRestoring = useProjectStore(s => s.isRestoring)
     const [previewData, setPreviewData] = useState<any[] | null>(
       initialData.length > 0 ? initialData : null
@@ -221,7 +224,12 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
       >
         {gateNode}
         {/* EDITOR AREA */}
-        <div className="flex-1 border border-zinc-200 rounded-lg overflow-hidden relative flex flex-col min-h-0 shadow-sm bg-white">
+        <div
+          className={cn(
+            'border border-zinc-200 rounded-lg overflow-hidden relative flex flex-col min-h-0 shadow-sm bg-white transition-all duration-300',
+            isMaximized ? 'flex-1' : 'h-1/2'
+          )}
+        >
           <div className="flex items-center justify-between px-3 py-2 border-b bg-zinc-50/80 shrink-0">
             <div className="flex items-center gap-2">
               <Code className="w-3.5 h-3.5 text-zinc-500" />
@@ -292,6 +300,24 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
               </Button>
               <div className="w-px h-4 bg-zinc-200 mx-1" />
               <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-zinc-500 hover:text-zinc-900"
+                onClick={() => setIsMaximized(!isMaximized)}
+                title={
+                  isMaximized
+                    ? t('sql_editor.restore', 'Restore')
+                    : t('sql_editor.maximize', 'Maximize')
+                }
+              >
+                {isMaximized ? (
+                  <Minimize2 className="w-3.5 h-3.5" />
+                ) : (
+                  <Maximize2 className="w-3.5 h-3.5" />
+                )}
+              </Button>
+              <div className="w-px h-4 bg-zinc-200 mx-1" />
+              <Button
                 size="sm"
                 onClick={() => handleRunPreview(sql)}
                 className="h-7 bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 shadow-sm px-3"
@@ -345,61 +371,63 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
         </div>
 
         {/* PREVIEW AREA */}
-        <div className="h-1/2 min-h-[300px] border border-zinc-200 rounded-lg bg-white flex flex-col min-w-0 shadow-sm">
-          <div className="bg-zinc-50/80 px-4 py-2 border-b flex justify-between items-center text-xs shrink-0">
-            <div className="flex items-center gap-2 font-bold text-zinc-500 uppercase tracking-wider">
-              <Table className="w-3.5 h-3.5" />
-              <span>{t('sql_editor.result_preview')}</span>
-            </div>
-
-            <div className="flex items-center gap-3 text-zinc-400 font-mono">
-              {execTime !== null && (
-                <span className="flex items-center gap-1">
-                  <Timer className="w-3 h-3" /> {execTime}ms
-                </span>
-              )}
-              {previewData && (
-                <>
-                  <span className="w-px h-3 bg-zinc-200" />
-                  <span>
-                    {previewData.length} {t('sql_editor.rows_suffix')}
-                  </span>
-                  <span>x</span>
-                  <span>
-                    {Object.keys(previewData[0] || {}).length}{' '}
-                    {t('field_name', { ns: 'common' })}
-                  </span>
-                  <span className="w-px h-3 bg-zinc-200" />
-                  <button
-                    onClick={handleExportCSV}
-                    className="hover:text-zinc-600 transition-colors flex items-center gap-1"
-                    title={t('export', { ns: 'common' })}
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="flex-1 min-h-0">
-            {previewError ? (
-              <div className="p-4 text-red-600 font-mono text-sm bg-red-50/30 h-full overflow-auto">
-                <div className="flex items-center gap-2 mb-2 font-bold">
-                  <X className="w-4 h-4" />
-                  ERROR
-                </div>
-                <pre className="whitespace-pre-wrap">{previewError}</pre>
+        {!isMaximized && (
+          <div className="h-1/2 min-h-[300px] border border-zinc-200 rounded-lg bg-white flex flex-col min-w-0 shadow-sm">
+            <div className="bg-zinc-50/80 px-4 py-2 border-b flex justify-between items-center text-xs shrink-0">
+              <div className="flex items-center gap-2 font-bold text-zinc-500 uppercase tracking-wider">
+                <Table className="w-3.5 h-3.5" />
+                <span>{t('sql_editor.result_preview')}</span>
               </div>
-            ) : (
-              <ReportTable
-                data={previewData || []}
-                columnFields={previewColumnFields}
-                variant="preview"
-              />
-            )}
+
+              <div className="flex items-center gap-3 text-zinc-400 font-mono">
+                {execTime !== null && (
+                  <span className="flex items-center gap-1">
+                    <Timer className="w-3 h-3" /> {execTime}ms
+                  </span>
+                )}
+                {previewData && (
+                  <>
+                    <span className="w-px h-3 bg-zinc-200" />
+                    <span>
+                      {previewData.length} {t('sql_editor.rows_suffix')}
+                    </span>
+                    <span>x</span>
+                    <span>
+                      {Object.keys(previewData[0] || {}).length}{' '}
+                      {t('field_name', { ns: 'common' })}
+                    </span>
+                    <span className="w-px h-3 bg-zinc-200" />
+                    <button
+                      onClick={handleExportCSV}
+                      className="hover:text-zinc-600 transition-colors flex items-center gap-1"
+                      title={t('export', { ns: 'common' })}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 min-h-0">
+              {previewError ? (
+                <div className="p-4 text-red-600 font-mono text-sm bg-red-50/30 h-full overflow-auto">
+                  <div className="flex items-center gap-2 mb-2 font-bold">
+                    <X className="w-4 h-4" />
+                    ERROR
+                  </div>
+                  <pre className="whitespace-pre-wrap">{previewError}</pre>
+                </div>
+              ) : (
+                <ReportTable
+                  data={previewData || []}
+                  columnFields={previewColumnFields}
+                  variant="preview"
+                />
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     )
   }
