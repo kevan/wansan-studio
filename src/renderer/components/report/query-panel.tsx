@@ -336,7 +336,7 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
         </div>
 
         {/* PREVIEW AREA */}
-        <div className="h-1/2 border border-zinc-200 rounded-lg bg-white flex flex-col min-w-0 overflow-hidden shadow-sm">
+        <div className="h-1/2 min-h-[300px] border border-zinc-200 rounded-lg bg-white flex flex-col min-w-0 shadow-sm">
           <div className="bg-zinc-50/80 px-4 py-2 border-b flex justify-between items-center text-xs shrink-0">
             <div className="flex items-center gap-2 font-bold text-zinc-500 uppercase tracking-wider">
               <Table className="w-3.5 h-3.5" />
@@ -373,7 +373,7 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col p-0 min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0">
             {previewError ? (
               <div className="p-4 text-red-600 font-mono text-sm bg-red-50/30 h-full overflow-auto">
                 <div className="flex items-center gap-2 mb-2 font-bold">

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef, useEffect } from 'react'
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
 import {
   flexRender,
@@ -53,9 +53,64 @@ export function DataTable({
   }, [columnFields, columns, columnTypes, safeData])
 
   const [sorting, setSorting] = React.useState<SortingState>([])
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const isCard = variant === 'chat' || variant === 'dashboard' || variant === 'report'
   const isModal = variant === 'preview' || variant === 'fullscreen'
+
+  // Mouse drag scrolling
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    let isDown = false
+    let startX = 0
+    let scrollLeft = 0
+
+    const handleMouseDown = (e: MouseEvent) => {
+      // Only activate on table body, not on header buttons
+      const target = e.target as HTMLElement
+      if (target.closest('th')) return
+      
+      isDown = true
+      container.style.cursor = 'grabbing'
+      container.style.userSelect = 'none'
+      startX = e.pageX - container.offsetLeft
+      scrollLeft = container.scrollLeft
+    }
+
+    const handleMouseLeave = () => {
+      isDown = false
+      container.style.cursor = 'default'
+      container.style.userSelect = 'auto'
+    }
+
+    const handleMouseUp = () => {
+      isDown = false
+      container.style.cursor = 'default'
+      container.style.userSelect = 'auto'
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDown) return
+      e.preventDefault()
+      const x = e.pageX - container.offsetLeft
+      const walk = (x - startX) * 1.5 // Scroll speed multiplier
+      container.scrollLeft = scrollLeft - walk
+    }
+
+    container.addEventListener('mousedown', handleMouseDown)
+    container.addEventListener('mouseleave', handleMouseLeave)
+    container.addEventListener('mouseup', handleMouseUp)
+    container.addEventListener('mousemove', handleMouseMove)
+
+    return () => {
+      container.removeEventListener('mousedown', handleMouseDown)
+      container.removeEventListener('mouseleave', handleMouseLeave)
+      container.removeEventListener('mouseup', handleMouseUp)
+      container.removeEventListener('mousemove', handleMouseMove)
+    }
+  }, [])
 
   const columnDefs: ColumnDef<Record<string, any>>[] =
     effectiveColumnFields.map(field => ({
@@ -95,15 +150,34 @@ export function DataTable({
       (variant === 'dashboard' || isModal) ? 'h-full' : 'h-auto'
     )}>
       <div
+        ref={scrollContainerRef}
+        style={{
+          // Force scrollbar to always show on macOS
+          scrollbarWidth: 'thin', // Firefox
+          scrollbarColor: '#d4d4d8 #f4f4f5', // Firefox: thumb track
+        }}
         className={cn(
-          'relative transition-all w-full',
-          (variant === 'dashboard' || isModal) ? 'flex-1 overflow-x-auto overflow-y-auto' : 'overflow-x-auto overflow-y-hidden',
+          'relative w-full scroll-smooth',
+          (variant === 'dashboard' || isModal) ? 'flex-1 overflow-auto' : 'overflow-x-auto overflow-y-auto max-h-[400px]',
           isCard
             ? 'border-0 bg-transparent'
-            : 'rounded-lg border border-zinc-200 bg-white shadow-sm'
+            : 'rounded-lg border border-zinc-200 bg-white shadow-sm',
+          // Webkit scrollbar styling (Chrome, Safari, Edge)
+          '[&::-webkit-scrollbar]:h-3 [&::-webkit-scrollbar]:w-3',
+          '[&::-webkit-scrollbar]:appearance-none', // Override macOS auto-hide
+          '[&::-webkit-scrollbar-track]:bg-zinc-100/80 [&::-webkit-scrollbar-track]:rounded-md',
+          '[&::-webkit-scrollbar-thumb]:bg-zinc-400 [&::-webkit-scrollbar-thumb]:rounded-md',
+          '[&::-webkit-scrollbar-thumb]:hover:bg-zinc-500',
+          '[&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-solid [&::-webkit-scrollbar-thumb]:border-zinc-100',
+          '[&::-webkit-scrollbar-corner]:bg-zinc-100/80'
         )}
       >
-        <table className="min-w-full text-[13px] border-separate border-spacing-0 table-auto">
+        <table className="w-full text-[13px] border-separate border-spacing-0">
+          <colgroup>
+            {effectiveColumnFields.map((field, i) => (
+              <col key={i} className="min-w-[120px]" />
+            ))}
+          </colgroup>
           <thead
             className={cn(
               'sticky top-0 z-20 transition-all',
