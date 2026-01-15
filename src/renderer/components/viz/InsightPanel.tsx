@@ -481,52 +481,6 @@ export function InsightPanel({
     )
   }
 
-  const ConsentForm = () => (
-    <div className="flex items-start gap-3">
-      <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0 border border-indigo-100">
-        <Sparkles className="w-4 h-4 text-indigo-500" />
-      </div>
-      <div className="flex-1 w-full min-w-0">
-        <div className="text-sm font-bold text-zinc-800">
-          {t('insight_consent_title')}
-        </div>
-        <div className="text-xs text-zinc-500 mt-1 leading-relaxed">
-          {t('insight_consent_desc', { count: dataPointCount })}
-        </div>
-
-        <div className="mt-3 w-full">
-          <TextareaAutosize
-            value={instructions}
-            onChange={e => setInstructions(e.target.value)}
-            placeholder={
-              t('insight_instruction_placeholder') ||
-              'Any specific requirements? (Optional)'
-            }
-            className="w-full bg-white border border-zinc-200 rounded-lg p-2.5 text-xs text-zinc-700 placeholder:text-zinc-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-200 outline-none transition-all resize-none shadow-sm"
-            minRows={2}
-            maxRows={5}
-          />
-        </div>
-
-        <div className="flex gap-2 mt-3">
-          <button
-            onClick={handleConfirmSend}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            {t('confirm_send')}
-          </button>
-          <button
-            onClick={handleCancel}
-            className="px-3 py-1.5 text-xs font-bold text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors"
-          >
-            {t('cancel')}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-
   if (state === 'consent') {
     // If regenerating (we have previous data), overlay the consent form on top of the skeleton
     // This prevents layout collapse from Done -> Consent
@@ -546,7 +500,13 @@ export function InsightPanel({
           {/* Overlay: Consent Form */}
           <div className="absolute inset-0 z-10 flex items-center justify-center p-4 bg-white/60 backdrop-blur-[1px]">
             <div className="w-full bg-white border border-indigo-100 rounded-xl p-4 shadow-xl animate-in zoom-in-95 fade-in duration-200">
-              <ConsentForm />
+              <InsightConsentForm
+                dataPointCount={dataPointCount}
+                instructions={instructions}
+                setInstructions={setInstructions}
+                onConfirm={handleConfirmSend}
+                onCancel={handleCancel}
+              />
             </div>
           </div>
         </div>
@@ -560,7 +520,13 @@ export function InsightPanel({
           className
         )}
       >
-        <ConsentForm />
+        <InsightConsentForm
+          dataPointCount={dataPointCount}
+          instructions={instructions}
+          setInstructions={setInstructions}
+          onConfirm={handleConfirmSend}
+          onCancel={handleCancel}
+        />
       </div>
     )
   }
@@ -681,6 +647,68 @@ export function InsightPanel({
 
       {/* Content */}
       {isExpanded && <div className="px-4 pb-4">{renderContent()}</div>}
+    </div>
+  )
+}
+
+function InsightConsentForm({
+  dataPointCount,
+  instructions,
+  setInstructions,
+  onConfirm,
+  onCancel,
+}: {
+  dataPointCount: number
+  instructions: string
+  setInstructions: (val: string) => void
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  const { t } = useTranslation('common')
+
+  return (
+    <div className="flex items-start gap-3">
+      <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0 border border-indigo-100">
+        <Sparkles className="w-4 h-4 text-indigo-500" />
+      </div>
+      <div className="flex-1 w-full min-w-0">
+        <div className="text-sm font-bold text-zinc-800">
+          {t('insight_consent_title')}
+        </div>
+        <div className="text-xs text-zinc-500 mt-1 leading-relaxed">
+          {t('insight_consent_desc', { count: dataPointCount })}
+        </div>
+
+        <div className="mt-3 w-full">
+          <TextareaAutosize
+            value={instructions}
+            onChange={e => setInstructions(e.target.value)}
+            placeholder={
+              t('insight_instruction_placeholder') ||
+              'Any specific requirements? (Optional)'
+            }
+            className="w-full bg-white border border-zinc-200 rounded-lg p-2.5 text-xs text-zinc-700 placeholder:text-zinc-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-200 outline-none transition-all resize-none shadow-sm"
+            minRows={2}
+            maxRows={5}
+          />
+        </div>
+
+        <div className="flex gap-2 mt-3">
+          <button
+            onClick={onConfirm}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            {t('confirm_send')}
+          </button>
+          <button
+            onClick={onCancel}
+            className="px-3 py-1.5 text-xs font-bold text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors"
+          >
+            {t('cancel')}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
