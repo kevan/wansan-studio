@@ -487,27 +487,42 @@ export function MagicInput({
       const next = value.slice(1)
       setValue(next)
       valueRef.current = next
-      // We don't necessarily need to sync to store immediately here, useEffect will handle it on blur/switch
+      setCursorPosition(0)
+      setTimeout(() => {
+        textareaRef.current?.focus()
+        textareaRef.current?.setSelectionRange(0, 0)
+      }, 0)
     } else {
       const next = '/' + value
       setValue(next)
       valueRef.current = next
       setTriggerType('command')
       setPopoverOpen(true)
+      setCursorPosition(1)
+      setTimeout(() => {
+        textareaRef.current?.focus()
+        textareaRef.current?.setSelectionRange(1, 1)
+      }, 0)
     }
-    textareaRef.current?.focus()
   }
 
   const handleToggleMention = () => {
     if (value.endsWith('@')) return
-    
-    const insertion = (value && !value.endsWith(' ') ? ' @' : '@')
+
+    const insertion = value && !value.endsWith(' ') ? ' @' : '@'
     const next = value + insertion
+    const nextCursor = next.length
+
     setValue(next)
     valueRef.current = next
     setTriggerType('table')
     setPopoverOpen(true)
-    textareaRef.current?.focus()
+    setCursorPosition(nextCursor)
+
+    setTimeout(() => {
+      textareaRef.current?.focus()
+      textareaRef.current?.setSelectionRange(nextCursor, nextCursor)
+    }, 0)
   }
 
   const detectMention = (text: string, caret: number): MentionState => {
