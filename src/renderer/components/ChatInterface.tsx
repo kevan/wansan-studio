@@ -300,6 +300,72 @@ export function ChatInterface({
 }
 
 /**
+ * Individual suggestion item with smart tooltip detection.
+ */
+function SuggestionItem({
+  suggestion,
+  onSelect,
+  isChatLoading,
+  isRestoring,
+}: {
+  suggestion: string
+  onSelect: (query: string) => void
+  isChatLoading: boolean
+  isRestoring: boolean
+}) {
+  const textRef = useRef<HTMLSpanElement>(null)
+  const [isTruncated, setIsTruncated] = useState(false)
+
+  useEffect(() => {
+    const checkTruncation = () => {
+      if (textRef.current) {
+        setIsTruncated(textRef.current.scrollWidth > textRef.current.offsetWidth)
+      }
+    }
+
+    checkTruncation()
+    // Re-check on window resize
+    window.addEventListener('resize', checkTruncation)
+    return () => window.removeEventListener('resize', checkTruncation)
+  }, [suggestion])
+
+  const buttonContent = (
+    <button
+      onClick={() => {
+        if (!isChatLoading && !isRestoring) {
+          onSelect(suggestion)
+        }
+      }}
+      disabled={isChatLoading || isRestoring}
+      className={cn(
+        'group/item flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white border border-zinc-200 text-zinc-600 text-[12px] font-medium shadow-sm transition-all text-left overflow-hidden w-full',
+        isChatLoading || isRestoring
+          ? 'opacity-50 cursor-not-allowed'
+          : 'hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/30 hover:shadow-md active:scale-95'
+      )}
+    >
+      <div className="w-1.5 h-1.5 rounded-full bg-zinc-300 group-hover/item:bg-indigo-400 transition-colors shrink-0" />
+      <span ref={textRef} className="truncate flex-1">
+        {suggestion}
+      </span>
+    </button>
+  )
+
+  if (!isTruncated) {
+    return buttonContent
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{buttonContent}</TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[300px] break-words">
+        {suggestion}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+/**
  * Collapsible suggestions component.
  */
 function MessageSuggestions({
@@ -362,30 +428,13 @@ function MessageSuggestions({
         <TooltipProvider>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-1 animate-in fade-in slide-in-from-top-1 zoom-in-95 duration-200">
             {suggestions.map((suggestion, idx) => (
-              <Tooltip key={idx}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => {
-                      if (!isChatLoading && !isRestoring) {
-                        onSelect(suggestion)
-                      }
-                    }}
-                    disabled={isChatLoading || isRestoring}
-                    className={cn(
-                      'group/item flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white border border-zinc-200 text-zinc-600 text-[12px] font-medium shadow-sm transition-all text-left overflow-hidden',
-                      isChatLoading || isRestoring
-                        ? 'opacity-50 cursor-not-allowed'
-                        : 'hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/30 hover:shadow-md active:scale-95'
-                    )}
-                  >
-                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-300 group-hover/item:bg-indigo-400 transition-colors shrink-0" />
-                    <span className="truncate">{suggestion}</span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[300px] break-words">
-                  {suggestion}
-                </TooltipContent>
-              </Tooltip>
+              <SuggestionItem
+                key={idx}
+                suggestion={suggestion}
+                onSelect={onSelect}
+                isChatLoading={isChatLoading}
+                isRestoring={isRestoring}
+              />
             ))}
           </div>
         </TooltipProvider>
