@@ -696,7 +696,13 @@ export function setupIPC(
         })
 
         if (filePath) {
-          await fs.writeFile(filePath, content, 'utf-8')
+          // If it's a binary format like PDF, treat content as base64
+          if (extension === 'pdf' || extension === 'zip') {
+            const buffer = Buffer.from(content, 'base64')
+            await fs.writeFile(filePath, buffer)
+          } else {
+            await fs.writeFile(filePath, content, 'utf-8')
+          }
           return { success: true, data: filePath }
         }
         return { success: false, error: 'Cancelled' }

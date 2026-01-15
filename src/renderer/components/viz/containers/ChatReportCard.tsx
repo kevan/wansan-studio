@@ -323,18 +323,18 @@ export const ChatReportCard = React.memo(function ChatReportCard({
     <div
       ref={cardRef}
       className={cn(
-        'flex flex-col border border-zinc-200 rounded-xl bg-white shadow-sm transition-all overflow-hidden h-full group',
+        'flex flex-col border border-zinc-200 rounded-xl bg-white shadow-sm transition-all overflow-hidden h-full group report-card-container',
         className
       )}
     >
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0" data-export-split="chart">
         {reportData && (
           <VizRenderer
             {...reportData}
             variant="chat"
             timestamp={message.timestamp}
             messageId={messageId}
-            highlightedItems={highlightedItems}
+            highlightedItems={isExporting ? [] : highlightedItems}
             onDrillDownAction={handleDrillDown}
             className="p-5 bg-white"
           />
@@ -342,7 +342,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
       </div>
 
       {showPanel && (
-        <div className="border-t border-zinc-100 bg-zinc-50/30 p-3">
+        <div className="border-t border-zinc-100 bg-zinc-50/30 p-3" data-export-split="insight">
           <InsightPanel
             title={reportData.title}
             chartType={reportData.chartType}

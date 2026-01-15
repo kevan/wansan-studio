@@ -48,7 +48,7 @@ export function DashboardHeader() {
   const addToast = useToastStore(state => state.addToast)
   const addWidget = useProjectStore(state => state.addWidget)
   const { mutateAsync: exportWebReport } = useExportWebReport()
-  const [isExportingWeb, setIsExportingWeb] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const { checkGate, gateNode } = useProGate()
 
   const handleExportWeb = async () => {
@@ -65,7 +65,7 @@ export function DashboardHeader() {
     }
 
     Analytics.track('export_clicked', { format: 'html' })
-    setIsExportingWeb(true)
+    setIsExporting(true)
     try {
       const filePath = await exportWebReport({
         widgets: pinnedReports,
@@ -95,7 +95,7 @@ export function DashboardHeader() {
       if (String(e).includes('Cancelled')) return
       addToast({ title: t('export_failed', 'Export Failed'), type: 'error' })
     } finally {
-      setIsExportingWeb(false)
+      setIsExporting(false)
     }
   }
 
@@ -175,7 +175,9 @@ export function DashboardHeader() {
 
     const originalZoom = canvasConfig.zoom
     setCanvasConfig({ zoom: 100 })
-    await new Promise(resolve => setTimeout(resolve, 300))
+    setIsExporting(true)
+    node.classList.add('wansan-exporting-pdf')
+    await new Promise(resolve => setTimeout(resolve, 500))
 
     try {
       const dataUrl = await toPng(node, {
@@ -271,52 +273,118 @@ export function DashboardHeader() {
       const pdfHeight = pdf.internal.pageSize.getHeight()
       const footerHeightMM = isA4 ? 0 : 8
       const contentHeightMM = pdfHeight - footerHeightMM
-      const sliceHeight = img.width * (contentHeightMM / pdfWidth)
-      const ratio = img.width / (node.offsetWidth || 1)
-      const gapHeight = isA4 ? PAGE_GAP_PX * ratio : 0
-      const loopCount = isA4 ? pageCount : Math.ceil(img.height / sliceHeight)
-
+      
       const canvas = document.createElement('canvas')
       canvas.width = img.width
-      canvas.height = sliceHeight
       const ctx = canvas.getContext('2d')
 
       if (!ctx) {
         throw new Error('Failed to get 2d context for slicing')
       }
 
-      for (let i = 0; i < loopCount; i++) {
-        if (i > 0) pdf.addPage()
-        const srcY = i * (sliceHeight + gapHeight)
+      let currentSourceY = 0
+      const totalHeight = img.height
+      const ratio = img.width / (node.offsetWidth || 1)
+      
+      // Collect primary (card) and secondary (sub-widget) boundaries
+      const cardElements = Array.from(node.querySelectorAll('.report-card-container'))
+      const splitElements = Array.from(node.querySelectorAll('[data-export-split]'))
+      
+      const boundaries = [
+        ...cardElements.map(el => ({
+          type: 'card',
+          top: (el as HTMLElement).offsetTop * ratio,
+          bottom: ((el as HTMLElement).offsetTop + (el as HTMLElement).offsetHeight) * ratio
+        })),
+        ...splitElements.map(el => ({
+          type: 'split',
+          top: (el as HTMLElement).offsetTop * ratio,
+          bottom: ((el as HTMLElement).offsetTop + (el as HTMLElement).offsetHeight) * ratio
+        }))
+      ].sort((a, b) => a.top - b.top)
+
+      let pageIdx = 0
+      while (currentSourceY < totalHeight) {
+        if (pageIdx > 0) pdf.addPage()
+        
+        const maxPageHeightInSource = img.width * (contentHeightMM / pdfWidth)
+        let actualSliceHeight = maxPageHeightInSource
+
+        if (currentSourceY + maxPageHeightInSource < totalHeight) {
+          const cutLine = currentSourceY + maxPageHeightInSource
+          
+          // 1. Check for card bisection (Primary)
+          const bisectedCard = boundaries.find(b => b.type === 'card' && b.top < cutLine && b.bottom > cutLine)
+          
+          if (bisectedCard) {
+            // 2. Check for sub-split within this specific bisected area (Secondary)
+            const internalSplit = boundaries.find(b => 
+              b.type === 'split' && 
+              b.top > bisectedCard.top && 
+              b.top < cutLine && 
+              b.top > currentSourceY + (maxPageHeightInSource * 0.2) // At least 20% content on current page
+            )
+
+            if (internalSplit) {
+              // Cut at the sub-split (e.g. between chart and insight)
+              actualSliceHeight = internalSplit.top - currentSourceY
+            } else if (bisectedCard.top > currentSourceY) {
+              // Cut at the card top
+              actualSliceHeight = bisectedCard.top - currentSourceY
+            }
+          }
+        }
+
+        canvas.height = actualSliceHeight
         ctx.clearRect(0, 0, canvas.width, canvas.height)
-        ctx.drawImage(
-          img,
-          0,
-          srcY,
-          img.width,
-          sliceHeight,
-          0,
-          0,
-          canvas.width,
-          canvas.height
-        )
+        ctx.drawImage(img, 0, currentSourceY, img.width, actualSliceHeight, 0, 0, canvas.width, actualSliceHeight)
+
         const sliceData = canvas.toDataURL('image/png')
-        pdf.addImage(sliceData, 'PNG', 0, 0, pdfWidth, contentHeightMM)
+        const pdfSliceHeight = (actualSliceHeight / img.width) * pdfWidth
+        pdf.addImage(sliceData, 'PNG', 0, 0, pdfWidth, pdfSliceHeight)
 
         const footerY = pdfHeight - 3
         pdf.addImage(logoImg, 'PNG', 10, footerY - 3, 3, 3)
         pdf.setFontSize(7)
         pdf.setTextColor(120, 120, 120)
         pdf.text('Created with Wansan Studio', 16, footerY - 1)
-        pdf.text(`Page ${i + 1}`, pdfWidth - 10, footerY - 1, {
-          align: 'right',
-        })
+        pdf.text(`Page ${pageIdx + 1}`, pdfWidth - 10, footerY - 1, { align: 'right' })
+
+        currentSourceY += actualSliceHeight
+        pageIdx++
+
+        // Yield to main thread to allow loading animation to run
+        await new Promise(resolve => setTimeout(resolve, 10))
       }
 
-      pdf.save(fileName)
+      // Save using Electron API to get file path and show professional toast
+      // pdf.output('datauristring') returns "data:application/pdf;filename=...;base64,..."
+      const dataUri = pdf.output('datauristring')
+      const base64Content = dataUri.split(',')[1] // Strip the data URI prefix
+
+      const result = await window.electronAPI?.saveFile(
+        base64Content,
+        'pdf',
+        fileName
+      )
+
+      if (result?.success && result.data) {
+        const filePath = result.data as string
+        addToast({
+          title: t('export_success'),
+          description: filePath,
+          type: 'success',
+          action: {
+            label: t('open_folder', 'Open Folder'),
+            onClick: () => window.electronAPI.showItemInFolder(filePath),
+          },
+        })
+      }
     } catch (err) {
       console.error('Export failed', err)
     } finally {
+      node.classList.remove('wansan-exporting-pdf')
+      setIsExporting(false)
       setCanvasConfig({ zoom: originalZoom })
     }
   }
@@ -324,7 +392,7 @@ export function DashboardHeader() {
   return (
     <div className="h-14 border-b bg-white flex items-center px-4 justify-between shrink-0 z-20 relative">
       {gateNode}
-      <ExportLoadingModal isOpen={isExportingWeb} />
+      <ExportLoadingModal isOpen={isExporting} />
       {/* LEFT: Actions */}
       <div className="flex items-center gap-2 w-[200px]">
         <Button
@@ -461,6 +529,7 @@ export function DashboardHeader() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem
+              disabled={isExporting}
               onSelect={() =>
                 checkGate(t('export_pdf'), () => handleExport('pdf'))
               }
@@ -468,6 +537,7 @@ export function DashboardHeader() {
               {t('export_pdf')}
             </DropdownMenuItem>
             <DropdownMenuItem
+              disabled={isExporting}
               onSelect={() =>
                 checkGate(t('export_png'), () => handleExport('png'))
               }
@@ -475,7 +545,7 @@ export function DashboardHeader() {
               {t('export_png')}
             </DropdownMenuItem>
             <DropdownMenuItem
-              disabled={isExportingWeb}
+              disabled={isExporting}
               onSelect={() =>
                 checkGate(t('export_web_report'), handleExportWeb)
               }
