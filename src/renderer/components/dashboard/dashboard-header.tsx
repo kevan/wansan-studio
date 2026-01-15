@@ -42,6 +42,7 @@ export function DashboardHeader() {
   const setPageCount = useWorkbenchStore(state => state.setPageCount)
   // const layoutScenario = useWorkbenchStore(state => state.layoutScenario)
   const isA4 = canvasConfig.layout === 'a4'
+  const isReport = canvasConfig.layout === 'report'
   const { t } = useTranslation('common')
   const { isActivated, language } = useSettingsStore()
   const addToast = useToastStore(state => state.addToast)
@@ -54,7 +55,7 @@ export function DashboardHeader() {
     const { pinnedReports, canvasConfig } = useWorkbenchStore.getState()
 
     // 1. Check if in Report Mode
-    if (canvasConfig.layout !== 'report') {
+    if (!isReport) {
       addToast({
         title: t('warning'),
         description: t('export_web_report_hint', 'Web Export is only available in Report Mode. Please switch view first.'),
@@ -261,7 +262,7 @@ export function DashboardHeader() {
       })
 
       const pdf = new jsPDF({
-        orientation: isA4 ? 'portrait' : 'landscape',
+        orientation: (isA4 || isReport) ? 'portrait' : 'landscape',
         unit: 'mm',
         format: 'a4',
       })
