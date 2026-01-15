@@ -60,20 +60,11 @@ async function loadDuckDB() {
   try {
     log('[DB-Worker] Loading @duckdb/node-api...')
 
-    // [Windows Fix] Try to locate the .node file and check its status
-    // This helps diagnose if it's a path length issue or permission issue
-    // We also set CWD to the parent of the entry script to help DLL resolution
-    try {
-        const scriptDir = path.dirname(__filename);
-        process.chdir(scriptDir);
-        log(`[DB-Worker] Changed CWD to: ${scriptDir}`);
-    } catch (err) {
-        logError('[DB-Worker] Failed to change CWD', err);
-    }
+    // [FIX] REMOVED process.chdir logic. 
+    // In Electron packaged builds, __filename points inside app.asar.
+    // process.chdir() into an ASAR archive is not supported and throws ENOENT.
+    // Native modules are handled by Electron's module loader automatically.
 
-    // Use Function to bypass webpack/bundler static analysis if needed,
-    // but standard dynamic import() is usually sufficient and safer for types.
-    // However, in CJS output, import() returns a Promise resolving to the module.
     const module = await import('@duckdb/node-api');
     DuckDBClass = module.DuckDBInstance;
     log('[DB-Worker] @duckdb/node-api loaded successfully')

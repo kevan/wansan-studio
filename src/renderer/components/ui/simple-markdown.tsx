@@ -49,7 +49,7 @@ export function SimpleMarkdown({ content, className }: SimpleMarkdownProps) {
     return instance
   }, [])
 
-  if (!content) return null
+  if (!content || typeof content !== 'string') return null
 
   const htmlContent = md.render(content)
 
