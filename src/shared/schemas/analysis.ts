@@ -31,7 +31,10 @@ export const AnalysisResultSchema = z.object({
         .union([z.string(), z.array(z.string())])
         .nullable()
         .optional(),
-      series_name: z.union([z.string(), z.array(z.string())]).optional(),
+      series_name: z
+        .union([z.string(), z.array(z.string())])
+        .nullable()
+        .optional(),
     })
     .optional(),
   reasoning: z.string().optional(),
@@ -54,8 +57,20 @@ export const RelationSuggestionSchema = z.object({
   reason: z.string(),
 })
 
+export const SmartMetricSchema = z.object({
+  name: z.string().describe('Business name, e.g. "Profit Margin"'),
+  sqlExpression: z
+    .string()
+    .describe('DuckDB SQL expression, e.g. "profit / revenue"'),
+  description: z.string().optional().describe('Brief explanation'),
+  tableName: z.string().describe('The table this metric belongs to'),
+  confidence: z.number().min(0.0).max(1.0).optional().default(0.8),
+  reason: z.string().optional().describe('Why this metric was suggested'),
+})
+
 export const ContextAnalysisResultSchema = z.object({
   relationships: z.array(RelationSuggestionSchema),
+  metrics: z.array(SmartMetricSchema).optional(),
   suggestedPrompts: z.array(z.string().max(60)),
 })
 
