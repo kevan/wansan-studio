@@ -344,7 +344,11 @@
     "empty": "暂无记忆。添加指令来教导 AI！",
     "project_title": "项目业务记忆",
     "project_description": "定义仅适用于当前项目的业务上下文。这些指令将与全局记忆合并。",
-    "project_empty": "暂无项目级记忆。"
+    "project_empty": "暂无项目级记忆。",
+    "rule_empty_warning": "规则内容不能为空",
+    "rule_empty_content": "规则内容为空",
+    "placeholder_new": "请输入业务规则（支持 Markdown）...",
+    "finish_editing": "完成编辑"
   },
   "trial_limit_reached_title": "达到试用限制",
   "trial_limit_file_desc": "试用版最多支持 1 个文件。请激活专业版以解锁无限文件。",

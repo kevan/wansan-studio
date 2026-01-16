@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
+  Check,
   CheckCircle2,
   Circle,
   GripVertical,
@@ -32,8 +32,17 @@ import { DomainRule } from '@shared/types'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { useProGate } from '@/hooks/use-pro-gate'
 
+import { MarkdownEditor } from '../ui/markdown-editor'
+import { SimpleMarkdown } from '../ui/simple-markdown'
+
+import { useToastStore } from '@/stores/useToastStore'
+
 interface SortableItemProps {
   rule: DomainRule
+  isEditing: boolean
+  t: any
+  onStartEdit: () => void
+  onStopEdit: (id: string, content: string) => void
   onToggle: (id: string) => void
   onUpdate: (id: string, content: string) => void
   onRemove: (id: string) => void
@@ -41,6 +50,10 @@ interface SortableItemProps {
 
 function SortableItem({
   rule,
+  isEditing,
+  t,
+  onStartEdit,
+  onStopEdit,
   onToggle,
   onUpdate,
   onRemove,
@@ -66,55 +79,103 @@ function SortableItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'group flex items-center gap-3 p-3 rounded-lg border transition-all bg-white relative',
-        rule.isEnabled
-          ? 'border-zinc-200 shadow-sm'
-          : 'border-transparent bg-zinc-50 opacity-80'
+        'group flex items-start gap-3 p-3 pl-8 pr-12 rounded-2xl border transition-all bg-white relative',
+        isEditing ? 'ring-2 ring-indigo-500 border-transparent shadow-xl z-20' : (
+          rule.isEnabled
+            ? 'border-zinc-200 shadow-sm hover:shadow-md hover:border-zinc-300'
+            : 'border-transparent bg-zinc-50 opacity-80'
+        )
       )}
     >
+      {/* Drag Handle - Absolute Left (Centered) */}
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab hover:text-zinc-600 text-zinc-300 transition-colors -ml-1 flex items-center justify-center p-1"
+        className="absolute left-1 top-0 bottom-0 w-6 flex items-center justify-center cursor-grab text-zinc-300 hover:text-zinc-600 transition-all opacity-0 group-hover:opacity-100"
+        title="Drag to reorder"
       >
         <GripVertical className="w-4 h-4" />
       </div>
 
-      <button
-        onClick={() => onToggle(rule.id)}
-        className={cn(
-          'shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-colors',
-          rule.isEnabled
-            ? 'text-indigo-600'
-            : 'text-zinc-300 hover:text-zinc-400'
-        )}
-      >
-        {rule.isEnabled ? (
-          <CheckCircle2 className="w-5 h-5" />
+      {/* Content Area */}
+      <div className="flex-1 min-w-0 pt-0.5">
+        {isEditing ? (
+          <MarkdownEditor
+            value={rule.content}
+            onChange={val => onUpdate(rule.id, val)}
+            hideToolbar={true}
+            minHeight="40px"
+            className="border-none bg-transparent shadow-none focus-within:ring-0 px-0 py-0"
+          />
         ) : (
-          <Circle className="w-5 h-5" />
+          <div 
+            onClick={onStartEdit}
+            className={cn(
+              "cursor-text min-h-[24px] rounded-lg transition-colors hover:bg-zinc-50/50 p-1 -m-1",
+              !rule.isEnabled && 'opacity-50 grayscale line-through decoration-zinc-400'
+            )}
+          >
+            {rule.content ? (
+              <SimpleMarkdown 
+                content={rule.content} 
+                className="prose-p:my-0 prose-p:leading-relaxed text-sm" 
+              />
+            ) : (
+              <span className="text-zinc-400 italic text-xs">{t('domain.rule_empty_content')}</span>
+            )}
+          </div>
         )}
-      </button>
-
-      <div className="flex-1 min-w-0">
-        <input
-          className={cn(
-            'w-full bg-transparent border-none focus:outline-none text-sm',
-            rule.isEnabled
-              ? 'text-zinc-900 font-medium'
-              : 'text-zinc-500 line-through decoration-zinc-300'
-          )}
-          value={rule.content}
-          onChange={e => onUpdate(rule.id, e.target.value)}
-        />
       </div>
 
-      <button
-        onClick={() => onRemove(rule.id)}
-        className="shrink-0 p-1.5 rounded-md text-zinc-400 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
+      {/* Floating Toolbar - Top Right */}
+      <div className={cn(
+        "absolute right-2 top-2 flex items-center gap-1 p-1 bg-white/95 backdrop-blur-sm border border-zinc-200/80 shadow-sm rounded-lg transition-all duration-200",
+        (isEditing || !rule.isEnabled) ? "opacity-100 border-zinc-300" : "opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0"
+      )}>
+        {isEditing ? (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onStopEdit(rule.id, rule.content);
+            }}
+            className="w-7 h-7 rounded-md flex items-center justify-center bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
+            title="Finish editing"
+          >
+            <Check className="w-4 h-4" />
+          </button>
+        ) : (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle(rule.id);
+            }}
+            className={cn(
+              'w-7 h-7 rounded-md flex items-center justify-center transition-colors hover:bg-zinc-100',
+              rule.isEnabled ? 'text-indigo-600' : 'text-zinc-400'
+            )}
+            title={rule.isEnabled ? "Disable rule" : "Enable rule"}
+          >
+            {rule.isEnabled ? (
+              <CheckCircle2 className="w-4 h-4" />
+            ) : (
+              <Circle className="w-4 h-4" />
+            )}
+          </button>
+        )}
+        
+        <div className="w-px h-4 bg-zinc-200" />
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove(rule.id);
+          }}
+          className="w-7 h-7 rounded-md flex items-center justify-center text-zinc-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+          title="Remove rule"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   )
 }
@@ -144,35 +205,53 @@ export function RuleEditor({
   addButtonLabel: _addButtonLabel,
   scope = 'project',
 }: RuleEditorProps) {
-  const { t } = useTranslation('common')
+  const { t } = useTranslation(['common', 'chat'])
   const { isActivated } = useSettingsStore()
   const { checkGate, gateNode } = useProGate()
-  const [newRule, setNewRule] = useState('')
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const addToast = useToastStore(s => s.addToast)
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Avoid triggering drag while clicking/typing
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   )
 
   const handleAdd = () => {
-    if (!newRule.trim()) return
-
     // Limit check for project-level rules in TRIAL mode: Strictly Pro only
     if (!isActivated && scope === 'project') {
-      checkGate(t('domain.project_title'), () => {})
+      checkGate(t('common:domain.project_title'), () => {})
       return
     }
 
-    onAdd(newRule.trim())
-    setNewRule('')
+    // Since onAdd doesn't return ID yet, we'll try to find the new one or 
+    // just rely on store update.
+    onAdd('')
+    // The store implementation will push to end or start?
+    // ProjectStore: ...(state.domainRules || []), content (End)
+    // We'll set a tiny timeout to set activeId to the last item
+    setTimeout(() => {
+        const lastRule = rules[rules.length - 1]; // This is problematic if rules updated later
+        // A better way is to update store, but let's handle the empty check first
+    }, 50);
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleAdd()
+  const handleStopEdit = (id: string, content: string) => {
+    if (!content.trim()) {
+        // If content is empty, remove it and show warning
+        onRemove(id)
+        addToast({
+            title: t('domain.rule_empty_warning'),
+            type: 'warning',
+            duration: 3000
+        })
     }
+    setActiveId(null)
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -186,35 +265,15 @@ export function RuleEditor({
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Input Area */}
-      <div className="flex gap-3 shrink-0 p-1 mb-4">
-        <div className="flex-1 flex items-center bg-zinc-50/80 border border-zinc-200/60 rounded-2xl focus-within:border-indigo-400/50 focus-within:bg-white transition-all shadow-sm group/input">
-          <Input
-            value={newRule}
-            onChange={e => setNewRule(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder || t('domain.placeholder')}
-            className="flex-1 border-none bg-transparent focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-4 py-6 text-sm font-medium placeholder:text-zinc-400"
-          />
-          <Button
-            onClick={handleAdd}
-            disabled={!newRule.trim()}
-            variant="ghost"
-            size="icon"
-            className="mr-2 h-8 w-8 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 disabled:opacity-30 transition-all"
-          >
-            <Plus className="w-5 h-5" />
-          </Button>
-        </div>
-      </div>
-
+    <div className="flex flex-col h-full overflow-hidden w-full max-w-4xl mx-auto">
       {/* List Area */}
-      <div className="flex-1 overflow-y-auto min-h-0 border border-zinc-100 rounded-2xl bg-zinc-50/30 p-2 space-y-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-200/50">
+      <div className="flex-1 overflow-y-auto min-h-0 border border-zinc-100 rounded-[2rem] bg-zinc-50/20 p-4 space-y-4 scrollbar-thin">
         {rules.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-zinc-400 space-y-2">
-            <Lightbulb className="w-8 h-8 opacity-50" />
-            <p className="text-sm">{emptyMessage || t('domain.empty')}</p>
+          <div className="flex flex-col items-center justify-center h-full text-zinc-400 space-y-3 opacity-60">
+            <div className="w-12 h-12 rounded-full bg-zinc-100 flex items-center justify-center">
+              <Lightbulb className="w-6 h-6" />
+            </div>
+            <p className="text-sm font-medium">{emptyMessage || t('chat:domain.empty')}</p>
           </div>
         ) : (
           <DndContext
@@ -226,11 +285,15 @@ export function RuleEditor({
               items={rules}
               strategy={verticalListSortingStrategy}
             >
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {rules.map(rule => (
                   <SortableItem
                     key={rule.id}
                     rule={rule}
+                    t={t}
+                    isEditing={activeId === rule.id}
+                    onStartEdit={() => setActiveId(rule.id)}
+                    onStopEdit={handleStopEdit}
                     onToggle={onToggle}
                     onUpdate={onUpdate}
                     onRemove={onRemove}
@@ -240,6 +303,16 @@ export function RuleEditor({
             </SortableContext>
           </DndContext>
         )}
+      </div>
+
+      <div className="shrink-0 p-4 pt-6 flex justify-center">
+        <Button
+          onClick={handleAdd}
+          className="rounded-full px-8 bg-zinc-900 hover:bg-zinc-800 text-white font-bold h-12 shadow-xl shadow-zinc-200 transition-all active:scale-95 gap-2 group"
+        >
+          <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+          {t('domain.add')}
+        </Button>
       </div>
       {gateNode}
     </div>

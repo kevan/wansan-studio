@@ -344,8 +344,12 @@
     "add": "Add Instruction",
     "empty": "No memory yet. Add instructions to teach the AI!",
     "project_title": "Project Business Memory",
-    "project_description": "Define business context specific to this project. These instructions will be combined with your global memory.",
-    "project_empty": "No project-specific memory yet."
+    "project_description": "Define business context that applies only to this project. These will be merged with global rules.",
+    "project_empty": "No project-level memory yet.",
+    "rule_empty_warning": "Rule content cannot be empty",
+    "rule_empty_content": "Empty rule content",
+    "placeholder_new": "Enter business rule (Markdown supported)...",
+    "finish_editing": "Finish Editing"
   },
   "trial_limit_reached_title": "Trial Limit Reached",
   "trial_limit_file_desc": "Trial version supports only 1 file. Please activate Pro for unlimited files.",

@@ -379,10 +379,10 @@ export async function generateInsight(
   // Build domain context section
   const domainContext =
     domainRules.length > 0
-      ? `\n\nBUSINESS CONTEXT:\n${domainRules
+      ? `\n\n### BUSINESS CONTEXT / DOMAIN KNOWLEDGE:\n${domainRules
           .filter(r => r.isEnabled)
-          .map(r => `- ${r.content}`)
-          .join('\n')}`
+          .map((r, i) => `[Rule #${i + 1}]\n${r.content}`)
+          .join('\n\n')}`
       : ''
 
   const systemPrompt = `You are a Senior Business Analyst specializing in data storytelling.

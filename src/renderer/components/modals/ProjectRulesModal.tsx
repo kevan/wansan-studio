@@ -27,7 +27,7 @@ export function ProjectRulesModal({ isOpen, onClose }: ProjectRulesModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl h-[80vh] flex flex-col overflow-hidden p-0 gap-0">
+      <DialogContent className="max-w-4xl h-[85vh] flex flex-col overflow-hidden p-0 gap-0">
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="flex items-center gap-2">
             <BrainCircuit className="w-5 h-5 text-indigo-500" />

@@ -21,6 +21,7 @@ interface MarkdownEditorProps {
   placeholder?: string
   className?: string
   minHeight?: string
+  hideToolbar?: boolean
 }
 
 export function MarkdownEditor({
@@ -28,40 +29,52 @@ export function MarkdownEditor({
   onChange,
   className,
   minHeight = '120px',
+  hideToolbar = false,
+  placeholder,
 }: MarkdownEditorProps) {
   const ref = useRef<MDXEditorMethods>(null)
 
+  const plugins = [
+    headingsPlugin(),
+    listsPlugin(),
+    quotePlugin(),
+    thematicBreakPlugin(),
+    markdownShortcutPlugin(),
+  ]
+
+  if (!hideToolbar) {
+    plugins.push(
+      toolbarPlugin({
+        toolbarContents: () => (
+          <div className="flex items-center gap-0.5 px-3 py-1.5 w-full bg-white/20 border-b border-zinc-50/50">
+            <BoldItalicUnderlineToggles />
+            <div className="w-px h-3 bg-zinc-200/60 mx-1.5" />
+            <div className="wansan-lists-group flex gap-0.5">
+              <ListsToggle />
+            </div>
+            <div className="w-px h-3 bg-zinc-200/60 mx-1.5" />
+            <UndoRedo />
+          </div>
+        ),
+      })
+    )
+  }
+
   return (
-    <div className={cn(
-        "markdown-editor-wrapper border border-zinc-100 rounded-2xl overflow-hidden bg-white/40 backdrop-blur-sm focus-within:border-indigo-200 focus-within:ring-4 focus-within:ring-indigo-50/30 transition-all duration-300",
+    <div
+      className={cn(
+        'markdown-editor-wrapper border border-zinc-100 rounded-2xl overflow-hidden bg-white/40 backdrop-blur-sm focus-within:border-indigo-200 focus-within:ring-4 focus-within:ring-indigo-50/30 transition-all duration-300',
         className
-    )}>
+      )}
+    >
       <MDXEditor
         ref={ref}
         markdown={value}
         onChange={onChange}
+        placeholder={placeholder}
         // Remove 'prose' to avoid conflicts. Use custom class for full control.
         contentEditableClassName="wansan-editor-content max-w-none focus:outline-none px-4 py-3 selection:bg-indigo-100 text-sm text-zinc-700"
-        plugins={[
-          headingsPlugin(),
-          listsPlugin(),
-          quotePlugin(),
-          thematicBreakPlugin(),
-          markdownShortcutPlugin(),
-          toolbarPlugin({
-            toolbarContents: () => (
-              <div className="flex items-center gap-0.5 px-3 py-1.5 w-full bg-white/20 border-b border-zinc-50/50">
-                <BoldItalicUnderlineToggles />
-                <div className="w-px h-3 bg-zinc-200/60 mx-1.5" />
-                <div className="wansan-lists-group flex gap-0.5">
-                    <ListsToggle />
-                </div>
-                <div className="w-px h-3 bg-zinc-200/60 mx-1.5" />
-                <UndoRedo />
-              </div>
-            )
-          })
-        ]}
+        plugins={plugins}
       />
       <style>{`
         /* Reset MDXEditor default heavy styles */
@@ -80,8 +93,9 @@ export function MarkdownEditor({
         
         /* Basic Text */
         .wansan-editor-content p {
-            margin-bottom: 0.5rem;
-            line-height: 1.6;
+            margin-bottom: 0.75rem;
+            line-height: 1.75;
+            font-size: 0.9rem;
         }
 
         /* Headings */
@@ -92,17 +106,18 @@ export function MarkdownEditor({
         /* Lists - Standard */
         .wansan-editor-content ul {
             list-style-type: disc !important;
-            padding-left: 1.5rem !important;
-            margin-bottom: 0.5rem;
+            padding-left: 1.2rem !important;
+            margin-bottom: 0.75rem;
         }
         .wansan-editor-content ol {
             list-style-type: decimal !important;
-            padding-left: 1.5rem !important;
-            margin-bottom: 0.5rem;
+            padding-left: 1.2rem !important;
+            margin-bottom: 0.75rem;
         }
         .wansan-editor-content li {
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.35rem;
             padding-left: 0.25rem;
+            line-height: 1.6;
         }
         /* Ensure list markers are visible */
         .wansan-editor-content li::marker {

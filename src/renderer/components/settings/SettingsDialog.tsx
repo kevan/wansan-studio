@@ -201,12 +201,8 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
-      <DialogContent
-        aria-describedby={undefined}
-        className="max-w-[700px] h-[80vh] flex flex-col p-0 gap-0"
-      >
-        <DialogHeader className="px-6 py-4 border-b shrink-0">
+      <DialogContent className="max-w-4xl h-[85vh] p-0 overflow-hidden border-none shadow-2xl flex flex-col bg-zinc-50/50 backdrop-blur-xl">
+        <DialogHeader className="hidden">
           <DialogTitle>{t('settings.title')}</DialogTitle>
         </DialogHeader>
 
