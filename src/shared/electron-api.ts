@@ -80,7 +80,13 @@ export interface ElectronAPI {
   checkFilesConsistency: (files: FileNode[]) => Promise<IPCResponse>
   validateColumnTypes: (
     params: ValidateColumnTypesParams
-  ) => Promise<IPCResponse<{ valid: boolean; error?: string }>>
+  ) => Promise<
+    IPCResponse<{
+      valid: boolean
+      error?: string
+      errorDetail?: { column: string; value: string; type: string }
+    }>
+  >
   reIngestFile: (
     fileId: string,
     filePath: string,

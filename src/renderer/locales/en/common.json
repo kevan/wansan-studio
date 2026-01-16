@@ -352,7 +352,7 @@
     "finish_editing": "Finish Editing"
   },
   "trial_limit_reached_title": "Trial Limit Reached",
-  "trial_limit_file_desc": "Trial version supports only 1 file. Please activate Pro for unlimited files.",
+  "trial_limit_file_desc": "Trial version supports only 3 files. Please activate Pro for unlimited files.",
   "pro_feature_title": "Pro Feature",
   "pro_feature_export_desc": "Exporting reports is available in Pro version.",
   "pro_feature_export_markdown_desc": "Markdown export is available in Pro version.",

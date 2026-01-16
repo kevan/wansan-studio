@@ -351,7 +351,7 @@
     "finish_editing": "完成编辑"
   },
   "trial_limit_reached_title": "达到试用限制",
-  "trial_limit_file_desc": "试用版最多支持 1 个文件。请激活专业版以解锁无限文件。",
+  "trial_limit_file_desc": "试用版最多支持 3 个文件。请激活专业版以解锁无限文件。",
   "pro_feature_title": "专业版功能",
   "pro_feature_export_desc": "导出报表仅在专业版可用。",
   "pro_feature_export_markdown_desc": "Markdown 导出仅在专业版可用。",

@@ -15,17 +15,10 @@ import { useTranslation } from 'react-i18next'
 import { ColumnConfig, IngestionTask } from '@shared/types/wizard'
 import { ColumnSchema } from '@shared/types'
 
-import { useSettingsStore } from '@/stores/useSettingsStore'
-import { useProGate } from '@/hooks/use-pro-gate'
-
-const TRIAL_FILE_LIMIT = 3
-
 export function FileSelectionStep() {
   const { selectedFiles, setFiles, setTasks, mode, targetTableId } =
     useWizardStore()
   const { files: projectFiles } = useProjectStore()
-  const { isActivated } = useSettingsStore()
-  const { checkGate, gateNode } = useProGate()
   const { t } = useTranslation('common')
   const [isParsing, setIsParsing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -215,12 +208,6 @@ export function FileSelectionStep() {
       if (newSelected.has(id)) {
         newSelected.delete(id)
       } else {
-        // Limit Check for Import Mode
-        const totalCount = projectFiles.length + newSelected.size
-        if (!isActivated && totalCount >= TRIAL_FILE_LIMIT) {
-          checkGate(t('trial_limit_reached_title'), () => {})
-          return
-        }
         newSelected.add(id)
       }
       setSelectedIds(newSelected)
@@ -387,7 +374,6 @@ export function FileSelectionStep() {
           </div>
         </div>
       )}
-      {gateNode}
     </div>
   )
 }

@@ -232,7 +232,11 @@ export class FileService {
     tempFilePath?: string
     columns: Array<{ name: string; type: string }>
     readOptions?: Record<string, any>
-  }): Promise<{ valid: boolean; error?: string }> {
+  }): Promise<{
+    valid: boolean
+    error?: string
+    errorDetail?: { column: string; value: string; type: string }
+  }> {
     const { filePath, tempFilePath, columns, readOptions } = params
 
     // Determine which file to read (prefer cached temp file)
@@ -261,33 +265,42 @@ export class FileService {
 
     let readSql = ''
     if (ext === '.csv') {
-      // For temp files (from Excel), we know they have headers.
-      // For user CSVs, we assume headers for now or auto-detect.
-      // auto_detect=true usually handles headers well.
       readSql = `read_csv_auto('${safePath}', SAMPLE_SIZE=-1, auto_detect=true${optionsPrefix})`
     } else if (ext === '.json') {
       readSql = `read_json_auto('${safePath}', format='auto', auto_detect=true)`
     } else {
-      // Excel files should have been converted to CSV temp files by now
       return {
         valid: false,
         error: `Cannot validate raw ${ext} file directly. Please ensure file is parsed first.`,
       }
     }
 
-    const castExpressions = columns
-      .map(col => `CAST("${col.name}" AS ${col.type})`)
-      .join(', ')
+    // Validate one by one to provide precise error feedback
+    for (const col of columns) {
+      try {
+        await this.databaseService.query(
+          `SELECT CAST("${col.name}" AS ${col.type}) FROM ${readSql} LIMIT 50000`
+        )
+      } catch (e: any) {
+        const rawError = e.message || String(e)
+        // Extract failed value if possible from DuckDB error
+        const convertMatch = rawError.match(
+          /Could not convert (?:string|value) '(.*)' to (\w+)/i
+        )
 
-    try {
-      // Try to read and cast a sample of rows (increased to 50k to catch late-appearing errors)
-      await this.databaseService.query(
-        `SELECT ${castExpressions} FROM ${readSql} LIMIT 50000`
-      )
-      return { valid: true }
-    } catch (e: any) {
-      return { valid: false, error: e.message || String(e) }
+        return {
+          valid: false,
+          error: rawError,
+          errorDetail: {
+            column: col.name,
+            value: convertMatch ? convertMatch[1] : '?',
+            type: col.type,
+          },
+        }
+      }
     }
+
+    return { valid: true }
   }
 
   async reIngestFile(

@@ -709,16 +709,6 @@ export const useProjectStore = create<ProjectState>()(
       setSuggestedPrompts: prompts => set({ suggestedPrompts: prompts }),
 
       addFile: file => {
-        // [LIMIT CHECK]
-        const { isActivated } = useSettingsStore.getState()
-        const currentCount = get().files.length
-
-        if (!isActivated && currentCount >= TRIAL_FILE_LIMIT) {
-          throw new Error(
-            'Trial version supports only 3 files. Please activate Pro for unlimited files.'
-          )
-        }
-
         const existing = get().files.find(
           f => f.path === file.path && f.sheetName === file.sheetName
         )

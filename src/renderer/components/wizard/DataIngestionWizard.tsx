@@ -14,8 +14,10 @@ import { useMemo, useState } from 'react'
 import { useToastStore } from '../../stores/useToastStore'
 import { useSettingsStore } from '../../stores/useSettingsStore'
 import { Analytics } from '../../services/analytics'
+import { useProGate } from '@/hooks/use-pro-gate'
 
 const TRIAL_ROW_LIMIT = 50000
+const TRIAL_FILE_LIMIT = 3
 
 export function DataIngestionWizard() {
   const {
@@ -35,6 +37,7 @@ export function DataIngestionWizard() {
   } = useWizardStore()
   const { files, addFile, updateFile, setView } = useProjectStore()
   const { isActivated } = useSettingsStore()
+  const { checkGate, gateNode } = useProGate()
   const { checkAutoLink } = useAutoLink()
   const { t } = useTranslation('common')
   const toast = useToastStore()
@@ -55,6 +58,14 @@ export function DataIngestionWizard() {
   }
 
   const handleFinish = async () => {
+    // Trial check: Limit total files to 3
+    if (mode === 'import' && !isActivated) {
+      if (files.length + tasks.length > TRIAL_FILE_LIMIT) {
+        checkGate(t('trial_limit_reached_title'), () => {})
+        return
+      }
+    }
+
     setProcessing(true)
     const limitRows = isActivated ? undefined : TRIAL_ROW_LIMIT
 
@@ -254,11 +265,13 @@ export function DataIngestionWizard() {
       close()
     } catch (e: any) {
       console.error('Final ingestion failed', e)
-      useUIStore.getState().showError(
-        t('wizard.ingestion_failed'),
-        t('chat:error_processing_request'),
-        e.stack || String(e)
-      )
+      useUIStore
+        .getState()
+        .showError(
+          t('wizard.ingestion_failed'),
+          t('chat:error_processing_request'),
+          e.stack || String(e)
+        )
     } finally {
       setProcessing(false)
     }
@@ -269,21 +282,6 @@ export function DataIngestionWizard() {
     title: string
     message: string
   } | null>(null)
-
-  const parseDuckDBError = (error: string) => {
-    // Standard DuckDB Conversion Error: "Conversion Error: Could not convert string 'abc' to INT64"
-    // Note: DuckDB doesn't always provide the column name in the error string directly for simple CAST queries
-    // but sometimes it does like "Column 'col' ...". 
-    // Here we try to extract the value and type at least.
-    const convertMatch = error.match(/Could not convert (?:string|value) '(.*)' to (\w+)/i)
-    if (convertMatch) {
-      return {
-        value: convertMatch[1],
-        type: convertMatch[2]
-      }
-    }
-    return null
-  }
 
   const handleNext = async () => {
     // Multi-task navigation within a step
@@ -304,23 +302,27 @@ export function DataIngestionWizard() {
 
           if (!res.success || !res.data?.valid) {
             const rawError = res.error || res.data?.error || ''
-            const parsed = parseDuckDBError(rawError)
-            
-            let displayTitle = t('wizard.type_validation_failed')
+
+            const detail = res.data?.errorDetail
+
+            const displayTitle = t('wizard.type_validation_failed')
+
             let displayDesc = rawError.split('\n')[0]
 
-            if (parsed) {
-              // Try to find which column caused this (heuristic: check types)
-              const possibleCol = currentTask.columns.find(c => c.type.includes(parsed.type))?.name || '?'
+            if (detail) {
               displayDesc = t('wizard.type_conversion_error', {
-                column: possibleCol,
-                value: parsed.value,
-                type: parsed.type,
+                column: detail.column,
+
+                value: detail.value,
+
+                type: detail.type,
               })
             }
 
             setValidationError({ title: displayTitle, message: displayDesc })
+
             setIsValidating(false)
+
             return // Block navigation
           }
         } catch (e) {
@@ -506,6 +508,7 @@ export function DataIngestionWizard() {
           </div>
         </DialogContent>
       </Dialog>
+      {gateNode}
     </Dialog>
   )
 }
