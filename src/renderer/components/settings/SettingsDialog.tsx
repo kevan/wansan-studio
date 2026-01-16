@@ -201,7 +201,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="max-w-4xl h-[85vh] p-0 overflow-hidden border-none shadow-2xl flex flex-col bg-zinc-50/50 backdrop-blur-xl">
+      <DialogContent className="max-w-4xl h-[85vh] p-0 overflow-hidden border-none shadow-2xl flex flex-col bg-white">
         <DialogHeader className="hidden">
           <DialogTitle>{t('settings.title')}</DialogTitle>
         </DialogHeader>
@@ -211,7 +211,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
           onValueChange={setActiveTab}
           className="flex flex-col flex-1 overflow-hidden"
         >
-          <div className="px-6 pt-4 shrink-0">
+          <div className="px-6 pt-12 shrink-0">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="ai" className="flex gap-2">
                 <Sparkles className="w-4 h-4" /> {t('tabs.ai')}
