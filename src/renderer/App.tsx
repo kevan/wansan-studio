@@ -52,6 +52,7 @@ import { ProjectLauncher } from './components/launcher/ProjectLauncher'
 import { DataIngestionWizard } from './components/wizard/DataIngestionWizard'
 import { ErrorDetailModal } from './components/system/ErrorDetailModal'
 import { AnalysisReviewModal } from './components/modals/AnalysisReviewModal'
+import { useAutoLink } from './hooks/useAutoLink'
 
 function App() {
   useBootSequence()
@@ -70,6 +71,9 @@ function App() {
   const analysisReviewResult = useProjectStore(s => s.analysisReviewResult)
   const setAnalysisReviewResult = useProjectStore(s => s.setAnalysisReviewResult)
   const applyAnalysisResult = useProjectStore(s => s.applyAnalysisResult)
+  const isSmartModelingOpen = useProjectStore(s => s.isSmartModelingOpen)
+  const setSmartModelingOpen = useProjectStore(s => s.setSmartModelingOpen)
+  const { runAnalysis, isAnalyzing } = useAutoLink()
 
   useEffect(() => {
     checkStatus()
@@ -358,10 +362,18 @@ function App() {
           <SettingsDialog />
           <DataIngestionWizard />
           <AnalysisReviewModal
-            isOpen={!!analysisReviewResult}
+            isOpen={isSmartModelingOpen}
             result={analysisReviewResult}
-            onCancel={() => setAnalysisReviewResult(null)}
-            onConfirm={applyAnalysisResult}
+            isAnalyzing={isAnalyzing}
+            onStartAnalysis={() => runAnalysis(useProjectStore.getState().files)}
+            onCancel={() => {
+              setSmartModelingOpen(false)
+              setAnalysisReviewResult(null)
+            }}
+            onConfirm={data => {
+              applyAnalysisResult(data)
+              setSmartModelingOpen(false) // Close modal after apply
+            }}
           />
           <GlobalSqlLab />
           <ErrorDetailModal />

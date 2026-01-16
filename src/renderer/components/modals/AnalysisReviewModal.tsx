@@ -14,6 +14,7 @@ import {
   Calculator,
   MessageSquare,
   ArrowRight,
+  Loader2,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
@@ -31,6 +32,8 @@ interface AnalysisReviewModalProps {
     selectedMetrics: MetricSuggestion[]
     selectedPrompts: string[]
   }) => void
+  onStartAnalysis: () => void
+  isAnalyzing: boolean
   result: ContextAnalysisResult | null
 }
 
@@ -38,6 +41,8 @@ export function AnalysisReviewModal({
   isOpen,
   onCancel,
   onConfirm,
+  onStartAnalysis,
+  isAnalyzing,
   result,
 }: AnalysisReviewModalProps) {
   const { t } = useTranslation(['chat', 'common'])
@@ -72,7 +77,7 @@ export function AnalysisReviewModal({
 
       // Default: Select ALL prompts
       setSelectedPrompts(new Set(result.suggestedPrompts))
-      
+
       // Auto-switch tab to first non-empty category
       if (result.relationships.length > 0) setActiveTab('relations')
       else if ((result.metrics || []).length > 0) setActiveTab('metrics')
@@ -80,6 +85,74 @@ export function AnalysisReviewModal({
     }
   }, [isOpen, result])
 
+  // --- RENDER: IDLE STATE ---
+  if (isOpen && !isAnalyzing && !result) {
+    return (
+      <Dialog open={isOpen} onOpenChange={open => !open && onCancel()}>
+        <DialogContent className="sm:max-w-md p-6 border-zinc-200 shadow-2xl bg-white">
+          <div className="flex flex-col items-center text-center gap-6 py-6">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-sm animate-in zoom-in duration-300">
+              <Sparkles className="w-8 h-8 text-indigo-600" />
+            </div>
+            <div className="space-y-2">
+              <DialogTitle className="text-xl font-bold text-zinc-900">
+                {t('chat:modeling_confirm_title')}
+              </DialogTitle>
+              <DialogDescription className="text-sm text-zinc-500 leading-relaxed">
+                {t('chat:modeling_confirm_desc')}
+              </DialogDescription>
+            </div>
+            <div className="flex w-full gap-3 mt-2">
+              <Button
+                variant="ghost"
+                onClick={onCancel}
+                className="flex-1 text-zinc-500 hover:bg-zinc-100"
+              >
+                {t('chat:modeling_confirm_cancel')}
+              </Button>
+              <Button
+                onClick={onStartAnalysis}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                {t('chat:modeling_confirm_ok')}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  // --- RENDER: LOADING STATE ---
+  if (isOpen && isAnalyzing) {
+    return (
+      <Dialog open={isOpen} onOpenChange={open => !open && onCancel()}>
+        <DialogContent
+          className="sm:max-w-sm p-12 border-zinc-200 shadow-2xl bg-white flex flex-col items-center justify-center gap-6"
+          onPointerDownOutside={e => e.preventDefault()}
+          onEscapeKeyDown={e => e.preventDefault()}
+        >
+          <div className="relative">
+            <div className="absolute inset-0 bg-indigo-100 rounded-full animate-ping opacity-25 duration-1000"></div>
+            <div className="relative bg-white p-4 rounded-full border border-indigo-50 shadow-sm">
+              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+            </div>
+          </div>
+          <div className="text-center space-y-1">
+            <h3 className="font-semibold text-zinc-900">
+              {t('chat:auto_link_analyzing_title')}
+            </h3>
+            <p className="text-xs text-zinc-500">
+              {t('chat:auto_link_analyzing_desc')}
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  // --- RENDER: REVIEW STATE ---
   if (!result) return null
 
   const handleConfirm = () => {
@@ -131,13 +204,23 @@ export function AnalysisReviewModal({
       )}
     >
       <div className="flex items-center gap-2">
-        <div className={cn("p-1 rounded", activeTab === id ? "bg-indigo-100 text-indigo-600" : "bg-transparent")}>
-            {icon}
+        <div
+          className={cn(
+            'p-1 rounded',
+            activeTab === id
+              ? 'bg-indigo-100 text-indigo-600'
+              : 'bg-transparent'
+          )}
+        >
+          {icon}
         </div>
         <span>{label}</span>
       </div>
       {count > 0 && (
-        <Badge variant="secondary" className="ml-2 text-xs h-5 px-1.5 min-w-[20px] justify-center bg-zinc-100 text-zinc-600">
+        <Badge
+          variant="secondary"
+          className="ml-2 text-xs h-5 px-1.5 min-w-[20px] justify-center bg-zinc-100 text-zinc-600"
+        >
           {count}
         </Badge>
       )}

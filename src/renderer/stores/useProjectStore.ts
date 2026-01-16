@@ -49,6 +49,7 @@ export interface ProjectState extends ProjectData {
   abortControllers: Record<string, AbortController>
   smartFilterRequest: SmartFilterRequest | null
   analysisReviewResult: ContextAnalysisResult | null
+  isSmartModelingOpen: boolean // [NEW]
   currentProjectPath: string | null
   isProjectLoaded: boolean // Transient flag to indicate project fully loaded
 
@@ -63,6 +64,7 @@ export interface ProjectState extends ProjectData {
   ) => void
   setShowRefreshConfirm: (open: boolean) => void
   setRefreshing: (val: boolean) => void
+  setSmartModelingOpen: (open: boolean) => void // [NEW]
   refreshSessionWidgets: () => Promise<void>
   confirmReplace: () => Promise<void>
   createSession: () => void
@@ -201,6 +203,7 @@ export const useProjectStore = create<ProjectState>()(
         isRefreshing: false,
         smartFilterRequest: null,
         analysisReviewResult: null,
+        isSmartModelingOpen: false,
       
             setSidebarMode: mode =>        set(_state => {
           const updates: Partial<ProjectState> = { sidebarMode: mode }
@@ -230,6 +233,7 @@ export const useProjectStore = create<ProjectState>()(
       setPendingReplace: payload => set({ pendingReplace: payload }),
       setShowRefreshConfirm: open => set({ showRefreshConfirm: open }),
       setRefreshing: val => set({ isRefreshing: val }),
+      setSmartModelingOpen: open => set({ isSmartModelingOpen: open }),
       setSmartFilterRequest: req => set({ smartFilterRequest: req }),
       setAnalysisReviewResult: result => set({ analysisReviewResult: result }),
 
@@ -1444,6 +1448,7 @@ export const useProjectStore = create<ProjectState>()(
           selectedNode: _sn,
           smartFilterRequest: _sfr,
           analysisReviewResult: _arr,
+          isSmartModelingOpen: _ismo,
           isProjectLoaded: _ipl,
           ...rest
         } = state
@@ -1464,6 +1469,7 @@ export const useProjectStore = create<ProjectState>()(
           isRefreshing: false,
           smartFilterRequest: null,
           analysisReviewResult: null,
+          isSmartModelingOpen: false,
           pendingReplace: null,
         }
       },
@@ -1484,6 +1490,8 @@ export const useProjectStore = create<ProjectState>()(
           // Even though partialize excludes them, we reset here to be safe against stale storage
           state.editingReportId = null
           state.smartFilterRequest = null
+          state.analysisReviewResult = null
+          state.isSmartModelingOpen = false
           state.pendingReplace = null
           state.showRefreshConfirm = false
           state.isRestoring = false

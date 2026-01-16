@@ -12,7 +12,13 @@ export function useAutoLink() {
   const { language: currentLanguage } = useWorkbenchStore.getState()
   const { t } = useTranslation('chat')
 
-  const checkAutoLink = useCallback(
+  // Entry point: Just opens the modal
+  const openSmartModeling = useCallback(() => {
+    useProjectStore.getState().setSmartModelingOpen(true)
+  }, [])
+
+  // Execution: Runs AI analysis
+  const runAnalysis = useCallback(
     async (currentFiles?: FileNode[]) => {
       let apiKey: string | undefined
       try {
@@ -36,10 +42,8 @@ export function useAutoLink() {
 
       const store = useProjectStore.getState()
       const filesToUse = currentFiles || store.files
-      const setAnalysisReviewResult = store.setAnalysisReviewResult // [CHANGED]
+      const setAnalysisReviewResult = store.setAnalysisReviewResult
       const language = currentLanguage || 'en'
-
-      console.log('checkAutoLink called. Files count:', filesToUse.length)
 
       if (filesToUse.length === 0) {
         console.log('No files to analyze')
@@ -58,22 +62,13 @@ export function useAutoLink() {
       }))
 
       try {
-        addToast({
-          title: t('auto_link_analyzing_title'),
-          description: t('auto_link_analyzing_desc'),
-          type: 'info',
-          duration: 3000,
-        })
-
         const result = await analysisMutation.mutateAsync({
           schemas,
           language,
         })
         console.log('AI Analysis Result:', result)
 
-        // [CHANGED] Set result to store, triggering the modal
         setAnalysisReviewResult(result)
-
       } catch (error) {
         console.error('Auto-link failed:', error)
         addToast({
@@ -83,8 +78,12 @@ export function useAutoLink() {
         })
       }
     },
-    [analysisMutation, addToast]
+    [analysisMutation, addToast, currentLanguage, t]
   )
 
-  return { checkAutoLink, isAnalyzing: analysisMutation.isPending }
+  return {
+    checkAutoLink: openSmartModeling, // Alias for UI triggers
+    runAnalysis,
+    isAnalyzing: analysisMutation.isPending,
+  }
 }

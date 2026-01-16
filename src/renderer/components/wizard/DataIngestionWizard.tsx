@@ -241,7 +241,8 @@ export function DataIngestionWizard() {
       }
 
       if (addedFileIds.length > 0) {
-        checkAutoLink(useProjectStore.getState().files)
+        // Show modeling confirmation instead of auto-triggering
+        useProjectStore.getState().setSmartModelingOpen(true)
       }
 
       setView('schema')
