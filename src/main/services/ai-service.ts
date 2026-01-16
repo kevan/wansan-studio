@@ -182,7 +182,7 @@ export class AIService {
     const client = this.requireOpenAI()
     const aiResult = await generateAnalysis(client, context, this.model)
     return {
-      status: 'success',
+      status: aiResult.error ? 'error' : 'success',
       ...aiResult,
     }
   }

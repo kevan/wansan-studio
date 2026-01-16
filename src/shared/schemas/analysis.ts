@@ -18,7 +18,7 @@ export const ParamSchema = z.object({
 export type FilterParam = z.infer<typeof ParamSchema>
 
 export const AnalysisResultSchema = z.object({
-  sql: z.string(),
+  sql: z.string().optional(),
   title: z.string().optional(),
   summary: z.string().optional(),
   viz_type: z
