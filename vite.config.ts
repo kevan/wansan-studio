@@ -3,13 +3,37 @@ import react from '@vitejs/plugin-react'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
+import obfuscator from 'rollup-plugin-obfuscator'
 
 const _dirname = dirname(fileURLToPath(import.meta.url))
 const pkg = JSON.parse(fs.readFileSync(resolve(_dirname, 'package.json'), 'utf-8'))
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  plugins: [react()],
+  plugins: [
+    react(),
+    mode === 'production' ? obfuscator({
+      global: true,
+      options: {
+        compact: true,
+        controlFlowFlattening: false, // 前端性能敏感，关闭控制流扁平化
+        deadCodeInjection: false,
+        debugProtection: false,
+        disableConsoleOutput: true,
+        identifierNamesGenerator: 'hexadecimal',
+        log: false,
+        renameGlobals: false,
+        rotateStringArray: true,
+        selfDefending: false,
+        stringArray: true,
+        stringArrayEncoding: ['rc4'],
+        stringArrayThreshold: 0.75,
+        splitStrings: true,
+        transformObjectKeys: true,
+        unicodeEscapeSequence: false
+      }
+    }) : null
+  ],
   root: './src/renderer',
   base: './',
   build: {
