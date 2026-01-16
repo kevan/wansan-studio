@@ -12,7 +12,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npm run build:main && npm run build:export && concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
+    "dev": "cross-env NO_OBFUSCATION=true npm run build:main && npm run build:export && concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
     "dev:electron": "cross-env NODE_ENV=development electron .",
     "build": "rimraf dist && npm run build:renderer && npm run build:main && npm run build:export",
@@ -64,7 +64,6 @@
     "@tanstack/react-router": "^1.139.14",
     "@tanstack/react-table": "^8.21.3",
     "@types/fs-extra": "^11.0.4",
-    "@types/javascript-obfuscator": "^0.0.5",
     "@types/lodash.debounce": "^4.0.9",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^20.19.26",

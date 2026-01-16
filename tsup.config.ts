@@ -53,32 +53,35 @@ export default defineConfig({
   },
   onSuccess: async () => {
     // 仅在非开发模式下混淆
-    if (process.env.npm_lifecycle_event === 'dev') {
+    if (
+      process.env.npm_lifecycle_event === 'dev' ||
+      process.env.NO_OBFUSCATION === 'true'
+    ) {
       console.log('Skipping obfuscation in dev mode')
       return
     }
 
     console.log('Starting obfuscation...')
     const distDir = path.resolve(__dirname, 'dist')
-    
+
     // 确保目录存在
     if (!fs.existsSync(distDir)) return
 
     const files = getAllFiles(distDir)
-    
+
     for (const file of files) {
       // 防止重复混淆 renderer 文件 (vite 已经处理过了)
       if (file.includes('/renderer/')) continue
 
       // 只混淆 .js 和 .cjs 文件
       if (!file.endsWith('.js') && !file.endsWith('.cjs')) continue
-      
+
       // 跳过 map 文件
       if (file.endsWith('.map')) continue
 
       console.log(`Obfuscating: ${file}`)
       const content = fs.readFileSync(file, 'utf8')
-      
+
       const obfuscationResult = JavaScriptObfuscator.obfuscate(content, {
         target: 'node',
         compact: true,
@@ -100,7 +103,7 @@ export default defineConfig({
         transformObjectKeys: true,
         unicodeEscapeSequence: false,
         ignoreRequireImports: true // 关键：防止破坏 native require
-      })
+      } as any)
 
       fs.writeFileSync(file, obfuscationResult.getObfuscatedCode())
     }
