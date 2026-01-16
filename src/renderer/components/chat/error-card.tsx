@@ -168,7 +168,7 @@ export function ErrorCard({ message }: ErrorCardProps) {
             </button>
           </div>
           <div className="rounded-xl bg-zinc-950 p-3.5 border border-zinc-800 shadow-inner group/log relative">
-            <pre className="text-[11px] font-mono text-rose-300/90 leading-relaxed overflow-x-auto max-h-48 whitespace-pre-wrap scrollbar-thin">
+            <pre className="text-[11px] font-mono text-rose-300/90 leading-relaxed overflow-x-auto max-h-48 whitespace-pre-wrap break-words scrollbar-thin">
               {errorMessage}
             </pre>
           </div>
