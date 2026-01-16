@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   AlertCircle,
-  RefreshCw,
-  Code,
-  Sparkles,
-  Settings,
-  KeyRound,
-  Copy,
   Check,
+  Code,
+  Copy,
+  KeyRound,
+  RefreshCw,
+  Settings,
+  Sparkles,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { Button } from '../ui/button'
@@ -167,18 +167,11 @@ export function ErrorCard({ message }: ErrorCardProps) {
 
         <div className="space-y-1">
           <h3 className="font-black text-sm uppercase tracking-tight text-red-900">
-            {isSqlError
-              ? t('error_analysis_failed')
-              : t('error_ai_failed', 'AI Analysis Failed')}
+            {isSqlError ? t('error_analysis_failed') : t('error_ai_failed')}
           </h3>
 
           <p className="text-xs font-medium text-red-700/70 leading-relaxed">
-            {isSqlError
-              ? t('error_processing_request')
-              : t(
-                  'error_ai_desc',
-                  'The assistant could not process your query'
-                )}
+            {isSqlError ? t('error_processing_request') : t('error_ai_desc')}
           </p>
         </div>
       </div>
