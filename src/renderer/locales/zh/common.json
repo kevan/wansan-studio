@@ -333,6 +333,7 @@
   "add_anchor": "添加锚点",
   "loading_editor": "正在加载编辑器...",
   "no_chart_data": "暂无图表数据",
+  "no_pinned_reports": "请在画布中添加图表以生成报告。",
   "showing_n_of_total": "显示前 {{n}} 条，共 {{total}} 条数据",
   "data_summary": "数据摘要",
   "data_visualization": "数据可视化",

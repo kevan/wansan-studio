@@ -334,6 +334,7 @@
   "add_anchor": "Add Anchor",
   "loading_editor": "Loading Editor...",
   "no_chart_data": "No chart data",
+  "no_pinned_reports": "Add charts to the canvas to build a report.",
   "showing_n_of_total": "Showing first {{n}} of {{total}} rows",
   "data_summary": "Data Summary",
   "data_visualization": "Visualization",
