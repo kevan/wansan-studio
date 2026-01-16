@@ -92,192 +92,17 @@ export function ChatInterface({
           </div>
         ) : (
           messages.map((message, messageIdx) => (
-            <div
+            <MessageItem
               key={message.id || `msg-${messageIdx}`}
-              className="flex gap-4 w-full max-w-5xl mx-auto group animate-in fade-in slide-in-from-bottom-2 relative"
-            >
-              {/* Avatar */}
-              <div className="flex-shrink-0 mt-1">
-                <div
-                  className={cn(
-                    'w-9 h-9 rounded-2xl flex items-center justify-center shadow-sm transition-transform hover:scale-105',
-                    message.type === 'user'
-                      ? 'bg-zinc-900 text-white font-bold text-[10px] ring-2 ring-white border border-white/10'
-                      : 'bg-white text-orange-600 border border-zinc-100 shadow-sm'
-                  )}
-                >
-                  {message.type === 'user' ? (
-                    username.slice(0, 2).toUpperCase()
-                  ) : (
-                    <Bot className="w-5 h-5" />
-                  )}
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2 mb-1.5 pl-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-zinc-900 flex items-center gap-1.5">
-                      {message.type === 'user' ? username : t('assistant')}
-                      {message.type === 'user' && settings.isActivated && (
-                        <Crown className="w-3 h-3 text-amber-500 fill-current" />
-                      )}
-                    </span>
-                    <span className="text-[10px] font-medium text-zinc-400">
-                      {new Date(message.timestamp).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                  </div>
-
-                  {/* Delete Button */}
-                  {message.type !== 'user' &&
-                    !['thinking', 'planning', 'executing'].includes(
-                      message.status || ''
-                    ) && (
-                      <button
-                        onClick={() => removeMessage(message.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-all p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-300 hover:text-red-500"
-                        title={t('delete_message')}
-                        aria-label="Delete message"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                </div>
-
-                {message.type === 'user' ? (
-                  <div className="text-zinc-800 font-medium text-[15px] leading-7 bg-white border border-zinc-100 px-5 py-3 rounded-[1.5rem] rounded-tl-sm shadow-sm inline-block max-w-full break-words">
-                    {message.content}
-                  </div>
-                ) : (
-                  <div className="w-full pl-1">
-                    {message.contextRef && (
-                      <div className="flex items-center gap-1.5 mb-3 text-[10px] font-medium text-indigo-500 bg-indigo-50/50 w-fit px-2.5 py-1 rounded-full border border-indigo-100/50">
-                        <GitBranch className="h-3 w-3" />
-                        <span className="truncate max-w-[300px]">
-                          {t('based_on')} &quot;{message.contextRef.query}&quot;
-                        </span>
-                      </div>
-                    )}
-                    {message.status && message.status !== 'error' && (
-                      <div className="mb-4 rounded-[1.5rem] border border-indigo-100/60 bg-indigo-50/30 px-5 py-4 text-sm text-indigo-900/80 animate-pulse-slow">
-                        <div className="flex items-center gap-2.5 font-bold text-xs uppercase tracking-wide opacity-80">
-                          {message.status === 'planning' ||
-                          message.status === 'thinking' ? (
-                            <Brain className="h-3.5 w-3.5" />
-                          ) : (
-                            <Zap className="h-3.5 w-3.5" />
-                          )}
-                          {message.status === 'thinking' &&
-                            t('status_thinking')}
-                          {message.status === 'planning' &&
-                            t('status_planning')}
-                          {message.status === 'executing' &&
-                            t('status_executing')}
-                        </div>
-                        {message.planSql && (
-                          <div className="mt-3 relative group/code">
-                            <pre className="max-h-48 overflow-y-auto rounded-xl bg-white/80 p-3 text-[11px] text-zinc-600 border border-indigo-100/50 font-mono leading-relaxed scrollbar-thin">
-                              <code className="whitespace-pre-wrap block">
-                                {(() => {
-                                  try {
-                                    return format(message.planSql, {
-                                      language: 'postgresql',
-                                    })
-                                  } catch (e) {
-                                    return message.planSql
-                                  }
-                                })()}
-                              </code>
-                            </pre>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Display message content (Analysis Summary) only if NOT in reportData */}
-                    {message.content && !message.reportData && (
-                      <div className="mb-4 text-zinc-600 text-[14px] leading-7 tracking-wide">
-                        <VizSummary content={message.content} />
-                      </div>
-                    )}
-
-                    {message.status === 'error' && (
-                      <div className="mb-4">
-                        <ErrorCard message={message} />
-                      </div>
-                    )}
-
-                    {message.reportData && (
-                      <div className="w-full mt-2 space-y-2">
-                        {(() => {
-                          const report = message.reportData!
-                          const isTemplate = !!report.is_template
-                          const hasData = !!(
-                            report.tableData && report.tableData.length > 0
-                          )
-
-                          // Case 1: Template waiting for configuration
-                          if (isTemplate && !hasData && onConfigureTemplate) {
-                            return (
-                              <AnalysisTemplateCard
-                                result={report as any}
-                                onOpenModal={() =>
-                                  onConfigureTemplate(
-                                    message.id,
-                                    report.sql!,
-                                    report.missing_params || [],
-                                    report.selected_params
-                                  )
-                                }
-                                isExecuted={false}
-                              />
-                            )
-                          }
-
-                          // Case 2: Standard Report or Configured Template
-                          return (
-                            <>
-                              <ChatReportCard
-                                messageId={message.id}
-                                message={message}
-                                reportData={report}
-                                className="w-full shadow-sm hover:shadow-md transition-shadow"
-                                onConfigure={
-                                  isTemplate && onConfigureTemplate
-                                    ? () =>
-                                        onConfigureTemplate(
-                                          message.id,
-                                          report.sql!,
-                                          report.missing_params || [],
-                                          report.selected_params
-                                        )
-                                    : undefined
-                                }
-                              />
-
-                              {report.suggestions &&
-                                report.suggestions.length > 0 && (
-                                  <MessageSuggestions
-                                    suggestions={report.suggestions}
-                                    isLast={messageIdx === messages.length - 1}
-                                    onSelect={handleQuerySubmit}
-                                    isChatLoading={isChatLoading}
-                                    isRestoring={isRestoring}
-                                  />
-                                )}
-                            </>
-                          )
-                        })()}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
+              message={message}
+              username={username}
+              isLast={messageIdx === messages.length - 1}
+              isChatLoading={isChatLoading}
+              isRestoring={isRestoring}
+              onRemove={removeMessage}
+              onConfigureTemplate={onConfigureTemplate}
+              onQuerySubmit={handleQuerySubmit}
+            />
           ))
         )}
 
@@ -300,6 +125,217 @@ export function ChatInterface({
 }
 
 /**
+ * Memoized Message Item to prevent unnecessary re-renders of heavy charts
+ */
+const MessageItem = React.memo(
+  ({
+    message,
+    username,
+    isLast,
+    isChatLoading,
+    isRestoring,
+    onRemove,
+    onConfigureTemplate,
+    onQuerySubmit,
+  }: {
+    message: ChatMessage
+    username: string
+    isLast: boolean
+    isChatLoading: boolean
+    isRestoring: boolean
+    onRemove: (id: string) => void
+    onConfigureTemplate?: ChatInterfaceProps['onConfigureTemplate']
+    onQuerySubmit: (query: string) => void
+  }) => {
+    const { t } = useTranslation('chat')
+    const settings = useSettingsStore()
+
+    // Stable handler for template configuration
+    // This is CRITICAL for ChatReportCard's React.memo to work
+    const handleConfigure = React.useCallback(() => {
+      if (onConfigureTemplate && message.reportData) {
+        onConfigureTemplate(
+          message.id,
+          message.reportData.sql!,
+          message.reportData.missing_params || [],
+          message.reportData.selected_params
+        )
+      }
+    }, [onConfigureTemplate, message.id, message.reportData])
+
+    return (
+      <div className="flex gap-4 w-full max-w-5xl mx-auto group animate-in fade-in slide-in-from-bottom-2 relative">
+        {/* Avatar */}
+        <div className="flex-shrink-0 mt-1">
+          <div
+            className={cn(
+              'w-9 h-9 rounded-2xl flex items-center justify-center shadow-sm transition-transform hover:scale-105',
+              message.type === 'user'
+                ? 'bg-zinc-900 text-white font-bold text-[10px] ring-2 ring-white border border-white/10'
+                : 'bg-white text-orange-600 border border-zinc-100 shadow-sm'
+            )}
+          >
+            {message.type === 'user' ? (
+              username.slice(0, 2).toUpperCase()
+            ) : (
+              <Bot className="w-5 h-5" />
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-1.5 pl-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-zinc-900 flex items-center gap-1.5">
+                {message.type === 'user' ? username : t('assistant')}
+                {message.type === 'user' && settings.isActivated && (
+                  <Crown className="w-3 h-3 text-amber-500 fill-current" />
+                )}
+              </span>
+              <span className="text-[10px] font-medium text-zinc-400">
+                {new Date(message.timestamp).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+            </div>
+
+            {/* Delete Button */}
+            {message.type !== 'user' &&
+              !['thinking', 'planning', 'executing'].includes(
+                message.status || ''
+              ) && (
+                <button
+                  onClick={() => onRemove(message.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-all p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-300 hover:text-red-500"
+                  title={t('delete_message')}
+                  aria-label="Delete message"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+          </div>
+
+          {message.type === 'user' ? (
+            <div className="text-zinc-800 font-medium text-[15px] leading-7 bg-white border border-zinc-100 px-5 py-3 rounded-[1.5rem] rounded-tl-sm shadow-sm inline-block max-w-full break-words">
+              {message.content}
+            </div>
+          ) : (
+            <div className="w-full pl-1">
+              {message.contextRef && (
+                <div className="flex items-center gap-1.5 mb-3 text-[10px] font-medium text-indigo-500 bg-indigo-50/50 w-fit px-2.5 py-1 rounded-full border border-indigo-100/50">
+                  <GitBranch className="h-3 w-3" />
+                  <span className="truncate max-w-[300px]">
+                    {t('based_on')} &quot;{message.contextRef.query}&quot;
+                  </span>
+                </div>
+              )}
+              {message.status && message.status !== 'error' && (
+                <div className="mb-4 rounded-[1.5rem] border border-indigo-100/60 bg-indigo-50/30 px-5 py-4 text-sm text-indigo-900/80 animate-pulse-slow">
+                  <div className="flex items-center gap-2.5 font-bold text-xs uppercase tracking-wide opacity-80">
+                    {message.status === 'planning' ||
+                    message.status === 'thinking' ? (
+                      <Brain className="h-3.5 w-3.5" />
+                    ) : (
+                      <Zap className="h-3.5 w-3.5" />
+                    )}
+                    {message.status === 'thinking' && t('status_thinking')}
+                    {message.status === 'planning' && t('status_planning')}
+                    {message.status === 'executing' && t('status_executing')}
+                  </div>
+                  {message.planSql && (
+                    <div className="mt-3 relative group/code">
+                      <pre className="max-h-48 overflow-y-auto rounded-xl bg-white/80 p-3 text-[11px] text-zinc-600 border border-indigo-100/50 font-mono leading-relaxed scrollbar-thin">
+                        <code className="whitespace-pre-wrap block">
+                          {(() => {
+                            try {
+                              return format(message.planSql, {
+                                language: 'postgresql',
+                              })
+                            } catch (e) {
+                              return message.planSql
+                            }
+                          })()}
+                        </code>
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Display message content (Analysis Summary) only if NOT in reportData */}
+              {message.content && !message.reportData && (
+                <div className="mb-4 text-zinc-600 text-[14px] leading-7 tracking-wide">
+                  <VizSummary content={message.content} />
+                </div>
+              )}
+
+              {message.status === 'error' && (
+                <div className="mb-4">
+                  <ErrorCard message={message} />
+                </div>
+              )}
+
+              {message.reportData && (
+                <div className="w-full mt-2 space-y-2">
+                  {(() => {
+                    const report = message.reportData!
+                    const isTemplate = !!report.is_template
+                    const hasData = !!(
+                      report.tableData && report.tableData.length > 0
+                    )
+
+                    // Case 1: Template waiting for configuration
+                    if (isTemplate && !hasData && onConfigureTemplate) {
+                      return (
+                        <AnalysisTemplateCard
+                          result={report as any}
+                          onOpenModal={handleConfigure}
+                          isExecuted={false}
+                        />
+                      )
+                    }
+
+                    // Case 2: Standard Report or Configured Template
+                    return (
+                      <>
+                        <ChatReportCard
+                          messageId={message.id}
+                          message={message}
+                          reportData={report}
+                          className="w-full shadow-sm hover:shadow-md transition-shadow"
+                          onConfigure={
+                            isTemplate && onConfigureTemplate
+                              ? handleConfigure
+                              : undefined
+                          }
+                        />
+
+                        {report.suggestions &&
+                          report.suggestions.length > 0 && (
+                            <MessageSuggestions
+                              suggestions={report.suggestions}
+                              isLast={isLast}
+                              onSelect={onQuerySubmit}
+                              isChatLoading={isChatLoading}
+                              isRestoring={isRestoring}
+                            />
+                          )}
+                      </>
+                    )
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+)
+
+/**
  * Individual suggestion item with smart tooltip detection.
  */
 function SuggestionItem({
@@ -316,17 +352,11 @@ function SuggestionItem({
   const textRef = useRef<HTMLSpanElement>(null)
   const [isTruncated, setIsTruncated] = useState(false)
 
+  // Removed Global Resize Listener to improve performance on large lists
   useEffect(() => {
-    const checkTruncation = () => {
-      if (textRef.current) {
-        setIsTruncated(textRef.current.scrollWidth > textRef.current.offsetWidth)
-      }
+    if (textRef.current) {
+      setIsTruncated(textRef.current.scrollWidth > textRef.current.offsetWidth)
     }
-
-    checkTruncation()
-    // Re-check on window resize
-    window.addEventListener('resize', checkTruncation)
-    return () => window.removeEventListener('resize', checkTruncation)
   }, [suggestion])
 
   const buttonContent = (
