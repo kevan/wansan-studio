@@ -79,8 +79,18 @@ export interface RelationSuggestion {
   reason: string // Explanation for the UI (e.g. "Column names match")
 }
 
+export interface MetricSuggestion {
+  name: string
+  sqlExpression: string
+  description?: string
+  tableName: string
+  confidence?: number
+  reason?: string
+}
+
 export interface ContextAnalysisResult {
   relationships: RelationSuggestion[]
+  metrics?: MetricSuggestion[]
   suggestedPrompts: string[]
 }
 

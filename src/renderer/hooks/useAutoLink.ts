@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useContextAnalysis } from './useIPC'
 import { useToastStore } from '../stores/useToastStore'
-import type { RelationSuggestion, FileNode } from '../../shared/types'
+import type { FileNode } from '../../shared/types'
 import { useWorkbenchStore } from '../stores/useWorkbenchStore'
 import { useTranslation } from 'react-i18next'
 
@@ -36,29 +36,16 @@ export function useAutoLink() {
 
       const store = useProjectStore.getState()
       const filesToUse = currentFiles || store.files
-      const addRelation = store.addRelation
-      const setSuggestedPrompts = store.setSuggestedPrompts
-      const language = currentLanguage || 'en' // Use currentLanguage or default to 'en'
-
-      // Aggregate all current relations for duplicate check
-      const relationsToUse = filesToUse.flatMap(f =>
-        (f.relations || []).map(r => ({
-          sourceFileId: f.id,
-          sourceColumn: r.sourceColumn,
-          targetFileId: r.targetFileId,
-          targetColumn: r.targetColumn,
-        }))
-      )
+      const setAnalysisReviewResult = store.setAnalysisReviewResult // [CHANGED]
+      const language = currentLanguage || 'en'
 
       console.log('checkAutoLink called. Files count:', filesToUse.length)
 
-      // 2. Validation
       if (filesToUse.length === 0) {
         console.log('No files to analyze')
         return
       }
 
-      // 3. Prepare Schemas
       const schemas = filesToUse.map(f => ({
         tableName: f.tableName,
         description: f.name,
@@ -71,7 +58,6 @@ export function useAutoLink() {
       }))
 
       try {
-        // 4. Notify User
         addToast({
           title: t('auto_link_analyzing_title'),
           description: t('auto_link_analyzing_desc'),
@@ -79,83 +65,15 @@ export function useAutoLink() {
           duration: 3000,
         })
 
-        // 5. Call AI Service
         const result = await analysisMutation.mutateAsync({
           schemas,
           language,
         })
         console.log('AI Analysis Result:', result)
 
-        const { relationships, suggestedPrompts } = result
+        // [CHANGED] Set result to store, triggering the modal
+        setAnalysisReviewResult(result)
 
-        // Update Prompts
-        if (suggestedPrompts && suggestedPrompts.length > 0) {
-          setSuggestedPrompts(suggestedPrompts)
-        }
-
-        // Process Relationships (only if we have multiple files)
-        let addedCount = 0
-        if (
-          relationships &&
-          Array.isArray(relationships) &&
-          filesToUse.length > 1
-        ) {
-          relationships.forEach((suggestion: RelationSuggestion) => {
-            if (suggestion.confidence > 0.8) {
-              const fileA = filesToUse.find(
-                f => f.tableName === suggestion.sourceTable
-              )
-              const fileB = filesToUse.find(
-                f => f.tableName === suggestion.targetTable
-              )
-
-              if (fileA && fileB) {
-                // Check for duplicates
-                const exists = relationsToUse.some(
-                  r =>
-                    (r.sourceFileId === fileA.id &&
-                      r.sourceColumn === suggestion.sourceColumn &&
-                      r.targetFileId === fileB.id &&
-                      r.targetColumn === suggestion.targetColumn) ||
-                    (r.sourceFileId === fileB.id &&
-                      r.sourceColumn === suggestion.targetColumn &&
-                      r.targetFileId === fileA.id &&
-                      r.targetColumn === suggestion.sourceColumn)
-                )
-
-                if (!exists) {
-                  console.log('Adding relation:', suggestion)
-                  addRelation({
-                    sourceFileId: fileA.id,
-                    sourceColumn: suggestion.sourceColumn,
-                    targetFileId: fileB.id,
-                    targetColumn: suggestion.targetColumn,
-                    autoDetected: true,
-                  })
-                  addedCount++
-                }
-              }
-            }
-          })
-        }
-
-        // 6. Final Result Toast
-        const promptMsg = suggestedPrompts?.length
-          ? t('auto_link_complete_prompts')
-          : ''
-        const relationMsg =
-          addedCount > 0
-            ? t('auto_link_complete_relations', { count: addedCount })
-            : ''
-
-        addToast({
-          title: t('auto_link_complete_title'),
-          description: t('auto_link_complete_desc', {
-            prompts: promptMsg,
-            relations: relationMsg,
-          }),
-          type: 'success',
-        })
       } catch (error) {
         console.error('Auto-link failed:', error)
         addToast({
@@ -166,7 +84,7 @@ export function useAutoLink() {
       }
     },
     [analysisMutation, addToast]
-  ) // Dependencies are stable now
+  )
 
   return { checkAutoLink, isAnalyzing: analysisMutation.isPending }
 }

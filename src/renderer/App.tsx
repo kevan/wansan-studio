@@ -51,6 +51,7 @@ import { AutoSaveStatus, useAutoSave } from './hooks/useAutoSave'
 import { ProjectLauncher } from './components/launcher/ProjectLauncher'
 import { DataIngestionWizard } from './components/wizard/DataIngestionWizard'
 import { ErrorDetailModal } from './components/system/ErrorDetailModal'
+import { AnalysisReviewModal } from './components/modals/AnalysisReviewModal'
 
 function App() {
   useBootSequence()
@@ -65,6 +66,10 @@ function App() {
   const currentProjectPath = useProjectStore(s => s.currentProjectPath)
   const projectName = useProjectStore(s => s.meta.name)
   const isProjectLoaded = useProjectStore(s => s.isProjectLoaded)
+  
+  const analysisReviewResult = useProjectStore(s => s.analysisReviewResult)
+  const setAnalysisReviewResult = useProjectStore(s => s.setAnalysisReviewResult)
+  const applyAnalysisResult = useProjectStore(s => s.applyAnalysisResult)
 
   useEffect(() => {
     checkStatus()
@@ -352,6 +357,12 @@ function App() {
           <RefreshConfirmModal />
           <SettingsDialog />
           <DataIngestionWizard />
+          <AnalysisReviewModal
+            isOpen={!!analysisReviewResult}
+            result={analysisReviewResult}
+            onCancel={() => setAnalysisReviewResult(null)}
+            onConfirm={applyAnalysisResult}
+          />
           <GlobalSqlLab />
           <ErrorDetailModal />
           {/* Global Window Header */}

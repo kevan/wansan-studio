@@ -138,5 +138,18 @@
   "lineage_latency_split": "AI 推理: {{aiLatency}}ms · 数据引擎: {{dbLatency}}ms",
   "lineage_latency_total": "总耗时: {{latency}}ms",
   "clear_selection": "清除",
-  "run_analysis": "运行分析"
+  "run_analysis": "智能建模",
+  "review_analysis_title": "审查 AI 分析结果",
+  "review_analysis_desc": "AI 已完成数据分析。请审查并确认建议的关联和指标。",
+  "tab_relations": "关联关系",
+  "tab_metrics": "智能指标",
+  "tab_prompts": "探索建议",
+  "confirm_apply": "确认并应用",
+  "confidence_score": "置信度: {{score}}%",
+  "sql_expression": "计算公式",
+  "no_suggestions": "未发现相关建议。",
+  "source": "来源",
+  "target": "目标",
+  "metric_name": "名称",
+  "metric_table": "所属表"
 }

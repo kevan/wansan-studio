@@ -5,6 +5,7 @@ import { Message } from '@shared/types/chat'
 import { ReportData, ReportWidget } from '@shared/types/dashboard'
 import {
   ColumnSchema,
+  ContextAnalysisResult,
   FileNode,
   SelectedNode,
   SmartMetric,
@@ -47,6 +48,7 @@ export interface ProjectState extends ProjectData {
   isRefreshing: boolean
   abortControllers: Record<string, AbortController>
   smartFilterRequest: SmartFilterRequest | null
+  analysisReviewResult: ContextAnalysisResult | null
   currentProjectPath: string | null
   isProjectLoaded: boolean // Transient flag to indicate project fully loaded
 
@@ -94,6 +96,12 @@ export interface ProjectState extends ProjectData {
   setRestoring: (val: boolean) => void
   setSuggestedPrompts: (prompts: string[]) => void
   setSmartFilterRequest: (req: SmartFilterRequest | null) => void
+  setAnalysisReviewResult: (result: ContextAnalysisResult | null) => void
+  applyAnalysisResult: (data: {
+    selectedRelations: any[]
+    selectedMetrics: any[]
+    selectedPrompts: string[]
+  }) => Promise<void>
   addFile: (
     file: Partial<FileNode> & { name: string; path: string; tableName: string }
   ) => string
@@ -189,12 +197,12 @@ export const useProjectStore = create<ProjectState>()(
       sidebarMode: 'sessions',
       suggestedPrompts: [],
       selectedNode: null,
-      isRestoring: false,
-      isRefreshing: false,
-      smartFilterRequest: null,
-
-      setSidebarMode: mode =>
-        set(_state => {
+        isRestoring: false,
+        isRefreshing: false,
+        smartFilterRequest: null,
+        analysisReviewResult: null,
+      
+            setSidebarMode: mode =>        set(_state => {
           const updates: Partial<ProjectState> = { sidebarMode: mode }
           if (mode === 'sessions') {
             updates.activeView = 'chat'
@@ -223,6 +231,67 @@ export const useProjectStore = create<ProjectState>()(
       setShowRefreshConfirm: open => set({ showRefreshConfirm: open }),
       setRefreshing: val => set({ isRefreshing: val }),
       setSmartFilterRequest: req => set({ smartFilterRequest: req }),
+      setAnalysisReviewResult: result => set({ analysisReviewResult: result }),
+
+      applyAnalysisResult: async ({
+        selectedRelations,
+        selectedMetrics,
+        selectedPrompts,
+      }) => {
+        const {
+          addRelation,
+          addSmartMetric,
+          setSuggestedPrompts,
+          files,
+          suggestedPrompts: oldPrompts,
+        } = get()
+
+        // 1. Add Relations
+        for (const rel of selectedRelations) {
+          const fileA = files.find(f => f.tableName === rel.sourceTable)
+          const fileB = files.find(f => f.tableName === rel.targetTable)
+          if (fileA && fileB) {
+            // Check for duplicates handled inside addRelation, but we call it sequentially
+            addRelation({
+              sourceFileId: fileA.id,
+              sourceColumn: rel.sourceColumn,
+              targetFileId: fileB.id,
+              targetColumn: rel.targetColumn,
+              autoDetected: true,
+            })
+          }
+        }
+
+        // 2. Add Metrics (With Duplicate Check)
+        await Promise.all(
+          selectedMetrics.map(async m => {
+            const file = files.find(f => f.tableName === m.tableName)
+            if (file) {
+              const exists = (file.smartMetrics || []).some(
+                existing =>
+                  existing.name === m.name ||
+                  existing.sqlExpression === m.sqlExpression
+              )
+              if (!exists) {
+                await addSmartMetric(file.id, {
+                  id: crypto.randomUUID(),
+                  name: m.name,
+                  sqlExpression: m.sqlExpression,
+                  description: m.description,
+                })
+              }
+            }
+          })
+        )
+
+        // 3. Update Prompts (Direct Replacement)
+        if (selectedPrompts.length > 0) {
+          setSuggestedPrompts(selectedPrompts)
+        }
+
+        // Clear modal
+        set({ analysisReviewResult: null })
+      },
 
       refreshSessionWidgets: async () => {
         const state = get()
@@ -1374,6 +1443,7 @@ export const useProjectStore = create<ProjectState>()(
           sidebarMode: _sm,
           selectedNode: _sn,
           smartFilterRequest: _sfr,
+          analysisReviewResult: _arr,
           isProjectLoaded: _ipl,
           ...rest
         } = state
@@ -1393,6 +1463,7 @@ export const useProjectStore = create<ProjectState>()(
           isRestoring: false,
           isRefreshing: false,
           smartFilterRequest: null,
+          analysisReviewResult: null,
           pendingReplace: null,
         }
       },

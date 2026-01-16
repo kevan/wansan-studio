@@ -6,6 +6,7 @@ import {
   TrendingUp,
   Lightbulb,
   RefreshCw,
+  Wand2,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { useProjectStore } from '../../stores/useProjectStore'
@@ -113,31 +114,45 @@ export function EmptyState({
               disabled={isChatLoading || isRestoring || isAnalyzing}
               className={cn(
                 'group flex items-center gap-3 px-4 py-3 rounded-2xl bg-white border border-zinc-200 text-zinc-600 text-[12px] font-medium shadow-sm transition-all text-left overflow-hidden',
-                (isChatLoading || isRestoring || isAnalyzing)
+                isChatLoading || isRestoring || isAnalyzing
                   ? 'opacity-50 cursor-not-allowed border-zinc-100'
                   : 'hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/30 hover:shadow-md active:scale-95'
               )}
             >
               <div className="w-1.5 h-1.5 rounded-full bg-zinc-300 group-hover:bg-indigo-400 transition-colors shrink-0" />
               <span className="truncate flex-1">
-                  {item.isAi ? item.prompt : t(`chat:${item.prompt}`)}
+                {item.isAi ? item.prompt : t(`chat:${item.prompt}`)}
               </span>
             </button>
           ))}
         </div>
 
-        {/* Regenerate Button - Only show if we have data and AI prompts */}
-        {hasData && suggestedPrompts.length > 0 && (
-            <div className="flex justify-center mt-2">
-                <button 
-                    onClick={() => checkAutoLink()}
-                    disabled={isChatLoading || isRestoring || isAnalyzing}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-zinc-400 hover:text-indigo-600 transition-colors disabled:opacity-50"
-                >
-                    <RefreshCw className={cn("w-3 h-3", isAnalyzing && "animate-spin")} />
-                    {t('common:regenerate')}
-                </button>
-            </div>
+        {/* AI Analysis Trigger - Always show if we have data */}
+        {hasData && (
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={() => checkAutoLink()}
+              disabled={isChatLoading || isRestoring || isAnalyzing}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all',
+                isAnalyzing
+                  ? 'text-zinc-400 cursor-not-allowed'
+                  : 'text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50/50 active:scale-95'
+              )}
+            >
+              {isAnalyzing ? (
+                <>
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                  {t('chat:auto_link_analyzing_title')}...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3 h-3" />
+                  {t('chat:run_analysis')}
+                </>
+              )}
+            </button>
+          </div>
         )}
       </div>
     </div>

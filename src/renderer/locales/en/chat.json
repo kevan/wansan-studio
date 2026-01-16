@@ -139,5 +139,18 @@
   "lineage_latency_split": "AI Inference: {{aiLatency}}ms · Compute: {{dbLatency}}ms",
   "lineage_latency_total": "Total Latency: {{latency}}ms",
   "clear_selection": "Clear",
-  "run_analysis": "Run Analysis"
+  "run_analysis": "Smart Modeling",
+  "review_analysis_title": "Review AI Analysis",
+  "review_analysis_desc": "AI has analyzed your data. Please review and confirm the suggested relationships and metrics.",
+  "tab_relations": "Relationships",
+  "tab_metrics": "Smart Metrics",
+  "tab_prompts": "Prompts",
+  "confirm_apply": "Confirm & Apply",
+  "confidence_score": "Confidence: {{score}}%",
+  "sql_expression": "Formula",
+  "no_suggestions": "No suggestions found.",
+  "source": "Source",
+  "target": "Target",
+  "metric_name": "Name",
+  "metric_table": "Table"
 }

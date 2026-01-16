@@ -172,7 +172,9 @@ ${schemaContext}
         role: 'system',
         content: `${CONTEXT_ANALYSIS_SYSTEM_PROMPT}
 
-OUTPUT RULE: The "suggestedPrompts" MUST be written in ${languageNote}.`,
+OUTPUT RULE:
+1. The "suggestedPrompts" MUST be written in ${languageNote}.
+2. The "reason" field in "relationships" and "metrics" MUST be written in ${languageNote}.`,
       },
       { role: 'user', content: userPrompt },
     ],
