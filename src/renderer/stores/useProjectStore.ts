@@ -14,12 +14,8 @@ import {
 import { Layout } from 'react-grid-layout'
 import { createBigIntStorage } from '@shared/serialization'
 import { Analytics } from '../services/analytics'
-import { useSettingsStore } from './useSettingsStore'
 import { FilterParam } from '@shared/schemas/analysis'
 import { DuckDBViewManager } from '../lib/duckdb-view-manager'
-import { getCleanedRegistry } from '../utils/project-utils'
-
-const TRIAL_FILE_LIMIT = 3
 
 // 生成唯一 ID
 const generateId = () =>
@@ -88,7 +84,10 @@ export interface ProjectState extends ProjectData {
     update: Partial<ReportWidget> | ((w: ReportWidget) => ReportWidget)
   ) => void
   updateWidgetData: (id: string, update: Partial<ReportData>) => void
-  updateRegistryByWidgetId: (widgetId: string, updates: Partial<ReportData>) => void
+  updateRegistryByWidgetId: (
+    widgetId: string,
+    updates: Partial<ReportData>
+  ) => void
   updateLayout: (layout: Layout[]) => void
   setCanvasConfig: (config: any) => void
   setLayoutScenario: (scenario: LayoutScenario) => void
@@ -199,13 +198,14 @@ export const useProjectStore = create<ProjectState>()(
       sidebarMode: 'sessions',
       suggestedPrompts: [],
       selectedNode: null,
-        isRestoring: false,
-        isRefreshing: false,
-        smartFilterRequest: null,
-        analysisReviewResult: null,
-        isSmartModelingOpen: false,
-      
-            setSidebarMode: mode =>        set(_state => {
+      isRestoring: false,
+      isRefreshing: false,
+      smartFilterRequest: null,
+      analysisReviewResult: null,
+      isSmartModelingOpen: false,
+
+      setSidebarMode: mode =>
+        set(_state => {
           const updates: Partial<ProjectState> = { sidebarMode: mode }
           if (mode === 'sessions') {
             updates.activeView = 'chat'
@@ -752,8 +752,6 @@ export const useProjectStore = create<ProjectState>()(
           }
           return state
         }),
-
-
 
       setCanvasConfig: (config: any) =>
         set(state => ({
@@ -1431,32 +1429,12 @@ export const useProjectStore = create<ProjectState>()(
       name: 'wansan-project-v2',
       storage: createBigIntStorage(),
       partialize: state => {
-        // Use common utility to prune registry before persistence
-        const cleanedRegistry = getCleanedRegistry(state.widgetRegistry, state.sessions)
-
-        // Exclude transient/runtime state from persistence
-        const {
-          abortControllers: _ac,
-          layoutScenario: _ls,
-          editingReportId: _er,
-          pendingReplace: _pr,
-          showRefreshConfirm: _src,
-          isRestoring: _ir,
-          isRefreshing: _iref,
-          activeView: _av,
-          sidebarMode: _sm,
-          selectedNode: _sn,
-          smartFilterRequest: _sfr,
-          analysisReviewResult: _arr,
-          isSmartModelingOpen: _ismo,
-          isProjectLoaded: _ipl,
-          ...rest
-        } = state
-
+        // Only persist the project path and active session ID (navigation preference).
+        // Core data (files, sessions, widgets) MUST be loaded from disk (SSOT).
         return {
-          ...rest,
-          widgetRegistry: cleanedRegistry,
-        }
+          currentProjectPath: state.currentProjectPath,
+          activeSessionId: state.activeSessionId,
+        } as unknown as ProjectState
       },
       merge: (persistedState: any, currentState) => {
         // Force transient fields to null/default even if they exist in storage
@@ -1475,19 +1453,7 @@ export const useProjectStore = create<ProjectState>()(
       },
       onRehydrateStorage: () => state => {
         if (state) {
-          // 1. Clean the registry using common utility
-          const cleanedRegistry = getCleanedRegistry(state.widgetRegistry, state.sessions)
-          state.widgetRegistry = cleanedRegistry
-
-          // 2. Clean the dashboard: remove any widgets that point to non-existent registry entries.
-          state.sessions.forEach(s => {
-            s.dashboard.widgets = s.dashboard.widgets.filter(
-              w => w.widgetId && cleanedRegistry[w.widgetId]
-            )
-          })
-
-          // 3. Reset Transient UI States
-          // Even though partialize excludes them, we reset here to be safe against stale storage
+          // Ensure transient UI states are reset on reload
           state.editingReportId = null
           state.smartFilterRequest = null
           state.analysisReviewResult = null
@@ -1496,6 +1462,7 @@ export const useProjectStore = create<ProjectState>()(
           state.showRefreshConfirm = false
           state.isRestoring = false
           state.isRefreshing = false
+          state.isProjectLoaded = false // Force reload from disk
         }
       },
     }
