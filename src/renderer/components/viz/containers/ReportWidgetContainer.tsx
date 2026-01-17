@@ -124,7 +124,9 @@ export function ReportWidgetContainer({
           <div className={cn(
             "flex flex-col",
             displayMode === 'chart' && "justify-center",
-            displayMode === 'chart' ? "p-3 sm:p-4 md:p-6 lg:p-8" : "p-3 sm:p-4 md:p-5"
+            displayMode === 'chart' ? "p-3 sm:p-4 md:p-6 lg:p-8" : "p-3 sm:p-4 md:p-5",
+            // Add additional bottom padding when insight is missing to maintain visual balance
+            (!reportData.insight || reportConfig.showInsight === false) && "pb-8 sm:pb-10 md:pb-12 lg:pb-14"
           )}>
             <VizRenderer
               {...reportData}

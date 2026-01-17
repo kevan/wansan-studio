@@ -277,13 +277,13 @@ export function AnalysisReviewModal({
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <p className="text-xs text-zinc-500 truncate flex-1">
+                  <div className="flex items-start justify-between gap-4">
+                    <p className="text-xs text-zinc-500 leading-relaxed flex-1">
                       {rel.reason}
                     </p>
                     <span
                       className={cn(
-                        'text-[10px] font-bold px-1.5 py-0.5 rounded uppercase',
+                        'text-[10px] font-bold px-1.5 py-0.5 rounded uppercase whitespace-nowrap mt-0.5',
                         rel.confidence > 0.8
                           ? 'bg-emerald-50 text-emerald-600'
                           : 'bg-amber-50 text-amber-600'
@@ -321,7 +321,7 @@ export function AnalysisReviewModal({
                   checked={selectedMetrics.has(i)}
                   onChange={() => toggleMetric(i)}
                 />
-                <div className="flex-1 space-y-1">
+                <div className="flex-1 min-w-0 space-y-1.5">
                   <div className="flex items-center justify-between gap-4">
                     <h4 className="text-sm font-semibold text-zinc-900 truncate">
                       {m.name}
@@ -333,12 +333,12 @@ export function AnalysisReviewModal({
                       {m.tableName}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-zinc-500">{m.description}</p>
+                  <div className="flex items-start justify-between gap-4">
+                    <p className="text-xs text-zinc-500 leading-relaxed flex-1">{m.description}</p>
                     {m.confidence !== undefined && (
                       <span
                         className={cn(
-                          'text-[10px] font-bold px-1.5 py-0.5 rounded uppercase',
+                          'text-[10px] font-bold px-1.5 py-0.5 rounded uppercase whitespace-nowrap mt-0.5',
                           m.confidence > 0.8
                             ? 'bg-emerald-50 text-emerald-600'
                             : 'bg-amber-50 text-amber-600'
@@ -351,11 +351,11 @@ export function AnalysisReviewModal({
                     )}
                   </div>
                   {m.reason && (
-                    <p className="text-[10px] text-zinc-400 mt-1 italic">
+                    <p className="text-[11px] text-zinc-400 mt-2 italic leading-relaxed border-l-2 border-zinc-100 pl-3 py-0.5">
                       {m.reason}
                     </p>
                   )}
-                  <div className="bg-zinc-50 border border-zinc-200 rounded px-2 py-1.5 mt-1.5">
+                  <div className="bg-zinc-50 border border-zinc-200 rounded px-2.5 py-2 mt-2">
                     <code className="text-[10px] text-zinc-600 font-mono break-all block">
                       {m.sqlExpression}
                     </code>

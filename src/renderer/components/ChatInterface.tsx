@@ -415,7 +415,7 @@ function MessageSuggestions({
   const [isExpanded, setIsExpanded] = useState(isLast)
 
   useEffect(() => {
-    if (isLast) setIsExpanded(true)
+    setIsExpanded(isLast)
   }, [isLast])
 
   return (

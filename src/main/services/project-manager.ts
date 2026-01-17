@@ -1,11 +1,7 @@
 import path from 'path'
 import fs from 'fs-extra'
-import gracefulFs from 'graceful-fs'
 import { v4 as uuidv4 } from 'uuid'
 import { NativeDatabaseService } from './native-db-service'
-
-// Patch global fs to use graceful-fs features (e.g. queueing on EMFILE)
-gracefulFs.gracefulify(fs)
 
 import {
   ProjectManifest,

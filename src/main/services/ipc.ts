@@ -141,8 +141,12 @@ export function setupIPC(
       )
 
       return { success: true, data: filesWithStats }
-    } catch (error) {
-      return { success: false, error: 'Multi-file selection error' }
+    } catch (error: any) {
+      console.error('[IPC] select-files error:', error)
+      return {
+        success: false,
+        error: error.message || 'Multi-file selection error',
+      }
     }
   })
 

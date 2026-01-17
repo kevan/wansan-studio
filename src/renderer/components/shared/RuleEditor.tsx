@@ -79,7 +79,7 @@ function SortableItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'group flex items-start gap-3 p-3 pl-8 pr-12 rounded-2xl border transition-all bg-white relative',
+        'group flex items-start gap-3 p-3 pl-8 pr-10 rounded-2xl border transition-all bg-white relative',
         isEditing ? 'ring-2 ring-indigo-500 border-transparent shadow-xl z-20' : (
           rule.isEnabled
             ? 'border-zinc-200 shadow-sm hover:shadow-md hover:border-zinc-300'
@@ -103,9 +103,10 @@ function SortableItem({
           <MarkdownEditor
             value={rule.content}
             onChange={val => onUpdate(rule.id, val)}
-            hideToolbar={true}
-            minHeight="40px"
-            className="border-none bg-transparent shadow-none focus-within:ring-0 px-0 py-0"
+            hideToolbar={false}
+            minHeight="32px"
+            className="border-none bg-transparent shadow-none"
+            contentClassName="px-0 py-1"
           />
         ) : (
           <div 
@@ -129,8 +130,8 @@ function SortableItem({
 
       {/* Floating Toolbar - Top Right */}
       <div className={cn(
-        "absolute right-2 top-2 flex items-center gap-1 p-1 bg-white/95 backdrop-blur-sm border border-zinc-200/80 shadow-sm rounded-lg transition-all duration-200",
-        (isEditing || !rule.isEnabled) ? "opacity-100 border-zinc-300" : "opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0"
+        "absolute right-2 top-2.5 flex items-center gap-0.5 transition-all duration-200",
+        (isEditing || !rule.isEnabled) ? "opacity-100" : "opacity-0 group-hover:opacity-100 translate-y-0.5 group-hover:translate-y-0"
       )}>
         {isEditing ? (
           <button
@@ -138,10 +139,10 @@ function SortableItem({
               e.stopPropagation();
               onStopEdit(rule.id, rule.content);
             }}
-            className="w-7 h-7 rounded-md flex items-center justify-center bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
+            className="w-6 h-6 rounded-md flex items-center justify-center bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition-all active:scale-95"
             title="Finish editing"
           >
-            <Check className="w-4 h-4" />
+            <Check className="w-3.5 h-3.5 stroke-[3]" />
           </button>
         ) : (
           <button
@@ -150,30 +151,28 @@ function SortableItem({
               onToggle(rule.id);
             }}
             className={cn(
-              'w-7 h-7 rounded-md flex items-center justify-center transition-colors hover:bg-zinc-100',
+              'w-6 h-6 rounded-md flex items-center justify-center transition-all hover:bg-zinc-100',
               rule.isEnabled ? 'text-indigo-600' : 'text-zinc-400'
             )}
             title={rule.isEnabled ? "Disable rule" : "Enable rule"}
           >
             {rule.isEnabled ? (
-              <CheckCircle2 className="w-4 h-4" />
+              <CheckCircle2 className="w-3.5 h-3.5" />
             ) : (
-              <Circle className="w-4 h-4" />
+              <Circle className="w-3.5 h-3.5" />
             )}
           </button>
         )}
         
-        <div className="w-px h-4 bg-zinc-200" />
-
         <button
           onClick={(e) => {
             e.stopPropagation();
             onRemove(rule.id);
           }}
-          className="w-7 h-7 rounded-md flex items-center justify-center text-zinc-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+          className="w-6 h-6 rounded-md flex items-center justify-center text-zinc-400 hover:text-rose-500 hover:bg-rose-50 transition-all"
           title="Remove rule"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>

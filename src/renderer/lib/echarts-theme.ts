@@ -385,11 +385,21 @@ export function applyWansanTheme(
     ? option.xAxis.map((x: any) => ({
         ...x,
         ...commonAxis,
+        axisLabel: {
+          ...commonAxis.axisLabel,
+          rotate: 30, // [NEW] Slant X-axis text
+          ...x.axisLabel,
+        },
         splitLine: { show: false }, // Usually hide vertical grid
       }))
     : {
         ...(option.xAxis as any),
         ...commonAxis,
+        axisLabel: {
+          ...commonAxis.axisLabel,
+          rotate: 30, // [NEW] Slant X-axis text
+          ...(option.xAxis as any)?.axisLabel,
+        },
         splitLine: { show: false },
       }
 

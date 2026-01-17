@@ -20,6 +20,7 @@ interface MarkdownEditorProps {
   onChange: (value: string) => void
   placeholder?: string
   className?: string
+  contentClassName?: string // [NEW]
   minHeight?: string
   hideToolbar?: boolean
 }
@@ -28,6 +29,7 @@ export function MarkdownEditor({
   value,
   onChange,
   className,
+  contentClassName, // [NEW]
   minHeight = '120px',
   hideToolbar = false,
   placeholder,
@@ -46,13 +48,13 @@ export function MarkdownEditor({
     plugins.push(
       toolbarPlugin({
         toolbarContents: () => (
-          <div className="flex items-center gap-0.5 px-3 py-1.5 w-full bg-white/20 border-b border-zinc-50/50">
+          <div className="flex items-center gap-0.5 px-2 py-1 w-full bg-zinc-50/50 border-b border-zinc-100/50">
             <BoldItalicUnderlineToggles />
-            <div className="w-px h-3 bg-zinc-200/60 mx-1.5" />
+            <div className="w-px h-3 bg-zinc-200/60 mx-1" />
             <div className="wansan-lists-group flex gap-0.5">
               <ListsToggle />
             </div>
-            <div className="w-px h-3 bg-zinc-200/60 mx-1.5" />
+            <div className="w-px h-3 bg-zinc-200/60 mx-1" />
             <UndoRedo />
           </div>
         ),
@@ -73,7 +75,10 @@ export function MarkdownEditor({
         onChange={onChange}
         placeholder={placeholder}
         // Remove 'prose' to avoid conflicts. Use custom class for full control.
-        contentEditableClassName="wansan-editor-content max-w-none focus:outline-none px-4 py-3 selection:bg-indigo-100 text-sm text-zinc-700"
+        contentEditableClassName={cn(
+          "wansan-editor-content max-w-none focus:outline-none px-4 py-3 selection:bg-indigo-100 text-sm text-zinc-700",
+          contentClassName
+        )}
         plugins={plugins}
       />
       <style>{`
@@ -93,31 +98,31 @@ export function MarkdownEditor({
         
         /* Basic Text */
         .wansan-editor-content p {
-            margin-bottom: 0.75rem;
-            line-height: 1.75;
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
             font-size: 0.9rem;
         }
 
         /* Headings */
-        .wansan-editor-content h1 { font-size: 1.5rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0.5rem; }
-        .wansan-editor-content h2 { font-size: 1.25rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; }
-        .wansan-editor-content h3 { font-size: 1.125rem; font-weight: 600; margin-top: 0.75rem; margin-bottom: 0.5rem; }
+        .wansan-editor-content h1 { font-size: 1.4rem; font-weight: 700; margin-top: 0.75rem; margin-bottom: 0.4rem; }
+        .wansan-editor-content h2 { font-size: 1.2rem; font-weight: 600; margin-top: 0.75rem; margin-bottom: 0.4rem; }
+        .wansan-editor-content h3 { font-size: 1.1rem; font-weight: 600; margin-top: 0.5rem; margin-bottom: 0.4rem; }
 
         /* Lists - Standard */
         .wansan-editor-content ul {
             list-style-type: disc !important;
             padding-left: 1.2rem !important;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
         }
         .wansan-editor-content ol {
             list-style-type: decimal !important;
             padding-left: 1.2rem !important;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
         }
         .wansan-editor-content li {
-            margin-bottom: 0.35rem;
-            padding-left: 0.25rem;
-            line-height: 1.6;
+            margin-bottom: 0.25rem;
+            padding-left: 0.2rem;
+            line-height: 1.5;
         }
         /* Ensure list markers are visible */
         .wansan-editor-content li::marker {
@@ -139,23 +144,24 @@ export function MarkdownEditor({
         /* --- Toolbar Styles --- */
         
         .markdown-editor-wrapper [role="toolbar"] {
-            padding: 4px 12px;
-            min-height: 36px;
+            padding: 2px 8px;
+            min-height: 32px;
             overflow: visible;
             display: flex;
-            gap: 2px;
-            background-color: #ffffff;
+            align-items: center;
+            gap: 1px;
+            background-color: transparent;
             border-bottom: 1px solid #f4f4f5; /* zinc-100 */
         }
         
         .markdown-editor-wrapper [role="toolbar"] button {
-            width: 26px;
-            height: 26px;
+            width: 24px;
+            height: 24px;
             padding: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 6px;
+            border-radius: 5px;
             color: #a1a1aa; /* zinc-400 */
             border: 1px solid transparent; 
             margin: 0;
@@ -170,32 +176,25 @@ export function MarkdownEditor({
         
         .markdown-editor-wrapper [role="toolbar"] button[data-state="on"] {
             color: #4f46e5 !important; /* indigo-600 */
-            background-color: transparent;
+            background-color: #eff6ff; /* indigo-50 */
         }
 
         .markdown-editor-wrapper [role="toolbar"] button[data-state="on"] svg {
             stroke-width: 2.2px;
-            transform: scale(1.15); /* Slightly larger when active */
             color: currentColor;
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy feel */
-        }
-
-        .markdown-editor-wrapper [role="toolbar"] button[data-state="on"]:hover {
-            background-color: #f4f4f5;
-            color: #4338ca !important;
         }
 
         /* Toolbar Divider */
         .markdown-editor-wrapper [role="toolbar"] .w-px {
-            height: 12px;
+            height: 10px;
             background-color: #e4e4e7; /* zinc-200 */
-            margin: 0 6px;
+            margin: 0 4px;
             align-self: center;
         }
 
         .markdown-editor-wrapper [role="toolbar"] svg {
-            width: 14px;
-            height: 14px;
+            width: 13px;
+            height: 13px;
         }
 
         /* Hide Checklist buttons - Try standard MDXEditor labels */

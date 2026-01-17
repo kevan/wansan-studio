@@ -31,7 +31,9 @@ export function FileSelectionStep() {
 
   const handleSelectFiles = async () => {
     if (!window.electronAPI) return
+    console.log('[Wizard] Opening file dialog...')
     const result = await window.electronAPI.selectFiles()
+    console.log('[Wizard] Dialog result:', result)
 
     if (result.success && result.data && result.data.length > 0) {
       // Map result to include 'name' derived from path
@@ -39,7 +41,10 @@ export function FileSelectionStep() {
         ...f,
         name: f.path.split(/[\\/]/).pop() || 'unknown',
       }))
+      console.log('[Wizard] Setting selected files:', filesWithNames)
       setFiles(filesWithNames)
+    } else {
+        console.warn('[Wizard] File selection failed or empty', result)
     }
   }
 
@@ -61,6 +66,7 @@ export function FileSelectionStep() {
     if (selectedFiles.length === 0) return
 
     const parseFiles = async () => {
+      console.log('[Wizard] Starting parseFiles for:', selectedFiles)
       setIsParsing(true)
       setError(null)
       setParseProgress(null)
@@ -68,7 +74,9 @@ export function FileSelectionStep() {
 
       try {
         for (const file of selectedFiles) {
+          console.log('[Wizard] Parsing file:', file.path)
           const res = await window.electronAPI.parseFile(file.path)
+          console.log('[Wizard] Parse result:', res)
           if (!res.success) {
             throw new Error(res.error || 'Failed to parse file')
           }
