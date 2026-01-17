@@ -9,25 +9,31 @@ export async function exportDebugLog() {
 
   const chats = useChatStore.getState().messages
   const logs = await useLogStore.getState().getAllLogs()
-  
+
   let mainLogs: any[] = []
+  const platform = window.electronAPI?.platform ?? 'unknown'
   if (window.electronAPI?.getMainLogs) {
-      const resp = await window.electronAPI.getMainLogs()
-      if (resp.success) {
-          mainLogs = resp.data || []
-      }
+    const resp = await window.electronAPI.getMainLogs()
+    if (resp.success) {
+      mainLogs = resp.data || []
+    }
   }
 
   const report = {
     timestamp: new Date().toISOString(),
     app_info: {
       version: __APP_VERSION__,
-      platform: navigator.platform,
-      userAgent: navigator.userAgent,
+      platform: platform,
     },
     settings: {
-      ...settings,
-      apiKey: 'REDACTED', // CRITICAL: Mask API Key
+      provider: settings.provider,
+      model: settings.model,
+      baseUrl: settings.baseUrl,
+      language: settings.language,
+      isActivated: settings.isActivated,
+      isSpecialChannel: settings.isSpecialChannel,
+      showChartLabels: settings.showChartLabels,
+      suggestionCount: settings.suggestionCount,
     },
     files: files.map(f => ({
       name: f.name,
@@ -57,7 +63,7 @@ export async function exportDebugLog() {
       `wansan-debug-${Date.now()}.json`
     )
     if (result.success && result.data) {
-        return result.data as string
+      return result.data as string
     }
     return null
   } else {
