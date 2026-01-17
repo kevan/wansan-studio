@@ -31,6 +31,7 @@ jobs:
         if: matrix.os == 'macos-latest'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_OPTIONS: --max-old-space-size=4096
           # Force skip signing
           CSC_IDENTITY_AUTO_DISCOVERY: false
         run: npm run dist:mac:all
@@ -39,6 +40,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_OPTIONS: --max-old-space-size=4096
         run: npm run dist:win
 
       - name: Upload Artifacts to PUBLIC Release

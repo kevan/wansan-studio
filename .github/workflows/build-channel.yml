@@ -42,6 +42,7 @@ jobs:
 
       - name: Build and Package
         env:
+          NODE_OPTIONS: --max-old-space-size=4096
           # 核心渠道信息
           VITE_SPECIAL_CHANNEL: ${{ env.CHANNEL }}
           VITE_DEFAULT_EXPIRY: ${{ vars[format('{0}_EXPIRY', env.CHANNEL_UPPER)] || '2026-12-31' }} # 默认有效期，也可通过 vars.[CHANNEL]_EXPIRY 获取
