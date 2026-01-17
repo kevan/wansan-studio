@@ -393,6 +393,8 @@
   "download": "下载",
   "announcement_title": "公告",
   "announcement_important": "重要通知",
+  "announcement_dismiss": "不再显示",
+  "update_ignore": "忽略此版本",
   "error_boundary_title": "发生了一些错误。",
   "error_boundary_description": "发生了一个意外错误。请尝试重新加载应用。",
   "error_boundary_reload_button": "重新加载应用",

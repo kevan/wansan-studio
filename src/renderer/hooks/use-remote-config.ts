@@ -6,27 +6,26 @@ import { useTranslation } from 'react-i18next'
 
 export function useRemoteConfig() {
   const setRemoteConfig = useSettingsStore(s => s.setRemoteConfig)
-  const updateSettings = useSettingsStore(s => s.updateSettings)
-  const dismissedAnnouncementId = useSettingsStore(
-    s => s.dismissedAnnouncementId
-  )
+  const dismissedAnnouncementId = useSettingsStore(s => s.dismissedAnnouncementId)
+  const ignoredUpdateVersion = useSettingsStore(s => s.ignoredUpdateVersion)
+  const dismissedRef = useRef<string | null>(null)
+  const ignoredVersionRef = useRef<string | null>(null)
+
+  // Keep refs in sync
+  useEffect(() => {
+    dismissedRef.current = useSettingsStore.getState().dismissedAnnouncementId
+    ignoredVersionRef.current = useSettingsStore.getState().ignoredUpdateVersion
+  }, [dismissedAnnouncementId, ignoredUpdateVersion])
+
   const { addToast } = useToastStore()
   const { t } = useTranslation('common')
   const appVersion = __APP_VERSION__ || '0.0.0'
-  const initialized = useRef(false)
 
   useEffect(() => {
-    if (initialized.current) return
-    initialized.current = true
-
-    // 核心安全变更：不再在前端发起 fetch
-    // 而是通过 Electron 提供的订阅机制接收主进程（后端）下发的安全配置
     const unsub = window.electronAPI?.onRemoteConfig?.((config: any) => {
-      console.log(
-        '[useRemoteConfig] Received verified config from Main Process'
-      )
+      console.log('[useRemoteConfig] Received config:', config)
 
-      // 处理特殊渠道的回退逻辑（当网络请求失败但本地环境变量存在时）
+      // ... (fallback logic)
       if (config.isSpecialFallback) {
         setRemoteConfig({ ...useSettingsStore.getState().remoteConfig })
         return
@@ -35,32 +34,27 @@ export function useRemoteConfig() {
       setRemoteConfig(config)
 
       // 1. Force Update Check
-
       if (config.min_version && semver.lt(appVersion, config.min_version)) {
-        const event = new CustomEvent('force-update', {
-          detail: {
-            version: config.latest_version,
-            url: config.download_url || 'https://wansan.app',
-          },
-        })
-        document.dispatchEvent(event)
+        document.dispatchEvent(new CustomEvent('force-update', {
+          detail: { version: config.latest_version, url: config.download_url || 'https://wansan.app' }
+        }))
       }
 
       // 2. 软件更新提示
       if (
         config.latest_version &&
-        semver.gt(config.latest_version, appVersion)
+        semver.gt(config.latest_version, appVersion) &&
+        config.latest_version !== ignoredVersionRef.current
       ) {
         addToast({
           title: t('update_available', { version: config.latest_version }),
           description: t('update_available_desc'),
           type: 'info',
-          duration: 10000,
+          duration: 15000,
           action: {
-            label: t('download'),
+            label: t('update_ignore'),
             onClick: () => {
-              const url = config.download_url || 'https://wansan.app'
-              window.electronAPI?.openExternal?.(url)
+              useSettingsStore.getState().ignoreUpdate(config.latest_version)
             },
           },
         })
@@ -70,33 +64,36 @@ export function useRemoteConfig() {
       const { language } = useSettingsStore.getState()
       if (
         config.announcement &&
-        config.announcement.id !== dismissedAnnouncementId
+        config.announcement.id !== dismissedRef.current
       ) {
         const rawText = config.announcement.text
         const displayText =
           typeof rawText === 'object'
-            ? rawText[language] || rawText['en'] || Object.values(rawText)[0]
+            ? rawText[language] || rawText[language.split('-')[0]] || rawText['en'] || Object.values(rawText)[0]
             : rawText
 
-        addToast({
-          title:
-            config.announcement.level === 'warning'
-              ? t('announcement_important')
-              : t('announcement_title'),
-          description: displayText,
-          type: config.announcement.level === 'warning' ? 'error' : 'info',
-          duration: 10000,
-        })
+        if (displayText) {
+          addToast({
+            title:
+              config.announcement.level === 'warning'
+                ? t('announcement_important')
+                : t('announcement_title'),
+            description: displayText,
+            type: config.announcement.level === 'warning' ? 'error' : 'info',
+            duration: 15000,
+            action: {
+              label: t('announcement_dismiss'),
+              onClick: () => {
+                useSettingsStore
+                  .getState()
+                  .dismissAnnouncement(config.announcement.id)
+              },
+            },
+          })
+        }
       }
     })
 
     return () => unsub?.()
-  }, [
-    setRemoteConfig,
-    addToast,
-    appVersion,
-    updateSettings,
-    dismissedAnnouncementId,
-    t,
-  ])
+  }, [setRemoteConfig, addToast, appVersion, t])
 }

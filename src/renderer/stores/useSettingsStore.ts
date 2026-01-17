@@ -27,6 +27,7 @@ export interface SettingsState {
   deviceId?: string
   remoteConfig: AppConfig
   dismissedAnnouncementId: string | null
+  ignoredUpdateVersion: string | null // [NEW]
   domainRules: DomainRule[]
   recentProjectPaths: string[]
   isSpecialChannel: boolean
@@ -38,6 +39,7 @@ export interface SettingsState {
   loadSensitiveData: () => Promise<void>
   setRemoteConfig: (cfg: AppConfig) => void
   dismissAnnouncement: (id: string) => void
+  ignoreUpdate: (version: string) => void // [NEW]
   addDomainRule: (content: string) => void
   toggleDomainRule: (id: string) => void
   removeDomainRule: (id: string) => void
@@ -121,6 +123,7 @@ const initialSettingsState: Omit<
   isActivated: false,
   remoteConfig: {},
   dismissedAnnouncementId: null,
+  ignoredUpdateVersion: null,
   domainRules: [],
   recentProjectPaths: [],
   isSpecialChannel: false,
@@ -216,6 +219,7 @@ export const useSettingsStore = create<SettingsState>()(
         })
       },
       dismissAnnouncement: (id: string) => set({ dismissedAnnouncementId: id }),
+      ignoreUpdate: (version: string) => set({ ignoredUpdateVersion: version }),
       addDomainRule: content => {
         Analytics.track('domain_rule_added', { scope: 'global' })
         set(state => ({
@@ -312,6 +316,7 @@ export const useSettingsStore = create<SettingsState>()(
           baseUrl: state.baseUrl,
           model: state.model,
           dismissedAnnouncementId: state.dismissedAnnouncementId,
+          ignoredUpdateVersion: state.ignoredUpdateVersion,
           showChartLabels: false,
           suggestionCount: 3,
         }))
@@ -381,6 +386,7 @@ export const useSettingsStore = create<SettingsState>()(
           isSpecialChannel: isSpecial,
           isExpired: isExpired,
           dismissedAnnouncementId: state.dismissedAnnouncementId ?? null,
+          ignoredUpdateVersion: state.ignoredUpdateVersion ?? null,
         } as any
       },
     }

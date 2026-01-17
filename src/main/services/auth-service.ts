@@ -2,6 +2,7 @@ import { app } from 'electron'
 import Store from 'electron-store'
 import { getDeviceId } from './device'
 import type { RemoteConfig } from '@shared/types'
+import { getAppUserAgent } from '../utils/env'
 
 export interface AuthState {
   isActivated?: boolean
@@ -143,7 +144,8 @@ class AuthService {
     try {
       const res = await fetch(url.toString(), {
         headers: {
-          // 'Cache-Control:': 'no-cache',
+          // 'Cache-Control': 'no-cache',
+          'User-Agent': getAppUserAgent(),
           'X-App-Version': appVersion,
           'X-Special-Channel': this.channelEnv,
           'X-Device-Id': deviceId,

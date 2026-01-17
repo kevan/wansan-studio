@@ -15,6 +15,7 @@ import { createApplicationMenu } from './config/menu'
 import { authService } from './services/auth-service'
 import { setupFetchLogger } from './utils/fetch-logger'
 import { setupLogger } from './utils/logger'
+import { getAppUserAgent } from './utils/env'
 import type { AppConfig } from '../shared/types'
 
 class WansanApp {
@@ -58,6 +59,9 @@ class WansanApp {
 
     // 等待 Electron 准备就绪
     await app.whenReady()
+
+    // 设置全局 User-Agent 降级
+    app.userAgentFallback = getAppUserAgent()
 
     // 创建 AI Service 实例
     this.aiService = new AIService()

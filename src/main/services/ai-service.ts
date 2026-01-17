@@ -4,6 +4,7 @@ import type { ClientOptions } from 'openai'
 import { generateAnalysis, analyzeContext, fixSQL, generateInsight } from '../engine/ai-bridge'
 import crypto from 'crypto'
 import { secureGet, secureSet } from './secure-storage'
+import { getAppUserAgent } from '../utils/env'
 import type {
   TableSchema,
   AIAnalysisContext,
@@ -139,6 +140,9 @@ export class AIService {
       const options: ClientOptions = {
         apiKey: effectiveConfig.apiKey,
         baseURL: effectiveConfig.baseURL,
+        defaultHeaders: {
+          'User-Agent': getAppUserAgent(),
+        },
       }
       this.openai = new OpenAI(options)
     } else {

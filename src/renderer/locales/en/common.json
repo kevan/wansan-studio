@@ -395,6 +395,8 @@
   "download": "Download",
   "announcement_title": "Announcement",
   "announcement_important": "Important",
+  "announcement_dismiss": "Don't show again",
+  "update_ignore": "Ignore this version",
   "error_boundary_title": "Something went wrong.",
   "error_boundary_description": "An unexpected error occurred. Please try reloading the app.",
   "error_boundary_reload_button": "Reload App",
