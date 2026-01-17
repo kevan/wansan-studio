@@ -26,7 +26,9 @@ import type { ChatMessage } from '../ChatInterface'
 import { useTranslation } from 'react-i18next'
 import { exportDebugLog } from '@/utils/debug-exporter.ts'
 import { generateMarkdown } from '@/utils/markdown-exporter.ts'
+import { collectExcelDataFromChat } from '@/utils/export-utils.ts'
 import { useProGate } from '@/hooks/use-pro-gate'
+import { sanitizeFilename } from '@shared/naming-utils'
 
 interface MagicInputProps {
   onSubmit: (value: string) => void
@@ -190,7 +192,8 @@ export function MagicInput({
         })
 
         const content = generateMarkdown(messages)
-        const fileName = `Chat_Export_${new Date().toISOString().slice(0, 10)}.md`
+        const sessionTitle = sanitizeFilename(activeSession?.title, 'Chat')
+        const fileName = `${sessionTitle}_Export_${new Date().toISOString().slice(0, 10)}.md`
 
         const result = await window.electronAPI.saveFile(
           content,
@@ -216,6 +219,54 @@ export function MagicInput({
         console.error('Export failed', error)
         addToast({
           title: t('export_failed_title'),
+          description: String(error),
+          type: 'error',
+        })
+      }
+    })
+  }
+
+  const handleExportExcel = async () => {
+    checkGate('Excel Export', async () => {
+      try {
+        addToast({
+          title: tCommon('export_generating_file'),
+          description: tCommon('exporting_excel'),
+          type: 'info',
+          duration: 2000,
+        })
+
+        const sheets = await collectExcelDataFromChat(messages)
+        if (sheets.length === 0) {
+          addToast({ title: tCommon('no_chart_data'), type: 'warning' })
+          return
+        }
+
+        const sessionTitle = sanitizeFilename(activeSession?.title, 'Chat')
+        const fileName = `${sessionTitle}_Export_${new Date().toISOString().slice(0, 10)}.xlsx`
+        const result = await window.electronAPI.exportExcel({
+          filename: fileName,
+          sheets
+        })
+
+        if (result.success && result.data) {
+          const filePath = result.data as string
+          addToast({
+            title: tCommon('export_success'),
+            description: filePath,
+            type: 'success',
+            action: {
+              label: tCommon('open_folder'),
+              onClick: () => window.electronAPI.showItemInFolder(filePath),
+            },
+          })
+        } else if (result.error !== 'Cancelled') {
+          throw new Error(result.error)
+        }
+      } catch (error) {
+        console.error('Excel Export failed', error)
+        addToast({
+          title: tCommon('export_failed'),
           description: String(error),
           type: 'error',
         })
@@ -338,6 +389,19 @@ export function MagicInput({
         className: !isActivated ? 'text-zinc-400' : '',
       },
       {
+        id: 'export-excel',
+        label: t('export_excel'),
+        icon: isActivated ? FileSpreadsheet : Lock,
+        action: () => {
+          handleExportExcel()
+          setPopoverOpen(false)
+          setValue('')
+          setInputDraft('')
+          valueRef.current = ''
+        },
+        className: !isActivated ? 'text-zinc-400' : '',
+      },
+      {
         id: 'debug',
         label: t('debug_export_command'),
         icon: Bug,
@@ -426,7 +490,7 @@ export function MagicInput({
 
     if (trimmed.startsWith('/')) {
       const cmd = trimmed.slice(1).toLowerCase()
-      if (['clear', 'export', 'debug', 'refresh'].includes(cmd)) {
+      if (['clear', 'export', 'export-excel', 'debug', 'refresh'].includes(cmd)) {
         if (cmd === 'clear') {
           resetChat()
           addToast({ title: t('chat_cleared'), type: 'info', duration: 2500 })
@@ -452,6 +516,9 @@ export function MagicInput({
         }
         if (cmd === 'export') {
           handleExportMarkdown()
+        }
+        if (cmd === 'export-excel') {
+          handleExportExcel()
         }
         if (cmd === 'debug') {
           const debugPath = await exportDebugLog()

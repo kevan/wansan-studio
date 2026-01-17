@@ -27,6 +27,7 @@
   "export_success_title": "Export Successful",
   "export_failed_title": "Export Failed",
   "export_markdown": "Export Chat (Markdown)",
+  "export_excel": "Export Chat (Excel)",
   "debug_export_command": "Export Debug Log",
   "input_hint": "Enter to send • / commands • @ tables",
   "table_count": "{{count}} tables",

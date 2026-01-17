@@ -39,3 +39,12 @@ export function parseJoinedColumnName(
   if (parts.length < 2) return null
   return { prefix: parts[0], column: parts.slice(1).join('__') }
 }
+
+/**
+ * Sanitizes a string for use as a filename by replacing illegal characters.
+ */
+export function sanitizeFilename(name: string, fallback: string = 'file'): string {
+  if (!name) return fallback
+  // Replace illegal filename characters with underscore
+  return name.replace(/[\\\/\?\*\:\!\|\"\<\>\.]/g, '_') || fallback
+}

@@ -32,10 +32,12 @@
   },
   "dependencies": {
     "@duckdb/node-api": "^1.4.3-r.3",
+    "@types/graceful-fs": "^4.1.9",
     "electron-store": "^11.0.2",
     "electron-updater": "^6.1.7",
     "exceljs": "^4.4.0",
     "fs-extra": "^11.3.2",
+    "graceful-fs": "^4.2.11",
     "lodash.debounce": "^4.0.8",
     "node-machine-id": "^1.1.12",
     "openai": "^6.10.0",

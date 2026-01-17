@@ -32,8 +32,10 @@ import { useTranslation } from 'react-i18next'
 import { Analytics } from '../../services/analytics'
 import logo from '@/src/assets/logo.png'
 import { useExportWebReport } from '@/hooks/useIPC'
+import { collectExcelDataFromDashboard } from '@/utils/export-utils'
 import { ExportLoadingModal } from '../modals/ExportLoadingModal'
 import { useProGate } from '@/hooks/use-pro-gate'
+import { sanitizeFilename } from '@shared/naming-utils'
 
 export function DashboardHeader() {
   const { canvasConfig, setCanvasConfig, setLayoutScenario } =
@@ -53,6 +55,10 @@ export function DashboardHeader() {
 
   const handleExportWeb = async () => {
     const { pinnedReports, canvasConfig } = useWorkbenchStore.getState()
+    const activeSession = useProjectStore.getState().sessions.find(
+      s => s.id === useProjectStore.getState().activeSessionId
+    )
+    const sessionTitle = sanitizeFilename(activeSession?.title, canvasConfig.title || t('default_report_title'))
 
     // 1. Check if in Report Mode
     if (!isReport) {
@@ -70,12 +76,12 @@ export function DashboardHeader() {
       const filePath = await exportWebReport({
         widgets: pinnedReports,
         config: {
-          title: canvasConfig.title || t('default_report_title'),
+          title: sessionTitle,
           theme: 'minimal',
           language: language as 'en' | 'zh',
         },
         fullSnapshot: {
-          workbench: { canvasConfig },
+          workbench: { canvasConfig: { ...canvasConfig, title: sessionTitle } },
           settings: {
             showChartLabels: useSettingsStore.getState().showChartLabels,
           },
@@ -94,6 +100,62 @@ export function DashboardHeader() {
       console.error(e)
       if (String(e).includes('Cancelled')) return
       addToast({ title: t('export_failed', 'Export Failed'), type: 'error' })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleExportExcel = async () => {
+    const { pinnedReports, canvasConfig } = useWorkbenchStore.getState()
+    const activeSession = useProjectStore.getState().sessions.find(
+      s => s.id === useProjectStore.getState().activeSessionId
+    )
+    const sessionTitle = sanitizeFilename(activeSession?.title, 'Dashboard')
+    
+    Analytics.track('export_clicked', { format: 'excel' })
+    setIsExporting(true)
+    
+    try {
+      addToast({
+        title: t('export_generating_file'),
+        description: t('exporting_excel'),
+        type: 'info',
+        duration: 2000,
+      })
+
+      const sheets = await collectExcelDataFromDashboard(pinnedReports)
+      if (sheets.length === 0) {
+        addToast({ title: t('no_chart_data'), type: 'warning' })
+        return
+      }
+
+      const fileName = `${sessionTitle}_Export_${new Date().toISOString().slice(0, 10)}.xlsx`
+      const result = await window.electronAPI.exportExcel({
+        filename: fileName,
+        sheets
+      })
+
+      if (result.success && result.data) {
+        const filePath = result.data as string
+        addToast({
+          title: t('export_success'),
+          description: filePath,
+          type: 'success',
+          action: {
+            label: t('open_folder'),
+            onClick: () => window.electronAPI.showItemInFolder(filePath),
+          },
+        })
+      } else if (result.error !== 'Cancelled') {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      console.error('Excel Export failed', error)
+      addToast({
+        title: t('export_failed'),
+        description: String(error),
+        type: 'error',
+      })
     } finally {
       setIsExporting(false)
     }
@@ -195,7 +257,11 @@ export function DashboardHeader() {
         logoImg.src = logo
       })
 
-      const fileName = `${canvasConfig.title || 'Report'}.${type === 'png' ? 'png' : 'pdf'}`
+      const activeSession = useProjectStore.getState().sessions.find(
+        s => s.id === useProjectStore.getState().activeSessionId
+      )
+      const sessionTitle = sanitizeFilename(activeSession?.title, canvasConfig.title || 'Report')
+      const fileName = `${sessionTitle}.${type === 'png' ? 'png' : 'pdf'}`
 
       if (type === 'png') {
         Analytics.track('export_clicked', { format: 'png' })
@@ -543,6 +609,14 @@ export function DashboardHeader() {
               }
             >
               {t('export_png')}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={isExporting}
+              onSelect={() =>
+                checkGate(t('export_excel'), handleExportExcel)
+              }
+            >
+              {t('export_excel')}
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={isExporting}

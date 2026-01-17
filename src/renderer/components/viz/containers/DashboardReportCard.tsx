@@ -93,6 +93,7 @@ export const DashboardReportCard = forwardRef<
       <div
         ref={cardRef}
         style={style}
+        data-export-id={report.id}
         className={cn(
           'group relative flex flex-col overflow-hidden transition-all no-break',
           isDashboard

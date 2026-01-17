@@ -322,6 +322,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
   return (
     <div
       ref={cardRef}
+      data-export-id={messageId}
       className={cn(
         'flex flex-col border border-zinc-200 rounded-xl bg-white shadow-sm transition-all overflow-hidden h-full group report-card-container',
         className

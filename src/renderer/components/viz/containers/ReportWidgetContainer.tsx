@@ -69,6 +69,7 @@ export function ReportWidgetContainer({
 
   return (
     <div
+      data-export-id={report.id}
       className={cn(
         'group flex flex-col gap-3 mb-4 pb-4 border-b border-zinc-100 last:border-0',
         className

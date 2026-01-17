@@ -17,6 +17,7 @@ import {
   GetSchemaResponse,
   AskAIResponse,
   AnalyzeContextResponse,
+  ExportExcelPayload,
 } from './api-types'
 
 export interface IngestPreCheckParams {
@@ -173,6 +174,7 @@ export interface ElectronAPI {
     config: unknown,
     fullSnapshot?: unknown
   ) => Promise<IPCResponse>
+  exportExcel: (payload: ExportExcelPayload) => Promise<IPCResponse<string>>
 
   // System / Misc
   getDeviceId: () => Promise<IPCResponse<string>>

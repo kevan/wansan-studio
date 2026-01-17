@@ -5,6 +5,7 @@ import {
   AskAIResponse,
   IPCResponse,
   RunSQLResponse,
+  ExportExcelPayload,
 } from '@shared/api-types'
 import { ElectronAPI } from '@shared/electron-api'
 import type {
@@ -128,6 +129,9 @@ const mockIPC: ElectronAPI = {
     _config: unknown
   ): Promise<IPCResponse> => {
     return { success: true }
+  },
+  exportExcel: async (_payload: ExportExcelPayload): Promise<IPCResponse<string>> => {
+    return { success: true, data: '/mock/path/export.xlsx' }
   },
   resetDB: async (): Promise<IPCResponse> => {
     return { success: true }

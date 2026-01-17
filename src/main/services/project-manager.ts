@@ -1,7 +1,12 @@
 import path from 'path'
 import fs from 'fs-extra'
+import gracefulFs from 'graceful-fs'
 import { v4 as uuidv4 } from 'uuid'
 import { NativeDatabaseService } from './native-db-service'
+
+// Patch global fs to use graceful-fs features (e.g. queueing on EMFILE)
+gracefulFs.gracefulify(fs)
+
 import {
   ProjectManifest,
   ProjectLoadResult,
@@ -12,9 +17,31 @@ import {
 export class ProjectManager {
   private currentProjectPath: string | null = null
   private nativeDB: NativeDatabaseService
+  private pendingSaves: Promise<void>[] = []
 
   constructor(nativeDB: NativeDatabaseService) {
     this.nativeDB = nativeDB
+  }
+
+  /**
+   * Waits for all pending save operations to complete.
+   * Call this before app quit to prevent data loss.
+   */
+  async waitForPendingSaves(timeoutMs = 2000): Promise<void> {
+    if (this.pendingSaves.length === 0) return
+
+    console.log(`[ProjectManager] Waiting for ${this.pendingSaves.length} pending save(s)...`)
+    
+    // Create a timeout promise
+    const timeout = new Promise<void>(resolve => setTimeout(resolve, timeoutMs))
+    
+    // Wait for all saves or timeout
+    await Promise.race([
+      Promise.allSettled(this.pendingSaves),
+      timeout
+    ])
+    
+    console.log('[ProjectManager] Pending saves cleared (or timed out).')
   }
 
   async createProject(name: string, location: string): Promise<string> {
@@ -113,49 +140,71 @@ export class ProjectManager {
     // 2. Read Meta Data
     let manifest: ProjectManifest
     try {
-      manifest = await fs.readJSON(manifestPath)
-    } catch (e) {
-      console.warn(
-        `[ProjectManager] wansan.json is corrupted or empty. Attempting repair...`,
-        e
-      )
-      // Repair strategy: Reconstruct minimal manifest
-      manifest = {
-        meta: {
-          id: uuidv4(),
-          name: path.basename(projectPath).replace('.wansan', ''),
-          version: '0.5.0',
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          engine: 'native',
-        },
-        assets: [],
-        settings: {
-          theme: 'light',
-        },
-      }
-      // Write it back immediately to fix the file
-      try {
-        await this.atomicWriteJSON(manifestPath, manifest)
-      } catch (writeErr) {
-        console.error('Failed to write repaired wansan.json', writeErr)
+      manifest = await this.retryWithBackoff(() => fs.readJSON(manifestPath))
+    } catch (e: any) {
+      // Only repair if file is missing (ENOENT) or explicitly corrupted (SyntaxError)
+      // If it's a lock issue (EBUSY, EPERM), we should FAIL, not overwrite.
+      if (e.code === 'ENOENT' || e instanceof SyntaxError) {
+        console.warn(
+          `[ProjectManager] wansan.json is corrupted or empty. Attempting repair...`,
+          e
+        )
+        // Repair strategy: Reconstruct minimal manifest
+        manifest = {
+          meta: {
+            id: uuidv4(),
+            name: path.basename(projectPath).replace('.wansan', ''),
+            version: '0.5.0',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            engine: 'native',
+          },
+          assets: [],
+          settings: {
+            theme: 'light',
+          },
+        }
+        // Write it back immediately to fix the file
+        try {
+          await this.atomicWriteJSON(manifestPath, manifest)
+        } catch (writeErr) {
+          console.error('Failed to write repaired wansan.json', writeErr)
+        }
+      } else {
+        throw new Error(`Failed to read wansan.json: ${e.message}`)
       }
     }
 
     let semantic: SemanticLayer
     try {
-      semantic = await fs.readJSON(path.join(projectPath, 'semantic.json'))
-    } catch (e) {
-      console.warn('Failed to read semantic.json, using default', e)
-      semantic = { relations: {}, smartMetrics: {} }
+      semantic = await this.retryWithBackoff(() => fs.readJSON(path.join(projectPath, 'semantic.json')))
+    } catch (e: any) {
+      if (e.code === 'ENOENT') {
+        console.warn('semantic.json missing, using default')
+        semantic = { relations: {}, smartMetrics: {} }
+      } else if (e instanceof SyntaxError) {
+        console.error('semantic.json corrupted, using default (DATA LOSS RISK)', e)
+        semantic = { relations: {}, smartMetrics: {} }
+      } else {
+        // EBUSY or other system error - DO NOT OVERWRITE
+        throw new Error(`Failed to read semantic.json: ${e.message}`)
+      }
     }
 
     let session: any
     try {
-      session = await fs.readJSON(path.join(projectPath, 'session.json'))
-    } catch (e) {
-      console.warn('Failed to read session.json, using default', e)
-      session = {}
+      session = await this.retryWithBackoff(() => fs.readJSON(path.join(projectPath, 'session.json')))
+    } catch (e: any) {
+      if (e.code === 'ENOENT') {
+        console.warn('session.json missing, using default')
+        session = {}
+      } else if (e instanceof SyntaxError) {
+        console.error('session.json corrupted, using default (DATA LOSS RISK)', e)
+        session = {}
+      } else {
+        // EBUSY or other system error - DO NOT OVERWRITE
+        throw new Error(`Failed to read session.json: ${e.message}`)
+      }
     }
 
     return {
@@ -194,9 +243,12 @@ export class ProjectManager {
       const manifestPath = path.join(targetPath, 'wansan.json')
       let current = {}
       try {
-        current = await fs.readJSON(manifestPath)
-      } catch {
-        // ignore
+        current = await this.retryWithBackoff(() => fs.readJSON(manifestPath))
+      } catch (e: any) {
+        if (e.code !== 'ENOENT') {
+           console.error(`[ProjectManager] Read failed for manifest during save (Code: ${e.code}). Aborting save to prevent data loss.`)
+           throw e
+        }
       }
       // Deep merge meta is tricky, but here we expect data.manifest to be partial updates.
       // We explicitly merge meta.
@@ -218,9 +270,12 @@ export class ProjectManager {
       const semanticPath = path.join(targetPath, 'semantic.json')
       let current = { relations: [], smartMetrics: {} }
       try {
-        current = await fs.readJSON(semanticPath)
-      } catch {
-        // ignore
+        current = await this.retryWithBackoff(() => fs.readJSON(semanticPath))
+      } catch (e: any) {
+        if (e.code !== 'ENOENT') {
+           console.error(`[ProjectManager] Read failed for semantic during save (Code: ${e.code}). Aborting save to prevent data loss.`)
+           throw e
+        }
       }
       const updated = { ...current, ...data.semantic }
       tasks.push(this.atomicWriteJSON(semanticPath, updated))
@@ -231,7 +286,14 @@ export class ProjectManager {
       tasks.push(this.atomicWriteJSON(sessionPath, data.session))
     }
 
-    await Promise.all(tasks)
+    const savePromise = Promise.all(tasks).then(() => {
+        // Remove self from pending list when done
+        const idx = this.pendingSaves.indexOf(savePromise)
+        if (idx !== -1) this.pendingSaves.splice(idx, 1)
+    })
+
+    this.pendingSaves.push(savePromise)
+    await savePromise
   }
 
   /**
@@ -268,5 +330,26 @@ export class ProjectManager {
       this.currentProjectPath = null
     }
     await this.nativeDB.close()
+  }
+
+  /**
+   * Helper: Retries an async operation with exponential backoff.
+   * Useful for overcoming transient file locks (OneDrive, Anti-virus).
+   */
+  private async retryWithBackoff<T>(
+    operation: () => Promise<T>,
+    retries = 3,
+    delay = 100
+  ): Promise<T> {
+    try {
+      return await operation()
+    } catch (err: any) {
+      if (retries > 0 && (err.code === 'EBUSY' || err.code === 'EPERM' || err.code === 'EACCES')) {
+        console.warn(`[ProjectManager] Transient error ${err.code}, retrying in ${delay}ms... (${retries} left)`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+        return this.retryWithBackoff(operation, retries - 1, delay * 2)
+      }
+      throw err
+    }
   }
 }

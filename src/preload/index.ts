@@ -110,6 +110,7 @@ const electronAPI: ElectronAPI = {
   exportReport: (payload: any) => ipcRenderer.invoke('export-report', payload),
   exportWebReport: (widgets: any[], config: any, fullSnapshot?: any) =>
     ipcRenderer.invoke('export-web-report', widgets, config, fullSnapshot),
+  exportExcel: (payload: any) => ipcRenderer.invoke('export-excel', payload),
 
   // System
   getDeviceId: () => ipcRenderer.invoke('get-device-id'),

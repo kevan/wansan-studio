@@ -130,6 +130,7 @@ const initialSettingsState: Omit<
   isExpired: false,
   showChartLabels: false,
   suggestionCount: 3,
+  ignoreUpdate: () => {},
 }
 
 export const SETTINGS_STORAGE_KEY = 'wansan-settings-v1'

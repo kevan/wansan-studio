@@ -8,6 +8,7 @@ import { executeSQL } from '../engine/executor'
 import { checkFilesConsistency } from '../engine/file-watcher'
 import { ingestJsonData, getUniqueTableName } from '../engine/ingestion'
 import { exportWebReport } from './web-export'
+import { exportExcel } from './excel-export'
 import fs from 'fs-extra'
 import os from 'os'
 import Store from 'electron-store'
@@ -390,6 +391,14 @@ export function setupIPC(
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
+    }
+  )
+
+  // AI Excel Export
+  ipcMain.handle(
+    'export-excel',
+    async (_event, payload: any) => {
+      return await exportExcel(payload)
     }
   )
 

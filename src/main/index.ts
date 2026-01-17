@@ -253,7 +253,12 @@ class WansanApp {
     })
 
     // 应用退出前清理
-    app.on('before-quit', async () => {
+    app.on('before-quit', async (event) => {
+      // Prevent immediate quit to allow cleanup
+      if (this.projectManager) {
+        await this.projectManager.waitForPendingSaves()
+      }
+
       if (this.databaseService) {
         await this.databaseService.close()
       }

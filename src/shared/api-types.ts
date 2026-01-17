@@ -36,3 +36,18 @@ export type AskAIResponse = IPCResponse<AIAnalysisResult>
 
 export type AnalyzeContextResponse = IPCResponse<ContextAnalysisResult>
 
+export interface ExportSheetData {
+  name: string
+  data: Record<string, unknown>[]
+  columns: Array<{ name: string; type: string }>
+  insight?: string
+  chartImage?: string // Base64 data URL
+  chartWidth?: number
+  chartHeight?: number
+}
+
+export interface ExportExcelPayload {
+  filename: string
+  sheets: ExportSheetData[]
+}
+
