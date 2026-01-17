@@ -9,7 +9,7 @@ import type { ExportExcelPayload } from '../../shared/api-types'
  */
 export async function exportExcel(payload: ExportExcelPayload): Promise<{ success: boolean; data?: string; error?: string }> {
   try {
-    const { filename, sheets } = payload
+    const { filename, sheets, insightTitle = 'AI Insights' } = payload
 
     const { filePath, canceled } = await dialog.showSaveDialog({
       defaultPath: filename || 'Wansan_Export.xlsx',
@@ -107,17 +107,17 @@ export async function exportExcel(payload: ExportExcelPayload): Promise<{ succes
           .replace(/\*\*/g, '')
           .replace(/- /g, '• ')
 
-        titleCell.value = 'AI Insights'
+        titleCell.value = insightTitle
         titleCell.font = { bold: true, size: 12, color: { argb: 'FF4F46E5' } } // Indigo-600
 
         const contentCell = worksheet.getRow(insightBodyRow).getCell(anchorColIndex + 1)
         contentCell.value = cleanInsight
         contentCell.alignment = { wrapText: true, vertical: 'top' }
         
-        // Merge cells for readability (5 columns wide)
+        // Merge cells for readability (8 columns wide, 20 rows high)
         worksheet.mergeCells(
           insightBodyRow, anchorColIndex + 1, 
-          insightBodyRow + 15, anchorColIndex + 5
+          insightBodyRow + 20, anchorColIndex + 8
         )
       }
       

@@ -50,23 +50,26 @@ async function captureChartInfo(exportId: string): Promise<{ dataUrl: string; wi
 /**
  * Formats structured AI insight into a plain string for Excel.
  */
-function formatInsight(insight: any): string | undefined {
+function formatInsight(
+  insight: any,
+  labels: { summary: string; findings: string; recommendation: string }
+): string | undefined {
   if (!insight) return undefined
   if (typeof insight === 'string') return insight
 
   const parts: string[] = []
-  if (insight.summary) parts.push(`Summary: ${insight.summary}\n`)
+  if (insight.summary) parts.push(`${labels.summary}: ${insight.summary}\n`)
   
   if (Array.isArray(insight.findings)) {
-    parts.push('Key Findings:')
+    parts.push(`${labels.findings}:`)
     insight.findings.forEach((f: any) => {
-      parts.push(`- ${f.markdown || f.content || ''}`)
+      parts.push(`• ${f.markdown || f.content || f || ''}`)
     })
     parts.push('')
   }
 
   if (insight.recommendation) {
-    parts.push(`Recommendation: ${insight.recommendation}`)
+    parts.push(`${labels.recommendation}: ${insight.recommendation}`)
   }
 
   return parts.join('\n').trim()
@@ -75,7 +78,10 @@ function formatInsight(insight: any): string | undefined {
 /**
  * Collects data for Excel export from Chat Messages.
  */
-export async function collectExcelDataFromChat(messages: any[]): Promise<any[]> {
+export async function collectExcelDataFromChat(
+  messages: any[],
+  labels: { summary: string; findings: string; recommendation: string }
+): Promise<any[]> {
   const sheets: any[] = []
 
   for (const msg of messages) {
@@ -87,7 +93,7 @@ export async function collectExcelDataFromChat(messages: any[]): Promise<any[]> 
         name: report.title || `Chat_${msg.id.slice(0, 4)}`,
         data: report.tableData,
         columns: report.columnFields || [],
-        insight: formatInsight(report.insight),
+        insight: formatInsight(report.insight, labels),
         chartImage: chartInfo?.dataUrl,
         chartWidth: chartInfo?.width,
         chartHeight: chartInfo?.height
@@ -101,7 +107,10 @@ export async function collectExcelDataFromChat(messages: any[]): Promise<any[]> 
 /**
  * Collects data for Excel export from Dashboard Widgets.
  */
-export async function collectExcelDataFromDashboard(widgets: any[]): Promise<any[]> {
+export async function collectExcelDataFromDashboard(
+  widgets: any[],
+  labels: { summary: string; findings: string; recommendation: string }
+): Promise<any[]> {
   const sheets: any[] = []
 
   for (const widget of widgets) {
@@ -113,7 +122,7 @@ export async function collectExcelDataFromDashboard(widgets: any[]): Promise<any
         name: report.title || `Widget_${widget.id.slice(0, 4)}`,
         data: report.tableData,
         columns: report.columnFields || [],
-        insight: formatInsight(report.insight),
+        insight: formatInsight(report.insight, labels),
         chartImage: chartInfo?.dataUrl,
         chartWidth: chartInfo?.width,
         chartHeight: chartInfo?.height

@@ -123,7 +123,13 @@ export function DashboardHeader() {
         duration: 2000,
       })
 
-      const sheets = await collectExcelDataFromDashboard(pinnedReports)
+      const insightLabels = {
+        summary: t('insight_summary'),
+        findings: t('insight_findings'),
+        recommendation: t('insight_recommendation')
+      }
+
+      const sheets = await collectExcelDataFromDashboard(pinnedReports, insightLabels)
       if (sheets.length === 0) {
         addToast({ title: t('no_chart_data'), type: 'warning' })
         return
@@ -132,7 +138,8 @@ export function DashboardHeader() {
       const fileName = `${sessionTitle}_Export_${new Date().toISOString().slice(0, 10)}.xlsx`
       const result = await window.electronAPI.exportExcel({
         filename: fileName,
-        sheets
+        sheets,
+        insightTitle: t('insights')
       })
 
       if (result.success && result.data) {

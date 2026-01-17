@@ -236,7 +236,13 @@ export function MagicInput({
           duration: 2000,
         })
 
-        const sheets = await collectExcelDataFromChat(messages)
+        const insightLabels = {
+          summary: tCommon('insight_summary'),
+          findings: tCommon('insight_findings'),
+          recommendation: tCommon('insight_recommendation')
+        }
+
+        const sheets = await collectExcelDataFromChat(messages, insightLabels)
         if (sheets.length === 0) {
           addToast({ title: tCommon('no_chart_data'), type: 'warning' })
           return
@@ -246,7 +252,8 @@ export function MagicInput({
         const fileName = `${sessionTitle}_Export_${new Date().toISOString().slice(0, 10)}.xlsx`
         const result = await window.electronAPI.exportExcel({
           filename: fileName,
-          sheets
+          sheets,
+          insightTitle: tCommon('insights')
         })
 
         if (result.success && result.data) {

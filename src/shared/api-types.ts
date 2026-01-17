@@ -49,5 +49,6 @@ export interface ExportSheetData {
 export interface ExportExcelPayload {
   filename: string
   sheets: ExportSheetData[]
+  insightTitle?: string // [NEW] Localized title for AI Insights section
 }
 
