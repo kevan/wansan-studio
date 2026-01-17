@@ -67,14 +67,14 @@ export default defineConfig({
     // 确保目录存在
     if (!fs.existsSync(distDir)) return
 
-    const files = getAllFiles(distDir)
-
-    for (const file of files) {
-      // 防止重复混淆 renderer 文件 (vite 已经处理过了)
-      if (file.includes('/renderer/')) continue
-
-      // 只混淆 .js 和 .cjs 文件
-      if (!file.endsWith('.js') && !file.endsWith('.cjs')) continue
+        const files = getAllFiles(distDir)
+    
+        for (const file of files) {
+          // 防止重复混淆 renderer 文件 (vite 已经处理过了)
+          // 使用正则兼容 Windows (\) 和 Mac (/) 路径分隔符
+          if (/[\\/]renderer[\\/]/.test(file)) continue
+    
+          // 只混淆 .js 和 .cjs 文件      if (!file.endsWith('.js') && !file.endsWith('.cjs')) continue
 
       // 跳过 map 文件
       if (file.endsWith('.map')) continue
