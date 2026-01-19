@@ -16,7 +16,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
@@ -31,7 +30,6 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { useSettingsStore } from '@/stores/useSettingsStore'
-import { useUIStore } from '@/stores/useUIStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
@@ -44,10 +42,10 @@ import { DomainKnowledgeTab } from './domain-knowledge-tab'
 type VerifyStatus = 'idle' | 'loading' | 'success' | 'error'
 
 interface SettingsDialogProps {
-  trigger?: React.ReactNode
+  // trigger?: React.ReactNode
 }
 
-export function SettingsDialog({ trigger }: SettingsDialogProps) {
+export function SettingsDialog(_props: SettingsDialogProps) {
   const settings = useSettingsStore()
   const addToast = useToastStore(state => state.addToast)
   const { t, i18n } = useTranslation('settings')

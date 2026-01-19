@@ -247,7 +247,6 @@ export const useProjectStore = create<ProjectState>()(
           addSmartMetric,
           setSuggestedPrompts,
           files,
-          suggestedPrompts: oldPrompts,
         } = get()
 
         // 1. Add Relations

@@ -29,19 +29,19 @@ if (snapshot) {
   }
 
   if (snapshot.workbench) {
-    ;(useWorkbenchStore as any).setState(snapshot.workbench)
+    (useWorkbenchStore as any).setState(snapshot.workbench)
   }
   
   if (snapshot.project) {
-    ;(useProjectStore as any).setState(snapshot.project)
+    (useProjectStore as any).setState(snapshot.project)
   }
 
   if (snapshot.ui) {
-      ;(useUIStore as any).setState(snapshot.ui)
+      (useUIStore as any).setState(snapshot.ui)
   }
 
   if (snapshot.settings) {
-    ;(useSettingsStore as any).setState(snapshot.settings)
+    (useSettingsStore as any).setState(snapshot.settings)
   }
 }
 

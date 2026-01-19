@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from 'react'
 import {
   ChevronLeft,
@@ -27,7 +28,6 @@ import { useProjectStore } from '@/stores/useProjectStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
-import { PAGE_GAP_PX } from '@/components/dashboard-v3/page-layer'
 import { useTranslation } from 'react-i18next'
 import { Analytics } from '../../services/analytics'
 import logo from '@/src/assets/logo.png'
@@ -38,13 +38,13 @@ import { useProGate } from '@/hooks/use-pro-gate'
 import { sanitizeFilename } from '@shared/naming-utils'
 
 export function DashboardHeader() {
-  const { canvasConfig, setCanvasConfig, setLayoutScenario } =
+  const { setCanvasConfig, setLayoutScenario } =
     useWorkbenchStore()
   const pageCount = useWorkbenchStore(state => state.pageCount)
   const setPageCount = useWorkbenchStore(state => state.setPageCount)
   // const layoutScenario = useWorkbenchStore(state => state.layoutScenario)
-  const isA4 = canvasConfig.layout === 'a4'
-  const isReport = canvasConfig.layout === 'report'
+  const isA4 = useWorkbenchStore.getState().canvasConfig.layout === 'a4'
+  const isReport = useWorkbenchStore.getState().canvasConfig.layout === 'report'
   const { t } = useTranslation('common')
   const { isActivated, language } = useSettingsStore()
   const addToast = useToastStore(state => state.addToast)

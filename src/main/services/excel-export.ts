@@ -27,7 +27,7 @@ export async function exportExcel(payload: ExportExcelPayload): Promise<{ succes
 
     for (const sheetData of sheets) {
       // 1. Create Worksheet
-      const sheetName = sheetData.name.replace(/[\\\/\?\*\[\]]/g, '').slice(0, 31) || 'Sheet'
+      const sheetName = sheetData.name.replace(/[\\/?*[\]]/g, '').slice(0, 31) || 'Sheet'
       const worksheet = workbook.addWorksheet(sheetName)
 
       // 2. Prepare Columns

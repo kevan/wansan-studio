@@ -46,5 +46,5 @@ export function parseJoinedColumnName(
 export function sanitizeFilename(name: string, fallback: string = 'file'): string {
   if (!name) return fallback
   // Replace illegal filename characters with underscore
-  return name.replace(/[\\\/\?\*\:\!\|\"\<\>\.]/g, '_') || fallback
+  return name.replace(/[\\/?*:!|"<>.]/g, '_') || fallback
 }

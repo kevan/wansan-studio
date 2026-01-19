@@ -9,7 +9,6 @@ import type {
   TableSchema,
   AIAnalysisContext,
   AIAnalysisResult,
-  RelationSuggestion,
   ContextAnalysisResult,
   AIConfig,
   DomainRule,

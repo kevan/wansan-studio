@@ -300,7 +300,7 @@ export function AnalysisReviewModal({
           </div>
         )
 
-      case 'metrics':
+      case 'metrics': {
         const metrics = result.metrics || []
         if (metrics.length === 0)
             return (
@@ -365,6 +365,7 @@ export function AnalysisReviewModal({
             ))}
           </div>
         )
+      }
 
       case 'prompts':
         if (result.suggestedPrompts.length === 0)

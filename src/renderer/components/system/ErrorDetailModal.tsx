@@ -2,15 +2,12 @@ import React, { useState } from 'react'
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useUIStore } from '@/stores/useUIStore'
 import { useTranslation } from 'react-i18next'
 import { AlertCircle, ChevronDown, ChevronUp, Terminal, Copy, Check } from 'lucide-react'
-import { cn } from '@/utils/cn'
 
 export function ErrorDetailModal() {
   const { errorModal, closeError } = useUIStore()

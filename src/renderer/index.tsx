@@ -7,7 +7,6 @@ import App from './App'
 import './styles/globals.css'
 import './i18n'
 import { enableFetchLogger } from './utils/fetch-logger'
-import { useLogStore } from './stores/useLogStore'
 
 // Enable fetch logging in development
 if (import.meta.env.DEV) {

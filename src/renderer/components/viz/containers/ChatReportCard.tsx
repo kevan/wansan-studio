@@ -70,6 +70,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
   const [manualActive, setManualActive] = useState(false)
   const [triggerCount, setTriggerCount] = useState(0)
   const [highlightedItems, setHighlightedItems] = useState<string[]>([])
+  const [isExporting, setIsExporting] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
   const generateInsight = useGenerateInsight()
@@ -264,8 +265,6 @@ export const ChatReportCard = React.memo(function ChatReportCard({
       })
     }
   }
-
-  const [isExporting, setIsExporting] = useState(false)
 
   const handleExportPNG = async () => {
     if (!cardRef.current) return

@@ -4,7 +4,6 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
-  Loader2,
   AlertTriangle,
   Check,
   RefreshCw,
@@ -112,7 +111,7 @@ export function InsightPanel({
         setInternalExpanded(true)
       }
     }
-  }, [insight])
+  }, [insight, expanded, internalExpanded])
 
   // Auto request logic
   useEffect(() => {

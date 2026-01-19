@@ -199,7 +199,7 @@ export function RuleEditor({
   onRemove,
   onUpdate,
   onReorder,
-  placeholder,
+  placeholder: _placeholder,
   emptyMessage,
   addButtonLabel: _addButtonLabel,
   scope = 'project',
@@ -231,13 +231,6 @@ export function RuleEditor({
     // Since onAdd doesn't return ID yet, we'll try to find the new one or 
     // just rely on store update.
     onAdd('')
-    // The store implementation will push to end or start?
-    // ProjectStore: ...(state.domainRules || []), content (End)
-    // We'll set a tiny timeout to set activeId to the last item
-    setTimeout(() => {
-        const lastRule = rules[rules.length - 1]; // This is problematic if rules updated later
-        // A better way is to update store, but let's handle the empty check first
-    }, 50);
   }
 
   const handleStopEdit = (id: string, content: string) => {

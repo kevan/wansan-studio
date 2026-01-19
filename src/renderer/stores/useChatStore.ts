@@ -805,7 +805,7 @@ const autoFixMessage = async (
     if (is_template && missing_params) {
         // Try to reuse existing params if they match
         const existingParams = message.reportData?.selected_params || {}
-        let paramsToApply = existingParams
+        const paramsToApply = existingParams
 
         // If parameters changed (unlikely for a fix, but possible), we might need re-confirmation.
         // For now, we assume if placeholders match, we reuse values.

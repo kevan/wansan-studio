@@ -8,7 +8,6 @@ import {
 
 import { DashboardReportCard as ReportCard } from '@/components/viz/containers/DashboardReportCard'
 import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
-import { useProjectStore } from '@/stores/useProjectStore'
 import {
   GRID_MARGIN_Y,
   GRID_ROW_HEIGHT,

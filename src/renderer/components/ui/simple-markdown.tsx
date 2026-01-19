@@ -30,7 +30,7 @@ export function SimpleMarkdown({ content, className }: SimpleMarkdownProps) {
       if (aIndex < 0) {
         tokens[idx].attrPush(['target', '_blank']);
       } else {
-        // @ts-ignore
+        // @ts-expect-error: markdown-it tokens.attrs might be null but we check index first
         tokens[idx].attrs[aIndex][1] = '_blank';
       }
       
@@ -39,7 +39,7 @@ export function SimpleMarkdown({ content, className }: SimpleMarkdownProps) {
       if (relIndex < 0) {
         tokens[idx].attrPush(['rel', 'noopener noreferrer']);
       } else {
-        // @ts-ignore
+        // @ts-expect-error: markdown-it tokens.attrs might be null but we check index first
         tokens[idx].attrs[relIndex][1] = 'noopener noreferrer';
       }
 

@@ -21,7 +21,7 @@ type SectionGroup = {
   items: RenderBlock[]
 }
 
-export function ReportFlowLayer({ width, scale, readOnly }: ReportFlowLayerProps) {
+export function ReportFlowLayer({ width: _width, scale: _scale, readOnly }: ReportFlowLayerProps) {
   const { t } = useTranslation('common')
   const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const removeReport = useWorkbenchStore(state => state.removeReport)
@@ -112,7 +112,7 @@ export function ReportFlowLayer({ width, scale, readOnly }: ReportFlowLayerProps
                   )}
 
                   <div className="space-y-1.5">
-                      {group.items.map((block, idx) => {
+                      {group.items.map((block, _idx) => {
                           if (block.type === 'widget') {
                               return (
                                   <ReportWidgetContainer

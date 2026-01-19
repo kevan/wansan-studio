@@ -15,7 +15,7 @@ const SAFETY_PROTOCOL = `
 
 const SQL_SYNTAX_RULES = `
 ### ⚙️ SQL SYNTAX RULES (DUCKDB DIALECT)
-1.  **STRICT DOUBLE QUOTING (\`"\`)**: 
+1.  **STRICT DOUBLE QUOTING ("")**: 
     -   You **MUST** wrap **ALL** table names and column names in double quotes.
     -   Example: \`SELECT "Order Amount" FROM "sales_data"\` (Correct) vs \`SELECT Order Amount...\` (WRONG).
 2.  **STRICT ALIASING**: Always use table aliases (e.g., \`t1\`, \`t2\`) and qualify ALL column references.
@@ -49,19 +49,23 @@ const VISUALIZATION_RULES = `
 const getDomainContext = (rules: DomainRule[]) => {
   const activeRules = rules.filter(r => r.isEnabled)
   if (activeRules.length === 0) return ''
-  return `
-### 🏢 BUSINESS DOMAIN CONTEXT (USER DEFINED)
-The user has provided the following background knowledge. Use this to interpret business logic and terminology:
-\${activeRules.map((r, i) => \`\${i + 1}. \${r.content}\`).join('\\n')}
-(End of User Context)
-`
+
+  const header = '\n### 🏢 BUSINESS DOMAIN CONTEXT (USER DEFINED)\nThe user has provided the following background knowledge. Use this to interpret business logic and terminology:\n'
+  const footer = '\n(End of User Context)\n'
+
+  let list = ''
+  for (let i = 0; i < activeRules.length; i++) {
+    list += (i + 1).toString() + '. ' + activeRules[i].content + '\n'
+  }
+
+  return header + list + footer
 }
 
 const getLocalizationRule = (language: 'en' | 'zh') => `
 ### 🌐 LOCALIZATION RULE
 ${
   language === 'zh'
-    ? 'Since the user is using Chinese, you **MUST** use meaningful Chinese aliases for the result columns:\n1. **Calculated Columns**: ALWAYS alias them in Chinese (e.g., \`SELECT sum("amount") AS "总销售额"\`).\n2. **Raw Columns**: If the original column name is in English, **TRY** to alias it to Chinese if the meaning is clear.'
+    ? 'Since the user is using Chinese, you **MUST** use meaningful Chinese aliases for the result columns:\n1. **Calculated Columns**: ALWAYS alias them in Chinese (e.g., \\`SELECT sum("amount") AS "总销售额"\\`).\n2. **Raw Columns**: If the original column name is in English, **TRY** to alias it to Chinese if the meaning is clear.'
     : 'Use English aliases for calculated columns.'
 }
 `
@@ -72,14 +76,14 @@ const SMART_FILTER_CREATION_RULES = `
 ### 🔍 SMART FILTER RULE (TEMPLATE MODE)
 If the user asks for data regarding a specific dimension value but you are **not 100% sure** of the exact value in the database:
 1.  **DO NOT GUESS**: Create a **TEMPLATE SQL**.
-2.  **USE IN OPERATOR**: \`column IN ({{PLACEHOLDER}})\`.
-3.  **FLAG AS TEMPLATE**: Set \`is_template: true\`.
-4.  **DEFINE PARAM**: Fill \`missing_params\` array with:
-    - \`placeholder\`: "{{CITY}}"
-    - \`label\`: "City" (A human-readable label for the UI)
-    - \`column\`: "city"
-    - \`table\`: "customers" (The table containing the column)
-    - \`hint\`: "Beijing" (The term user used)
+2.  **USE IN OPERATOR**: column IN ({{PLACEHOLDER}}).
+3.  **FLAG AS TEMPLATE**: Set is_template: true.
+4.  **DEFINE PARAM**: Fill missing_params array with:
+    - placeholder: "{{CITY}}"
+    - label: "City" (A human-readable label for the UI)
+    - column: "city"
+    - table: "customers" (The table containing the column)
+    - hint: "Beijing" (The term user used)
 `
 
 const SMART_FILTER_PRESERVATION_RULES = `

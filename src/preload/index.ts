@@ -1,6 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { ElectronAPI } from '../shared/electron-api'
-import { DomainRule } from '../shared/types'
 
 // 定义暴露给渲染进程的 API
 const electronAPI: ElectronAPI = {

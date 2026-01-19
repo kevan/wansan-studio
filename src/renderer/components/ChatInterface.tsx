@@ -64,7 +64,6 @@ export function ChatInterface({
   const isChatLoading = useChatStore(state => !!state.abortController)
   const isRestoring = !useChatStore.persist.hasHydrated()
   const { data: userInfo } = useUserInfo()
-  const settings = useSettingsStore()
   const username = userInfo?.username || 'User'
 
   // Auto-scroll to bottom when messages or loading state changes
@@ -334,11 +333,12 @@ const MessageItem = React.memo(
     )
   }
 )
+MessageItem.displayName = 'MessageItem'
 
 /**
  * Individual suggestion item with smart tooltip detection.
  */
-function SuggestionItem({
+const SuggestionItem = React.memo(({
   suggestion,
   onSelect,
   isChatLoading,
@@ -348,7 +348,7 @@ function SuggestionItem({
   onSelect: (query: string) => void
   isChatLoading: boolean
   isRestoring: boolean
-}) {
+}) => {
   const textRef = useRef<HTMLSpanElement>(null)
   const [isTruncated, setIsTruncated] = useState(false)
 
@@ -393,7 +393,8 @@ function SuggestionItem({
       </TooltipContent>
     </Tooltip>
   )
-}
+})
+SuggestionItem.displayName = 'SuggestionItem'
 
 /**
  * Collapsible suggestions component.

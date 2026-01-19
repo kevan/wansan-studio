@@ -4,9 +4,7 @@ import {
   BarChart3,
   PieChart,
   TrendingUp,
-  Lightbulb,
   RefreshCw,
-  Wand2,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { useProjectStore } from '../../stores/useProjectStore'
@@ -18,13 +16,6 @@ interface EmptyStateProps {
   isChatLoading: boolean
   isRestoring: boolean
 }
-
-const STYLES = [
-  { icon: BarChart3, color: 'text-blue-500', bg: 'bg-blue-50' },
-  { icon: PieChart, color: 'text-purple-500', bg: 'bg-purple-50' },
-  { icon: TrendingUp, color: 'text-green-500', bg: 'bg-green-50' },
-  { icon: Lightbulb, color: 'text-yellow-500', bg: 'bg-yellow-50' },
-]
 
 const STARTER_PROMPTS = [
   {
@@ -75,7 +66,7 @@ export function EmptyState({
 
   const promptsToShow =
     suggestedPrompts && suggestedPrompts.length > 0
-      ? suggestedPrompts.map((prompt, idx) => {
+      ? suggestedPrompts.map((prompt, _idx) => {
           return {
             title: 'ai_suggestion_title',
             prompt,

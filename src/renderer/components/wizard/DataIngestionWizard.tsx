@@ -9,7 +9,6 @@ import { FileSelectionStep } from './steps/FileSelectionStep'
 import { DataPreviewStep } from './steps/DataPreviewStep'
 import { FinalizeStep } from './steps/FinalizeStep'
 import { AlertCircle, Loader2 } from 'lucide-react'
-import { useAutoLink } from '@/hooks/useAutoLink.ts'
 import { useMemo, useState } from 'react'
 import { useToastStore } from '../../stores/useToastStore'
 import { useSettingsStore } from '../../stores/useSettingsStore'
@@ -38,7 +37,6 @@ export function DataIngestionWizard() {
   const { files, addFile, updateFile, setView } = useProjectStore()
   const { isActivated } = useSettingsStore()
   const { checkGate, gateNode } = useProGate()
-  const { checkAutoLink } = useAutoLink()
   const { t } = useTranslation('common')
   const toast = useToastStore()
 
