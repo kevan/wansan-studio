@@ -290,38 +290,39 @@ export function MetricEditorModal({
             </div>
 
             <div className="flex-1 p-6 flex flex-col min-h-0 gap-2">
-              <Label className="flex justify-between items-center text-xs font-bold text-zinc-500 uppercase">
-                <span>{tAnalysis('smart_metric.sql_expression')}</span>
-                <span className="text-[10px] text-zinc-400 font-normal normal-case">
-                  {tAnalysis('smart_metric.duckdb_syntax')}
-                </span>
-              </Label>
+              <div className="flex justify-between items-center">
+                <Label className="flex items-center gap-2 text-xs font-bold text-zinc-500 uppercase">
+                  <span>{tAnalysis('smart_metric.sql_expression')}</span>
+                  <span className="text-[10px] text-zinc-400 font-normal normal-case border-l border-zinc-200 pl-2">
+                    {tAnalysis('smart_metric.duckdb_syntax')}
+                  </span>
+                </Label>
 
-              <div className="flex-1 border border-zinc-200 rounded-lg bg-zinc-50 font-mono text-sm overflow-hidden relative flex flex-col focus-within:border-purple-300 transition-colors shadow-inner">
-                <div className="absolute right-2 top-2 z-10">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 gap-1 text-purple-600 hover:bg-purple-50 hover:text-purple-700 text-[10px]"
-                    onClick={handleAiGenerate}
-                    disabled={
-                      isGenerating || (!expression.trim() && !name.trim())
-                    }
-                  >
-                    <Wand2
-                      className={cn('w-3 h-3', isGenerating && 'animate-spin')}
-                    />
-                    {isGenerating
-                      ? tAnalysis('smart_metric.generating')
-                      : tAnalysis('smart_metric.ai_magic')}
-                  </Button>
-                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1.5 text-purple-600 hover:bg-purple-50 hover:text-purple-700 text-[11px] font-bold"
+                  onClick={handleAiGenerate}
+                  disabled={isGenerating || (!expression.trim() && !name.trim())}
+                >
+                  <Wand2
+                    className={cn('w-3.5 h-3.5', isGenerating && 'animate-spin')}
+                  />
+                  {isGenerating
+                    ? tAnalysis('smart_metric.generating')
+                    : tAnalysis('smart_metric.ai_magic')}
+                </Button>
+              </div>
+
+              <div className="flex-1 border border-zinc-200 rounded-lg bg-white overflow-hidden relative flex flex-col focus-within:border-purple-300 transition-colors">
                 <div className="flex-1 overflow-hidden relative">
                   <CodeEditor
                     value={expression}
                     onChange={setExpression}
                     onMount={editor => (editorRef.current = editor)}
                     className="h-full"
+                    minimap={false}
+                    stickyScroll={false}
                   />
                 </div>
               </div>

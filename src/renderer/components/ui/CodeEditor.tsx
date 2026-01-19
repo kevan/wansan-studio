@@ -13,6 +13,8 @@ interface CodeEditorProps {
   className?: string
   readOnly?: boolean
   language?: string
+  minimap?: boolean
+  stickyScroll?: boolean
 }
 
 export function CodeEditor({
@@ -23,6 +25,8 @@ export function CodeEditor({
   className,
   readOnly = false,
   language = 'sql',
+  minimap = true,
+  stickyScroll = true,
 }: CodeEditorProps) {
   const { t } = useTranslation('common')
   const files = useProjectStore(s => s.files)
@@ -55,9 +59,30 @@ export function CodeEditor({
     }
     completionProviderRef.current = registerSqlCompletion(monaco, files)
 
+    // Define custom themes
+    monaco.editor.defineTheme('wansan-light', {
+      base: 'vs',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.lineHighlightBackground': '#f5f3ff', // Very light purple
+        'editor.lineHighlightBorder': '#00000000', // Transparent border
+      },
+    })
+
+    monaco.editor.defineTheme('wansan-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.lineHighlightBackground': '#2e106533', // Deep purple with low opacity
+        'editor.lineHighlightBorder': '#00000000',
+      },
+    })
+
     // Set theme
     const isDark = document.documentElement.classList.contains('dark')
-    monaco.editor.setTheme(isDark ? 'vs-dark' : 'light')
+    monaco.editor.setTheme(isDark ? 'wansan-dark' : 'wansan-light')
 
     if (onMount) {
       onMount(editor, monaco)
@@ -81,7 +106,7 @@ export function CodeEditor({
         }
         options={{
           minimap: {
-            enabled: true,
+            enabled: minimap,
             renderCharacters: false,
             scale: 1,
             side: 'right',
@@ -92,13 +117,13 @@ export function CodeEditor({
           automaticLayout: true,
           readOnly,
           lineNumbers: 'on',
-          renderLineHighlight: 'all',
+          renderLineHighlight: 'line',
           padding: { top: 12, bottom: 12 },
           fixedOverflowWidgets: true,
           folding: true,
           showFoldingControls: 'mouseover',
           stickyScroll: {
-            enabled: true,
+            enabled: stickyScroll,
             maxLineCount: 3,
             defaultModel: 'indentationModel',
           },
