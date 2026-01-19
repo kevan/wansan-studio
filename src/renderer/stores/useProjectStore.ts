@@ -1429,11 +1429,13 @@ export const useProjectStore = create<ProjectState>()(
       name: 'wansan-project-v2',
       storage: createBigIntStorage(),
       partialize: state => {
-        // Only persist the project path and active session ID (navigation preference).
+        // Only persist navigation preferences.
         // Core data (files, sessions, widgets) MUST be loaded from disk (SSOT).
         return {
           currentProjectPath: state.currentProjectPath,
           activeSessionId: state.activeSessionId,
+          sidebarMode: state.sidebarMode,
+          activeView: state.activeView,
         } as unknown as ProjectState
       },
       merge: (persistedState: any, currentState) => {

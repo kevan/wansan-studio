@@ -13,33 +13,41 @@ export function useAutoLink() {
   const { t } = useTranslation('chat')
 
   // Entry point: Just opens the modal
-  const openSmartModeling = useCallback(() => {
+  const openSmartModeling = useCallback(async () => {
+    // Pre-check AI config before opening
+    let apiKey: string | undefined
+    try {
+      const configRes = await window.electronAPI.getAIConfig()
+      if (configRes.success && configRes.data) {
+        apiKey = configRes.data.apiKey
+      }
+    } catch (e) {
+      console.error('Failed to check AI config for auto-link', e)
+    }
+
+    if (!apiKey) {
+      addToast({
+        title: t('auto_link_analysis_failed_title'),
+        description: t('auto_link_missing_api_key_desc'),
+        type: 'error',
+        duration: 10000,
+        action: {
+          label: t('settings', { ns: 'common' }),
+          onClick: () => {
+            // Trigger global settings dialog
+            document.dispatchEvent(new CustomEvent('open-settings', { detail: 'ai' }))
+          },
+        },
+      })
+      return
+    }
+
     useProjectStore.getState().setSmartModelingOpen(true)
-  }, [])
+  }, [addToast, t])
 
   // Execution: Runs AI analysis
   const runAnalysis = useCallback(
     async (currentFiles?: FileNode[]) => {
-      let apiKey: string | undefined
-      try {
-        const configRes = await window.electronAPI.getAIConfig()
-        if (configRes.success && configRes.data) {
-          apiKey = configRes.data.apiKey
-        }
-      } catch (e) {
-        console.error('Failed to check AI config for auto-link', e)
-      }
-
-      if (!apiKey) {
-        addToast({
-          title: t('auto_link_analysis_failed_title'),
-          description: t('auto_link_missing_api_key_desc'),
-          type: 'error',
-          duration: 10000,
-        })
-        return
-      }
-
       const store = useProjectStore.getState()
       const filesToUse = currentFiles || store.files
       const setAnalysisReviewResult = store.setAnalysisReviewResult
