@@ -381,13 +381,22 @@ export function applyWansanTheme(
     },
   }
 
+  const getXAxisRotate = (x: any) => {
+    if (x?.axisLabel?.rotate !== undefined) return x.axisLabel.rotate
+    const dataCount =
+      x?.data?.length ||
+      (series && Array.isArray(series) && (series as any)[0]?.data?.length) ||
+      0
+    return dataCount > 8 ? 30 : 0
+  }
+
   const xAxis = Array.isArray(option.xAxis)
     ? option.xAxis.map((x: any) => ({
         ...x,
         ...commonAxis,
         axisLabel: {
           ...commonAxis.axisLabel,
-          rotate: 30, // [NEW] Slant X-axis text
+          rotate: getXAxisRotate(x),
           ...x.axisLabel,
         },
         splitLine: { show: false }, // Usually hide vertical grid
@@ -397,7 +406,7 @@ export function applyWansanTheme(
         ...commonAxis,
         axisLabel: {
           ...commonAxis.axisLabel,
-          rotate: 30, // [NEW] Slant X-axis text
+          rotate: getXAxisRotate(option.xAxis),
           ...(option.xAxis as any)?.axisLabel,
         },
         splitLine: { show: false },
