@@ -18,7 +18,7 @@ export function SimpleMarkdown({ content, className }: SimpleMarkdownProps) {
       linkify: true, // Autoconvert URL-like text to links
       typographer: true,
     })
-    
+
     // Custom renderer for links to open in new tab
     const defaultRender = instance.renderer.rules.link_open || function(tokens, idx, options, env, self) {
       return self.renderToken(tokens, idx, options);
@@ -30,16 +30,14 @@ export function SimpleMarkdown({ content, className }: SimpleMarkdownProps) {
       if (aIndex < 0) {
         tokens[idx].attrPush(['target', '_blank']);
       } else {
-        // @ts-expect-error: markdown-it tokens.attrs might be null but we check index first
         tokens[idx].attrs[aIndex][1] = '_blank';
       }
-      
+
       // Add rel="noopener noreferrer"
       const relIndex = tokens[idx].attrIndex('rel');
       if (relIndex < 0) {
         tokens[idx].attrPush(['rel', 'noopener noreferrer']);
       } else {
-        // @ts-expect-error: markdown-it tokens.attrs might be null but we check index first
         tokens[idx].attrs[relIndex][1] = 'noopener noreferrer';
       }
 
@@ -54,7 +52,7 @@ export function SimpleMarkdown({ content, className }: SimpleMarkdownProps) {
   const htmlContent = md.render(content)
 
   return (
-    <div 
+    <div
       className={cn(
         'prose prose-sm prose-zinc max-w-none text-sm',
         // Explicitly enforce list styles
@@ -65,7 +63,7 @@ export function SimpleMarkdown({ content, className }: SimpleMarkdownProps) {
         'prose-a:text-indigo-600 prose-a:no-underline hover:prose-a:underline',
         className
       )}
-      dangerouslySetInnerHTML={{ __html: htmlContent }} 
+      dangerouslySetInnerHTML={{ __html: htmlContent }}
     />
   )
 }

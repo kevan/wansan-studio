@@ -156,5 +156,11 @@
   "modeling_confirm_title": "智能建模",
   "modeling_confirm_desc": "AI 将扫描您的数据结构，自动识别表关联并推荐业务指标。这可能需要几秒钟。",
   "modeling_confirm_ok": "开始分析",
-  "modeling_confirm_cancel": "取消"
+  "modeling_confirm_cancel": "取消",
+  "domain": {
+    "empty": "暂无定义的业务规则",
+    "add": "添加业务规则",
+    "rule_empty_warning": "规则内容不能为空",
+    "rule_empty_content": "输入规则内容..."
+  }
 }

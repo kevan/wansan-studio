@@ -100,9 +100,9 @@ export function SettingsDialog(_props: SettingsDialogProps) {
       settings.isSpecialChannel &&
       settings.remoteConfig?.managedAI?.models?.length
     ) {
-      return settings.remoteConfig.managedAI.models
+      return settings.remoteConfig.managedAI.models as string[]
     }
-    return providerConfig?.models || []
+    return (providerConfig?.models || []) as string[]
   }, [
     providerConfig,
     settings.isSpecialChannel,
@@ -356,38 +356,76 @@ export function SettingsDialog(_props: SettingsDialogProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      {t('ai.model_label')}
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium">
+                        {t('ai.model_label')}
+                      </label>
+                      {settings.provider !== 'custom' &&
+                        settings.model &&
+                        !modelOptions.includes(settings.model) && (
+                          <span className="text-[10px] font-bold text-destructive uppercase animate-pulse">
+                            {t('ai.model_incompatible', 'Incompatible Model')}
+                          </span>
+                        )}
+                    </div>
                     {settings.provider === 'custom' &&
                     !settings.isSpecialChannel ? (
-                      <Input
-                        value={settings.model}
-                        onChange={e =>
-                          settings.updateSettings({ model: e.target.value })
-                        }
-                        placeholder={t('ai.custom_model_placeholder')}
-                      />
+                      <div className="space-y-1">
+                        <Input
+                          value={settings.model}
+                          onChange={e =>
+                            settings.updateSettings({ model: e.target.value })
+                          }
+                          className={cn(
+                            'transition-colors',
+                            !settings.model.trim() && 'border-destructive focus-visible:border-destructive'
+                          )}
+                          placeholder={t('ai.custom_model_placeholder')}
+                        />
+                        {!settings.model.trim() && (
+                          <p className="text-[10px] text-destructive font-medium pl-1">
+                            {t('ai.model_required', 'Model name is required')}
+                          </p>
+                        )}
+                      </div>
                     ) : (
-                      <Select
-                        value={settings.model}
-                        onValueChange={value =>
-                          settings.updateSettings({ model: value })
-                        }
-                      >
-                        <SelectTrigger disabled={settings.isSpecialChannel}>
-                          <SelectValue
-                            placeholder={t('ai.select_model_placeholder')}
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {modelOptions.map(m => (
-                            <SelectItem key={m} value={m}>
-                              {m}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="space-y-1">
+                        <Select
+                          value={settings.model}
+                          onValueChange={value =>
+                            settings.updateSettings({ model: value })
+                          }
+                        >
+                          <SelectTrigger 
+                            disabled={settings.isSpecialChannel}
+                            className={cn(
+                              'transition-colors',
+                              (!settings.model || !modelOptions.includes(settings.model)) && 'border-destructive focus-visible:border-destructive'
+                            )}
+                          >
+                            <SelectValue
+                              placeholder={t('ai.select_model_placeholder')}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {modelOptions.map(m => (
+                              <SelectItem key={m} value={m}>
+                                {m}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {!settings.model && (
+                          <p className="text-[10px] text-destructive font-medium pl-1">
+                            {t('ai.model_selection_required', 'Please select a model')}
+                          </p>
+                        )}
+                        {settings.model && !modelOptions.includes(settings.model) && (
+                          <p className="text-[10px] text-destructive font-medium pl-1">
+                            {t('ai.model_not_found_hint', 'Model not in current provider list. Please re-select.')}
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
 

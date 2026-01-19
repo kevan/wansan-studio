@@ -38,7 +38,11 @@
     "verify_failed_title": "Connection failed",
     "verify_failed_no_key_desc": "Please enter an API key first.",
     "managed_mode": "Enterprise Managed",
-    "managed_placeholder": "Managed by Organization"
+    "managed_placeholder": "Managed by Organization",
+    "model_incompatible": "Model Incompatible",
+    "model_required": "Model name is required",
+    "model_selection_required": "Please select a model",
+    "model_not_found_hint": "Model not in current provider list. Please re-select."
   },
   "general": {
     "language_label": "Language",

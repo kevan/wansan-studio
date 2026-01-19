@@ -157,5 +157,11 @@
   "modeling_confirm_title": "Smart Modeling",
   "modeling_confirm_desc": "AI will scan your data schema to auto-detect relationships and suggest business metrics. This may take a few seconds.",
   "modeling_confirm_ok": "Start Analysis",
-  "modeling_confirm_cancel": "Cancel"
+  "modeling_confirm_cancel": "Cancel",
+  "domain": {
+    "empty": "No business rules defined yet.",
+    "add": "Add Rule",
+    "rule_empty_warning": "Rule content cannot be empty",
+    "rule_empty_content": "Type your rule here..."
+  }
 }

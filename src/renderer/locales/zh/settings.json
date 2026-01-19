@@ -38,7 +38,11 @@
     "verify_failed_title": "连接失败",
     "verify_failed_no_key_desc": "请先输入 API 密钥。",
     "managed_mode": "企业托管",
-    "managed_placeholder": "由组织统一管理"
+    "managed_placeholder": "由组织统一管理",
+    "model_incompatible": "模型不匹配",
+    "model_required": "模型名称不能为空",
+    "model_selection_required": "请选择一个模型",
+    "model_not_found_hint": "当前模型不在服务商支持列表中，请重新选择"
   },
   "general": {
     "language_label": "语言",
