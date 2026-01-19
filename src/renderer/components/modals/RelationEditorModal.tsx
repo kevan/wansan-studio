@@ -63,6 +63,15 @@ export function RelationEditorModal({
     initialRelation?.targetColumn || ''
   )
 
+  // Reset state when modal opens or initialRelation changes
+  React.useEffect(() => {
+    if (isOpen) {
+      setTargetFileId(initialRelation?.targetFileId || otherFiles[0]?.id || '')
+      setSourceColumn(initialRelation?.sourceColumn || '')
+      setTargetColumn(initialRelation?.targetColumn || '')
+    }
+  }, [isOpen, initialRelation, otherFiles])
+
   const targetFile = useMemo(
     () => allFiles.find(f => f.id === targetFileId),
     [allFiles, targetFileId]
@@ -100,7 +109,7 @@ export function RelationEditorModal({
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">
-                Source Table
+                {t('source_table')}
               </span>
               <span className="text-sm font-semibold text-zinc-900">
                 {sourceFile.name}
@@ -139,7 +148,7 @@ export function RelationEditorModal({
             {/* Source Column */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-zinc-500 uppercase">
-                {t('join_column')} (Source)
+                {t('join_column')} ({t('source_table')})
               </label>
               <Select value={sourceColumn} onValueChange={setSourceColumn}>
                 <SelectTrigger>
@@ -158,7 +167,7 @@ export function RelationEditorModal({
             {/* Target Column */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-zinc-500 uppercase">
-                {t('join_column')} (Target)
+                {t('join_column')} ({t('target_table')})
               </label>
               <Select value={targetColumn} onValueChange={setTargetColumn}>
                 <SelectTrigger disabled={!targetFile}>
@@ -178,8 +187,7 @@ export function RelationEditorModal({
           <div className="flex items-start gap-2 p-3 bg-blue-50/50 rounded-lg border border-blue-100/50">
             <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-blue-700 leading-relaxed">
-              Linking tables allows AI to perform multi-table analysis. Ensure
-              selected columns contain matching values (e.g., ID fields).
+              {t('relation_tip_body')}
             </p>
           </div>
         </div>
