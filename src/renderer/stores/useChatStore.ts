@@ -805,15 +805,13 @@ const autoFixMessage = async (
     if (is_template && missing_params) {
         // Try to reuse existing params if they match
         const existingParams = message.reportData?.selected_params || {}
-        const paramsToApply = existingParams
-
         // If parameters changed (unlikely for a fix, but possible), we might need re-confirmation.
         // For now, we assume if placeholders match, we reuse values.
-        
+
         // Auto-fill template with existing values if available
         let filledSql = fixedSql
         let allParamsFilled = true
-        
+
         missing_params.forEach(p => {
             const vals = existingParams[p.placeholder]
             if (vals && vals.length > 0) {
@@ -852,10 +850,10 @@ const autoFixMessage = async (
                 throw e
             }
         }
-    } 
+    }
     // Scenario 2: AI returned a template but we treated it as a regular fix (fallback logic)
     // or Scenario 3: AI stripped the template and returned a hardcoded SQL (downgrade)
-    
+
     const execution = await window.electronAPI.runSQL(finalSql)
     if (!execution.success || !execution.data)
       throw new Error(

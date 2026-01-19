@@ -38,13 +38,13 @@ import { useProGate } from '@/hooks/use-pro-gate'
 import { sanitizeFilename } from '@shared/naming-utils'
 
 export function DashboardHeader() {
-  const { setCanvasConfig, setLayoutScenario } =
-    useWorkbenchStore()
+  const { setCanvasConfig, setLayoutScenario } = useWorkbenchStore()
+  const canvasConfig = useWorkbenchStore(state => state.canvasConfig)
   const pageCount = useWorkbenchStore(state => state.pageCount)
   const setPageCount = useWorkbenchStore(state => state.setPageCount)
   // const layoutScenario = useWorkbenchStore(state => state.layoutScenario)
-  const isA4 = useWorkbenchStore.getState().canvasConfig.layout === 'a4'
-  const isReport = useWorkbenchStore.getState().canvasConfig.layout === 'report'
+  const isA4 = canvasConfig.layout === 'a4'
+  const isReport = canvasConfig.layout === 'report'
   const { t } = useTranslation('common')
   const { isActivated, language } = useSettingsStore()
   const addToast = useToastStore(state => state.addToast)
@@ -54,7 +54,7 @@ export function DashboardHeader() {
   const { checkGate, gateNode } = useProGate()
 
   const handleExportWeb = async () => {
-    const { pinnedReports, canvasConfig } = useWorkbenchStore.getState()
+    const { pinnedReports, canvasConfig: _canvasConfig } = useWorkbenchStore.getState()
     const activeSession = useProjectStore.getState().sessions.find(
       s => s.id === useProjectStore.getState().activeSessionId
     )
@@ -106,7 +106,7 @@ export function DashboardHeader() {
   }
 
   const handleExportExcel = async () => {
-    const { pinnedReports, canvasConfig } = useWorkbenchStore.getState()
+    const { pinnedReports } = useWorkbenchStore.getState()
     const activeSession = useProjectStore.getState().sessions.find(
       s => s.id === useProjectStore.getState().activeSessionId
     )

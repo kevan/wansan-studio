@@ -1,17 +1,22 @@
 import Store from 'electron-store'
-import { OpenAI } from 'openai'
 import type { ClientOptions } from 'openai'
-import { generateAnalysis, analyzeContext, fixSQL, generateInsight } from '../engine/ai-bridge'
+import { OpenAI } from 'openai'
+import {
+  analyzeContext,
+  fixSQL,
+  generateAnalysis,
+  generateInsight,
+} from '../engine/ai-bridge'
 import crypto from 'crypto'
 import { secureGet, secureSet } from './secure-storage'
 import { getAppUserAgent } from '../utils/env'
 import type {
-  TableSchema,
   AIAnalysisContext,
   AIAnalysisResult,
-  ContextAnalysisResult,
   AIConfig,
+  ContextAnalysisResult,
   DomainRule,
+  TableSchema,
 } from '@shared/types.ts'
 import { InsightGenerationContext } from '@shared/types/dashboard'
 
@@ -100,7 +105,7 @@ export class AIService {
         this.builtinConfig = {
           apiKey,
           baseURL: baseUrl || '',
-          model: models?.split(',')[0] || 'gpt-4-turbo-preview',
+          model: models?.split(',')[0] || '',
           models: models?.split(',') || [],
           provider: 'custom',
           isManaged: true,
@@ -128,13 +133,10 @@ export class AIService {
       effectiveConfig = {
         apiKey: secureKey || process.env.OPENAI_API_KEY,
         baseURL: storedConfig.baseURL || process.env.OPENAI_BASE_URL,
-        model:
-          storedConfig.model ||
-          process.env.OPENAI_MODEL ||
-          'gpt-4-turbo-preview',
+        model: storedConfig.model || process.env.OPENAI_MODEL || '',
       }
     }
-    this.model = effectiveConfig.model || 'gpt-4-turbo-preview'
+    this.model = effectiveConfig.model || ''
     if (effectiveConfig.apiKey) {
       const options: ClientOptions = {
         apiKey: effectiveConfig.apiKey,
@@ -272,7 +274,7 @@ export class AIService {
     return {
       apiKey: secureKey,
       baseURL: storedConfig.baseURL || '',
-      model: storedConfig.model || 'gpt-4-turbo-preview',
+      model: storedConfig.model || '',
     }
   }
 
@@ -337,9 +339,9 @@ CRITICAL SYNTAX RULES:
     const client = this.requireOpenAI()
     // Ensure default values if not provided in context (though Interface defines them as optional, engine handles them)
     const enrichedContext = {
-        ...context,
-        language: context.language || 'en',
-        domainRules: context.domainRules || []
+      ...context,
+      language: context.language || 'en',
+      domainRules: context.domainRules || [],
     }
     return await generateInsight(client, enrichedContext, this.model)
   }
