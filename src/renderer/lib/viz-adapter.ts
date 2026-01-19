@@ -304,7 +304,7 @@ export function buildEChartsOption(
             scale: true, // Optimizes view for numeric axes
             axisLabel: {
               interval: 'auto',
-              rotate: 45,
+              // rotate: 45, // Handled by theme
               fontSize: 10,
               hideOverlap: true,
             },
@@ -322,7 +322,7 @@ export function buildEChartsOption(
             data: xData,
             axisLabel: {
               interval: 'auto',
-              rotate: 45,
+              // rotate: 45, // Handled by theme
               fontSize: 10,
               hideOverlap: true,
             },
@@ -521,7 +521,7 @@ export function buildEChartsOption(
       xAxis: {
         type: 'category' as const,
         data: xData,
-        axisLabel: { rotate: 45, fontSize: 10 },
+        axisLabel: { fontSize: 10 },
       },
       yAxis: [
         {

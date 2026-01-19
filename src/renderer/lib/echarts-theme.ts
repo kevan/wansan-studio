@@ -382,11 +382,43 @@ export function applyWansanTheme(
   }
 
   const getXAxisRotate = (x: any) => {
+    // Respect user's explicit config
     if (x?.axisLabel?.rotate !== undefined) return x.axisLabel.rotate
-    const dataCount =
-      x?.data?.length ||
-      (series && Array.isArray(series) && (series as any)[0]?.data?.length) ||
-      0
+    
+    // Skip rotation for value or time axes unless forced
+    if (x?.type === 'value' || x?.type === 'time') return 0
+
+    let dataCount = 0
+
+    // Strategy 1: Check dataset (Preferred for modern ECharts)
+    if (option.dataset) {
+      const datasets = Array.isArray(option.dataset)
+        ? option.dataset
+        : [option.dataset]
+      
+      // Look for the first dataset with a source
+      const sourceData = datasets.find((d: any) => d.source && Array.isArray(d.source))?.source
+      if (sourceData) {
+        dataCount = (sourceData as any[]).length
+      }
+    }
+
+    // Strategy 2: Check xAxis.data (Legacy or direct category mode)
+    if (dataCount === 0 && x?.data?.length) {
+      dataCount = x.data.length
+    }
+
+    // Strategy 3: Check series data (Fallback)
+    if (
+      dataCount === 0 &&
+      series &&
+      Array.isArray(series) &&
+      (series as any)[0]?.data?.length
+    ) {
+      dataCount = (series as any)[0].data.length
+    }
+
+    // Heuristic: If items > 8, rotate 30 degrees to prevent overlap
     return dataCount > 8 ? 30 : 0
   }
 
