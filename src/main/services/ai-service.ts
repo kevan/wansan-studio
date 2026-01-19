@@ -211,7 +211,12 @@ export class AIService {
     error: string,
     schemas: TableSchema[],
     domainRules: DomainRule[] = []
-  ): Promise<{ sql: string; reasoning: string }> {
+  ): Promise<{
+    sql: string
+    reasoning: string
+    is_template?: boolean
+    missing_params?: any[]
+  }> {
     const client = this.requireOpenAI()
     return await fixSQL(
       client,

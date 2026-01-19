@@ -96,6 +96,70 @@ export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
     })
   }
 
+  // Separate selected items from results for better UX
+  const selectedOptions = displayOptions.filter(o => value.includes(String(o.value)))
+  const resultOptions = options.filter(o => !value.includes(String(o.value)))
+
+  const renderOption = (opt: any) => {
+    const val = String(opt.value)
+    const isChecked = value.includes(val)
+
+    let mainLabel = val
+    let subLabels = ''
+
+    if (param.display_columns && param.display_columns.length > 0) {
+      const firstCol = param.display_columns[0]
+      if (opt[firstCol]) mainLabel = String(opt[firstCol])
+
+      const otherCols = param.display_columns.slice(1)
+      subLabels = otherCols
+        .map(c => opt[c])
+        .filter(Boolean)
+        .join(' • ')
+    }
+
+    return (
+      <div
+        key={val}
+        onClick={() => toggleValue(val)}
+        className={cn(
+          'flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer text-sm transition-all select-none border border-transparent group',
+          isChecked
+            ? 'bg-indigo-50/60 border-indigo-100/50'
+            : 'hover:bg-zinc-100 hover:border-zinc-200/50'
+        )}
+      >
+        <Checkbox
+          checked={isChecked}
+          readOnly
+          className={cn(
+            'data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 transition-all duration-200 shrink-0',
+            isChecked ? 'shadow-sm' : 'border-zinc-300'
+          )}
+        />
+        <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+          <span
+            className={cn(
+              'truncate font-medium',
+              isChecked ? 'text-indigo-900' : 'text-zinc-900'
+            )}
+          >
+            {mainLabel}
+          </span>
+          {subLabels && (
+            <span className="text-xs text-zinc-500 truncate">
+              {subLabels}
+            </span>
+          )}
+        </div>
+        {/* Optional ID Badge */}
+        <div className="ml-2 px-1.5 py-0.5 bg-zinc-100 text-[10px] font-mono text-zinc-400 rounded shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          {val}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full w-full">
       {/* Search Header */}
@@ -134,8 +198,22 @@ export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
       <div className="flex-1 min-h-0 bg-white relative">
         <ScrollArea className="h-full">
           <div className="p-2 space-y-0.5 min-h-[200px]">
+            {/* Selected Items Section */}
+            {selectedOptions.length > 0 && (
+              <div className="mb-4">
+                <div className="px-3 py-1.5 text-[10px] font-bold text-indigo-500 uppercase tracking-wider flex items-center justify-between">
+                  <span>{t('selected_count', { count: selectedOptions.length })}</span>
+                  {searchTerm.length > 0 && <span className="text-zinc-300 font-normal lowercase">{t('common:pinned', 'pinned')}</span>}
+                </div>
+                <div className="space-y-0.5">
+                  {selectedOptions.map(renderOption)}
+                </div>
+                <div className="h-px bg-zinc-100 my-3 mx-2" />
+              </div>
+            )}
+
             {/* Empty State */}
-            {!isLoading && displayOptions.length === 0 && (
+            {!isLoading && selectedOptions.length === 0 && resultOptions.length === 0 && (
               <div className="flex flex-col items-center justify-center h-[200px] text-zinc-400 space-y-3 animate-in fade-in zoom-in-95 duration-300">
                 <div className="w-12 h-12 rounded-full bg-zinc-50 flex items-center justify-center">
                   <Search className="w-5 h-5 opacity-40" />
@@ -146,66 +224,17 @@ export function FilterPanel({ param, value, onChange }: FilterPanelProps) {
               </div>
             )}
 
-            {/* List Items */}
-            {displayOptions.map(opt => {
-              const val = String(opt.value)
-              const isChecked = value.includes(val)
-
-              let mainLabel = val
-              let subLabels = ''
-
-              if (param.display_columns && param.display_columns.length > 0) {
-                const firstCol = param.display_columns[0]
-                if (opt[firstCol]) mainLabel = String(opt[firstCol])
-
-                const otherCols = param.display_columns.slice(1)
-                subLabels = otherCols
-                  .map(c => opt[c])
-                  .filter(Boolean)
-                  .join(' • ')
-              }
-
-              return (
-                <div
-                  key={val}
-                  onClick={() => toggleValue(val)}
-                  className={cn(
-                    'flex items-center space-x-3 px-3 py-2.5 rounded-lg cursor-pointer text-sm transition-all select-none border border-transparent group',
-                    isChecked
-                      ? 'bg-indigo-50/60 border-indigo-100/50'
-                      : 'hover:bg-zinc-100 hover:border-zinc-200/50'
-                  )}
-                >
-                  <Checkbox
-                    checked={isChecked}
-                    readOnly
-                    className={cn(
-                      'data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 transition-all duration-200 shrink-0',
-                      isChecked ? 'shadow-sm' : 'border-zinc-300'
-                    )}
-                  />
-                  <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                    <span
-                      className={cn(
-                        'truncate font-medium',
-                        isChecked ? 'text-indigo-900' : 'text-zinc-900'
-                      )}
-                    >
-                      {mainLabel}
-                    </span>
-                    {subLabels && (
-                      <span className="text-xs text-zinc-500 truncate">
-                        {subLabels}
-                      </span>
-                    )}
+            {/* Results Section */}
+            {resultOptions.length > 0 && (
+              <div className="space-y-0.5">
+                {searchTerm.length === 0 && selectedOptions.length > 0 && (
+                  <div className="px-3 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                    {t('common:suggestions', 'Suggestions')}
                   </div>
-                  {/* Optional ID Badge */}
-                  <div className="ml-2 px-1.5 py-0.5 bg-zinc-100 text-[10px] font-mono text-zinc-400 rounded shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {val}
-                  </div>
-                </div>
-              )
-            })}
+                )}
+                {resultOptions.map(renderOption)}
+              </div>
+            )}
           </div>
         </ScrollArea>
       </div>

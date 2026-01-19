@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -21,19 +21,35 @@ interface SmartFilterModalProps {
   initialValues?: Record<string, string[]>
 }
 
+const DEFAULT_VALUES = {}
+
 export function SmartFilterModal({
   isOpen,
   onCancel,
   onConfirm,
   params,
   templateSql,
-  initialValues = {},
+  initialValues = DEFAULT_VALUES,
 }: SmartFilterModalProps) {
   const { t } = useTranslation(['chat', 'common'])
   const [activeIdx, setActiveIdx] = useState(0)
   const [paramValues, setParamValues] =
     useState<Record<string, string[]>>(initialValues)
   const confirmedRef = useRef(false)
+
+  // Track the last processed initialValues to avoid loops
+  const lastInitialValuesRef = useRef(initialValues)
+
+  // Sync paramValues when the modal opens or initialValues reference changes
+  useEffect(() => {
+    if (isOpen) {
+      // Only reset if it's a fresh open or the external values changed
+      setParamValues(initialValues)
+      confirmedRef.current = false
+      setActiveIdx(0)
+      lastInitialValuesRef.current = initialValues
+    }
+  }, [isOpen, initialValues])
 
   const activeParam = params[activeIdx]
 
@@ -71,6 +87,8 @@ export function SmartFilterModal({
     (acc, curr) => acc + curr.length,
     0
   )
+
+  const isUpdate = Object.keys(initialValues).length > 0
 
   return (
     <Dialog
@@ -173,11 +191,13 @@ export function SmartFilterModal({
               className={cn(
                 'h-8 px-4 transition-all shadow-sm font-medium',
                 allFilled
-                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'
+                  ? isUpdate
+                    ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'
                   : 'bg-zinc-200 text-zinc-400'
               )}
             >
-              {t('run_analysis')}
+              {isUpdate ? t('common:update') : t('run_analysis')}
             </Button>
           </div>
         </div>

@@ -513,7 +513,7 @@ export const useProjectStore = create<ProjectState>()(
             } as ReportData
 
             nextUpdate.widgetId = wId
-            delete (nextUpdate as any).reportData
+            nextUpdate.reportData = undefined // Explicitly clear to force registry resolution
           }
 
           return {

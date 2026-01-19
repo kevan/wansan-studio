@@ -224,6 +224,7 @@
   "close": "关闭",
   "close_project": "关闭项目",
   "save": "保存",
+  "update": "更新",
   "report_layout": "报告排版",
   "layout_type": "显示格式",
   "layout_flow": "全宽 (堆叠)",

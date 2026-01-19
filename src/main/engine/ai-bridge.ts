@@ -13,7 +13,8 @@ import {
 } from '@shared/schemas/analysis.ts'
 import {
   CONTEXT_ANALYSIS_SYSTEM_PROMPT,
-  getSystemPrompt,
+  getAnalysisSystemPrompt,
+  getFixSystemPrompt,
   serializeSchemas,
 } from './prompts.ts'
 import { isDev } from '../utils/env'
@@ -102,7 +103,7 @@ ${relationsContext}${contextSection}
     messages: [
       {
         role: 'system',
-        content: `${getSystemPrompt(domainRules, language, suggestionCount)}
+        content: `${getAnalysisSystemPrompt(domainRules, language, suggestionCount)}
 
 OUTPUT RULE:
 1. The "summary", "title", "reasoning", and "suggestions" fields MUST be in ${languageNote}.
@@ -223,9 +224,14 @@ export async function fixSQL(
 Your goal is to FIX a broken SQL query based on the error message and table schema.
 
 Additional Context:
-${getSystemPrompt(domainRules)}
+${getFixSystemPrompt(domainRules)}
 
-OUTPUT: JSON object { "sql": "FIXED_SQL", "reasoning": "Brief explanation of the fix (supplementary to the original plan)" }`
+OUTPUT: JSON object { 
+  "sql": "FIXED_SQL", 
+  "reasoning": "Brief explanation of the fix (supplementary to the original plan)",
+  "is_template": boolean, // (Optional) Set to true if using placeholders
+  "missing_params": [ { "placeholder": "...", "label": "...", "column": "...", "table": "...", "hint": "..." } ] // (Optional) Parameters if is_template is true
+}`
 
   const userPrompt = `### 📂 SCHEMA
 ${schemaContext}

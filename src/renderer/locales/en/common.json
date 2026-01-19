@@ -223,6 +223,7 @@
   "close": "Close",
   "close_project": "Close Project",
   "save": "Save",
+  "update": "Update",
   "report_layout": "Report Layout",
   "layout_type": "Display Format",
   "layout_flow": "Full Width (Stacked)",

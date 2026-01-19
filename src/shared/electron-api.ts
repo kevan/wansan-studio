@@ -19,6 +19,7 @@ import {
   AnalyzeContextResponse,
   ExportExcelPayload,
 } from './api-types'
+import { FilterParam } from './schemas/analysis'
 
 export interface IngestPreCheckParams {
   filePath: string
@@ -148,7 +149,14 @@ export interface ElectronAPI {
     error: string,
     schemas: TableSchema[],
     domainRules?: DomainRule[]
-  ) => Promise<IPCResponse<{ sql: string; reasoning: string }>>
+  ) => Promise<
+    IPCResponse<{
+      sql: string
+      reasoning: string
+      is_template?: boolean
+      missing_params?: FilterParam[]
+    }>
+  >
   analyzeContext: (
     schemas: TableSchema[],
     language?: 'en' | 'zh'

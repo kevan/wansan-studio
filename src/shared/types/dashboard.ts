@@ -32,6 +32,7 @@ export interface ReportData {
   summary?: string
   content?: string // For Text Widget
   sql?: string
+  template_sql?: string // [NEW] Preserve original template with placeholders
   reasoning?: string
   suggestions?: string[]
   chartType?: ChartType

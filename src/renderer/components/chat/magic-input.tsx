@@ -705,13 +705,21 @@ export function MagicInput({
     }
   }, [value, cursorPosition])
 
-  // Force re-calculation of textarea height when container resizes
+  // Force re-calculation of textarea height when container width changes (e.g. sidebar toggle)
+  const lastWidthRef = useRef(0)
   useEffect(() => {
     if (!containerRef.current) return
-    const observer = new ResizeObserver(() => {
-      // TextareaAutosize listens to window resize, but not container resize.
-      // We manually trigger a window resize event to force it to recalculate height.
-      window.dispatchEvent(new Event('resize'))
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry) return
+      
+      const width = Math.round(entry.contentRect.width)
+      if (width !== lastWidthRef.current) {
+        lastWidthRef.current = width
+        // TextareaAutosize listens to window resize. Triggering it manually 
+        // ensures height is recalculated when the available width changes.
+        window.dispatchEvent(new Event('resize'))
+      }
     })
     observer.observe(containerRef.current)
     return () => observer.disconnect()

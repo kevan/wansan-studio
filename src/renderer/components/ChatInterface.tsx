@@ -156,7 +156,7 @@ const MessageItem = React.memo(
       if (onConfigureTemplate && message.reportData) {
         onConfigureTemplate(
           message.id,
-          message.reportData.sql!,
+          message.reportData.template_sql || message.reportData.sql!,
           message.reportData.missing_params || [],
           message.reportData.selected_params
         )

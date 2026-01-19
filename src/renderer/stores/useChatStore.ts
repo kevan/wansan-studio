@@ -389,6 +389,7 @@ const sendMessage = async (
           title: plan.title,
           summary: plan.summary,
           sql: plan.sql,
+          template_sql: plan.sql, // Store the raw template here
           reasoning: plan.reasoning,
           suggestions: plan.suggestions,
           chartType: plan.viz_type,
@@ -765,6 +766,9 @@ const autoFixMessage = async (
   const message = messages.find(m => m.id === messageId)
   if (!message) return
 
+  // Prefer fixing the template to preserve parameters flexibility
+  const sqlToFix = message.reportData?.template_sql || originalSql
+
   updateMessage(messageId, msg => ({
     ...msg,
     status: 'executing',
@@ -775,7 +779,7 @@ const autoFixMessage = async (
     const readyFiles = fileState.files.filter(f => f.status === 'ready')
     const schemas = readyFiles.map(mapFileToSchema)
 
-    if (!originalSql)
+    if (!sqlToFix)
       throw new Error(i18n.t('error_no_sql_to_fix', { ns: 'chat' }))
 
     const globalRules = useSettingsStore.getState().domainRules || []
@@ -783,7 +787,7 @@ const autoFixMessage = async (
     const combinedRules = [...globalRules, ...projectRules]
 
     const fixResult = await window.electronAPI.fixSQL(
-      originalSql,
+      sqlToFix,
       error,
       schemas,
       combinedRules
@@ -793,8 +797,66 @@ const autoFixMessage = async (
         fixResult.error || i18n.t('error_failed_to_fix_sql', { ns: 'chat' })
       )
 
-    const { sql: fixedSql, reasoning } = fixResult.data
-    const execution = await window.electronAPI.runSQL(fixedSql)
+    const { sql: fixedSql, reasoning, is_template, missing_params } = fixResult.data
+    let finalSql = fixedSql
+    let selectedParams: Record<string, string[]> | undefined
+
+    // Scenario 1: AI returned a template (preserved or new)
+    if (is_template && missing_params) {
+        // Try to reuse existing params if they match
+        const existingParams = message.reportData?.selected_params || {}
+        let paramsToApply = existingParams
+
+        // If parameters changed (unlikely for a fix, but possible), we might need re-confirmation.
+        // For now, we assume if placeholders match, we reuse values.
+        
+        // Auto-fill template with existing values if available
+        let filledSql = fixedSql
+        let allParamsFilled = true
+        
+        missing_params.forEach(p => {
+            const vals = existingParams[p.placeholder]
+            if (vals && vals.length > 0) {
+                 const sqlList = vals.map(v => `'${String(v).replace(/'/g, "''")}'`).join(', ')
+                 const escapedPlaceholder = p.placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                 const regex = new RegExp(`'${escapedPlaceholder}'|${escapedPlaceholder}`, 'g')
+                 filledSql = filledSql.replace(regex, sqlList)
+            } else {
+                allParamsFilled = false
+            }
+        })
+
+        if (allParamsFilled) {
+            finalSql = filledSql
+            selectedParams = existingParams
+        } else {
+            // Fallback: Ask user to fill missing params (rare in fix flow)
+             try {
+                const resolved = await new Promise<{
+                sql: string
+                params: Record<string, string[]>
+                }>((resolve, reject) => {
+                useProjectStore.getState().setSmartFilterRequest({
+                    isOpen: true,
+                    params: missing_params as FilterParam[],
+                    templateSql: fixedSql,
+                    resolve,
+                    reject,
+                })
+                })
+                finalSql = resolved.sql
+                selectedParams = resolved.params
+                useProjectStore.getState().setSmartFilterRequest(null)
+            } catch (e) {
+                useProjectStore.getState().setSmartFilterRequest(null)
+                throw e
+            }
+        }
+    } 
+    // Scenario 2: AI returned a template but we treated it as a regular fix (fallback logic)
+    // or Scenario 3: AI stripped the template and returned a hardcoded SQL (downgrade)
+    
+    const execution = await window.electronAPI.runSQL(finalSql)
     if (!execution.success || !execution.data)
       throw new Error(
         execution.error ||
@@ -810,13 +872,17 @@ const autoFixMessage = async (
       reportData: {
         title: msg.reportData?.title || 'Auto-fix Result', // Fallback title
         ...(msg.reportData || {}),
-        sql: fixedSql,
+        sql: finalSql,
+        template_sql: is_template ? fixedSql : msg.reportData?.template_sql, // Preserve template if returned or exists
         reasoning:
           (msg.planReasoning ? msg.planReasoning + '\n\n' : '') +
           i18n.t('autofix_reasoning', { ns: 'chat', reasoning }),
         tableData: data,
         columnFields,
         chartType: msg.reportData?.chartType || 'table',
+        is_template,
+        missing_params: missing_params as any,
+        selected_params: selectedParams,
       },
     }))
     useToastStore.getState().addToast({

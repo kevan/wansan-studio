@@ -77,4 +77,6 @@ export const ContextAnalysisResultSchema = z.object({
 export const FixSQLResultSchema = z.object({
   sql: z.string(),
   reasoning: z.string(),
+  is_template: z.boolean().optional().default(false),
+  missing_params: z.array(ParamSchema).optional(),
 })
