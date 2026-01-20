@@ -31,6 +31,7 @@ export function ReportWidgetContainer({
 
   // Local state for layout to support "Export/ReadOnly" mode (where updateWidget might not persist or exist)
   const [layoutType, setLayoutType] = useState<'flow' | 'split'>(reportConfig.layoutType || 'flow')
+  const [isInsightExpanded, setIsInsightExpanded] = useState(true)
   const isSplit = layoutType === 'split'
   const displayMode = getDisplayMode(reportData.chartType, reportData.tableData || [], reportData.vizConfig)
 
@@ -145,7 +146,8 @@ export function ReportWidgetContainer({
           {/* 2.2 Insight Area */}
           {reportData.insight && reportConfig.showInsight !== false && (
             <div className={cn(
-               "bg-zinc-50/30 flex flex-col justify-center",
+               "flex flex-col transition-colors duration-300",
+               isInsightExpanded ? "bg-zinc-50/30" : "bg-white",
                displayMode === 'chart' ? "p-3 sm:p-4 md:p-6 lg:p-8" : "p-3 sm:p-4 md:p-5"
             )}>
               <InsightPanel
@@ -154,9 +156,10 @@ export function ReportWidgetContainer({
                 chartData={reportData.tableData || []}
                 insight={reportData.insight}
                 onGenerateInsight={async () => ''}
-                defaultExpanded={true}
+                expanded={isInsightExpanded}
+                onExpandChange={setIsInsightExpanded}
                 onHighlight={setHighlightedItems}
-                className="bg-transparent border-0 p-0 shadow-none"
+                className="bg-transparent border-0 shadow-none"
                 readOnly={true}
               />
             </div>

@@ -119,7 +119,7 @@
   "drop_zone_click_hint": "Please drag files to the right area, or click to select in the empty state page",
   "debug_export_command": "Export Debug Log",
   "debug_export_success_toast": "Debug log exported successfully",
-  "modify_parameters": "Modify Parameters",
+  "modify_parameters": "Parameters",
   "refining": "Based on:",
   "analysis_cancelled": "Analysis cancelled",
   "analysis_cancelled_title": "Analysis Cancelled",

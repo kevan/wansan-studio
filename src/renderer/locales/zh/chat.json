@@ -118,7 +118,7 @@
   "drop_zone_click_hint": "请将文件拖拽到右侧区域，或在空状态页面点击选择文件",
   "debug_export_command": "导出调试日志",
   "debug_export_success_toast": "调试日志导出成功",
-  "modify_parameters": "修改参数",
+  "modify_parameters": "参数",
   "refining": "基于：",
   "analysis_cancelled": "分析已取消",
   "analysis_cancelled_title": "分析已取消",

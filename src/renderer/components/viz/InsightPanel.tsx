@@ -68,6 +68,7 @@ interface InsightPanelProps {
   /** Called when hovering over a finding to highlight chart elements */
   onHighlight?: (items: string[]) => void
   readOnly?: boolean
+  headerClassName?: string
 }
 
 export function InsightPanel({
@@ -87,6 +88,7 @@ export function InsightPanel({
   onSave,
   config,
   readOnly = false,
+  headerClassName,
 }: InsightPanelProps) {
   const { t } = useTranslation('common')
   const [state, setState] = useState<InsightState>(insight ? 'done' : 'idle')
@@ -99,6 +101,7 @@ export function InsightPanel({
   const [editBuffer, setEditEditBuffer] = useState<InsightResult | null>(null)
   const [activeFindingId, setActiveFindingId] = useState<string | null>(null)
   const [instructions, setInstructions] = useState('')
+  const hasAutoExpanded = React.useRef(false)
 
   const isExpanded = expanded !== undefined ? expanded : internalExpanded
   const dataPointCount = chartData.length
@@ -107,20 +110,19 @@ export function InsightPanel({
     if (insight && typeof insight !== 'string') {
       setInsightData(insight)
       setState('done')
-      if (expanded === undefined && !internalExpanded) {
+      if (expanded === undefined && !hasAutoExpanded.current) {
         setInternalExpanded(true)
+        hasAutoExpanded.current = true
       }
     }
-  }, [insight, expanded, internalExpanded])
+  }, [insight, expanded])
 
-  // Auto request logic
   useEffect(() => {
     if (requestTrigger > 0 && state === 'idle' && !insight) {
       setState('consent')
     }
   }, [requestTrigger, state, insight])
 
-  // Sync internal expanded state if prop changes
   useEffect(() => {
     if (expanded !== undefined) {
       setInternalExpanded(expanded)
@@ -212,7 +214,7 @@ export function InsightPanel({
       ...editBuffer,
       findings: [...editBuffer.findings, newFinding],
     })
-    setActiveFindingId(newFinding.id) // Auto-focus new finding
+    setActiveFindingId(newFinding.id)
   }
 
   const removeFinding = (id: string) => {
@@ -266,7 +268,6 @@ export function InsightPanel({
 
     return (
       <div className="space-y-6 pt-2 pb-4">
-        {/* Summary Edit */}
         <div className="space-y-2">
           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">
             {t('insight_summary')}
@@ -279,7 +280,6 @@ export function InsightPanel({
           />
         </div>
 
-        {/* Findings Edit */}
         <div className="space-y-3">
           <div className="flex items-center justify-between ml-1">
             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
@@ -296,7 +296,6 @@ export function InsightPanel({
             {editBuffer.findings.map(f => (
               <div key={f.id} className="bg-zinc-50 border border-zinc-200 rounded-xl p-3 relative group/finding">
                 <div className="flex gap-3">
-                  {/* Icon Picker */}
                   <div className="relative pt-1 shrink-0">
                     <IconSelector 
                         current={f.sentiment || 'neutral'} 
@@ -328,7 +327,6 @@ export function InsightPanel({
                         </div>
                     )}
                     
-                    {/* Related Items Edit */}
                     <div className="flex flex-wrap gap-1.5 items-center">
                         <span className="text-[9px] font-bold text-zinc-400 uppercase mr-1">{t('insight_anchors')}:</span>
                         {f.relatedItems?.map(item => (
@@ -375,7 +373,6 @@ export function InsightPanel({
           </div>
         </div>
 
-        {/* Recommendation Edit */}
         <div className="space-y-2">
           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider ml-1">
             {t('insight_recommendation')}
@@ -388,7 +385,6 @@ export function InsightPanel({
           />
         </div>
 
-        {/* Footer Actions */}
         <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100 mt-4">
             <button
                 onClick={handleCancelEdit}
@@ -416,14 +412,12 @@ export function InsightPanel({
 
     return (
       <div className="space-y-4 pt-1">
-        {/* Summary */}
         {summary && (
           <div className="text-sm text-zinc-700 font-medium leading-relaxed bg-white/60 p-3 rounded-lg border border-indigo-50/50 shadow-sm">
             {summary}
           </div>
         )}
 
-        {/* Findings */}
         {findings && findings.length > 0 && (
           <div className="space-y-2">
             <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider ml-1">
@@ -450,7 +444,6 @@ export function InsightPanel({
           </div>
         )}
 
-        {/* Recommendation */}
         {recommendation && (
           <div className="flex items-start gap-3 p-3 bg-emerald-50/50 border border-emerald-100/50 rounded-lg">
             < Lightbulb className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
@@ -463,7 +456,6 @@ export function InsightPanel({
     )
   }
 
-  // Render based on state
   if (state === 'idle') {
     if (hiddenIfIdle) return null
     return (
@@ -481,8 +473,6 @@ export function InsightPanel({
   }
 
   if (state === 'consent') {
-    // If regenerating (we have previous data), overlay the consent form on top of the skeleton
-    // This prevents layout collapse from Done -> Consent
     if (insightData) {
       return (
         <div
@@ -491,12 +481,10 @@ export function InsightPanel({
             className
           )}
         >
-          {/* Background: Skeleton to maintain height */}
           <div className="opacity-50 blur-[1px]">
             <InsightSkeleton className="border-0 shadow-none" />
           </div>
 
-          {/* Overlay: Consent Form */}
           <div className="absolute inset-0 z-10 flex items-center justify-center p-4 bg-white/60 backdrop-blur-[1px]">
             <div className="w-full bg-white border border-indigo-100 rounded-xl p-4 shadow-xl animate-in zoom-in-95 fade-in duration-200">
               <InsightConsentForm
@@ -554,7 +542,6 @@ export function InsightPanel({
     )
   }
 
-  // state === 'done'
   return (
     <div
       className={cn(
@@ -563,10 +550,13 @@ export function InsightPanel({
         isEditing && 'ring-2 ring-indigo-500 border-transparent shadow-2xl'
       )}
     >
-      {/* Header */}
       <div
         onClick={toggleExpanded}
-        className="w-full flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-indigo-50/50 transition-colors select-none"
+        className={cn(
+          "w-full flex items-center justify-between px-4 py-3 cursor-pointer transition-colors select-none rounded-xl",
+          className?.includes('bg-transparent') ? "hover:bg-zinc-200/50" : "hover:bg-indigo-50/50",
+          headerClassName
+        )}
       >
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-indigo-500" />
@@ -579,20 +569,14 @@ export function InsightPanel({
           {isEditing ? (
             <>
               <button
-                onClick={e => {
-                  e.stopPropagation()
-                  handleSaveEdit()
-                }}
+                onClick={e => { e.stopPropagation(); handleSaveEdit(); }}
                 className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded bg-transparent transition-colors"
                 title={t('save')}
               >
                 <Check className="w-4 h-4" />
               </button>
               <button
-                onClick={e => {
-                  e.stopPropagation()
-                  handleCancelEdit()
-                }}
+                onClick={e => { e.stopPropagation(); handleCancelEdit(); }}
                 className="p-1.5 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 rounded bg-transparent transition-colors"
                 title={t('cancel')}
               >
@@ -604,10 +588,7 @@ export function InsightPanel({
               <>
                 {!readOnly && (
                   <button
-                    onClick={e => {
-                      e.stopPropagation()
-                      handleStartEdit()
-                    }}
+                    onClick={e => { e.stopPropagation(); handleStartEdit(); }}
                     className="p-1.5 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded bg-transparent transition-colors"
                     title={t('edit')}
                   >
@@ -644,7 +625,6 @@ export function InsightPanel({
         </div>
       </div>
 
-      {/* Content */}
       {isExpanded && <div className="px-4 pb-4">{renderContent()}</div>}
     </div>
   )
@@ -767,7 +747,6 @@ function InsightSkeleton({ className }: { className?: string }) {
         className
       )}
     >
-      {/* Header Skeleton */}
       <div className="w-full flex items-center justify-between px-4 py-3 border-b border-zinc-50/50">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-indigo-100 animate-pulse" />
@@ -775,15 +754,12 @@ function InsightSkeleton({ className }: { className?: string }) {
         </div>
       </div>
 
-      {/* Content Skeleton */}
       <div className="p-4 space-y-6">
-        {/* Summary */}
         <div className="space-y-2">
           <div className="h-4 w-full bg-zinc-100 rounded animate-pulse" />
           <div className="h-4 w-3/4 bg-zinc-100 rounded animate-pulse" />
         </div>
 
-        {/* Findings */}
         <div className="space-y-3">
           <div className="h-3 w-20 bg-zinc-100 rounded animate-pulse mb-2" />
           {[1, 2, 3].map(i => (
@@ -797,7 +773,6 @@ function InsightSkeleton({ className }: { className?: string }) {
           ))}
         </div>
 
-        {/* Recommendation */}
         <div className="p-3 bg-emerald-50/30 rounded-lg border border-emerald-50">
           <div className="flex gap-3">
             <div className="w-4 h-4 rounded-full bg-emerald-100 animate-pulse shrink-0" />
