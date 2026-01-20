@@ -6,7 +6,7 @@ import {
   Image,
   Pin,
   RefreshCw,
-  Settings2,
+  SquarePen,
   SlidersHorizontal,
   Sparkles,
   Lightbulb,
@@ -383,7 +383,7 @@ export const ChatReportCard = React.memo(function ChatReportCard({
         {/* Right: Standard Actions */}
         <div className="flex items-center gap-1">
           <ExpandableAction
-            icon={<Settings2 className="h-3.5 w-3.5" />}
+            icon={<SquarePen className="h-3.5 w-3.5" />}
             label={t('common:edit_viz')}
             onClick={handleEditViz}
           />
