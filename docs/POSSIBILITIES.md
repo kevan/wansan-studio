@@ -97,3 +97,28 @@
 ### 6.2 The "Figma Model"
 *   **Strategy**: Maintain a unified codebase where Web is the default entry point, and Desktop is the "Pro Performance Wrapper".
 *   **Sync**: Web version syncs via Cloudflare R2 to allow seamless transition to Desktop for heavy workloads.
+
+---
+
+## ☁️ 7. Wansan Cloud Services (The SaaS Path)
+
+> These features represent a potential pivot towards a "Hybrid" or "SaaS" model, introducing server-side components to enhance connectivity.
+
+### 7.1 Managed AI Gateway
+*   **Concept**: A "Zero-Config" mode where users don't need their own OpenAI Key.
+*   **Implementation**: Centralized gateway handling billing and routing to LLM providers.
+*   **Value**: Lowers entry barrier for non-technical users.
+
+### 7.2 Cloud Project Sync (BYOS)
+*   **Concept**: Allow users to configure their own S3-compatible storage (Cloudflare R2, AWS S3) to sync projects across devices.
+*   **Feature**: "One-Click Publish" to generate a shareable URL for Web Exports.
+
+### 7.3 Web Viewer (Lite)
+*   **Concept**: A server-side component to host and render `.wansan` project exports online, eliminating the need to download HTML files.
+
+### 7.4 Team Collaboration
+*   **Concept**: Multi-user access to shared project bundles with permission control (Viewer/Editor).
+*   **Value**: Transforming Wansan from a personal tool to a team workspace.
+
+### 7.5 Data Alerts
+*   **Concept**: Server-side scheduling agent that checks local (or synced) data and sends emails/Slack notifications when metrics breach thresholds.
