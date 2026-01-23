@@ -21,6 +21,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit2,
+  Eye,
+  EyeOff,
   FileSearch,
   Info,
   Key,
@@ -252,6 +254,11 @@ export function DataPreviewStep() {
                         onTogglePK={() =>
                           handleTogglePK(col.name, !col.isPrimaryKey)
                         }
+                        onToggleIgnore={() =>
+                          updateColumnConfig(currentTaskIndex, col.name, {
+                            isIgnored: !col.isIgnored,
+                          })
+                        }
                         onTypeChange={type =>
                           handleTypeChange(col.name, type as ColumnType)
                         }
@@ -271,13 +278,19 @@ export function DataPreviewStep() {
                         ? currentTask.columnMapping?.[col.name]
                         : col.name
                     const cellValue = sourceColName ? row[sourceColName] : null
+                    const isIgnored = (col as ColumnConfig).isIgnored
 
                     return (
                       <TableCell
                         key={col.name}
-                        className="px-4 py-2 text-xs text-zinc-600 border-r border-zinc-100 font-mono truncate max-w-[300px]"
+                        className={cn(
+                          'px-4 py-2 text-xs border-r border-zinc-100 font-mono truncate max-w-[300px]',
+                          isIgnored ? 'text-zinc-300 italic' : 'text-zinc-600'
+                        )}
                       >
-                        {cellValue !== null && cellValue !== undefined ? (
+                        {isIgnored ? (
+                          '--'
+                        ) : cellValue !== null && cellValue !== undefined ? (
                           formatForDisplay(cellValue, col.type)
                         ) : (
                           <span className="opacity-20 italic">
@@ -299,55 +312,92 @@ export function DataPreviewStep() {
 const ColumnPreviewHead = ({
   column,
   onTogglePK,
+  onToggleIgnore,
   onTypeChange,
 }: {
   column: any
   onTogglePK: () => void
+  onToggleIgnore: () => void
   onTypeChange: (type: ColumnType) => void
 }) => {
   const { t } = useTranslation('common')
+  const isIgnored = column.isIgnored
   return (
-    <TableHead className="px-4 py-3 border-b border-r border-zinc-200 min-w-[200px] max-w-[300px]">
-      <div className="flex flex-col gap-2">
+    <TableHead
+      className={cn(
+        'px-4 py-3 border-b border-r border-zinc-200 min-w-[200px] max-w-[300px] transition-colors',
+        isIgnored && 'bg-zinc-50 border-zinc-100'
+      )}
+    >
+      <div className={cn('flex flex-col gap-2', isIgnored && 'opacity-50')}>
         <div className="flex items-center justify-between group">
-          <span
-            className="text-xs font-bold text-zinc-900 truncate pr-2"
-            title={column.name}
-          >
-            {column.name}
-          </span>
-          <button
-            onClick={onTogglePK}
-            className={cn(
-              'p-1.5 rounded-lg border transition-all',
-              column.isPrimaryKey
-                ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
-                : 'bg-white border-zinc-200 text-zinc-300 hover:text-indigo-600 hover:border-indigo-200'
-            )}
-            title={t('wizard.set_unique_key')}
-          >
-            <Key
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              onClick={onToggleIgnore}
               className={cn(
-                'w-3.5 h-3.5',
-                column.isPrimaryKey && 'fill-current'
+                'p-1.5 rounded-lg border transition-all',
+                isIgnored
+                  ? 'bg-zinc-100 border-zinc-200 text-zinc-400'
+                  : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50'
               )}
-            />
-          </button>
+              title={isIgnored ? t('wizard.include_col') : t('wizard.exclude_col')}
+            >
+              {isIgnored ? (
+                <EyeOff className="w-3.5 h-3.5" />
+              ) : (
+                <Eye className="w-3.5 h-3.5" />
+              )}
+            </button>
+            <span
+              className={cn(
+                'text-xs font-bold truncate',
+                isIgnored ? 'text-zinc-400' : 'text-zinc-900'
+              )}
+              title={column.name}
+            >
+              {column.name}
+            </span>
+          </div>
+          {!isIgnored && (
+            <button
+              onClick={onTogglePK}
+              className={cn(
+                'p-1.5 rounded-lg border transition-all',
+                column.isPrimaryKey
+                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+                  : 'bg-white border-zinc-200 text-zinc-300 hover:text-indigo-600 hover:border-indigo-200'
+              )}
+              title={t('wizard.set_unique_key')}
+            >
+              <Key
+                className={cn(
+                  'w-3.5 h-3.5',
+                  column.isPrimaryKey && 'fill-current'
+                )}
+              />
+            </button>
+          )}
         </div>
-        <Select value={column.type} onValueChange={onTypeChange}>
-          <SelectTrigger className="h-7 text-[10px] font-bold bg-white border-zinc-200 uppercase">
-            {t(COLUMN_TYPE_CONFIG[column.type as ColumnType]?.label) || (
-              <SelectValue />
-            )}
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(COLUMN_TYPE_CONFIG).map(([type, cfg]) => (
-              <SelectItem key={type} value={type}>
-                {t(cfg.label)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {isIgnored ? (
+          <div className="h-7 px-3 flex items-center text-[10px] font-bold bg-zinc-50 border border-zinc-200 text-zinc-400 uppercase rounded-md">
+            {t('wizard.ignore')}
+          </div>
+        ) : (
+          <Select value={column.type} onValueChange={onTypeChange}>
+            <SelectTrigger className="h-7 text-[10px] font-bold bg-white border-zinc-200 uppercase">
+              {t(COLUMN_TYPE_CONFIG[column.type as ColumnType]?.label) || (
+                <SelectValue />
+              )}
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(COLUMN_TYPE_CONFIG).map(([type, cfg]) => (
+                <SelectItem key={type} value={type}>
+                  {t(cfg.label)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
     </TableHead>
   )

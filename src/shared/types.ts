@@ -5,11 +5,39 @@ export type { ChartType, InsightResult, ReportData, ReportWidget }
 
 export type ColumnType =
   | 'VARCHAR'
-  | 'DOUBLE'
+  | 'DECIMAL'
   | 'BOOLEAN'
   | 'DATE'
+  | 'TIME'
   | 'INTEGER'
+  | 'BIGINT'
   | 'TIMESTAMP'
+
+export interface ColumnSemantic {
+  /** 
+   * User-friendly aliases or synonyms 
+   * e.g. ["营收", "收入", "Sales Revenue"] for column "amt"
+   */
+  aliases?: string[]
+  
+  /** 
+   * High-level business type hint for visualization
+   * e.g. "Currency", "City", "User_ID", "Category"
+   */
+  businessType?: string
+  
+  /**
+   * Description of the column's business logic
+   */
+  description?: string
+  
+  /**
+   * Whether this column is visible to the AI Context.
+   * If false, it is EXCLUDED from the prompt sent to LLM.
+   * Default: true.
+   */
+  isVisibleToAI?: boolean
+}
 
 export interface ColumnSchema {
   name: string // Original column name (e.g., "销售额(万元)")
@@ -17,10 +45,17 @@ export interface ColumnSchema {
   type: ColumnType // Inferred DuckDB type
   sampleValues: any[] // Top 3 non-null values for AI context
   nullable?: boolean // From UI state, indicates if column can have nulls
-  isKey?: boolean // From UI state, indicates if column is a join key
+  
+  /** @deprecated Use relations structure instead */
+  isKey?: boolean 
+  
   isPrimaryKey?: boolean // Optional metadata when a column is a primary key
-  alias?: string // User defined alias for the column
+  
+  /** @deprecated Use semantic.aliases instead */
+  alias?: string 
+  
   userType?: ColumnType // User defined type override
+  semantic?: ColumnSemantic // [NEW] Semantic metadata
 }
 
 export interface TableSchema {
@@ -161,6 +196,17 @@ export interface DomainRule {
   content: string
   isEnabled: boolean
   createdAt: number
+}
+
+export interface DBConnectionConfig {
+  id: string
+  name: string // Display name, e.g. "Production Postgres"
+  type: 'mysql' | 'postgres'
+  host: string
+  port: number
+  user: string
+  database: string
+  // Note: password is stored in secure-storage with key: `db_pass_${id}`
 }
 
 // 选中节点类型

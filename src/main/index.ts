@@ -10,6 +10,7 @@ import { NativeDatabaseService } from './services/native-db-service'
 import { AIService } from './services/ai-service' // Import AIService
 import { dbClient } from './services/db-service/client'
 import { ProjectManager } from './services/project-manager'
+import { DBConnectorService } from './services/connector-service'
 import { registerProjectHandlers } from './ipc/project-ipc'
 import { createApplicationMenu } from './config/menu'
 import { authService } from './services/auth-service'
@@ -23,6 +24,7 @@ class WansanApp {
   private databaseService: NativeDatabaseService | null = null
   private aiService: AIService | null = null // Add AIService property
   private projectManager: ProjectManager | null = null
+  private connectorService: DBConnectorService | null = null
   // private duckdbNativeService: any = null // Removed: now in dbClient
   // private pendingQueries = new Map<string, { resolve: Function; reject: Function }>() // Removed
 
@@ -71,6 +73,9 @@ class WansanApp {
 
     // 初始化数据库服务
     this.databaseService = new NativeDatabaseService()
+
+    // Initialize Connector Service
+    this.connectorService = new DBConnectorService(this.databaseService)
 
     // Initialize Project Manager
     this.projectManager = new ProjectManager(this.databaseService)
@@ -228,11 +233,19 @@ class WansanApp {
   }
 
   private setupIPC() {
-    if (!this.databaseService || !this.aiService) {
+    if (
+      !this.databaseService ||
+      !this.aiService ||
+      !this.connectorService
+    ) {
       throw new Error('Services not initialized')
     }
 
-    const { fileService } = setupIPC(this.databaseService, this.aiService)
+    const { fileService } = setupIPC(
+      this.databaseService,
+      this.aiService,
+      this.connectorService
+    )
 
     // Cleanup orphaned temp files from previous sessions on boot
     fileService.cleanupTempFiles().catch(err => {

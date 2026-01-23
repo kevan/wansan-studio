@@ -57,10 +57,10 @@ export interface CreateTableParams {
   filePath: string
   tableName: string
   sheetName?: string
-  columns: Array<{ name: string; type: string }> // User-confirmed types
+  columns: Array<{ name: string; type: string; isIgnored?: boolean }> // User-confirmed types and filters
   tempFilePath?: string // Cached CSV path
   limitRows?: number // Max rows allowed
-  readOptions?: Record<string, any>
+  readOptions?: Record<string, any> // Options used to read the file
 }
 
 export interface ValidateColumnTypesParams {
@@ -119,6 +119,25 @@ export interface ElectronAPI {
   ) => Promise<IPCResponse<string>>
   getPathForFile: (file: File) => string
 
+  // Database Connectors
+  testDBConnection: (
+    config: import('./types').DBConnectionConfig,
+    password?: string
+  ) => Promise<IPCResponse<boolean>>
+  listDBTables: (
+    config: import('./types').DBConnectionConfig
+  ) => Promise<IPCResponse<Array<{ name: string; schema?: string }>>>
+  syncDBTable: (
+    config: import('./types').DBConnectionConfig,
+    tableName: string,
+    localTableName: string
+  ) => Promise<
+    IPCResponse<{
+      rowCount: number
+      columns: Array<{ name: string; type: string; nullable: boolean }>
+    }>
+  >
+
   // Database Operations
   runSQL: (sql: string) => Promise<RunSQLResponse>
   getUniqueTableName: (
@@ -161,6 +180,11 @@ export interface ElectronAPI {
     schemas: TableSchema[],
     language?: 'en' | 'zh'
   ) => Promise<AnalyzeContextResponse>
+  analyzeSemantics: (
+    tableName: string,
+    columns: ColumnSchema[],
+    sampleValues: any[][]
+  ) => Promise<IPCResponse<Record<string, import('./types').ColumnSemantic>>>
   generateMetricExpression: (options: {
     input: string
     columns: Array<{ name: string; type: string }>

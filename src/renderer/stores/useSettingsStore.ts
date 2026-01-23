@@ -30,6 +30,7 @@ export interface SettingsState {
   ignoredUpdateVersion: string | null // [NEW]
   domainRules: DomainRule[]
   recentProjectPaths: string[]
+  dbConnections: import('@shared/types').DBConnectionConfig[]
   isSpecialChannel: boolean
   isExpired: boolean
   showChartLabels: boolean
@@ -47,6 +48,16 @@ export interface SettingsState {
   reorderDomainRules: (oldIndex: number, newIndex: number) => void
   addRecentProject: (path: string) => void
   removeRecentProject: (path: string) => void
+  addDBConnection: (
+    conn: Omit<import('@shared/types').DBConnectionConfig, 'id'>,
+    password?: string
+  ) => Promise<string>
+  removeDBConnection: (id: string) => Promise<void>
+  updateDBConnection: (
+    id: string,
+    updates: Partial<import('@shared/types').DBConnectionConfig>,
+    password?: string
+  ) => Promise<void>
   updateSettings: (
     patch: Partial<
       Omit<
@@ -114,6 +125,9 @@ const initialSettingsState: Omit<
   | 'reorderDomainRules'
   | 'addRecentProject'
   | 'removeRecentProject'
+  | 'addDBConnection'
+  | 'removeDBConnection'
+  | 'updateDBConnection'
 > = {
   provider: 'deepseek',
   apiKey: '',
@@ -126,6 +140,7 @@ const initialSettingsState: Omit<
   ignoredUpdateVersion: null,
   domainRules: [],
   recentProjectPaths: [],
+  dbConnections: [],
   isSpecialChannel: false,
   isExpired: false,
   showChartLabels: false,
@@ -139,6 +154,34 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
       ...initialSettingsState,
+      // ... (loadSensitiveData and other actions)
+      addDBConnection: async (conn, password) => {
+        const id = crypto.randomUUID()
+        const newConn = { ...conn, id }
+        if (password) {
+          await window.electronAPI.secureSet(`db_pass_${id}`, password)
+        }
+        set(state => ({
+          dbConnections: [...state.dbConnections, newConn],
+        }))
+        return id
+      },
+      removeDBConnection: async id => {
+        await window.electronAPI.secureSet(`db_pass_${id}`, '') // Clear password
+        set(state => ({
+          dbConnections: state.dbConnections.filter(c => c.id !== id),
+        }))
+      },
+      updateDBConnection: async (id, updates, password) => {
+        if (password) {
+          await window.electronAPI.secureSet(`db_pass_${id}`, password)
+        }
+        set(state => ({
+          dbConnections: state.dbConnections.map(c =>
+            c.id === id ? { ...c, ...updates } : c
+          ),
+        }))
+      },
       loadSensitiveData: async () => {
         try {
           // Sync full AI config from backend (Single Source of Truth)

@@ -62,7 +62,7 @@ export const COLUMN_TYPE_CONFIG: Record<ColumnType, ColumnTypeDisplayConfig> = {
     textColor: 'text-zinc-600',
     uiLabel: 'Text',
   },
-  DOUBLE: {
+  DECIMAL: {
     label: 'format_decimal',
     icon: Hash,
     bgColor: 'bg-blue-50',
@@ -70,6 +70,13 @@ export const COLUMN_TYPE_CONFIG: Record<ColumnType, ColumnTypeDisplayConfig> = {
     uiLabel: 'Decimal',
   },
   INTEGER: {
+    label: 'format_integer',
+    icon: Hash,
+    bgColor: 'bg-blue-50',
+    textColor: 'text-blue-600',
+    uiLabel: 'Integer',
+  },
+  BIGINT: {
     label: 'format_integer',
     icon: Hash,
     bgColor: 'bg-blue-50',
@@ -89,6 +96,13 @@ export const COLUMN_TYPE_CONFIG: Record<ColumnType, ColumnTypeDisplayConfig> = {
     bgColor: 'bg-purple-50',
     textColor: 'text-purple-600',
     uiLabel: 'Date Time',
+  },
+  TIME: {
+    label: 'format_datetime',
+    icon: Clock,
+    bgColor: 'bg-purple-50',
+    textColor: 'text-purple-600',
+    uiLabel: 'Time',
   },
   BOOLEAN: {
     label: 'type_boolean',

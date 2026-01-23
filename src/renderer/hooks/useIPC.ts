@@ -44,8 +44,12 @@ const mockIPC: ElectronAPI = {
   }),
   analyzeContext: async (): Promise<AnalyzeContextResponse> => ({
     success: true,
-    data: { relationships: [], suggestedPrompts: [] },
+    data: {
+      relationships: [],
+      suggestedPrompts: [],
+    },
   }),
+  analyzeSemantics: async () => ({ success: true, data: {} }),
   generateMetricExpression: async () => ({
     success: true,
     data: '1 + 1',
@@ -118,6 +122,12 @@ const mockIPC: ElectronAPI = {
   validateLicense: async (_key: string): Promise<IPCResponse<boolean>> => {
     return { success: true, data: true }
   },
+  testDBConnection: async () => ({ success: true, data: true }),
+  listDBTables: async () => ({ success: true, data: [] }),
+  syncDBTable: async () => ({
+    success: true,
+    data: { rowCount: 0, columns: [] },
+  }),
   exportPDF: async (_data: unknown): Promise<IPCResponse> => {
     return { success: true }
   },

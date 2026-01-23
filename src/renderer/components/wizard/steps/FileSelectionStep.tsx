@@ -5,6 +5,7 @@ import { Button } from '../../ui/button'
 import {
   AlertCircle,
   Check,
+  Database,
   FileSpreadsheet,
   FileText,
   Loader2,
@@ -14,8 +15,64 @@ import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import { ColumnConfig, IngestionTask } from '@shared/types/wizard'
 import { ColumnSchema } from '@shared/types'
+import { DatabaseConnectorView } from './DatabaseConnectorView'
+
+type SelectionTab = 'file' | 'database'
 
 export function FileSelectionStep() {
+  const [activeTab, setActiveTab] = useState<SelectionTab>('file')
+  const { mode } = useWizardStore()
+  const { t } = useTranslation('common')
+
+  // Database connector is only available in 'import' mode for v1.6
+  const isDBAvailable = mode === 'import'
+
+  return (
+    <div className="h-full flex flex-col bg-zinc-50/30">
+      {/* Tab Switcher (Minimal Swiss Style) */}
+      {isDBAvailable && (
+        <div className="flex justify-center pt-6 shrink-0">
+          <div className="flex bg-zinc-100 p-1 rounded-xl border border-zinc-200 shadow-sm">
+            <button
+              onClick={() => setActiveTab('file')}
+              className={cn(
+                'px-6 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2',
+                activeTab === 'file'
+                  ? 'bg-white text-zinc-900 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-600'
+              )}
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              {t('wizard.tab_file', 'File Upload')}
+            </button>
+            <button
+              onClick={() => setActiveTab('database')}
+              className={cn(
+                'px-6 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2',
+                activeTab === 'database'
+                  ? 'bg-white text-zinc-900 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-600'
+              )}
+            >
+              <Database className="w-3.5 h-3.5" />
+              {t('wizard.tab_database', 'Database')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 min-h-0">
+        {activeTab === 'file' ? (
+          <FileUploadView />
+        ) : (
+          <DatabaseConnectorView />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function FileUploadView() {
   const { selectedFiles, setFiles, setTasks, mode, targetTableId } =
     useWizardStore()
   const { files: projectFiles } = useProjectStore()
@@ -31,20 +88,14 @@ export function FileSelectionStep() {
 
   const handleSelectFiles = async () => {
     if (!window.electronAPI) return
-    console.log('[Wizard] Opening file dialog...')
     const result = await window.electronAPI.selectFiles()
-    console.log('[Wizard] Dialog result:', result)
 
     if (result.success && result.data && result.data.length > 0) {
-      // Map result to include 'name' derived from path
       const filesWithNames = result.data.map(f => ({
         ...f,
         name: f.path.split(/[\\/]/).pop() || 'unknown',
       }))
-      console.log('[Wizard] Setting selected files:', filesWithNames)
       setFiles(filesWithNames)
-    } else {
-        console.warn('[Wizard] File selection failed or empty', result)
     }
   }
 
@@ -61,74 +112,48 @@ export function FileSelectionStep() {
     }
   }, [])
 
-  // Effect: When files change, parse them to get sheets/tasks
   useEffect(() => {
     if (selectedFiles.length === 0) return
 
     const parseFiles = async () => {
-      console.log('[Wizard] Starting parseFiles for:', selectedFiles)
       setIsParsing(true)
       setError(null)
-      setParseProgress(null)
       const newTasks: IngestionTask[] = []
 
       try {
         for (const file of selectedFiles) {
-          console.log('[Wizard] Parsing file:', file.path)
           const res = await window.electronAPI.parseFile(file.path)
-          console.log('[Wizard] Parse result:', res)
-          if (!res.success) {
-            throw new Error(res.error || 'Failed to parse file')
-          }
+          if (!res.success) throw new Error(res.error || 'Failed to parse file')
+          
           if (res.data) {
             const results = Array.isArray(res.data) ? res.data : [res.data]
-
-            // Use Promise.all to handle async tableName generation
             const taskPromises = results.map(async (item: any) => {
-              // For append mode, inherit PK/Key from target table
-              const targetFile =
-                mode === 'append'
-                  ? projectFiles.find(f => f.id === targetTableId)
-                  : null
-
-              const columns: ColumnConfig[] = item.schema.columns.map(
-                (c: ColumnSchema) => {
-                  const targetCol = targetFile?.columns.find(
-                    tc => tc.name === c.name
-                  )
-                  return {
-                    name: c.name,
-                    type: c.type,
-                    isPrimaryKey: targetCol
-                      ? !!targetCol.isPrimaryKey || !!targetCol.isKey
-                      : false,
-                  }
+              const targetFile = mode === 'append' ? projectFiles.find(f => f.id === targetTableId) : null
+              const columns: ColumnConfig[] = item.schema.columns.map((c: ColumnSchema) => {
+                const targetCol = targetFile?.columns.find(tc => tc.name === c.name)
+                return {
+                  name: c.name,
+                  type: c.type,
+                  isPrimaryKey: targetCol ? !!targetCol.isPrimaryKey || !!targetCol.isKey : false,
                 }
-              )
+              })
 
-              const sourceName = item.sheetName || item.tableName || file.name
               let defaultTableName = item.tableName
-
               if (mode === 'import') {
-                // Pass raw names to backend to handle sanitization and unique check
-                const res = await window.electronAPI.getUniqueTableName(
-                  file.name,
-                  item.sheetName
-                )
+                const res = await window.electronAPI.getUniqueTableName(file.name, item.sheetName)
                 if (res.success) defaultTableName = res.data
               }
 
-              const displayName =
-                item.sheetName && item.sheetName !== file.name
+              const displayName = item.sheetName && item.sheetName !== file.name
                   ? `${file.name.replace(/\.xlsx?$/, '')} - ${item.sheetName}`
                   : item.sheetName || file.name.replace(/\.xlsx?$/, '')
 
               return {
                 id: crypto.randomUUID(),
-                sourceName: sourceName,
+                sourceName: item.sheetName || item.tableName || file.name,
                 fileName: file.name,
                 filePath: file.path,
-                tableName: item.tableName, // This is empty/temp from parseFile
+                tableName: item.tableName,
                 finalTableName: defaultTableName,
                 finalDisplayName: displayName,
                 columns,
@@ -136,7 +161,7 @@ export function FileSelectionStep() {
                 rowCount: item.rowCount || 0,
                 mode: mode,
                 status: 'pending',
-                tempFilePath: item.schema?.tempFilePath, // Correctly access nested property
+                tempFilePath: item.schema?.tempFilePath,
                 readOptions: item.schema?.readOptions,
               } as IngestionTask
             })
@@ -146,31 +171,21 @@ export function FileSelectionStep() {
           }
         }
 
-        setAllTasks(newTasks) // Store locally
-
+        setAllTasks(newTasks)
         if (mode === 'append' || mode === 'replace') {
-          // Default to first, but allow switching
           if (newTasks.length > 0) {
             let defaultTask = newTasks[0]
-
-            // For replace mode, try to match the original sheet name
             if (mode === 'replace' && targetTableId) {
-              const originalFile = projectFiles.find(
-                f => f.id === targetTableId
-              )
+              const originalFile = projectFiles.find(f => f.id === targetTableId)
               if (originalFile?.sheetName) {
-                const match = newTasks.find(
-                  t => t.sourceName === originalFile.sheetName
-                )
+                const match = newTasks.find(t => t.sourceName === originalFile.sheetName)
                 if (match) defaultTask = match
               }
             }
-
             setSelectedTaskId(defaultTask.id)
             setTasks([defaultTask])
           }
         } else {
-          // Import mode: default all to selected
           const allIds = new Set(newTasks.map(t => t.id))
           setSelectedIds(allIds)
           setTasks(newTasks)
@@ -181,51 +196,31 @@ export function FileSelectionStep() {
         setIsParsing(false)
       }
     }
-
     parseFiles()
-  }, [selectedFiles, setTasks, mode]) // Removed 'allTasks' dependency to avoid loop
+  }, [selectedFiles, setTasks, mode])
 
   const handleToggleTask = (id: string) => {
     if (mode === 'append' || mode === 'replace') {
       setSelectedTaskId(id)
       const task = allTasks.find(t => t.id === id)
       if (task) {
-        // Re-apply target file's PK config to the newly selected task (only for append)
         if (mode === 'append') {
           const targetFile = projectFiles.find(f => f.id === targetTableId)
           const updatedColumns = task.columns.map(col => {
-            const targetCol = targetFile?.columns.find(
-              tc => tc.name === col.name
-            )
-            return {
-              ...col,
-              isPrimaryKey: targetCol
-                ? !!targetCol.isPrimaryKey || !!targetCol.isKey
-                : false,
-            }
+            const targetCol = targetFile?.columns.find(tc => tc.name === col.name)
+            return { ...col, isPrimaryKey: targetCol ? !!targetCol.isPrimaryKey || !!targetCol.isKey : false }
           })
           setTasks([{ ...task, columns: updatedColumns }])
-        } else {
-          // Replace mode: just set the task
-          setTasks([task])
-        }
+        } else setTasks([task])
       }
     } else {
-      // Import mode: multi-select toggle
       const newSelected = new Set(selectedIds)
-      if (newSelected.has(id)) {
-        newSelected.delete(id)
-      } else {
-        newSelected.add(id)
-      }
+      if (newSelected.has(id)) newSelected.delete(id)
+      else newSelected.add(id)
       setSelectedIds(newSelected)
-      // Update global tasks list
       setTasks(allTasks.filter(t => newSelected.has(t.id)))
     }
   }
-
-  // Use allTasks for rendering in all modes to ensure unselected items don't disappear
-  const displayTasks = allTasks
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-8">
@@ -260,7 +255,7 @@ export function FileSelectionStep() {
                 {t('selected_data')}
               </h3>
               <p className="text-2xl font-black text-black uppercase mt-1">
-                {t('wizard.worksheets_found', { count: displayTasks.length })}
+                {t('wizard.worksheets_found', { count: allTasks.length })}
               </p>
             </div>
             <Button
@@ -284,12 +279,8 @@ export function FileSelectionStep() {
                 {parseProgress && (
                   <span className="text-xs text-zinc-400 font-mono">
                     {parseProgress.isPercentage
-                      ? t('wizard.processing_percent', {
-                          progress: parseProgress.progress?.toFixed(0),
-                        })
-                      : t('wizard.reading_rows', {
-                          count: parseProgress.count || 0,
-                        })}
+                      ? t('wizard.processing_percent', { progress: parseProgress.progress?.toFixed(0) })
+                      : t('wizard.reading_rows', { count: parseProgress.count || 0 })}
                   </span>
                 )}
               </div>
@@ -300,7 +291,7 @@ export function FileSelectionStep() {
               </div>
             ) : (
               <div className="divide-y divide-zinc-100">
-                {displayTasks.map(task => (
+                {allTasks.map(task => (
                   <div
                     key={task.id}
                     onClick={() => handleToggleTask(task.id)}

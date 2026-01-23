@@ -114,6 +114,11 @@ export interface ProjectState extends ProjectData {
     columnName: string,
     updates: Partial<ColumnSchema>
   ) => void
+  updateColumnSemantic: (
+    fileId: string,
+    columnName: string,
+    semantic: Partial<import('@shared/types').ColumnSemantic>
+  ) => void
   toggleKeyColumn: (fileId: string, columnName: string) => void
   addRelation: (
     relation: Omit<TableRelation, 'id'> & { sourceFileId: string }
@@ -851,6 +856,29 @@ export const useProjectStore = create<ProjectState>()(
         }))
       },
 
+      updateColumnSemantic: (fileId, columnName, semanticUpdates) => {
+        set(state => ({
+          files: state.files.map(f =>
+            f.id === fileId
+              ? {
+                  ...f,
+                  columns: f.columns.map(c =>
+                    c.name === columnName
+                      ? {
+                          ...c,
+                          semantic: {
+                            ...(c.semantic || { isVisibleToAI: true }),
+                            ...semanticUpdates,
+                          },
+                        }
+                      : c
+                  ),
+                }
+              : f
+          ),
+        }))
+      },
+
       toggleKeyColumn: (fileId, columnName) => {
         const file = get().files.find(f => f.id === fileId)
         if (!file) return
@@ -1380,6 +1408,7 @@ export const useProjectStore = create<ProjectState>()(
           removeFile: _removeFile,
           updateFile: _updateFile,
           updateColumn: _updateColumn,
+          updateColumnSemantic: _updateColumnSemantic,
           toggleKeyColumn: _toggleKeyColumn,
           addRelation: _addRelation,
           removeRelation: _removeRelation,

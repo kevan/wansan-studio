@@ -8,8 +8,8 @@ export function normalizeDuckDBType(duckType: string): ColumnType {
   if (type.includes('<')) {
     if (type.startsWith('DATE')) return 'DATE'
     if (type.startsWith('TIMESTAMP')) return 'TIMESTAMP'
-    if (type.startsWith('TIME')) return 'VARCHAR' // Time usually treated as string
-    if (type.startsWith('DECIMAL')) return 'DOUBLE'
+    if (type.startsWith('TIME')) return 'TIME'
+    if (type.startsWith('DECIMAL')) return 'DECIMAL'
     if (type.startsWith('LIST')) return 'VARCHAR' // Lists as JSON strings
     if (type.startsWith('STRUCT')) return 'VARCHAR' // Structs as JSON strings
     if (type.startsWith('MAP')) return 'VARCHAR' // Maps as JSON strings
@@ -18,13 +18,15 @@ export function normalizeDuckDBType(duckType: string): ColumnType {
   }
 
   // Handle Arrow primitive types without brackets or specific DuckDB variants
+  if (type === 'INT64' || type === 'UINT64' || type === 'HUGEINT') return 'BIGINT'
   if (type.startsWith('INT') || type.startsWith('UINT')) return 'INTEGER'
-  if (type.startsWith('FLOAT') || type.startsWith('DOUBLE')) return 'DOUBLE'
+  if (type.startsWith('FLOAT') || type.startsWith('DOUBLE')) return 'DECIMAL'
   if (
     type === 'UTF8' ||
     type === 'LARGEUTF8' ||
     type === 'BINARY' ||
-    type === 'LARGEBINARY'
+    type === 'LARGEBINARY' ||
+    type === 'UUID'
   )
     return 'VARCHAR'
   if (type === 'BOOL') return 'BOOLEAN'
@@ -42,10 +44,9 @@ export function normalizeDuckDBType(duckType: string): ColumnType {
     return 'VARCHAR'
   }
 
-  // 2. Integers (Handle BIGINT carefully)
-  // map to DOUBLE for metadata so AI knows it's numeric and can perform aggregations
+  // 2. Integers
   if (type === 'HUGEINT' || type === 'BIGINT' || type === 'UBIGINT') {
-    return 'DOUBLE'
+    return 'BIGINT'
   }
   if (
     type === 'INTEGER' ||
@@ -64,7 +65,7 @@ export function normalizeDuckDBType(duckType: string): ColumnType {
     type === 'REAL' ||
     type.startsWith('DECIMAL')
   ) {
-    return 'DOUBLE'
+    return 'DECIMAL'
   }
 
   // 4. Boolean
@@ -88,9 +89,9 @@ export function normalizeDuckDBType(duckType: string): ColumnType {
     return 'TIMESTAMP'
   }
 
-  // 7. Time (Convert to string for analysis usually, or keep separate if supported)
+  // 7. Time
   if (type.startsWith('TIME')) {
-    return 'VARCHAR' // Analyze time as string usually better for charts unless specific time-series
+    return 'TIME'
   }
 
   return 'VARCHAR' // Fallback for BLOBS, Structs, Lists (stringify them)
@@ -101,11 +102,15 @@ export type UIFormatType = 'number' | 'text' | 'date' | 'timestamp'
 export function getUIFormatType(type: ColumnType): UIFormatType {
   switch (type) {
     case 'INTEGER':
-    case 'DOUBLE':
+    case 'DECIMAL':
       return 'number'
+    case 'BIGINT':
+      // Default BIGINT to text to prevent precision loss in JS for IDs
+      return 'text'
     case 'DATE':
       return 'date'
     case 'TIMESTAMP':
+    case 'TIME':
       return 'timestamp'
     case 'VARCHAR':
     case 'BOOLEAN':

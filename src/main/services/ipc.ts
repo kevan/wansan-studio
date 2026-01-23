@@ -21,14 +21,70 @@ import type {
   RelationSuggestion,
   DomainRule,
   AIConfig,
+  DBConnectionConfig,
 } from '@shared/types.ts'
 import { InsightGenerationContext } from '@shared/types/dashboard'
 
 export function setupIPC(
   databaseService: NativeDatabaseService,
-  aiService: AIService
+  aiService: AIService,
+  connectorService: import('./connector-service').DBConnectorService
 ) {
   const fileService = new FileService(databaseService)
+
+  ipcMain.handle(
+    'db:test-connection',
+    async (_event, config: DBConnectionConfig, password?: string) => {
+      try {
+        const success = await connectorService.testConnection(config, password)
+        return { success: true, data: success }
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Connection failed',
+        }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'db:list-tables',
+    async (_event, config: DBConnectionConfig) => {
+      try {
+        const tables = await connectorService.listTables(config)
+        return { success: true, data: tables }
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to list tables',
+        }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'db:sync-table',
+    async (
+      _event,
+      config: DBConnectionConfig,
+      tableName: string,
+      localTableName: string
+    ) => {
+      try {
+        const result = await connectorService.syncTable(
+          config,
+          tableName,
+          localTableName
+        )
+        return { success: true, data: result }
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Sync failed',
+        }
+      }
+    }
+  )
 
   ipcMain.handle('open-external', async (_event, url: string) => {
     try {
@@ -307,6 +363,31 @@ export function setupIPC(
         return { success: true, data: result }
       } catch (error) {
         console.error('Analyze context error:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'analyze-semantics',
+    async (
+      _event,
+      tableName: string,
+      columns: ColumnSchema[],
+      sampleValues: any[][]
+    ) => {
+      try {
+        const result = await aiService.analyzeSemantics(
+          tableName,
+          columns,
+          sampleValues
+        )
+        return { success: true, data: result }
+      } catch (error) {
+        console.error('Analyze semantics error:', error)
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error',

@@ -7,6 +7,7 @@ import {
   generateAnalysis,
   generateInsight,
 } from '../engine/ai-bridge'
+import { analyzeSemantics as analyzeSemanticsEngine } from '../engine/semantic-engine'
 import crypto from 'crypto'
 import { secureGet, secureSet } from './secure-storage'
 import { getAppUserAgent } from '../utils/env'
@@ -14,6 +15,7 @@ import type {
   AIAnalysisContext,
   AIAnalysisResult,
   AIConfig,
+  ColumnSchema,
   ContextAnalysisResult,
   DomainRule,
   TableSchema,
@@ -235,6 +237,21 @@ export class AIService {
   ): Promise<ContextAnalysisResult> {
     const client = this.requireOpenAI()
     return await analyzeContext(client, schemas, this.model, language)
+  }
+
+  async analyzeSemantics(
+    tableName: string,
+    columns: ColumnSchema[],
+    sampleValues: any[][]
+  ): Promise<Record<string, any>> {
+    const client = this.requireOpenAI()
+    return await analyzeSemanticsEngine(
+      client,
+      this.model,
+      tableName,
+      columns,
+      sampleValues
+    )
   }
 
   setConfig(config: AIConfig) {

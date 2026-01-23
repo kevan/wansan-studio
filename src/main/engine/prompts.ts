@@ -250,33 +250,50 @@ export function serializeSchemas(schemas: TableSchema[]): string {
       const viewNote = hasMetrics ? ' (Enriched View with Metrics)' : ''
 
       let columnsStr = table.columns
+        .filter(col => {
+          // [NEW] Respect Visibility
+          return col.semantic?.isVisibleToAI !== false
+        })
         .map(col => {
           let hint = ''
           const lower = col.name.toLowerCase()
-          const isPrimaryKey = col.isPrimaryKey === true || col.isKey === true
+          const isPrimaryKey = col.isPrimaryKey === true
+          const semantic = col.semantic || {}
 
-          if (lower.includes('id') || lower.includes('code') || isPrimaryKey)
-            hint += ' [ID/Key]'
-          if (
-            lower.includes('price') ||
-            lower.includes('amount') ||
-            lower.includes('销售') ||
-            lower.includes('money')
-          )
-            hint += ' [Money/Metric]'
-          if (
-            lower.includes('date') ||
-            lower.includes('time') ||
-            lower.includes('日期')
-          )
-            hint += ' [Time]'
+          // [NEW] Use Business Type if available
+          if (semantic.businessType) {
+            hint += ` [${semantic.businessType}]`
+          } else {
+            // Fallback to heuristic
+            if (lower.includes('id') || lower.includes('code') || isPrimaryKey)
+              hint += ' [ID/Key]'
+            if (
+              lower.includes('price') ||
+              lower.includes('amount') ||
+              lower.includes('销售') ||
+              lower.includes('money')
+            )
+              hint += ' [Money/Metric]'
+            if (
+              lower.includes('date') ||
+              lower.includes('time') ||
+              lower.includes('日期')
+            )
+              hint += ' [Time]'
+          }
+
+          // [NEW] Include Aliases
+          const aliasStr =
+            semantic.aliases && semantic.aliases.length > 0
+              ? ` (Known as: ${semantic.aliases.join(', ')})`
+              : ''
 
           const samples =
             col.sampleValues && col.sampleValues.length > 0
               ? ` (Samples: ${col.sampleValues.slice(0, 3).join(', ')})`
               : ''
 
-          return `- "${col.name}" (${col.type})${hint}${samples}`
+          return `- "${col.name}" (${col.type})${hint}${aliasStr}${samples}`
         })
         .join('\n')
 

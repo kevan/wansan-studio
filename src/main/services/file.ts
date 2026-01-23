@@ -483,23 +483,23 @@ export class FileService {
 
     const ext = extname(filePath).toLowerCase()
 
-    // Build the types map for DuckDB: {'col1': 'TYPE', 'col2': 'TYPE'}
+    // 1. Build the types map and column list for DuckDB (Excluding ignored columns)
+    const activeColumns = columns.filter(c => !c.isIgnored)
+    if (activeColumns.length === 0) throw new Error('No columns selected for import')
 
-    const typesMap = columns.reduce(
+    const typesMap = activeColumns.reduce(
       (acc, col) => {
         acc[col.name] = col.type
-
         return acc
       },
       {} as Record<string, string>
     )
 
     const typesSql = Object.entries(typesMap)
-
       .map(([name, type]) => `'${name}': '${type}'`)
-
       .join(', ')
 
+    const selectColList = activeColumns.map(c => `"${c.name}"`).join(', ')
     const typesParam = `types={${typesSql}}`
     const limitClause = params.limitRows ? ` LIMIT ${params.limitRows}` : ''
 
@@ -523,66 +523,58 @@ export class FileService {
       if (ext === '.xlsx' || ext === '.xls') {
         if (tempFilePath && (await fs.pathExists(tempFilePath))) {
           // CACHE HIT
-
           const safeTempPath = tempFilePath.replace(/\\/g, '/')
-
-          const loadOptions = typesParam
-            ? `${typesParam}, auto_detect=true${optionsPrefix}`
-            : `HEADER=TRUE, SAMPLE_SIZE=-1, auto_detect=true${optionsPrefix}`
+          const loadOptions = `${typesParam}, auto_detect=true${optionsPrefix}`
 
           await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
-
           await this.databaseService.exec(
-            `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${safeTempPath}', ${loadOptions})${limitClause}`
+            `CREATE TABLE "${tableName}" AS SELECT ${selectColList} FROM read_csv_auto('${safeTempPath}', ${loadOptions})${limitClause}`
           )
         } else {
           // CACHE MISS
-
           const fileName = basename(filePath)
-
           const schemas = await ingestExcelFile(
             filePath,
-
             this.databaseService,
-
             fileName,
-
             tableName,
-
             sheetName,
-
             undefined,
-
             't_',
-
             typesParam,
-            params.limitRows // Pass limit to Excel ingestion if applicable
+            params.limitRows
           )
 
           if (schemas.length === 0)
             throw new Error('Excel ingestion produced no tables')
 
           tempFileToDrop = schemas[0].tempFilePath
+          
+          // Note: ingestExcelFile currently does "SELECT *". 
+          // If columns were ignored, we should filter the table AFTER ingestion if it wasn't handled in the worker.
+          // For simplicity in v1.6, we assume the worker handles basic types but we might need a DROP COLUMN here.
+          // Better: If ignored columns exist, we drop them from the table we just created.
+          const allColsInDb = await this.databaseService.query(`PRAGMA table_info('${tableName}')`)
+          const activeSet = new Set(activeColumns.map(c => c.name))
+          for (const col of allColsInDb) {
+            if (!activeSet.has(col.name)) {
+              await this.databaseService.exec(`ALTER TABLE "${tableName}" DROP COLUMN "${col.name}"`)
+            }
+          }
         }
       } else {
         const reader = ext === '.csv' ? 'read_csv_auto' : 'read_json_auto'
-
         const safePath = filePath.replace(/\\/g, '/')
 
         await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
 
-        // For JSON, options might differ, but readOptions usually applies to CSV mainly.
-        // If user passes 'encoding' for JSON, read_json_auto might accept it or not.
-        // We assume readOptions are mostly for CSV for now.
-        // DuckDB read_json_auto also supports auto_detect, format, etc.
-
         const loadOptions =
           ext === '.csv'
             ? `${typesParam}, auto_detect=true${optionsPrefix}`
-            : `${typesParam}, format='auto', auto_detect=true` // JSON usually UTF8
+            : `${typesParam}, format='auto', auto_detect=true`
 
         await this.databaseService.exec(
-          `CREATE TABLE "${tableName}" AS SELECT * FROM ${reader}('${safePath}', ${loadOptions})${limitClause}`
+          `CREATE TABLE "${tableName}" AS SELECT ${selectColList} FROM ${reader}('${safePath}', ${loadOptions})${limitClause}`
         )
       }
 

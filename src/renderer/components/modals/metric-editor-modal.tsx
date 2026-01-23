@@ -50,7 +50,7 @@ export function MetricEditorModal({
   const [name, setName] = useState('')
   const [safeName, setSafeName] = useState('')
   const [expression, setExpression] = useState('')
-  const [type, setType] = useState<ColumnType>('DOUBLE')
+  const [type, setType] = useState<ColumnType>('DECIMAL')
   const [isGenerating, setIsGenerating] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const [testResult, setTestResult] = useState<string | null>(null)
@@ -76,12 +76,12 @@ export function MetricEditorModal({
         setName(initialMetric.name)
         setSafeName(initialMetric.safeName || '')
         setExpression(initialMetric.sqlExpression)
-        setType(initialMetric.type || 'DOUBLE')
+        setType(initialMetric.type || 'DECIMAL')
       } else {
         setName('')
         setSafeName('')
         setExpression('')
-        setType('DOUBLE')
+        setType('DECIMAL')
       }
       setTestResult(null)
       setTestError(null)

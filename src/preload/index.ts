@@ -55,6 +55,8 @@ const electronAPI: ElectronAPI = {
     ipcRenderer.invoke('ask-ai-fix', originalSql, error, schemas, domainRules),
   analyzeContext: (schemas: any[], language?: 'en' | 'zh') =>
     ipcRenderer.invoke('analyze-context', schemas, language),
+  analyzeSemantics: (tableName: string, columns: any[], sampleValues: any[][]) =>
+    ipcRenderer.invoke('analyze-semantics', tableName, columns, sampleValues),
   generateMetricExpression: (options: {
     input: string
     columns: Array<{ name: string; type: string }>
@@ -99,6 +101,13 @@ const electronAPI: ElectronAPI = {
     ipcRenderer.invoke('ingest:cleanup', tempTableNames, tempFilePaths),
 
   cleanupAllStaging: () => ipcRenderer.invoke('ingest:cleanup-all-staging'),
+
+  // Database Connectors
+  testDBConnection: (config: any, password?: string) =>
+    ipcRenderer.invoke('db:test-connection', config, password),
+  listDBTables: (config: any) => ipcRenderer.invoke('db:list-tables', config),
+  syncDBTable: (config: any, tableName: string, localTableName: string) =>
+    ipcRenderer.invoke('db:sync-table', config, tableName, localTableName),
 
   // 导出功能
   exportPDF: (data: any) => ipcRenderer.invoke('export-pdf', data),
