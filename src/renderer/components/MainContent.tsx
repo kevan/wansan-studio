@@ -18,7 +18,7 @@ export function MainContent() {
         <WelcomeScreen />
       ) : currentView === 'schema' ? (
         <div className="flex-1 overflow-hidden relative">
-          <DataWorkspaceLayout>
+          <DataWorkspaceLayout showAction={true}>
             <SchemaEditor />
           </DataWorkspaceLayout>
         </div>

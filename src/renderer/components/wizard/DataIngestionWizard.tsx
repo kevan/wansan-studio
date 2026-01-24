@@ -374,7 +374,9 @@ export function DataIngestionWizard() {
 
   const isNextDisabled = useMemo(() => {
     const currentTask = tasks[currentTaskIndex]
-    if (step === 'select') return tasks.length === 0
+    if (step === 'select') {
+      return tasks.length === 0 || tasks.some(t => t.status !== 'ready')
+    }
     if (!currentTask) return true
 
     if (step === 'preview' && mode === 'merge') {

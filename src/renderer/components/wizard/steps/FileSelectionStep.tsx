@@ -10,6 +10,7 @@ import {
   Layers,
   Loader2,
   Plus,
+  RefreshCw,
   Trash2,
   Upload,
 } from 'lucide-react'
@@ -30,84 +31,89 @@ export function FileSelectionStep() {
   // --- Logic for File Parsing ---
   const [isParsing, setIsParsing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const syncTask = async (task: IngestionTask) => {
+    // 1. Mark as syncing immediately
+    const currentTasks = useWizardStore.getState().tasks
+    const taskIndex = currentTasks.findIndex(t => t.id === task.id)
+    if (taskIndex === -1) return
+    
+    useWizardStore.getState().updateTask(taskIndex, { status: 'syncing', error: undefined })
+
+    try {
+      const { dbConnections } = useSettingsStore.getState()
+      let resultData: any
+
+      if (task.connectionId) {
+        const conn = dbConnections.find(c => c.id === task.connectionId)
+        if (!conn) throw new Error('Connection not found')
+
+        const hintTableName = `t_${task.sourceName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`
+        const res = await window.electronAPI.syncDBTable(conn, task.sourceName, hintTableName)
+        
+        if (!res.success || !res.data) throw new Error(res.error || `Failed to sync ${task.sourceName}`)
+        resultData = res.data
+      } else {
+         const res = await window.electronAPI.prepareFile(task.filePath, task.sourceName, task.readOptions)
+         if (!res.success || !res.data) throw new Error(res.error || `Failed to prepare ${task.sourceName}`)
+         resultData = res.data
+      }
+
+      const { tempFilePath, rowCount, columns, preview, readOptions } = resultData
+      
+      // Final Check: Is task still there?
+      const latestTasks = useWizardStore.getState().tasks
+      const currentIndex = latestTasks.findIndex(t => t.id === task.id)
+      if (currentIndex === -1) {
+         if (tempFilePath && tempFilePath !== task.filePath) {
+           window.electronAPI.cleanupIngestion([], [tempFilePath])
+         }
+         return
+      }
+
+      let finalTableName = task.finalTableName
+      if (!finalTableName) {
+         const uniqueNameRes = await window.electronAPI.getUniqueTableName(task.fileName, task.sourceName)
+         finalTableName = uniqueNameRes.success ? uniqueNameRes.data : `t_${Date.now()}`
+      }
+
+      useWizardStore.getState().updateTask(currentIndex, {
+        status: 'ready',
+        filePath: tempFilePath,
+        tempFilePath: tempFilePath,
+        finalTableName: finalTableName || task.finalTableName,
+        tableName: finalTableName || task.tableName, 
+        columns: columns.map((c: any) => ({
+          name: c.name,
+          type: c.type as any,
+          isPrimaryKey: false 
+        })),
+        previewData: preview || [],
+        rowCount: rowCount,
+        readOptions: readOptions || task.readOptions
+      })
+    } catch (e: any) {
+      console.error('[Wizard] Task preparation failed:', e)
+      const latestTasks = useWizardStore.getState().tasks
+      const currentIndex = latestTasks.findIndex(t => t.id === task.id)
+      if (currentIndex !== -1) {
+        useWizardStore.getState().updateTask(currentIndex, { 
+          status: 'error', 
+          error: e.message || 'Synchronization failed' 
+        })
+      }
+    }
+  }
   
   // Auto-Preloading Effect
   useEffect(() => {
     const pendingTasks = tasks.filter(t => t.status === 'waiting_for_sync')
-    
     if (pendingTasks.length === 0) return
 
-    pendingTasks.forEach(async (task) => {
-      // 1. Mark as syncing immediately
-      const taskIndex = tasks.findIndex(t => t.id === task.id)
-      if (taskIndex === -1) return
-      
-      // Update store directly to avoid dependency cycle in effect
-      useWizardStore.getState().updateTask(taskIndex, { status: 'syncing' })
-
-      try {
-        const { dbConnections } = useSettingsStore.getState()
-        let resultData: any
-
-        if (task.connectionId) {
-          const conn = dbConnections.find(c => c.id === task.connectionId)
-          if (!conn) throw new Error('Connection not found')
-
-          const hintTableName = `t_${task.sourceName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`
-          const res = await window.electronAPI.syncDBTable(conn, task.sourceName, hintTableName)
-          
-          if (!res.success || !res.data) throw new Error(res.error || `Failed to sync ${task.sourceName}`)
-          resultData = res.data
-        } else {
-           const res = await window.electronAPI.prepareFile(task.filePath, task.sourceName, task.readOptions)
-           if (!res.success || !res.data) throw new Error(res.error || `Failed to prepare ${task.sourceName}`)
-           resultData = res.data
-        }
-
-        const { tempFilePath, rowCount, columns, preview } = resultData
-        
-        // Final Check: Is task still there?
-        const currentTasks = useWizardStore.getState().tasks
-        const currentIndex = currentTasks.findIndex(t => t.id === task.id)
-        if (currentIndex === -1) {
-           // Task was removed by user, cleanup temp file if needed
-           if (tempFilePath && tempFilePath !== task.filePath) {
-             window.electronAPI.cleanupIngestion([], [tempFilePath])
-           }
-           return
-        }
-
-        let finalTableName = task.finalTableName
-        if (!finalTableName) {
-           const uniqueNameRes = await window.electronAPI.getUniqueTableName(task.fileName, task.sourceName)
-           finalTableName = uniqueNameRes.success ? uniqueNameRes.data : `t_${Date.now()}`
-        }
-
-        useWizardStore.getState().updateTask(currentIndex, {
-          status: 'ready',
-          filePath: tempFilePath,
-          tempFilePath: tempFilePath,
-          finalTableName: finalTableName || task.finalTableName,
-          tableName: finalTableName || task.tableName, 
-          columns: columns.map((c: any) => ({
-            name: c.name,
-            type: c.type as any,
-            isPrimaryKey: false 
-          })),
-          previewData: preview || [],
-          rowCount: rowCount,
-        })
-
-      } catch (e: any) {
-        console.error('Auto-preload failed', e)
-        const currentTasks = useWizardStore.getState().tasks
-        const currentIndex = currentTasks.findIndex(t => t.id === task.id)
-        if (currentIndex !== -1) {
-           useWizardStore.getState().updateTask(currentIndex, { status: 'error', error: e.message })
-        }
-      }
+    pendingTasks.forEach(task => {
+      syncTask(task)
     })
-  }, [tasks]) // Dependency on tasks ensures this runs when new tasks are added
+  }, [tasks])
 
   const handleSelectFiles = async () => {
     if (!window.electronAPI) return
@@ -121,14 +127,15 @@ export function FileSelectionStep() {
   const parseFiles = async (files: { path: string; name: string }[]) => {
     setIsParsing(true)
     setError(null)
-    const newTasks: IngestionTask[] = []
-
     try {
+      const newTasks: IngestionTask[] = []
+      
       for (const file of files) {
-        // [Stage 1] Lightweight Inspect
         const res = await window.electronAPI.inspectFile(file.path)
-        if (!res.success || !res.data) throw new Error(res.error || 'Failed to inspect file')
-        
+        if (!res.success || !res.data) {
+          throw new Error(res.error || `Failed to inspect ${file.name}`)
+        }
+
         const fileTasks = res.data.map((item: any) => {
           // [Stage 1] No columns yet. They will be populated in Stage 2 (Prepare).
           const columns: ColumnConfig[] = []
@@ -138,19 +145,16 @@ export function FileSelectionStep() {
               : item.sourceName || file.name.replace(/\.xlsx?$/, '')
 
           return {
-            id: crypto.randomUUID(),
-            sourceName: item.sourceName || file.name,
+            id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             fileName: file.name,
             filePath: file.path,
-            tableName: '', // Will be set in Stage 2
-            finalTableName: '', // Will be set in Stage 2
+            sourceName: item.sourceName,
             finalDisplayName: displayName,
+            status: 'waiting_for_sync', // Triggers Stage 2
             columns,
-            previewData: [], // Empty for now
-            rowCount: 0, // Unknown for now
-            mode: mode,
-            status: 'waiting_for_sync', // Unified status with DB
-            readOptions: item.readOptions, // [NEW] Save detected encoding etc
+            previewData: [],
+            rowCount: 0,
+            tableName: `temp_ingest_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
           } as IngestionTask
         })
 
@@ -167,12 +171,13 @@ export function FileSelectionStep() {
 
       const skippedCount = newTasks.length - uniqueNewTasks.length
       
-      setTasks([...tasks, ...uniqueNewTasks])
+      if (uniqueNewTasks.length > 0) {
+        setTasks([...tasks, ...uniqueNewTasks])
+      }
 
       if (skippedCount > 0) {
         useToastStore.getState().addToast({
-          title: t('wizard.duplicates_skipped', 'Duplicates Skipped'),
-          description: t('wizard.duplicates_skipped_desc', { count: skippedCount }),
+          title: t('wizard.files_skipped', { count: skippedCount }),
           type: 'info'
         })
       }
@@ -185,69 +190,96 @@ export function FileSelectionStep() {
   }
 
   const handleRemoveTask = (id: string) => {
+    const task = tasks.find(t => t.id === id)
+    if (task?.tempFilePath && task.tempFilePath !== task.filePath) {
+      // Clean up temp file
+      window.electronAPI.cleanupIngestion([], [task.tempFilePath])
+    }
     setTasks(tasks.filter(t => t.id !== id))
   }
 
   return (
-    <div className="h-full flex flex-col bg-zinc-50/30 relative">
+    <div className="flex flex-col h-full bg-white">
       <DatabaseSelectorDialog />
-
-      {/* Empty State / Add Buttons */}
-      {tasks.length === 0 && !isParsing ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-12">
-          <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-6">
-            <Upload className="w-8 h-8 text-zinc-400" />
+      
+      {tasks.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-in fade-in zoom-in-95 duration-300">
+          <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mb-8 border-4 border-white shadow-xl">
+            <Upload className="w-10 h-10 text-indigo-600" />
           </div>
-          <h3 className="text-xl font-black text-zinc-900 mb-2">{t('import_data')}</h3>
-          <p className="text-sm text-zinc-500 max-w-sm text-center mb-8">{t('import_data_desc')}</p>
           
-          <div className="flex gap-4">
-            <Button onClick={handleSelectFiles} className="h-auto py-3 px-6 flex flex-col items-center gap-2 bg-white border border-zinc-200 hover:bg-zinc-50 hover:border-indigo-300 text-zinc-900 shadow-sm transition-all group w-40">
-              <FileSpreadsheet className="w-6 h-6 text-indigo-500 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold">Excel / CSV</span>
+          <h3 className="text-2xl font-bold text-zinc-900 mb-3 tracking-tight">
+            {t('wizard.select_title')}
+          </h3>
+          <p className="text-zinc-500 max-w-md mb-10 leading-relaxed">
+            {t('wizard.select_desc')}
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Button 
+              size="lg"
+              onClick={handleSelectFiles}
+              disabled={isParsing}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl px-10 h-14 font-bold text-lg shadow-lg shadow-indigo-100 hover:scale-105 transition-all active:scale-95"
+            >
+              {isParsing ? <Loader2 className="w-6 h-6 animate-spin mr-3" /> : <Plus className="w-6 h-6 mr-3" />}
+              {t('wizard.select_files')}
             </Button>
-            
+
             {isDBAvailable && (
-              <Button onClick={() => setDbSelectorOpen(true)} className="h-auto py-3 px-6 flex flex-col items-center gap-2 bg-white border border-zinc-200 hover:bg-zinc-50 hover:border-indigo-300 text-zinc-900 shadow-sm transition-all group w-40">
-                <Database className="w-6 h-6 text-pink-500 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-bold">Database</span>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setDbSelectorOpen(true)}
+                className="rounded-2xl px-10 h-14 font-bold text-lg border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 transition-all"
+              >
+                <Database className="w-6 h-6 mr-3 text-pink-500" />
+                {t('wizard.connect_db')}
               </Button>
             )}
           </div>
+          
+          <div className="mt-12 flex items-center gap-8 opacity-40 grayscale group hover:grayscale-0 transition-all duration-500">
+            <FileSpreadsheet className="w-8 h-8" />
+            <FileText className="w-8 h-8" />
+            <Layers className="w-8 h-8" />
+          </div>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col min-h-0">
-          {/* Header Actions */}
-          <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-white shrink-0">
+        <div className="flex-1 flex flex-col overflow-hidden animate-in slide-in-from-right-4 duration-500">
+          <div className="px-12 py-8 flex justify-between items-center bg-zinc-50/50 border-b border-zinc-100">
             <div>
-              <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-widest">{t('selected_data')}</h3>
-              <p className="text-2xl font-black text-black uppercase mt-1">
-                {tasks.length} {tasks.length === 1 ? 'Source' : 'Sources'}
-              </p>
+              <h3 className="text-lg font-bold text-zinc-900">{t('wizard.tasks_title', 'Data Sources')}</h3>
+              <p className="text-xs text-zinc-500 mt-1">{t('wizard.tasks_desc', 'Confirm the files or tables you want to ingest.')}</p>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleSelectFiles} disabled={isParsing}>
-                <Plus className="w-3.5 h-3.5 mr-2" /> File
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={handleSelectFiles}
+                disabled={isParsing}
+                className="rounded-xl border-zinc-200 font-bold h-10 px-4"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {t('wizard.add_more')}
               </Button>
               {isDBAvailable && (
-                <Button variant="outline" size="sm" onClick={() => setDbSelectorOpen(true)}>
-                  <Plus className="w-3.5 h-3.5 mr-2" /> DB Table
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDbSelectorOpen(true)}
+                  className="rounded-xl border-zinc-200 font-bold h-10 px-4"
+                >
+                  <Database className="w-4 h-4 mr-2 text-pink-500" />
+                  {t('wizard.add_db')}
                 </Button>
               )}
             </div>
           </div>
 
-          {/* Task List */}
-          <div className="flex-1 overflow-y-auto p-6">
-             {isParsing && (
-               <div className="mb-4 p-4 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center gap-3 animate-in fade-in">
-                 <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
-                 <span className="text-sm font-bold text-indigo-700">Analyzing files...</span>
-               </div>
-             )}
-
-             <div className="space-y-3">
-               {tasks.map(task => (
+          <div className="flex-1 overflow-y-auto p-12 bg-white">
+             <div className="max-w-4xl mx-auto space-y-4">
+               {tasks.map((task) => (
                  <div key={task.id} className="group bg-white border border-zinc-200 p-4 rounded-xl flex items-center gap-4 hover:border-indigo-300 transition-all shadow-sm">
                    <div className={cn(
                      "p-2.5 rounded-lg shrink-0",
@@ -280,9 +312,18 @@ export function FileSelectionStep() {
                          </span>
                        )}
                        {task.status === 'error' && (
-                         <span className="text-[9px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider truncate max-w-[150px]" title={task.error}>
-                           Error
-                         </span>
+                         <div className="flex items-center gap-1.5">
+                           <span className="text-[9px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider truncate max-w-[150px]" title={task.error}>
+                             Error
+                           </span>
+                           <button 
+                             onClick={() => syncTask(task)}
+                             className="p-1 hover:bg-zinc-100 rounded-md text-zinc-400 hover:text-indigo-600 transition-colors"
+                             title="Retry"
+                           >
+                             <RefreshCw className="w-3 h-3" />
+                           </button>
+                         </div>
                        )}
                      </div>
                      <p className="text-xs text-zinc-400 mt-0.5 truncate">{task.fileName}</p>

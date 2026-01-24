@@ -182,7 +182,10 @@ export class FileService {
     const ext = extname(filePath).toLowerCase()
     const stats = await fs.stat(filePath)
     let columns: ColumnSchema[] = []
-    const typesParam = knownColumns ? `types={${knownColumns.map(c => `'${c.name}': '${c.type}'`).join(', ')}}` : ''
+    
+    // [FIX] DuckDB uses 'types' for CSV but 'columns' for JSON
+    const paramName = ext === '.json' ? 'columns' : 'types'
+    const typesParam = knownColumns ? `${paramName}={${knownColumns.map(c => `'${c.name}': '${c.type}'`).join(', ')}}` : ''
 
     if (ext === '.xlsx' || ext === '.xls') {
       const schemas = await ingestExcelFile(filePath, this.databaseService, basename(filePath), tableName, sheetName, _onProgress, 't_', typesParam)
@@ -212,7 +215,11 @@ export class FileService {
     const activeCols = columns.filter(c => !c.isIgnored)
     if (activeCols.length === 0) throw new Error('No columns selected')
     const typesSql = activeCols.map(c => `'${c.name}': '${c.type}'`).join(', ')
-    const typesParam = `types={${typesSql}}`
+    
+    // [FIX] DuckDB uses 'types' for CSV but 'columns' for JSON
+    const paramName = ext === '.json' ? 'columns' : 'types'
+    const typesParam = `${paramName}={${typesSql}}`
+    
     const limit = params.limitRows ? ` LIMIT ${params.limitRows}` : ''
 
     await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}" `)
