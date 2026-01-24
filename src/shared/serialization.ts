@@ -277,6 +277,16 @@ export function formatForDisplay(value: unknown, typeHint?: string): string {
     }).format(numValue as number)
   }
 
+  // Handle Objects / Arrays (JSON data)
+  if (typeof value === 'object' && value !== null) {
+    try {
+      const str = JSON.stringify(value)
+      return str.length > 100 ? str.substring(0, 100) + '...' : str
+    } catch {
+      return '[Complex Data]'
+    }
+  }
+
   return String(value)
 }
 
