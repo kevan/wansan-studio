@@ -47,7 +47,7 @@ export function buildTreeData(
       fileId: file.id,
       columnName: col.name,
       columnType: col.type,
-      isKey: col.isKey,
+      isKey: col.isPrimaryKey,
       isForeignKey: relatedColumns.has(col.name),
     }))
 

@@ -886,7 +886,9 @@ export const useProjectStore = create<ProjectState>()(
         const column = file.columns.find(c => c.name === columnName)
         if (!column) return
 
-        get().updateColumn(fileId, columnName, { isKey: !column.isKey })
+        get().updateColumn(fileId, columnName, {
+          isPrimaryKey: !column.isPrimaryKey,
+        })
       },
 
       addRelation: async relation => {
@@ -1124,8 +1126,7 @@ export const useProjectStore = create<ProjectState>()(
               return {
                 ...newCol,
                 userType: oldCol.userType,
-                alias: oldCol.alias,
-                isKey: oldCol.isKey,
+                semantic: oldCol.semantic,
                 type: newCol.type,
               }
             } else {

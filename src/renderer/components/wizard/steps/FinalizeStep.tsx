@@ -57,7 +57,7 @@ export function FinalizeStep() {
         return currentTask.mergeKeys
       }
       return targetFile.columns
-        .filter(c => c.isPrimaryKey || c.isKey)
+        .filter(c => c.isPrimaryKey)
         .map(c => c.name)
     }
     return (

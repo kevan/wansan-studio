@@ -242,15 +242,18 @@ export class AIService {
   async analyzeSemantics(
     tableName: string,
     columns: ColumnSchema[],
-    sampleValues: any[][]
-  ): Promise<Record<string, any>> {
-    const client = this.requireOpenAI()
+    language: 'en' | 'zh' = 'zh'
+  ) {
+    if (!this.openai) throw new Error('AI not configured')
+
+    const langName = language === 'zh' ? 'Chinese (Simplified)' : 'English'
+
     return await analyzeSemanticsEngine(
-      client,
-      this.model,
+      this.openai,
+      this.model || 'gpt-4o',
       tableName,
       columns,
-      sampleValues
+      langName
     )
   }
 

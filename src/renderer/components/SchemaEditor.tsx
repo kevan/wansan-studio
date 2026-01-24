@@ -7,7 +7,10 @@ import { useProGate } from '@/hooks/use-pro-gate'
 import {
   ArrowRightLeft,
   Edit2,
+  Eye,
+  EyeOff,
   FileSpreadsheet,
+  GitMerge,
   Key,
   Link2,
   Plus,
@@ -15,16 +18,15 @@ import {
   Sparkles,
   Tag,
   Trash2,
-  GitMerge,
-  Ban,
   Calculator,
   FileInput,
-  Eye,
-  EyeOff,
-  Database,
+  Hash,
+  MessageSquare,
+  Layout,
+  Database
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
-import { TableRelation, SmartMetric } from '@shared/types'
+import { SmartMetric, TableRelation, ColumnSchema } from '@shared/types'
 import { Button } from './ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { Badge } from './ui/badge'
@@ -39,6 +41,35 @@ import { ConfirmDialog } from './modals/ConfirmDialog'
 import { MetricEditorModal } from './modals/metric-editor-modal'
 import { RelationEditorModal } from './modals/RelationEditorModal'
 import { COLUMN_TYPE_CONFIG } from '@/src/lib/constants'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from './ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
+import { Textarea } from './ui/textarea'
+
+const BUSINESS_TYPES = [
+  'ID',
+  'Money',
+  'Category',
+  'Text',
+  'Date',
+  'Time',
+  'Quantity',
+  'Location',
+  'Other',
+]
 
 export function SchemaEditor() {
   const files = useProjectStore(s => s.files)
@@ -52,28 +83,28 @@ export function SchemaEditor() {
   const removeRelation = useProjectStore(s => s.removeRelation)
   const openWizard = useWizardStore(s => s.open)
 
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
   const { t: tAnalysis } = useTranslation('analysis')
   const { checkGate, gateNode } = useProGate()
   const toast = useToastStore()
 
-  // 1. All Hooks must be at top level
+  // --- States ---
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isMetricModalOpen, setIsMetricModalOpen] = useState(false)
-  const [editingMetric, setEditingMetric] = useState<SmartMetric | undefined>(
-    undefined
-  )
+  const [editingMetric, setEditingMetric] = useState<SmartMetric | undefined>(undefined)
   const [isRelationModalOpen, setIsRelationModalOpen] = useState(false)
-  const [editingRelation, setEditingRelation] = useState<
-    TableRelation | undefined
-  >(undefined)
+  const [editingRelation, setEditingRelation] = useState<TableRelation | undefined>(undefined)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  
+  // Semantic Editing
+  const [editingColumn, setEditingColumn] = useState<ColumnSchema | null>(null)
+  const [editAliases, setEditAliases] = useState<string[]>([])
+  const [newAliasInput, setNewAliasInput] = useState('')
+  const [editDesc, setEditDescription] = useState('')
+  const [editBusinessType, setEditBusinessType] = useState('')
 
-  // 2. Derive state
-  const currentFileId =
-    activeFileId && files.find(f => f.id === activeFileId)
-      ? activeFileId
-      : files[0]?.id
+  // --- Derived ---
+  const currentFileId = activeFileId && files.find(f => f.id === activeFileId) ? activeFileId : files[0]?.id
   const currentFile = files.find(f => f.id === currentFileId)
 
   if (!currentFile) return null
@@ -119,35 +150,24 @@ export function SchemaEditor() {
     if (editingMetric) {
       await removeSmartMetric(currentFile.id, editingMetric.id)
     }
-
     const newMetric: SmartMetric = {
       ...metric,
       id: editingMetric ? editingMetric.id : crypto.randomUUID(),
     }
-
     await addSmartMetric(currentFile.id, newMetric)
     setIsMetricModalOpen(false)
     toast.addToast({
-      title: editingMetric
-        ? t('metric_updated', 'Metric Updated')
-        : t('metric_added', 'Metric Added'),
+      title: editingMetric ? t('metric_updated') : t('metric_added'),
       type: 'success',
       duration: 2000,
     })
   }
 
   const handleSaveRelation = async (relation: TableRelation) => {
-    if (editingRelation) {
-      await removeRelation(editingRelation.id)
-    }
-    await addRelation({
-      ...relation,
-      sourceFileId: currentFile.id,
-    })
+    if (editingRelation) await removeRelation(editingRelation.id)
+    await addRelation({ ...relation, sourceFileId: currentFile.id })
     toast.addToast({
-      title: editingRelation
-        ? t('relationship_updated', 'Relation Updated')
-        : t('relationship_added', 'Relation Added'),
+      title: editingRelation ? t('relationship_updated') : t('relationship_added'),
       type: 'success',
       duration: 2000,
     })
@@ -167,24 +187,46 @@ export function SchemaEditor() {
     })
   }
 
+  const handleOpenSemanticEdit = (col: ColumnSchema) => {
+    setEditingColumn(col)
+    setEditAliases(col.semantic?.aliases || [])
+    setEditDescription(col.semantic?.description || '')
+    setEditBusinessType(col.semantic?.businessType || 'Other')
+    setNewAliasInput('')
+  }
+
+  const handleAddAlias = () => {
+    const val = newAliasInput.trim()
+    if (val && !editAliases.includes(val)) {
+      setEditAliases([...editAliases, val])
+      setNewAliasInput('')
+    }
+  }
+
+  const handleRemoveAlias = (aliasToRemove: string) => {
+    setEditAliases(editAliases.filter(a => a !== aliasToRemove))
+  }
+
+  const handleSaveSemantic = () => {
+    if (!editingColumn) return
+    updateColumnSemantic(currentFile.id, editingColumn.name, {
+      aliases: editAliases,
+      description: editDesc,
+      businessType: editBusinessType
+    })
+    setEditingColumn(null)
+    toast.addToast({ title: t('semantic_updated', 'Metadata Updated'), type: 'success' })
+  }
+
   const handleAnalyzeSemantics = async () => {
     if (!currentFile) return
     setIsAnalyzing(true)
     try {
-      const res = await window.electronAPI.runSQL(
-        `SELECT * FROM "${currentFile.tableName}" LIMIT 10`
-      )
-      if (!res.success || !res.data) throw new Error('Failed to fetch samples')
-
-      const colNames = currentFile.columns.map(c => c.name)
-      const rows: any[][] = res.data.data.map((row: any) =>
-        colNames.map(name => row[name])
-      )
-
+      const language = i18n.language.startsWith('zh') ? 'zh' : 'en'
       const aiRes = await window.electronAPI.analyzeSemantics(
         currentFile.tableName,
         currentFile.columns,
-        rows
+        language
       )
 
       if (!aiRes.success || !aiRes.data)
@@ -197,7 +239,7 @@ export function SchemaEditor() {
 
       toast.addToast({
         title: 'Semantics Analysis Complete',
-        description: 'Suggested aliases and visibility applied.',
+        description: 'Suggested aliases and business types applied.',
         type: 'success',
       })
     } catch (e: any) {
@@ -214,135 +256,92 @@ export function SchemaEditor() {
 
   return (
     <div className="flex flex-col h-full w-full bg-white overflow-hidden relative">
-      {/* Scrollable Area with large bottom padding to avoid button obstruction */}
       <div className="flex-1 overflow-y-auto min-h-0 relative bg-white pb-48">
         <div className="flex flex-col min-h-0">
           {/* Header */}
           <div className="flex flex-col gap-3 px-8 py-6 border-b border-zinc-100 bg-white shrink-0">
             <div className="flex items-start justify-between gap-4">
-              {/* Title & Info Section */}
               <div className="flex items-center gap-4 min-w-0">
                 <div className="p-3 bg-indigo-50 rounded-2xl border border-indigo-100 shrink-0">
                   <FileSpreadsheet className="w-7 h-7 text-indigo-600" />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <h2 className="text-xl font-bold text-zinc-900 tracking-tight truncate">
+                  <h2 className="text-2xl font-bold text-zinc-900 tracking-tight truncate">
                     {currentFile.name}
                   </h2>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <code className="text-[10px] font-mono text-zinc-400 bg-zinc-50 px-1.5 py-0.5 rounded border border-zinc-100">
-                      {currentFile.tableName}
-                    </code>
-                    <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-tighter">
-                      {currentFile.rowCount.toLocaleString()} Rows
-                    </span>
+                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                    {/* Metadata Ribbon */}
+                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-zinc-50 text-zinc-500 rounded-md border border-zinc-100 whitespace-nowrap">
+                      <Database className="w-2.5 h-2.5 opacity-70" />
+                      <code className="text-[10px] font-mono">{currentFile.tableName}</code>
+                    </div>
+                    
+                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-md border border-emerald-100 whitespace-nowrap">
+                      <Hash className="w-2.5 h-2.5" />
+                      <span className="text-[10px] font-black uppercase tracking-tight">
+                        {currentFile.rowCount?.toLocaleString() || 0} Rows
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-md border border-blue-100 whitespace-nowrap">
+                      <Layout className="w-2.5 h-2.5" />
+                      <span className="text-[10px] font-black uppercase tracking-tight">
+                        {currentFile.columns.length} Columns
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Actions Toolbar - Compact Capsule Style */}
+              {/* Capsule Toolbar */}
               <div className="flex items-center p-1 bg-white border border-zinc-200/60 rounded-2xl shadow-sm shrink-0">
-                {/* Analyze - Primary Action */}
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleAnalyzeSemantics}
-                  disabled={isAnalyzing}
-                  className="h-8 px-3 text-indigo-600 hover:bg-indigo-50 font-bold gap-1.5 rounded-xl mr-1"
-                >
-                  {isAnalyzing ? (
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-3.5 h-3.5" />
-                  )}
-
-                  <span className="text-[11px] uppercase tracking-widest">
-                    AI Tag
-                  </span>
+                <Button variant="ghost" size="sm" onClick={handleAnalyzeSemantics} disabled={isAnalyzing}
+                  className="h-8 px-3 text-indigo-600 hover:bg-indigo-50 font-bold gap-1.5 rounded-xl mr-1">
+                  {isAnalyzing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  <span className="text-[11px] uppercase tracking-widest">AI Tag</span>
                 </Button>
-
                 <div className="w-px h-4 bg-zinc-100 mx-1" />
-
-                {/* Data Group */}
-
                 <div className="flex items-center gap-0.5 px-1">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={handleAppend}
-                          className="h-8 w-8 text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg"
-                        >
+                        <Button variant="ghost" size="icon" onClick={handleAppend} className="h-8 w-8 text-zinc-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg">
                           <Plus className="w-4 h-4" />
                         </Button>
                       </TooltipTrigger>
-
-                      <TooltipContent>
-                        {t('append_data', 'Append')}
-                      </TooltipContent>
+                      <TooltipContent>{t('append_data')}</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={handleMerge}
-                          className="h-8 w-8 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"
-                        >
+                        <Button variant="ghost" size="icon" onClick={handleMerge} className="h-8 w-8 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg">
                           <GitMerge className="w-4 h-4" />
                         </Button>
                       </TooltipTrigger>
-
-                      <TooltipContent>
-                        {t('merge_data', 'Merge')}
-                      </TooltipContent>
+                      <TooltipContent>{t('merge_data')}</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={handleReplace}
-                          className="h-8 w-8 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg"
-                        >
+                        <Button variant="ghost" size="icon" onClick={handleReplace} className="h-8 w-8 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg">
                           <RefreshCw className="w-4 h-4" />
                         </Button>
                       </TooltipTrigger>
-
-                      <TooltipContent>
-                        {t('replace_data', 'Replace')}
-                      </TooltipContent>
+                      <TooltipContent>{t('replace_data')}</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-
                 <div className="w-px h-4 bg-zinc-100 mx-1" />
-
-                {/* Danger Group */}
-
                 <div className="pl-1">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setShowDeleteConfirm(true)}
-                          className="h-8 w-8 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                        >
+                        <Button variant="ghost" size="icon" onClick={() => setShowDeleteConfirm(true)} className="h-8 w-8 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </TooltipTrigger>
-
                       <TooltipContent>{t('delete')}</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -354,156 +353,76 @@ export function SchemaEditor() {
           <div className="px-8 py-6">
             <Tabs defaultValue="columns" className="w-full">
               <TabsList className="bg-zinc-100/50 p-1 rounded-xl mb-8">
-                <TabsTrigger
-                  value="columns"
-                  className="rounded-lg text-xs font-bold px-6"
-                >
-                  {t('columns')}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="metrics"
-                  className="rounded-lg text-xs font-bold px-6"
-                >
-                  {tAnalysis('smart_metrics')}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="relations"
-                  className="rounded-lg text-xs font-bold px-6"
-                >
-                  {t('relationships')}
-                </TabsTrigger>
+                <TabsTrigger value="columns" className="rounded-lg text-xs font-bold px-6">{t('columns')}</TabsTrigger>
+                <TabsTrigger value="metrics" className="rounded-lg text-xs font-bold px-6">{tAnalysis('smart_metrics')}</TabsTrigger>
+                <TabsTrigger value="relations" className="rounded-lg text-xs font-bold px-6">{t('relationships')}</TabsTrigger>
               </TabsList>
 
               {/* Columns Tab */}
               <TabsContent value="columns" className="mt-0 space-y-6">
                 <div className="grid grid-cols-1 gap-3">
                   {currentFile.columns.map(col => {
-                    const isVisible = col.semantic?.isVisibleToAI !== false
+                    const isVisible = col.semantic?.isVisibleToAI !== false;
                     return (
-                      <div
-                        key={col.name}
-                        className={cn(
-                          'group flex items-center justify-between p-4 bg-white border rounded-2xl transition-all hover:border-zinc-300 hover:shadow-sm',
-                          col.isPrimaryKey
-                            ? 'border-indigo-100 bg-indigo-50/5'
-                            : 'border-zinc-100',
-                          !isVisible && 'opacity-60 bg-zinc-50/50'
-                        )}
-                      >
+                      <div key={col.name} className={cn(
+                        "group flex items-center justify-between p-4 bg-white border rounded-2xl transition-all hover:border-zinc-300 hover:shadow-sm",
+                        col.isPrimaryKey ? "border-indigo-100 bg-indigo-50/5" : "border-zinc-100",
+                        !isVisible && "opacity-60 bg-zinc-50/50"
+                      )}>
                         <div className="flex items-center gap-4 min-w-0">
-                          {/* PK Toggle */}
-                          <button
-                            onClick={() =>
-                              toggleKeyColumn(currentFile.id, col.name)
-                            }
-                            className={cn(
-                              'p-2.5 rounded-xl border transition-all shrink-0',
-                              col.isPrimaryKey
-                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-100'
-                                : 'bg-white border-zinc-100 text-zinc-300 hover:border-indigo-200 hover:text-indigo-600'
-                            )}
-                          >
-                            <Key
-                              className={cn(
-                                'w-4 h-4',
-                                col.isPrimaryKey && 'fill-current'
-                              )}
-                            />
-                          </button>
-
+                          {/* [Requirement 2] PK Indicator (Read-only) */}
+                          <div className={cn(
+                            "p-2.5 rounded-xl border transition-all shrink-0",
+                            col.isPrimaryKey 
+                              ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-100" 
+                              : "bg-white border-zinc-100 text-zinc-300"
+                          )}>
+                            <Key className={cn("w-4 h-4", col.isPrimaryKey && "fill-current")} />
+                          </div>
+                          
                           <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-bold text-zinc-900 truncate">
-                                {col.name}
-                              </span>
-
-                              {/* Semantic Aliases */}
-                              {(col.semantic?.aliases || []).map(
-                                (alias, idx) => (
-                                  <Badge
-                                    key={idx}
-                                    variant="secondary"
-                                    className="bg-indigo-50 text-indigo-600 font-bold border-none text-[9px] px-1.5 py-0 rounded-md"
-                                  >
-                                    {alias}
-                                  </Badge>
-                                )
-                              )}
-
-                              {/* Legacy Alias */}
-                              {col.alias &&
-                                !col.semantic?.aliases?.includes(col.alias) && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="bg-zinc-100 text-zinc-500 font-bold border-none text-[9px] px-1.5 py-0 rounded-md"
-                                  >
-                                    {col.alias}
-                                  </Badge>
-                                )}
+                              <span className="text-sm font-bold text-zinc-900 truncate">{col.name}</span>
+                              {(col.semantic?.aliases || []).map((alias, idx) => (
+                                <Badge key={idx} variant="secondary" className="bg-indigo-50 text-indigo-600 font-bold border-none text-[9px] px-1.5 py-0 rounded-md">
+                                  {alias}
+                                </Badge>
+                              ))}
                             </div>
-
+                            
                             <div className="flex items-center gap-2 mt-1">
-                              <span className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">
-                                {COLUMN_TYPE_CONFIG[col.type]?.label ||
-                                  col.type}
-                              </span>
+                              <span className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">{COLUMN_TYPE_CONFIG[col.type]?.label || col.type}</span>
                               {col.semantic?.businessType && (
-                                <>
-                                  <div className="w-1 h-1 rounded-full bg-zinc-200" />
-                                  <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter">
-                                    {col.semantic.businessType}
-                                  </span>
-                                </>
+                                <><div className="w-1 h-1 rounded-full bg-zinc-200" /><span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter">{col.semantic.businessType}</span></>
                               )}
                               {col.semantic?.description && (
-                                <>
-                                  <div className="w-1 h-1 rounded-full bg-zinc-200" />
-                                  <span className="text-[10px] text-zinc-400 truncate max-w-[200px]">
-                                    {col.semantic.description}
-                                  </span>
-                                </>
+                                <><div className="w-1 h-1 rounded-full bg-zinc-200" /><span className="text-[10px] text-zinc-400 truncate max-w-[200px] italic">"{col.semantic.description}"</span></>
                               )}
                             </div>
                           </div>
                         </div>
 
-                        {/* Right: Visibility Toggle (Permanent) */}
-                        <div className="flex items-center gap-2 shrink-0">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  onClick={() => {
-                                    updateColumnSemantic(
-                                      currentFile.id,
-                                      col.name,
-                                      {
-                                        isVisibleToAI: !isVisible,
-                                      }
-                                    )
-                                  }}
-                                  className={cn(
-                                    'p-2 rounded-xl transition-all',
-                                    isVisible
-                                      ? 'text-zinc-300 hover:text-indigo-600 hover:bg-indigo-50'
-                                      : 'text-red-500 bg-red-50 hover:bg-red-100'
-                                  )}
-                                >
-                                  {isVisible ? (
-                                    <Eye className="w-4 h-4" />
-                                  ) : (
-                                    <EyeOff className="w-4 h-4" />
-                                  )}
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {isVisible ? 'Visible to AI' : 'Hidden from AI'}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                           {/* [Requirement 3] Manual Semantic Edit */}
+                           <Button variant="ghost" size="icon" onClick={() => handleOpenSemanticEdit(col)} className="h-8 w-8 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg">
+                             <Edit2 className="w-3.5 h-3.5" />
+                           </Button>
+
+                           <TooltipProvider>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <button onClick={() => updateColumnSemantic(currentFile.id, col.name, { isVisibleToAI: !isVisible })}
+                                   className={cn("p-2 rounded-xl transition-all", isVisible ? "text-zinc-300 hover:text-indigo-600 hover:bg-indigo-50" : "text-red-500 bg-red-50 hover:bg-red-100")}>
+                                   {isVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                 </button>
+                               </TooltipTrigger>
+                               <TooltipContent>{isVisible ? "Visible to AI" : "Hidden from AI"}</TooltipContent>
+                             </Tooltip>
+                           </TooltipProvider>
                         </div>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </TabsContent>
@@ -512,55 +431,22 @@ export function SchemaEditor() {
               <TabsContent value="metrics" className="mt-0">
                 <div className="grid grid-cols-1 gap-4">
                   {(currentFile.smartMetrics || []).map(metric => (
-                    <div
-                      key={metric.id}
-                      className="p-5 bg-white border border-zinc-100 rounded-2xl flex items-center justify-between group hover:border-zinc-300 transition-all"
-                    >
+                    <div key={metric.id} className="p-5 bg-white border border-zinc-100 rounded-2xl flex items-center justify-between group hover:border-zinc-300 transition-all">
                       <div className="flex items-center gap-4">
-                        <div className="p-3 bg-purple-50 rounded-xl text-purple-600">
-                          <Tag className="w-5 h-5" />
-                        </div>
+                        <div className="p-3 bg-purple-50 rounded-xl text-purple-600"><Tag className="w-5 h-5" /></div>
                         <div>
-                          <h4 className="text-sm font-bold text-zinc-900">
-                            {metric.name}
-                          </h4>
-                          <code className="text-[10px] text-zinc-400 mt-1 block bg-zinc-50 px-1.5 py-0.5 rounded">
-                            {metric.sqlExpression}
-                          </code>
+                          <h4 className="text-sm font-bold text-zinc-900">{metric.name}</h4>
+                          <code className="text-[10px] text-zinc-400 mt-1 block bg-zinc-50 px-1.5 py-0.5 rounded">{metric.sqlExpression}</code>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditMetric(metric)}
-                          className="h-9 w-9 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            removeSmartMetric(currentFile.id, metric.id)
-                          }
-                          className="h-9 w-9 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleEditMetric(metric)} className="h-9 w-9 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl"><Edit2 className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => removeSmartMetric(currentFile.id, metric.id)} className="h-9 w-9 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-xl"><Trash2 className="w-4 h-4" /></Button>
                       </div>
                     </div>
                   ))}
-
-                  <Button
-                    variant="outline"
-                    onClick={handleAddMetric}
-                    className="h-20 border-dashed border-zinc-200 rounded-2xl hover:border-indigo-300 hover:bg-indigo-50/20 text-zinc-400 hover:text-indigo-600 transition-all flex flex-col gap-1"
-                  >
-                    <Plus className="w-5 h-5" />
-                    <span className="text-xs font-bold uppercase tracking-widest">
-                      {t('add_metric', 'Add Smart Metric')}
-                    </span>
+                  <Button variant="outline" onClick={handleAddMetric} className="h-20 border-dashed border-zinc-200 rounded-2xl hover:border-indigo-300 hover:bg-indigo-50/20 text-zinc-400 hover:text-indigo-600 transition-all flex flex-col gap-1">
+                    <Plus className="w-5 h-5" /><span className="text-xs font-bold uppercase tracking-widest">{t('add_metric')}</span>
                   </Button>
                 </div>
               </TabsContent>
@@ -569,63 +455,26 @@ export function SchemaEditor() {
               <TabsContent value="relations" className="mt-0">
                 <div className="grid grid-cols-1 gap-4">
                   {(currentFile.relations || []).map(rel => (
-                    <div
-                      key={rel.id}
-                      className="p-5 bg-white border border-zinc-100 rounded-2xl flex items-center justify-between group hover:border-zinc-300 transition-all"
-                    >
+                    <div key={rel.id} className="p-5 bg-white border border-zinc-100 rounded-2xl flex items-center justify-between group hover:border-zinc-300 transition-all">
                       <div className="flex items-center gap-4">
-                        <div className="p-3 bg-pink-50 rounded-xl text-pink-600">
-                          <Link2 className="w-5 h-5" />
-                        </div>
+                        <div className="p-3 bg-pink-50 rounded-xl text-pink-600"><Link2 className="w-5 h-5" /></div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-zinc-900">
-                              {rel.sourceColumn}
-                            </span>
+                            <span className="text-sm font-bold text-zinc-900">{rel.sourceColumn}</span>
                             <ArrowRightLeft className="w-3 h-3 text-zinc-300" />
-                            <span className="text-sm font-bold text-zinc-900">
-                              {files.find(f => f.id === rel.targetFileId)?.name}
-                              .{rel.targetColumn}
-                            </span>
+                            <span className="text-sm font-bold text-zinc-900">{files.find(f => f.id === rel.targetFileId)?.name}.{rel.targetColumn}</span>
                           </div>
-                          <p className="text-[10px] text-zinc-400 mt-1 uppercase tracking-widest font-black">
-                            {rel.joinType || 'LEFT'}
-                          </p>
+                          <p className="text-[10px] text-zinc-400 mt-1 uppercase tracking-widest font-black">{rel.joinType || 'LEFT'}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditRelation(rel)}
-                          className="h-9 w-9 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteRelation(rel.id)}
-                          className="h-9 w-9 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleEditRelation(rel)} className="h-9 w-9 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl"><Edit2 className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteRelation(rel.id)} className="h-9 w-9 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-xl"><Trash2 className="w-4 h-4" /></Button>
                       </div>
                     </div>
                   ))}
-
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setEditingRelation(undefined)
-                      setIsRelationModalOpen(true)
-                    }}
-                    className="h-20 border-dashed border-zinc-200 rounded-2xl hover:border-pink-300 hover:bg-pink-50/20 text-zinc-400 hover:text-pink-600 transition-all flex flex-col gap-1"
-                  >
-                    <Plus className="w-5 h-5" />
-                    <span className="text-xs font-bold uppercase tracking-widest">
-                      {t('add_relationship', 'Add Relationship')}
-                    </span>
+                  <Button variant="outline" onClick={() => { setEditingRelation(undefined); setIsRelationModalOpen(true); }} className="h-20 border-dashed border-zinc-200 rounded-2xl hover:border-pink-300 hover:bg-pink-50/20 text-zinc-400 hover:text-pink-600 transition-all flex flex-col gap-1">
+                    <Plus className="w-5 h-5" /><span className="text-xs font-bold uppercase tracking-widest">{t('add_relationship')}</span>
                   </Button>
                 </div>
               </TabsContent>
@@ -634,31 +483,85 @@ export function SchemaEditor() {
         </div>
       </div>
 
-      <ConfirmDialog
-        open={showDeleteConfirm}
-        onOpenChange={setShowDeleteConfirm}
-        onConfirm={handleDeleteFile}
-        title={t('delete_file_confirm_title')}
-        description={t('delete_file_confirm_desc')}
-        variant="destructive"
-      />
+      <ConfirmDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm} onConfirm={handleDeleteFile} title={t('delete_file_confirm_title')} description={t('delete_file_confirm_desc')} variant="destructive" />
+      <MetricEditorModal isOpen={isMetricModalOpen} onClose={() => setIsMetricModalOpen(false)} onSave={handleSaveMetric} initialMetric={editingMetric} file={currentFile} />
+      <RelationEditorModal isOpen={isRelationModalOpen} onClose={() => setIsRelationModalOpen(false)} onSave={handleSaveRelation} initialRelation={editingRelation} sourceFile={currentFile} allFiles={files} />
 
-      <MetricEditorModal
-        isOpen={isMetricModalOpen}
-        onClose={() => setIsMetricModalOpen(false)}
-        onSave={handleSaveMetric}
-        initialMetric={editingMetric}
-        file={currentFile}
-      />
+      {/* Manual Semantic Edit Modal */}
+      <Dialog open={!!editingColumn} onOpenChange={(open) => !open && setEditingColumn(null)}>
+        <DialogContent className="max-w-md rounded-3xl border-none shadow-2xl p-8 text-zinc-900">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-indigo-600" />
+              {t('edit_semantic', 'Edit Semantic Info')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="space-y-3">
+              <Label className="text-xs font-bold uppercase tracking-widest text-zinc-400">
+                {t('field_alias', 'Display Aliases / Synonyms')}
+              </Label>
+              
+              {/* Alias Tags List */}
+              <div className="flex flex-wrap gap-2 mb-2 min-h-[32px]">
+                {editAliases.map((alias, idx) => (
+                  <Badge key={idx} variant="secondary" className="bg-indigo-50 text-indigo-600 font-bold px-2 py-1 gap-1 rounded-lg border-none group/tag">
+                    {alias}
+                    <button onClick={() => handleRemoveAlias(alias)} className="text-indigo-300 hover:text-indigo-600 transition-colors">
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+                {editAliases.length === 0 && <span className="text-xs text-zinc-300 italic">No aliases added...</span>}
+              </div>
 
-      <RelationEditorModal
-        isOpen={isRelationModalOpen}
-        onClose={() => setIsRelationModalOpen(false)}
-        onSave={handleSaveRelation}
-        initialRelation={editingRelation}
-        sourceFile={currentFile}
-        allFiles={files}
-      />
+              <div className="flex gap-2">
+                <Input 
+                  value={newAliasInput} 
+                  onChange={(e) => setNewAliasInput(e.target.value)} 
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleAddAlias()
+                    }
+                  }}
+                  placeholder="Type and press Enter to add..." 
+                  className="rounded-xl border-zinc-100 focus:ring-indigo-500 flex-1" 
+                />
+                <Button variant="outline" onClick={handleAddAlias} className="rounded-xl border-zinc-100 text-zinc-400 hover:text-indigo-600">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Business Type Section */}
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-zinc-400">Business Type</Label>
+              <Select value={editBusinessType} onValueChange={setEditBusinessType}>
+                <SelectTrigger className="rounded-xl border-zinc-100">
+                  <SelectValue placeholder="Select type..." />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-none shadow-xl">
+                  {BUSINESS_TYPES.map((type) => (
+                    <SelectItem key={type} value={type} className="rounded-lg">
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-zinc-400">{t('field_description', 'Business Description')}</Label>
+              <Textarea value={editDesc} onChange={(e) => setEditDescription(e.target.value)} placeholder="Describe the logic or meaning of this column..." className="rounded-xl border-zinc-100 min-h-[100px] focus:ring-indigo-500" />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => setEditingColumn(null)} className="rounded-xl font-bold">{t('cancel')}</Button>
+            <Button onClick={handleSaveSemantic} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-8 font-bold">{t('save')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {gateNode}
     </div>

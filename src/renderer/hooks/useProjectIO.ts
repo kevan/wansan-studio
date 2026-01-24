@@ -49,9 +49,8 @@ export function useProjectIO() {
         safeName: c.safeName,
         sampleValues: c.sampleValues, // Add sampleValues
         nullable: c.nullable, // Add nullable
-        isKey: c.isKey, // Add isKey
         isPrimaryKey: c.isPrimaryKey, // Add isPrimaryKey
-        alias: c.alias, // Add alias
+        semantic: c.semantic, // [FIX] Persist semantic info
       })),
     }))
 
@@ -144,9 +143,8 @@ export function useProjectIO() {
             type: c.type as any,
             sampleValues: c.sampleValues || [], // Use saved sampleValues
             nullable: c.nullable ?? true, // Use saved nullable or default
-            isKey: c.isKey ?? false, // Use saved isKey or default
             isPrimaryKey: c.isPrimaryKey ?? false, // Use saved isPrimaryKey or default
-            alias: c.alias, // Use saved alias
+            semantic: (c as any).semantic, // [FIX] Restore semantic info
           })),
           rowCount: asset.rowCount || 0, // Use saved rowCount
           error: undefined, // Error status not persisted

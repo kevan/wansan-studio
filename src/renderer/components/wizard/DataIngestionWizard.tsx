@@ -87,7 +87,7 @@ export function DataIngestionWizard() {
               ? task.mergeKeys || []
               : mode === 'append'
                 ? targetFile.columns
-                    .filter(c => c.isPrimaryKey || c.isKey)
+                    .filter(c => c.isPrimaryKey)
                     .map(c => c.name)
                 : task.columns.filter(c => c.isPrimaryKey).map(c => c.name)
 
@@ -145,7 +145,6 @@ export function DataIngestionWizard() {
               safeName: c.name,
               type: c.type,
               sampleValues: c.sampleValues || [],
-              isKey: oldCol ? oldCol.isKey : false,
               isPrimaryKey: oldCol ? oldCol.isPrimaryKey : false,
             }
           })
@@ -340,10 +339,10 @@ export function DataIngestionWizard() {
     if (step === 'select') {
       const isSyncing = tasks.some(t => t.status === 'syncing' || t.status === 'waiting_for_sync')
       const hasErrors = tasks.some(t => t.status === 'error')
-      
+
       if (isSyncing) {
         // UI is already showing loading state, just block navigation
-        return 
+        return
       }
 
       if (hasErrors) {

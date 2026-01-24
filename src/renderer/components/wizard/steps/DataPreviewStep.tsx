@@ -76,7 +76,7 @@ export function DataPreviewStep() {
       // In Merge mode, default mergeKeys to PKs
       if (mode === 'merge' && !currentTask.mergeKeys) {
         updates.mergeKeys = targetFile.columns
-          .filter(c => c.isPrimaryKey || c.isKey)
+          .filter(c => c.isPrimaryKey)
           .map(c => c.name)
       }
 

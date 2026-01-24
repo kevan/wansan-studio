@@ -189,7 +189,7 @@ export interface ElectronAPI {
   analyzeSemantics: (
     tableName: string,
     columns: ColumnSchema[],
-    sampleValues: any[][]
+    language?: 'en' | 'zh'
   ) => Promise<IPCResponse<Record<string, import('./types').ColumnSemantic>>>
   generateMetricExpression: (options: {
     input: string

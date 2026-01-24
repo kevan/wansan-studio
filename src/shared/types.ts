@@ -14,23 +14,23 @@ export type ColumnType =
   | 'TIMESTAMP'
 
 export interface ColumnSemantic {
-  /** 
-   * User-friendly aliases or synonyms 
+  /**
+   * User-friendly aliases or synonyms
    * e.g. ["营收", "收入", "Sales Revenue"] for column "amt"
    */
   aliases?: string[]
-  
-  /** 
+
+  /**
    * High-level business type hint for visualization
    * e.g. "Currency", "City", "User_ID", "Category"
    */
   businessType?: string
-  
+
   /**
    * Description of the column's business logic
    */
   description?: string
-  
+
   /**
    * Whether this column is visible to the AI Context.
    * If false, it is EXCLUDED from the prompt sent to LLM.
@@ -45,15 +45,9 @@ export interface ColumnSchema {
   type: ColumnType // Inferred DuckDB type
   sampleValues: any[] // Top 3 non-null values for AI context
   nullable?: boolean // From UI state, indicates if column can have nulls
-  
-  /** @deprecated Use relations structure instead */
-  isKey?: boolean 
-  
+
   isPrimaryKey?: boolean // Optional metadata when a column is a primary key
-  
-  /** @deprecated Use semantic.aliases instead */
-  alias?: string 
-  
+
   userType?: ColumnType // User defined type override
   semantic?: ColumnSemantic // [NEW] Semantic metadata
 }

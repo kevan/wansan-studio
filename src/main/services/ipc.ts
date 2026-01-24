@@ -391,30 +391,21 @@ export function setupIPC(
     }
   )
 
-  ipcMain.handle(
-    'analyze-semantics',
-    async (
-      _event,
-      tableName: string,
-      columns: ColumnSchema[],
-      sampleValues: any[][]
-    ) => {
-      try {
-        const result = await aiService.analyzeSemantics(
-          tableName,
-          columns,
-          sampleValues
-        )
-        return { success: true, data: result }
-      } catch (error) {
-        console.error('Analyze semantics error:', error)
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
+    ipcMain.handle(
+      'ai:analyze-semantics',
+      async (_event, tableName: string, columns: ColumnSchema[], language?: 'en' | 'zh') => {
+        try {
+          const result = await aiService.analyzeSemantics(
+            tableName,
+            columns,
+            language
+          )
+          return { success: true, data: result }
+        } catch (e: any) {
+          return { success: false, error: e.message }
         }
       }
-    }
-  )
+    )
 
   // AI Insight Generation (Chart Data -> Natural Language)
   ipcMain.handle(

@@ -57,8 +57,8 @@ const electronAPI: ElectronAPI = {
     ipcRenderer.invoke('ask-ai-fix', originalSql, error, schemas, domainRules),
   analyzeContext: (schemas: any[], language?: 'en' | 'zh') =>
     ipcRenderer.invoke('analyze-context', schemas, language),
-  analyzeSemantics: (tableName: string, columns: any[], sampleValues: any[][]) =>
-    ipcRenderer.invoke('analyze-semantics', tableName, columns, sampleValues),
+  analyzeSemantics: (tableName: string, columns: any[], language?: string) =>
+    ipcRenderer.invoke('ai:analyze-semantics', tableName, columns, language),
   generateMetricExpression: (options: {
     input: string
     columns: Array<{ name: string; type: string }>
