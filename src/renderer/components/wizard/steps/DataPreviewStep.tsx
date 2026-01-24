@@ -328,68 +328,83 @@ const ColumnPreviewHead = ({
         isIgnored && 'bg-zinc-100/50 border-zinc-100'
       )}
     >
-      <div className={cn('flex flex-col gap-2', isIgnored && 'opacity-60')}>
-        <div className="flex items-center justify-between group">
-          <div className="flex items-center gap-2 min-w-0">
+      <div className={cn('flex flex-col gap-2.5', isIgnored && 'opacity-60')}>
+        <div className="flex items-center justify-between gap-2 group">
+          {/* Column Name on Left */}
+          <span
+            className={cn(
+              'text-xs font-bold truncate flex-1',
+              isIgnored ? 'text-zinc-400' : 'text-zinc-900'
+            )}
+            title={column.name}
+          >
+            {column.name}
+          </span>
+
+          {/* Controls on Right */}
+          <div className="flex items-center gap-1 shrink-0">
+            {!isIgnored && (
+              <button
+                onClick={onTogglePK}
+                className={cn(
+                  'p-1.5 rounded-lg border transition-all',
+                  column.isPrimaryKey
+                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+                    : 'bg-white border-zinc-200 text-zinc-300 hover:text-indigo-600 hover:border-indigo-200'
+                )}
+                title={t('wizard.set_unique_key')}
+              >
+                <Key
+                  className={cn(
+                    'w-3 h-3',
+                    column.isPrimaryKey && 'fill-current'
+                  )}
+                />
+              </button>
+            )}
             <button
               onClick={onToggleIgnore}
               className={cn(
                 'p-1.5 rounded-lg border transition-all',
                 isIgnored
                   ? 'bg-red-50 border-red-100 text-red-500 hover:bg-red-100 shadow-sm'
-                  : 'bg-white border-zinc-200 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600'
+                  : 'bg-white border-zinc-200 text-zinc-400 hover:bg-zinc-50 hover:text-red-500'
               )}
               title={isIgnored ? t('wizard.include_col') : t('wizard.exclude_col')}
             >
-              <Ban className="w-3.5 h-3.5" />
+              <Ban className="w-3 h-3" />
             </button>
-            <span
-              className={cn(
-                'text-xs font-bold truncate',
-                isIgnored ? 'text-zinc-400' : 'text-zinc-900'
-              )}
-              title={column.name}
-            >
-              {column.name}
-            </span>
           </div>
-          {!isIgnored && (
-            <button
-              onClick={onTogglePK}
-              className={cn(
-                'p-1.5 rounded-lg border transition-all',
-                column.isPrimaryKey
-                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
-                  : 'bg-white border-zinc-200 text-zinc-300 hover:text-indigo-600 hover:border-indigo-200'
-              )}
-              title={t('wizard.set_unique_key')}
-            >
-              <Key
-                className={cn(
-                  'w-3.5 h-3.5',
-                  column.isPrimaryKey && 'fill-current'
-                )}
-              />
-            </button>
-          )}
         </div>
+        
         {isIgnored ? (
-          <div className="h-7 px-3 flex items-center text-[10px] font-bold bg-zinc-100 border border-zinc-200 text-zinc-400 uppercase rounded-md italic">
+          <div className="h-8 px-3 flex items-center text-[9px] font-black bg-zinc-100 border border-zinc-200 text-zinc-400 uppercase rounded-lg italic tracking-tighter">
             {t('wizard.ignored_col', 'Excluding Column')}
           </div>
         ) : (
-          <Select value={column.type} onValueChange={onTypeChange}>
-            <SelectTrigger className="h-7 text-[10px] font-bold bg-white border-zinc-200 uppercase shadow-sm">
-              {t(COLUMN_TYPE_CONFIG[column.type as ColumnType]?.label) || (
-                <SelectValue />
-              )}
+          <Select 
+            value={
+              // Priority 1: Exact match with a standard type
+              (COLUMN_TYPE_CONFIG[column.type as ColumnType]?.isStandard ? column.type : 
+              // Priority 2: Match by uiLabel to find the standard equivalent
+              Object.entries(COLUMN_TYPE_CONFIG).find(([_, cfg]) => cfg.uiLabel === COLUMN_TYPE_CONFIG[column.type as ColumnType]?.uiLabel && cfg.isStandard)?.[0]) 
+              || column.type
+            } 
+            onValueChange={onTypeChange}
+          >
+            <SelectTrigger className="h-8 text-[10px] font-bold bg-white border-zinc-200 uppercase shadow-sm rounded-lg hover:border-zinc-300 transition-all">
+              <div className="flex items-center gap-2">
+                {COLUMN_TYPE_CONFIG[column.type as ColumnType]?.label ? t(COLUMN_TYPE_CONFIG[column.type as ColumnType]?.label) : <SelectValue />}
+              </div>
             </SelectTrigger>
-            <SelectContent>
-              {Object.entries(COLUMN_TYPE_CONFIG).map(([type, cfg]) => (
-                <SelectItem key={type} value={type}>
-                  {t(cfg.label)}
-                </SelectItem>
-              ))}
+            <SelectContent className="rounded-xl border-none shadow-2xl">
+              {Object.entries(COLUMN_TYPE_CONFIG)
+                .filter(([_, cfg]) => cfg.isStandard)
+                .map(([type, cfg]) => (
+                  <SelectItem key={type} value={type}>
+                    {t(cfg.label)}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         )}
@@ -444,74 +459,77 @@ const ColumnMappingHead = ({
             : 'border-zinc-200'
       )}
     >
-      {/* Absolute Match Key Toggle */}
-      {isMergeMode && (
-        <button
-          onClick={onToggleMergeKey}
-          className={cn(
-            'absolute top-2 right-2 p-1.5 rounded-lg border transition-all z-30',
-            isMergeKey
-              ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
-              : 'bg-white border-zinc-200 text-zinc-300 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-sm'
-          )}
-          title={
-            isMergeKey ? t('wizard.unset_match_key') : t('wizard.set_match_key')
-          }
-        >
-          <Key className={cn('w-3.5 h-3.5', isMergeKey && 'fill-current')} />
-        </button>
-      )}
-
-      <div className="flex flex-col gap-2">
-        {/* Header Row: Type Badge + Column Name */}
-        <div className="flex items-start justify-between gap-2 pr-8">
-          <div className="flex flex-col min-w-0 gap-1">
+      <div className="flex flex-col gap-2.5">
+        {/* Header Row: Column Name + Status Badges + Toggle Button */}
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex flex-col min-w-0 gap-1 flex-1">
+            {/* Status Indicator */}
             {isMergeMode ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 h-4">
                 {isMergeKey ? (
-                  <span className="flex items-center gap-1 text-[10px] font-black bg-indigo-600 text-white px-1.5 py-0.5 rounded shadow-sm">
+                  <span className="inline-flex items-center gap-1 text-[9px] font-black bg-indigo-600 text-white px-1.5 py-0.5 rounded shadow-sm leading-none uppercase">
                     {t('wizard.match_label')}
                   </span>
                 ) : isUpdateColumn ? (
-                  <span className="flex items-center gap-1 text-[10px] font-black bg-emerald-500 text-white px-1.5 py-0.5 rounded shadow-sm">
+                  <span className="inline-flex items-center gap-1 text-[9px] font-black bg-emerald-500 text-white px-1.5 py-0.5 rounded shadow-sm leading-none uppercase">
                     {t('wizard.update_label')}
                   </span>
                 ) : (
-                  <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-wider">
+                  <span className="text-[9px] font-bold text-zinc-300 uppercase tracking-tight leading-none">
                     {t('wizard.ignore')}
                   </span>
                 )}
               </div>
             ) : (
-              targetColumn.isPrimaryKey && (
-                <div
-                  title={t('wizard.set_unique_key')}
-                  className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg border border-indigo-200 shrink-0"
-                >
-                  <Key className="w-3.5 h-3.5 fill-current" />
-                </div>
-              )
+              targetColumn.isPrimaryKey && <div className="h-4" /> // Placeholder
+            )}
+            
+            {/* Column Name */}
+            <span
+              className={cn(
+                'text-xs font-bold truncate block',
+                isMergeKey
+                  ? 'text-indigo-900'
+                  : isUpdateColumn
+                    ? 'text-emerald-900'
+                    : 'text-zinc-500'
+              )}
+              title={targetColumn.name}
+            >
+              {targetColumn.name}
+            </span>
+          </div>
+
+          {/* Action Button: Key / PK Toggle */}
+          <div className="shrink-0 flex items-center gap-1">
+            {isMergeMode ? (
+              <button
+                onClick={onToggleMergeKey}
+                className={cn(
+                  'p-1.5 rounded-lg border transition-all',
+                  isMergeKey
+                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
+                    : 'bg-white border-zinc-200 text-zinc-300 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-sm'
+                )}
+                title={isMergeKey ? t('wizard.unset_match_key') : t('wizard.set_match_key')}
+              >
+                <Key className={cn('w-3 h-3', isMergeKey && 'fill-current')} />
+              </button>
+            ) : targetColumn.isPrimaryKey && (
+              <div
+                title={t('wizard.set_unique_key')}
+                className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg border border-indigo-200"
+              >
+                <Key className="w-3 h-3 fill-current" />
+              </div>
             )}
           </div>
-          <span
-            className={cn(
-              'text-xs font-bold truncate',
-              isMergeKey
-                ? 'text-indigo-900'
-                : isUpdateColumn
-                  ? 'text-emerald-900'
-                  : 'text-zinc-500'
-            )}
-            title={targetColumn.name}
-          >
-            {targetColumn.name}
-          </span>
         </div>
 
-        {/* Visual Label */}
-        <div className="flex items-center gap-2 my-1">
+        {/* Visual Label for Mapping */}
+        <div className="flex items-center gap-2">
           <div className="flex-1 h-px bg-zinc-100" />
-          <span className="text-[9px] font-mono text-zinc-300 tracking-tighter shrink-0 uppercase">
+          <span className="text-[8px] font-black font-mono text-zinc-300 tracking-tighter shrink-0 uppercase">
             {t('wizard.target_mapping')}
           </span>
           <div className="flex-1 h-px bg-zinc-100" />
@@ -526,7 +544,7 @@ const ColumnMappingHead = ({
         >
           <SelectTrigger
             className={cn(
-              'h-8 text-xs shadow-sm border-zinc-200 transition-all',
+              'h-8 text-xs shadow-sm border-zinc-200 transition-all rounded-lg hover:border-zinc-300',
               !currentSourceMapping && 'text-zinc-400 bg-zinc-50 italic',
               isMergeKey &&
                 'border-indigo-200 bg-white text-indigo-900 ring-2 ring-indigo-50',
@@ -536,7 +554,7 @@ const ColumnMappingHead = ({
           >
             <SelectValue placeholder={t('wizard.map_to_target')} />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="rounded-xl border-none shadow-2xl">
             <SelectItem value="">({t('wizard.ignore_field')})</SelectItem>
             {unmappedSourceCols.map(sc => (
               <SelectItem key={sc} value={sc}>

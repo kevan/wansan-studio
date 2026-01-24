@@ -176,7 +176,7 @@ export class DBConnectorService {
         const colQuery = `
           SELECT column_name, data_type, is_nullable
           FROM information_schema.columns 
-          WHERE table_name =    
+          WHERE table_name = $1 
           ${schema ? 'AND table_schema = $2' : ''}
         `
         const params = schema ? [table, schema] : [table]

@@ -51,7 +51,8 @@ export interface ColumnTypeDisplayConfig {
   icon: LucideIcon
   bgColor: string
   textColor: string
-  uiLabel: string // For dropdown display like "Text", "Decimal"
+  uiLabel: string
+  isStandard?: boolean // [NEW] Mark preferred type for ingestion
 }
 
 export const COLUMN_TYPE_CONFIG: Record<ColumnType, ColumnTypeDisplayConfig> = {
@@ -61,6 +62,7 @@ export const COLUMN_TYPE_CONFIG: Record<ColumnType, ColumnTypeDisplayConfig> = {
     bgColor: 'bg-zinc-100',
     textColor: 'text-zinc-600',
     uiLabel: 'Text',
+    isStandard: true,
   },
   DECIMAL: {
     label: 'format_decimal',
@@ -68,6 +70,7 @@ export const COLUMN_TYPE_CONFIG: Record<ColumnType, ColumnTypeDisplayConfig> = {
     bgColor: 'bg-blue-50',
     textColor: 'text-blue-600',
     uiLabel: 'Decimal',
+    isStandard: true,
   },
   INTEGER: {
     label: 'format_integer',
@@ -75,6 +78,7 @@ export const COLUMN_TYPE_CONFIG: Record<ColumnType, ColumnTypeDisplayConfig> = {
     bgColor: 'bg-blue-50',
     textColor: 'text-blue-600',
     uiLabel: 'Integer',
+    isStandard: true,
   },
   BIGINT: {
     label: 'format_integer',
@@ -89,6 +93,7 @@ export const COLUMN_TYPE_CONFIG: Record<ColumnType, ColumnTypeDisplayConfig> = {
     bgColor: 'bg-green-50',
     textColor: 'text-green-600',
     uiLabel: 'Date',
+    isStandard: true,
   },
   TIMESTAMP: {
     label: 'format_datetime',
@@ -96,13 +101,15 @@ export const COLUMN_TYPE_CONFIG: Record<ColumnType, ColumnTypeDisplayConfig> = {
     bgColor: 'bg-purple-50',
     textColor: 'text-purple-600',
     uiLabel: 'Date Time',
+    isStandard: true,
   },
   TIME: {
-    label: 'format_datetime',
+    label: 'format_time',
     icon: Clock,
     bgColor: 'bg-purple-50',
     textColor: 'text-purple-600',
     uiLabel: 'Time',
+    isStandard: true,
   },
   BOOLEAN: {
     label: 'type_boolean',
@@ -110,5 +117,6 @@ export const COLUMN_TYPE_CONFIG: Record<ColumnType, ColumnTypeDisplayConfig> = {
     bgColor: 'bg-orange-50',
     textColor: 'text-orange-700',
     uiLabel: 'Boolean',
+    isStandard: true,
   },
 }
