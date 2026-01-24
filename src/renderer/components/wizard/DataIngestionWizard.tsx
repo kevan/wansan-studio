@@ -14,6 +14,7 @@ import { useToastStore } from '../../stores/useToastStore'
 import { useSettingsStore } from '../../stores/useSettingsStore'
 import { Analytics } from '../../services/analytics'
 import { useProGate } from '@/hooks/use-pro-gate'
+import { sanitizeTableName, cleanDisplayName } from '@shared/naming-utils'
 
 const TRIAL_ROW_LIMIT = 50000
 const TRIAL_FILE_LIMIT = 3
@@ -150,9 +151,7 @@ export function DataIngestionWizard() {
           })
 
           const displayName =
-            task.sourceName && task.sourceName !== task.fileName
-              ? `${task.fileName.replace(/\.xlsx?$/, '')} - ${task.sourceName}`
-              : task.sourceName || task.fileName.replace(/\.xlsx?$/, '')
+            task.finalDisplayName || cleanDisplayName(task.fileName, task.sourceName)
 
           // Use reloadFile to safely update schema and validate relations
           useProjectStore.getState().reloadFile(targetFile.id, {
@@ -174,7 +173,7 @@ export function DataIngestionWizard() {
         } else {
           // --- IMPORT MODE ---
           const finalTableName =
-            task.finalTableName || task.tableName.replace('temp_ingest_', 't_')
+            task.finalTableName || sanitizeTableName(task.tableName.replace('temp_ingest_', ''))
 
           const result = await window.electronAPI.createTableFromSource({
             filePath: task.filePath,
@@ -211,11 +210,8 @@ export function DataIngestionWizard() {
           })
 
           // Construct a friendly display name
-          // If sourceName (Sheet1) != fileName (data.xlsx), show "data.xlsx - Sheet1"
           const displayName =
-            task.sourceName && task.sourceName !== task.fileName
-              ? `${task.fileName.replace(/\.xlsx?$/, '')} - ${task.sourceName}`
-              : task.sourceName || task.fileName.replace(/\.xlsx?$/, '')
+            task.finalDisplayName || cleanDisplayName(task.fileName, task.sourceName)
 
           const fileId = addFile({
             name: task.finalDisplayName || displayName,
@@ -374,7 +370,11 @@ export function DataIngestionWizard() {
   const isNextDisabled = useMemo(() => {
     const currentTask = tasks[currentTaskIndex]
     if (step === 'select') {
-      return tasks.length === 0 || tasks.some(t => t.status !== 'ready')
+      const baseDisabled = tasks.length === 0 || tasks.some(t => t.status !== 'ready')
+      if (mode !== 'import') {
+        return baseDisabled || tasks.length !== 1
+      }
+      return baseDisabled
     }
     if (!currentTask) return true
 

@@ -15,18 +15,37 @@ export function sanitizeTableName(
   sheetName?: string,
   prefix: string = 't_'
 ): string {
-  let baseName = originalName.split('.').slice(0, -1).join('.') || originalName
+  // 1. Remove extension
+  let baseName = originalName.replace(/\.[^/.]+$/, '') || originalName
 
-  if (sheetName) {
+  // 2. Handle Sheet names
+  if (sheetName && sheetName !== originalName) {
     baseName = `${baseName}_${sheetName}`
   }
 
-  // Allow Chinese, alphanum, underscore. Replace others with _
-  let safeName = prefix + baseName.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '_')
-  // Trim underscores
-  safeName = safeName.replace(/_+/g, '_').replace(/_$/, '')
+  // 3. Clean characters: Allow Chinese, alphanum, underscore. Replace others with _
+  let safeName = baseName.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '_')
+  
+  // 4. Force prefix
+  if (!safeName.startsWith(prefix)) {
+    safeName = prefix + safeName
+  }
+
+  // 5. Cleanup underscores
+  safeName = safeName.replace(/_+/g, '_').replace(/_$/, '').replace(/^_+/, '')
 
   return safeName.toLowerCase()
+}
+
+/**
+ * Generates a friendly display name by removing extensions and merging sheet info.
+ */
+export function cleanDisplayName(fileName: string, sourceName?: string): string {
+  const nameNoExt = fileName.replace(/\.[^/.]+$/, '')
+  if (!sourceName || sourceName === fileName) {
+    return nameNoExt
+  }
+  return `${nameNoExt} - ${sourceName}`
 }
 
 /**

@@ -1,4 +1,5 @@
 import fs from 'fs-extra'
+import os from 'os'
 import { basename, extname } from 'path'
 import { NativeDatabaseService } from './native-db-service'
 import { TempFileManager } from '../utils/temp-manager'
@@ -248,7 +249,14 @@ export class FileService {
 
   async cleanupStaging(tables: string[], files?: string[]) {
     for (const t of tables) if (t) await this.databaseService.exec(`DROP TABLE IF EXISTS "${t}" `)
-    if (files) for (const f of files) if (f && await fs.pathExists(f)) await fs.remove(f)
+    if (files) {
+      const tempDir = os.tmpdir()
+      for (const f of files) {
+        if (f && f.startsWith(tempDir) && await fs.pathExists(f)) {
+          await fs.remove(f)
+        }
+      }
+    }
   }
 
   async cleanupAllStaging() {

@@ -28,7 +28,7 @@ import { cn } from '@/utils/cn'
 import { RadioGroup, RadioGroupItem } from '../../ui/radio-group'
 import { Label } from '../../ui/label'
 import { Input } from '../../ui/input'
-import { sanitizeTableName } from '@shared/naming-utils'
+import { cleanDisplayName, sanitizeTableName } from '@shared/naming-utils'
 import { useTranslation } from 'react-i18next'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 
@@ -130,7 +130,7 @@ export function FinalizeStep() {
   if (!currentTask) return null
 
   const handleRename = (index: number, val: string) => {
-    const sanitized = sanitizeTableName(val, undefined, '')
+    const sanitized = sanitizeTableName(val)
     updateTask(index, { finalTableName: sanitized })
   }
 
@@ -339,6 +339,7 @@ export function FinalizeStep() {
                     f => f.tableName === task.finalTableName
                   )
                   const isTruncated = !isActivated && task.rowCount > 50000
+                  const displayNameBase = cleanDisplayName(task.fileName, task.sourceName)
 
                   return (
                     <div
@@ -360,7 +361,7 @@ export function FinalizeStep() {
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-zinc-900 truncate">
-                            {task.sourceName}
+                            {task.sourceName === task.fileName ? cleanDisplayName(task.fileName) : task.sourceName}
                           </p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <p className="text-[10px] text-zinc-400 truncate">
@@ -379,6 +380,7 @@ export function FinalizeStep() {
                       <div className="flex-1">
                         <Input
                           value={task.finalDisplayName || ''}
+                          placeholder={displayNameBase}
                           onChange={e =>
                             updateTask(idx, {
                               finalDisplayName: e.target.value,

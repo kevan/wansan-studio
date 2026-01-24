@@ -464,9 +464,9 @@ const ColumnMappingHead = ({
         <div className="flex items-center justify-between gap-2 min-w-0">
           <div className="flex flex-col min-w-0 gap-1 flex-1">
             {/* Status Indicator */}
-            {isMergeMode ? (
-              <div className="flex items-center gap-1.5 h-4">
-                {isMergeKey ? (
+            <div className="flex items-center gap-1.5 h-4">
+              {isMergeMode ? (
+                isMergeKey ? (
                   <span className="inline-flex items-center gap-1 text-[9px] font-black bg-indigo-600 text-white px-1.5 py-0.5 rounded shadow-sm leading-none uppercase">
                     {t('wizard.match_label')}
                   </span>
@@ -478,11 +478,13 @@ const ColumnMappingHead = ({
                   <span className="text-[9px] font-bold text-zinc-300 uppercase tracking-tight leading-none">
                     {t('wizard.ignore')}
                   </span>
-                )}
-              </div>
-            ) : (
-              targetColumn.isPrimaryKey && <div className="h-4" /> // Placeholder
-            )}
+                )
+              ) : targetColumn.isPrimaryKey ? (
+                <span className="inline-flex items-center gap-1 text-[9px] font-black bg-indigo-600 text-white px-1.5 py-0.5 rounded shadow-sm leading-none uppercase">
+                  {t('wizard.pk_label', 'PK')}
+                </span>
+              ) : null}
+            </div>
             
             {/* Column Name */}
             <span
@@ -500,9 +502,9 @@ const ColumnMappingHead = ({
             </span>
           </div>
 
-          {/* Action Button: Key / PK Toggle */}
-          <div className="shrink-0 flex items-center gap-1">
-            {isMergeMode ? (
+          {/* Action Button: Key / PK Toggle (Only for Merge Mode) */}
+          {isMergeMode && (
+            <div className="shrink-0 flex items-center gap-1">
               <button
                 onClick={onToggleMergeKey}
                 className={cn(
@@ -515,15 +517,8 @@ const ColumnMappingHead = ({
               >
                 <Key className={cn('w-3 h-3', isMergeKey && 'fill-current')} />
               </button>
-            ) : targetColumn.isPrimaryKey && (
-              <div
-                title={t('wizard.set_unique_key')}
-                className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg border border-indigo-200"
-              >
-                <Key className="w-3 h-3 fill-current" />
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Visual Label for Mapping */}

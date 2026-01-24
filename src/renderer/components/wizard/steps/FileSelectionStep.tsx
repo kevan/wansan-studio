@@ -117,10 +117,17 @@ export function FileSelectionStep() {
 
   const handleSelectFiles = async () => {
     if (!window.electronAPI) return
-    const result = await window.electronAPI.selectFiles()
-
-    if (result.success && result.data && result.data.length > 0) {
-      parseFiles(result.data.map(f => ({ path: f.path, name: f.path.split(/[\\/]/).pop() || 'unknown', size: f.size })))
+    
+    if (mode !== 'import') {
+      const result = await window.electronAPI.selectFile()
+      if (result.success && result.data) {
+        parseFiles([{ path: result.data, name: result.data.split(/[\\/]/).pop() || 'unknown' }])
+      }
+    } else {
+      const result = await window.electronAPI.selectFiles()
+      if (result.success && result.data && result.data.length > 0) {
+        parseFiles(result.data.map(f => ({ path: f.path, name: f.path.split(/[\\/]/).pop() || 'unknown', size: f.size })))
+      }
     }
   }
 
@@ -141,8 +148,8 @@ export function FileSelectionStep() {
           const columns: ColumnConfig[] = []
 
           const displayName = item.sourceName && item.sourceName !== file.name
-              ? `${file.name.replace(/\.xlsx?$/, '')} - ${item.sourceName}`
-              : item.sourceName || file.name.replace(/\.xlsx?$/, '')
+              ? `${file.name.replace(/\.[^/.]+$/, '')} - ${item.sourceName}`
+              : item.sourceName || file.name.replace(/\.[^/.]+$/, '')
 
           return {
             id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -161,25 +168,30 @@ export function FileSelectionStep() {
         newTasks.push(...fileTasks)
       }
 
-      // De-duplication
-      const uniqueNewTasks = newTasks.filter(newTask => 
-        !tasks.some(existingTask => 
-          existingTask.filePath === newTask.filePath && 
-          existingTask.sourceName === newTask.sourceName
+      if (mode !== 'import') {
+        // Replace existing tasks with all sheets from the newly selected file
+        setTasks(newTasks)
+      } else {
+        // De-duplication
+        const uniqueNewTasks = newTasks.filter(newTask => 
+          !tasks.some(existingTask => 
+            existingTask.filePath === newTask.filePath && 
+            existingTask.sourceName === newTask.sourceName
+          )
         )
-      )
 
-      const skippedCount = newTasks.length - uniqueNewTasks.length
-      
-      if (uniqueNewTasks.length > 0) {
-        setTasks([...tasks, ...uniqueNewTasks])
-      }
+        const skippedCount = newTasks.length - uniqueNewTasks.length
+        
+        if (uniqueNewTasks.length > 0) {
+          setTasks([...tasks, ...uniqueNewTasks])
+        }
 
-      if (skippedCount > 0) {
-        useToastStore.getState().addToast({
-          title: t('wizard.files_skipped', { count: skippedCount }),
-          type: 'info'
-        })
+        if (skippedCount > 0) {
+          useToastStore.getState().addToast({
+            title: t('wizard.files_skipped', { count: skippedCount }),
+            type: 'info'
+          })
+        }
       }
     } catch (err: any) {
       console.error('[Wizard] File inspection failed:', err)
@@ -250,20 +262,28 @@ export function FileSelectionStep() {
           <div className="px-12 py-8 flex justify-between items-center bg-zinc-50/50 border-b border-zinc-100">
             <div>
               <h3 className="text-lg font-bold text-zinc-900">{t('wizard.tasks_title', 'Data Sources')}</h3>
-              <p className="text-xs text-zinc-500 mt-1">{t('wizard.tasks_desc', 'Confirm the files or tables you want to ingest.')}</p>
+              {mode !== 'import' && tasks.length > 1 ? (
+                <p className="text-xs text-rose-500 mt-1 font-bold animate-pulse">
+                  {t('wizard.select_only_one_sheet', 'Please keep only one sheet. Only one data source is allowed for this mode.')}
+                </p>
+              ) : (
+                <p className="text-xs text-zinc-500 mt-1">{t('wizard.tasks_desc', 'Confirm the files or tables you want to ingest.')}</p>
+              )}
             </div>
             <div className="flex items-center gap-3">
-              <Button 
-                variant="outline"
-                size="sm"
-                onClick={handleSelectFiles}
-                disabled={isParsing}
-                className="rounded-xl border-zinc-200 font-bold h-10 px-4"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {t('wizard.add_more')}
-              </Button>
-              {isDBAvailable && (
+              {(mode === 'import' || tasks.length === 0) && (
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectFiles}
+                  disabled={isParsing}
+                  className="rounded-xl border-zinc-200 font-bold h-10 px-4"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t('wizard.add_more')}
+                </Button>
+              )}
+              {isDBAvailable && (mode === 'import' || tasks.length === 0) && (
                 <Button 
                   variant="outline"
                   size="sm"
