@@ -185,7 +185,7 @@ export class FileService {
     const typesParam = knownColumns ? `types={${knownColumns.map(c => `'${c.name}': '${c.type}'`).join(', ')}}` : ''
 
     if (ext === '.xlsx' || ext === '.xls') {
-      const schemas = await ingestExcelFile(filePath, this.databaseService, basename(filePath), tableName, sheetName, onProgress, 't_', typesParam)
+      const schemas = await ingestExcelFile(filePath, this.databaseService, basename(filePath), tableName, sheetName, _onProgress, 't_', typesParam)
       return { lastModified: stats.mtimeMs, newColumns: schemas[0]?.columns || [] }
     } else {
       await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`) 

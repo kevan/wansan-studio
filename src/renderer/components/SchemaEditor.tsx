@@ -94,10 +94,11 @@ export function SchemaEditor() {
   }
 
   const handleSaveMetric = async (metric: Omit<SmartMetric, 'id'>) => {
-    if (editingMetric) {
-      // Logic for update if needed, currently we just add
+    const newMetric: SmartMetric = {
+      ...metric,
+      id: crypto.randomUUID(),
     }
-    await addSmartMetric(currentFile.id, metric)
+    await addSmartMetric(currentFile.id, newMetric)
     setIsMetricModalOpen(false)
     toast.addToast({
       title: t('metric_added', 'Metric Added'),
@@ -320,11 +321,11 @@ export function SchemaEditor() {
                             <span className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">
                               {COLUMN_TYPE_CONFIG[col.type]?.label || col.type}
                             </span>
-                            {col.semanticType && (
+                            {col.semantic?.businessType && (
                               <>
                                 <div className="w-1 h-1 rounded-full bg-zinc-200" />
                                 <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter">
-                                  {col.semanticType}
+                                  {col.semantic.businessType}
                                 </span>
                               </>
                             )}
@@ -338,16 +339,16 @@ export function SchemaEditor() {
                            size="sm"
                            onClick={() => {
                              updateColumnSemantic(currentFile.id, col.name, {
-                               isVisibleToAI: !col.isVisibleToAI
+                               isVisibleToAI: !col.semantic?.isVisibleToAI
                              })
                            }}
                            className={cn(
                              "h-8 rounded-lg font-bold text-[10px] gap-1.5",
-                             col.isVisibleToAI ? "text-zinc-500" : "text-red-500 bg-red-50"
+                             (col.semantic?.isVisibleToAI !== false) ? "text-zinc-500" : "text-red-500 bg-red-50"
                            )}
                          >
-                           {col.isVisibleToAI ? <Wand2 className="w-3 h-3" /> : <Ban className="w-3 h-3" />}
-                           {col.isVisibleToAI ? "AI Ready" : "AI Hidden"}
+                           {(col.semantic?.isVisibleToAI !== false) ? <Wand2 className="w-3 h-3" /> : <Ban className="w-3 h-3" />}
+                           {(col.semantic?.isVisibleToAI !== false) ? "AI Ready" : "AI Hidden"}
                          </Button>
                       </div>
                     </div>
@@ -365,7 +366,7 @@ export function SchemaEditor() {
                         </div>
                         <div>
                           <h4 className="text-sm font-bold text-zinc-900">{metric.name}</h4>
-                          <code className="text-[10px] text-zinc-400 mt-1 block bg-zinc-50 px-1.5 py-0.5 rounded">{metric.expression}</code>
+                          <code className="text-[10px] text-zinc-400 mt-1 block bg-zinc-50 px-1.5 py-0.5 rounded">{metric.sqlExpression}</code>
                         </div>
                       </div>
                       <Button
@@ -395,7 +396,7 @@ export function SchemaEditor() {
 
               <TabsContent value="relations" className="mt-0">
                 <div className="grid grid-cols-1 gap-4">
-                  {useProjectStore.getState().relations[currentFile.id]?.map(rel => (
+                  {(currentFile.relations || []).map(rel => (
                     <div key={rel.id} className="p-5 bg-white border border-zinc-100 rounded-2xl flex items-center justify-between group hover:border-zinc-300 transition-all">
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-pink-50 rounded-xl text-pink-600">
@@ -409,7 +410,7 @@ export function SchemaEditor() {
                               {files.find(f => f.id === rel.targetFileId)?.name}.{rel.targetColumn}
                             </span>
                           </div>
-                          <p className="text-[10px] text-zinc-400 mt-1 uppercase tracking-widest font-black">{rel.type}</p>
+                          <p className="text-[10px] text-zinc-400 mt-1 uppercase tracking-widest font-black">{rel.joinType || 'LEFT'}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -457,20 +458,18 @@ export function SchemaEditor() {
           icon={<Plus className="w-4 h-4" />}
           label={t('append_data')}
           onClick={handleAppend}
-          variant="primary"
         />
         <div className="w-px h-6 bg-zinc-200 mx-1" />
         <ExpandableAction
           icon={<ArrowRightLeft className="w-4 h-4" />}
           label={t('merge_data')}
           onClick={handleMerge}
-          variant="secondary"
         />
       </div>
 
       <ConfirmDialog
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
         onConfirm={handleDeleteFile}
         title={t('delete_file_confirm_title')}
         description={t('delete_file_confirm_desc')}
@@ -482,7 +481,7 @@ export function SchemaEditor() {
         onClose={() => setIsMetricModalOpen(false)}
         onSave={handleSaveMetric}
         initialMetric={editingMetric}
-        columns={currentFile.columns}
+        file={currentFile}
       />
 
       <RelationEditorModal
@@ -491,7 +490,7 @@ export function SchemaEditor() {
         onSave={handleSaveRelation}
         initialRelation={editingRelation}
         sourceFile={currentFile}
-        availableFiles={files.filter(f => f.id !== currentFile.id)}
+        allFiles={files}
       />
 
       {gateNode}
