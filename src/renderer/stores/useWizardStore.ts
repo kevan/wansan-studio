@@ -12,16 +12,17 @@ export interface WizardActions {
     mode?: WizardMode,
     targetTableId?: string,
     initialFiles?: { path: string; name: string; size: number }[]
-  ) => void
+  ) => Promise<void>
   close: () => void
-  setStep: (step: WizardStep) => void // Reset currentTaskIndex here
+  setStep: (step: WizardStep) => void
+  setDbSelectorOpen: (open: boolean) => void
   setFiles: (files: { path: string; name: string; size: number }[]) => void
+  toggleDbTable: (connId: string, tableName: string) => void
 
   // Task Management
-
   setTasks: (tasks: IngestionTask[]) => void
   updateTask: (index: number, updates: Partial<IngestionTask>) => void
-  nextTask: () => boolean // Returns true if moved to next, false if last
+  nextTask: () => boolean
   prevTask: () => boolean
 
   // Column Management
@@ -46,100 +47,102 @@ const initialState: WizardState = {
   currentTaskIndex: 0,
   tempTableNames: [],
   isProcessing: false,
+  isDbSelectorOpen: false,
 }
 
-export const useWizardStore = create<WizardState & WizardActions>(
-  (set, get) => ({
-    ...initialState,
+export const useWizardStore = create<WizardState & WizardActions>((set, get) => ({
+  ...initialState,
 
-    open: async (mode = 'import', targetTableId, initialFiles = []) => {
-      // Cleanup any orphaned staging tables from previous sessions
-      if (window.electronAPI) {
-        await window.electronAPI.cleanupAllStaging()
-      }
-      set({
-        ...initialState,
-        isOpen: true,
-        mode,
-        targetTableId, // In 'replace' mode, this is the file ID being replaced
-        selectedFiles: initialFiles,
-        tasks: [],
-        tempTableNames: [],
-      })
-    },
+  open: async (mode: WizardMode = 'import', targetTableId?: string, initialFiles = []) => {
+    if (window.electronAPI) {
+      await window.electronAPI.cleanupAllStaging()
+    }
+    set({
+      ...initialState,
+      isOpen: true,
+      mode,
+      targetTableId,
+      selectedFiles: initialFiles,
+      tasks: [],
+      tempTableNames: [],
+    })
+  },
 
-    close: () => set({ isOpen: false }),
+  close: () => set({ isOpen: false }),
 
-    setStep: step => set({ step, currentTaskIndex: 0 }), // Reset currentTaskIndex here
+  setStep: (step) => set({ step, currentTaskIndex: 0 }),
 
-    setFiles: selectedFiles => set({ selectedFiles }),
+  setDbSelectorOpen: (isDbSelectorOpen) => set({ isDbSelectorOpen }),
 
-    setTasks: tasks =>
-      set({
-        tasks,
-        currentTaskIndex: 0,
-        tempTableNames: [
-          ...get().tempTableNames,
-          ...tasks.map(t => t.tableName),
-        ],
-      }),
+  setFiles: (selectedFiles) => set({ selectedFiles }),
 
-    updateTask: (index, updates) =>
-      set(state => {
-        const newTasks = [...state.tasks]
-        newTasks[index] = { ...newTasks[index], ...updates }
-        return { tasks: newTasks }
-      }),
+  toggleDbTable: () => {}, // Not used in the new flow
 
-    nextTask: () => {
-      const { currentTaskIndex, tasks } = get()
-      if (currentTaskIndex < tasks.length - 1) {
-        set({ currentTaskIndex: currentTaskIndex + 1 })
-        return true
-      }
-      return false
-    },
+  setTasks: (tasks) =>
+    set({
+      tasks,
+      currentTaskIndex: 0,
+      tempTableNames: [
+        ...get().tempTableNames,
+        ...tasks.map(t => t.tableName),
+      ],
+    }),
 
-    prevTask: () => {
-      const { currentTaskIndex } = get()
-      if (currentTaskIndex > 0) {
-        set({ currentTaskIndex: currentTaskIndex - 1 })
-        return true
-      }
-      return false
-    },
+  updateTask: (index, updates) =>
+    set((state) => {
+      const newTasks = [...state.tasks]
+      newTasks[index] = { ...newTasks[index], ...updates }
+      return { tasks: newTasks }
+    }),
 
-    updateColumnConfig: (taskIndex, columnName, updates) =>
-      set(state => {
-        const newTasks = [...state.tasks]
-        const task = newTasks[taskIndex]
-        if (!task) return state
+  nextTask: () => {
+    const { currentTaskIndex, tasks } = get()
+    if (currentTaskIndex < tasks.length - 1) {
+      set({ currentTaskIndex: currentTaskIndex + 1 })
+      return true
+    }
+    return false
+  },
 
-        const newColumns = task.columns.map(col =>
-          col.name === columnName ? { ...col, ...updates } : col
-        )
+  prevTask: () => {
+    const { currentTaskIndex } = get()
+    if (currentTaskIndex > 0) {
+      set({ currentTaskIndex: currentTaskIndex - 1 })
+      return true
+    }
+    return false
+  },
 
-        newTasks[taskIndex] = { ...task, columns: newColumns }
-        return { tasks: newTasks }
-      }),
+  updateColumnConfig: (taskIndex, columnName, updates) =>
+    set((state) => {
+      const newTasks = [...state.tasks]
+      const task = newTasks[taskIndex]
+      if (!task) return state
 
-    toggleMergeKey: (taskIndex, targetColName) =>
-      set(state => {
-        const newTasks = [...state.tasks]
-        const task = newTasks[taskIndex]
-        if (!task) return state
+      const newColumns = task.columns.map(col =>
+        col.name === columnName ? { ...col, ...updates } : col
+      )
 
-        const currentKeys = task.mergeKeys || []
-        const newKeys = currentKeys.includes(targetColName)
-          ? currentKeys.filter(k => k !== targetColName)
-          : [...currentKeys, targetColName]
+      newTasks[taskIndex] = { ...task, columns: newColumns }
+      return { tasks: newTasks }
+    }),
 
-        newTasks[taskIndex] = { ...task, mergeKeys: newKeys }
-        return { tasks: newTasks }
-      }),
+  toggleMergeKey: (taskIndex, targetColName) =>
+    set((state) => {
+      const newTasks = [...state.tasks]
+      const task = newTasks[taskIndex]
+      if (!task) return state
 
-    setProcessing: isProcessing => set({ isProcessing }),
+      const currentKeys = task.mergeKeys || []
+      const newKeys = currentKeys.includes(targetColName)
+        ? currentKeys.filter(k => k !== targetColName)
+        : [...currentKeys, targetColName]
 
-    reset: () => set(initialState),
-  })
-)
+      newTasks[taskIndex] = { ...task, mergeKeys: newKeys }
+      return { tasks: newTasks }
+    }),
+
+  setProcessing: (isProcessing) => set({ isProcessing }),
+
+  reset: () => set(initialState),
+}))

@@ -36,11 +36,13 @@
     "electron-updater": "^6.1.7",
     "exceljs": "^4.4.0",
     "fs-extra": "^11.3.2",
+    "iconv-lite": "^0.7.2",
     "lodash.debounce": "^4.0.8",
     "mysql2": "^3.16.1",
     "node-machine-id": "^1.1.12",
     "openai": "^6.10.0",
     "pg": "^8.17.2",
+    "pg-query-stream": "^4.11.2",
     "uuid": "^9.0.1",
     "zod": "^4.3.4"
   },

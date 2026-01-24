@@ -155,13 +155,33 @@ export function setupIPC(
     }
   })
 
+  // [NEW] Stage 1: Inspect (Lightweight)
+  ipcMain.handle('file:inspect', async (_, filePath: string) => {
+    try {
+      const result = await fileService.inspectFile(filePath)
+      return { success: true, data: result }
+    } catch (error: any) {
+      return { success: false, error: error.message }
+    }
+  })
+
+  // [NEW] Stage 2: Prepare (Excel/CSV/JSON)
+  ipcMain.handle('file:prepare', async (_, filePath: string, sourceName: string, readOptions?: Record<string, any>) => {
+    try {
+      const result = await fileService.prepareFile(filePath, sourceName, readOptions)
+      return { success: true, data: result }
+    } catch (error: any) {
+      return { success: false, error: error.message }
+    }
+  })
+
   // 选择文件对话框（单个文件）
   ipcMain.handle('select-file', async () => {
     try {
       const result = await dialog.showOpenDialog({
         properties: ['openFile'],
         filters: [
-          { name: 'Data Files', extensions: ['xlsx', 'xls', 'csv', 'json'] },
+          { name: 'Data Files', extensions: ['xlsx', 'xls', 'csv', 'json', 'parquet'] },
         ],
       })
 
@@ -181,7 +201,7 @@ export function setupIPC(
       const result = await dialog.showOpenDialog({
         properties: ['openFile', 'multiSelections'],
         filters: [
-          { name: 'Data Files', extensions: ['xlsx', 'xls', 'csv', 'json'] },
+          { name: 'Data Files', extensions: ['xlsx', 'xls', 'csv', 'json', 'parquet'] },
         ],
       })
 

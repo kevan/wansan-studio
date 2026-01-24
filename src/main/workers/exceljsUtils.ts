@@ -5,6 +5,7 @@ import * as path from 'path'
 export interface ExcelProcessResult {
   sheetName: string
   csvData: string
+  headers?: string[]
   error?: string
 }
 
@@ -54,6 +55,7 @@ export interface StreamingProcessResult {
   sheetName: string
   csvFilePath: string
   rowCount: number
+  headers?: string[]
   error?: string
 }
 
@@ -77,7 +79,8 @@ export async function processExcelFileStreaming(
   outputDir: string,
   targetSheetName?: string,
   targetTableName?: string,
-  onProgress?: (rowCount: number) => void
+  onProgress?: (rowCount: number) => void,
+  onlyHeaders: boolean = false
 ): Promise<{ results: StreamingProcessResult[]; allSheetsCount: number }> {
   const options = {
     sharedStrings: 'cache' as const,
@@ -117,10 +120,12 @@ export async function processExcelFileStreaming(
 
     try {
       const tempCsvName = `temp_ingest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.csv`
-      const csvFilePath = path.join(outputDir, tempCsvName)
-      const writeStream = fs.createWriteStream(csvFilePath, {
-        encoding: 'utf8',
-      })
+      const csvFilePath = onlyHeaders ? '' : path.join(outputDir, tempCsvName)
+      const writeStream = onlyHeaders
+        ? null
+        : fs.createWriteStream(csvFilePath, {
+            encoding: 'utf8',
+          })
 
       // Buffer for header detection
       const ROW_BUFFER_SIZE = 50
@@ -270,38 +275,50 @@ export async function processExcelFileStreaming(
         const { headerRowIndex: foundIndex, headers } = findHeaderRow(rowBuffer)
         headerRowIndex = foundIndex
         normalizedHeaders = normalizeHeaders(headers)
-        colCount = normalizedHeaders.length
 
-        const headerLine = normalizedHeaders
-          .map(h => `"${String(h).replace(/"/g, '""')}"`)
-          .join(',')
-        writeStream.write(headerLine + '\n')
+        if (onlyHeaders) {
+          results.push({ sheetName, csvFilePath: '', rowCount: 0, headers: normalizedHeaders })
+        } else {
+          colCount = normalizedHeaders.length
 
-        for (let i = headerRowIndex + 1; i < rowBuffer.length; i++) {
-          const buffRow = rowBuffer[i]
-          if (
-            buffRow.some(
-              c => c !== null && c !== undefined && String(c).trim() !== ''
-            )
-          ) {
-            writeStream.write(processRowToCSV(buffRow) + '\n')
-            rowCount++
-            if (onProgress && rowCount % 5000 === 0) onProgress(rowCount)
+          const headerLine = normalizedHeaders
+            .map(h => `"${String(h).replace(/"/g, '""')}"`)
+            .join(',')
+          writeStream?.write(headerLine + '\n')
+
+          for (let i = headerRowIndex + 1; i < rowBuffer.length; i++) {
+            const buffRow = rowBuffer[i]
+            if (
+              buffRow.some(
+                c => c !== null && c !== undefined && String(c).trim() !== ''
+              )
+            ) {
+              writeStream?.write(processRowToCSV(buffRow) + '\n')
+              rowCount++
+              if (onProgress && rowCount % 5000 === 0) onProgress(rowCount)
+            }
           }
         }
       }
 
       if (onProgress) onProgress(rowCount)
 
-      writeStream.end()
+      if (writeStream) {
+        writeStream.end()
 
-      // Wait for finish
-      await new Promise((resolve, reject) => {
-        writeStream.on('finish', () => resolve(null))
-        writeStream.on('error', reject)
-      })
+        // Wait for finish
+        await new Promise((resolve, reject) => {
+          writeStream!.on('finish', () => resolve(null))
+          writeStream!.on('error', reject)
+        })
 
-      results.push({ sheetName, csvFilePath, rowCount })
+        results.push({
+          sheetName,
+          csvFilePath,
+          rowCount,
+          headers: normalizedHeaders,
+        })
+      }
     } catch (e: any) {
       console.error(`Error processing sheet ${sheetName}:`, e)
       results.push({
@@ -323,7 +340,8 @@ export async function processExcelBufferExcelJS(
   fileBuffer: Buffer,
   targetSheetName?: string,
   targetTableName?: string,
-  onProgress?: (rowCount: number, isIntermediate?: boolean) => void
+  onProgress?: (rowCount: number, isIntermediate?: boolean) => void,
+  onlyHeaders: boolean = false
 ): Promise<{ results: ExcelProcessResult[]; allSheetsCount: number }> {
   const workbook = new ExcelJS.Workbook()
   await workbook.xlsx.load(fileBuffer as any)
@@ -357,6 +375,8 @@ export async function processExcelBufferExcelJS(
       const hasMerges = worksheet.hasMerges
 
       worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+        if (onlyHeaders && rowNumber > 50) return // Limit reading for inspect
+
         const filledRowData: any[] = []
 
         if (!hasMerges && Array.isArray(row.values)) {
@@ -424,7 +444,7 @@ export async function processExcelBufferExcelJS(
         data.push(filledRowData)
 
         // Report progress
-        if (onProgress && totalRows > 0 && rowNumber % 1000 === 0) {
+        if (!onlyHeaders && onProgress && totalRows > 0 && rowNumber % 1000 === 0) {
           onProgress((rowNumber / totalRows) * 100)
         }
       })
@@ -434,6 +454,16 @@ export async function processExcelBufferExcelJS(
       // Reuse finding headers logic
       const { headerRowIndex, headers } = findHeaderRow(data)
       const normalizedHeaders = normalizeHeaders(headers)
+
+      if (onlyHeaders) {
+        results.push({
+          sheetName: worksheet.name,
+          csvData: '',
+          headers: normalizedHeaders,
+        })
+        continue
+      }
+
       const colCount = normalizedHeaders.length
 
       // Filter empty rows
@@ -500,7 +530,11 @@ export async function processExcelBufferExcelJS(
 
       const csvData = [headerLine, ...csvLines].join('\n')
 
-      results.push({ sheetName: worksheet.name, csvData })
+      results.push({
+        sheetName: worksheet.name,
+        csvData,
+        headers: normalizedHeaders,
+      })
     } catch (e: any) {
       results.push({ sheetName: worksheet.name, csvData: '', error: e.message })
     }

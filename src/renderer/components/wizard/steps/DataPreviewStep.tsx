@@ -18,11 +18,10 @@ import {
 } from '../../ui/select'
 import {
   ArrowDownToLine,
+  Ban,
   ChevronLeft,
   ChevronRight,
   Edit2,
-  Eye,
-  EyeOff,
   FileSearch,
   Info,
   Key,
@@ -285,7 +284,7 @@ export function DataPreviewStep() {
                         key={col.name}
                         className={cn(
                           'px-4 py-2 text-xs border-r border-zinc-100 font-mono truncate max-w-[300px]',
-                          isIgnored ? 'text-zinc-300 italic' : 'text-zinc-600'
+                          isIgnored ? 'text-zinc-300 italic opacity-40 bg-zinc-50/50' : 'text-zinc-600'
                         )}
                       >
                         {isIgnored ? (
@@ -326,10 +325,10 @@ const ColumnPreviewHead = ({
     <TableHead
       className={cn(
         'px-4 py-3 border-b border-r border-zinc-200 min-w-[200px] max-w-[300px] transition-colors',
-        isIgnored && 'bg-zinc-50 border-zinc-100'
+        isIgnored && 'bg-zinc-100/50 border-zinc-100'
       )}
     >
-      <div className={cn('flex flex-col gap-2', isIgnored && 'opacity-50')}>
+      <div className={cn('flex flex-col gap-2', isIgnored && 'opacity-60')}>
         <div className="flex items-center justify-between group">
           <div className="flex items-center gap-2 min-w-0">
             <button
@@ -337,16 +336,12 @@ const ColumnPreviewHead = ({
               className={cn(
                 'p-1.5 rounded-lg border transition-all',
                 isIgnored
-                  ? 'bg-zinc-100 border-zinc-200 text-zinc-400'
-                  : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50'
+                  ? 'bg-red-50 border-red-100 text-red-500 hover:bg-red-100 shadow-sm'
+                  : 'bg-white border-zinc-200 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600'
               )}
               title={isIgnored ? t('wizard.include_col') : t('wizard.exclude_col')}
             >
-              {isIgnored ? (
-                <EyeOff className="w-3.5 h-3.5" />
-              ) : (
-                <Eye className="w-3.5 h-3.5" />
-              )}
+              <Ban className="w-3.5 h-3.5" />
             </button>
             <span
               className={cn(
@@ -379,12 +374,12 @@ const ColumnPreviewHead = ({
           )}
         </div>
         {isIgnored ? (
-          <div className="h-7 px-3 flex items-center text-[10px] font-bold bg-zinc-50 border border-zinc-200 text-zinc-400 uppercase rounded-md">
-            {t('wizard.ignore')}
+          <div className="h-7 px-3 flex items-center text-[10px] font-bold bg-zinc-100 border border-zinc-200 text-zinc-400 uppercase rounded-md italic">
+            {t('wizard.ignored_col', 'Excluding Column')}
           </div>
         ) : (
           <Select value={column.type} onValueChange={onTypeChange}>
-            <SelectTrigger className="h-7 text-[10px] font-bold bg-white border-zinc-200 uppercase">
+            <SelectTrigger className="h-7 text-[10px] font-bold bg-white border-zinc-200 uppercase shadow-sm">
               {t(COLUMN_TYPE_CONFIG[column.type as ColumnType]?.label) || (
                 <SelectValue />
               )}

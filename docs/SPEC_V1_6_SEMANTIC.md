@@ -1,8 +1,8 @@
 # 📦 Spec: v1.6 Semantic & Connect (语义与连接)
 
-> **Version**: 1.0 (Draft)
+> **Version**: 1.1 (Implemented)
 > **Theme**: "Understanding Data" & "Breaking Silos"
-> **Core Value**: Improving AI accuracy through semantic metadata, and expanding data reach to local databases.
+> **Core Value**: Improving AI accuracy through semantic metadata, and expanding data reach to local databases via a unified high-performance pipeline.
 
 ---
 
@@ -61,107 +61,79 @@ export interface ColumnSchema {
 ### 1.2 AI Auto-Tagging (On-Demand)
 
 *   **Trigger**: A "✨ Analyze Semantics" button in the Schema Editor toolbar.
-*   **Input**:
-    *   Table Name.
-    *   Column Names & Types.
-    *   **Sample Data** (Top 10 rows).
-*   **Prompt**:
-    > "Analyze the following schema and data samples. 
-    > 1. Infer the business meaning of each column.
-    > 2. Suggest 2-3 synonyms (aliases) in the user's language (Chinese).
-    > 3. Identify sensitive or technical columns (IDs, Hashes, System Logs) and mark `isVisibleToAI: false`."
+*   **Input**: Table Name, Column Names & Types, Sample Data.
+*   **Prompt**: "Analyze schema and samples to infer business meaning, suggest aliases, and identify sensitive columns."
 *   **Output**: JSON list of `ColumnSemantic` updates.
-*   **Action**: Frontend merges the suggestions into the store. User can manually review/revert.
-
-### 1.3 Prompt Injection
-
-When generating analysis plans (`askAI`), the system prompt generator (`generateSystemPrompt`) must now:
-1.  **Filter**: Exclude columns where `isVisibleToAI === false`.
-2.  **Annotate**: Append aliases to column descriptions.
-    *   *Format*: `Column: "amt" (Type: DOUBLE, Aliases: ["营收", "收入"])`
 
 ---
 
-## 2. Engine Expansion: Connectors (数据库连接)
+## 2. Unified Ingestion Pipeline (The "Wansan Flow")
 
-**Goal**: Pull data from local MySQL/PostgreSQL databases into Wansan for analysis.
+**Goal**: A unified, high-performance architecture to handle ALL data sources (Excel, CSV, JSON, Parquet, Database) with consistent UX.
 
-### 2.1 Connection Management
+### 2.1 The 3-Stage Pipeline
 
-Users should not re-enter credentials every time. We persist connection profiles securely.
+Instead of separate logic for files and databases, we enforce a strict 3-stage pipeline:
 
-*   **Storage**: Global `SettingsStore` (Metadata) + `secure-store` (Passwords).
-*   **Structure**:
-    ```typescript
-    interface DBConnectionConfig {
-      id: string;
-      name: string; // e.g. "Prod Master DB"
-      type: 'mysql' | 'postgres';
-      host: string;
-      port: number;
-      user: string;
-      database: string;
-      // Password is NEVER stored here. It is stored in Keychain via `db_pass_${id}`
-    }
-    ```
+1.  **Stage 1: Inspect (Lightweight)**
+    *   **Goal**: Rapidly identify available resources (Sheets, Tables) without loading data.
+    *   **Excel**: Uses `ExcelJS` streaming (or buffer fallback) to read Sheet names only.
+    *   **Flat Files**: Identity pass (filename).
+    *   **Database**: List tables via SQL `SHOW TABLES`.
+    *   **Result**: A list of "Tasks" in the Wizard UI (Status: `waiting_for_sync`).
 
-### 2.2 Architecture: Node Adapter (Snapshot Mode)
+2.  **Stage 2: Prepare (Staging)**
+    *   **Goal**: Standardize all sources into a DuckDB-friendly format (local CSV or direct read).
+    *   **Trigger**: **Auto-Preloading** immediately after selection.
+    *   **Excel**: Worker converts Sheet -> CSV.
+    *   **Database**: Connector streams `SELECT *` -> CSV.
+    *   **CSV**: Auto-detects encoding (UTF-8 / GBK / GB18030).
+    *   **Parquet**: Zero-copy pass-through.
+    *   **Result**: Task becomes `ready`, with row counts and column previews available.
 
-We do **NOT** use DuckDB native scanners. We use Node.js drivers to stream data into a local DuckDB table.
+3.  **Stage 3: Ingest (Finalize)**
+    *   **Goal**: Create optimized DuckDB tables.
+    *   **Action**: `CREATE TABLE final AS SELECT * FROM read_csv_auto('staged.csv')`.
+    *   **Feature**: Supports `CAST` for type enforcement and `EXCLUDE` for column ignoring.
 
-*   **Drivers**:
-    *   `pg`: PostgreSQL client (Lazy import).
-    *   `mysql2`: MySQL client (Lazy import).
-*   **Flow**:
-    1.  **Connect**: User selects a saved profile -> Main process retrieves password -> Connects.
-    2.  **Select**: List tables. User selects **ONE** table (v1.6 scope).
-    3.  **Ingest**:
-        *   Node.js executes `SELECT * FROM table`.
-        *   Stream rows -> `DuckDB Appender` -> Local `.duckdb` file.
-    4.  **Metadata**: Create a `FileNode` with `sourceType: 'postgres'` (or 'mysql').
+### 2.2 Database Connectors (Node Adapter)
 
-### 2.3 Data Type Mapping
+We use Node.js drivers (`pg`, `mysql2`) to stream data into the Staging Phase.
 
-Node drivers return JS types. We must map them to DuckDB types strictly to prevent precision loss.
+*   **Architecture**: `Stream` -> `fs.createWriteStream` -> `DuckDB read_csv_auto`.
+*   **Why**: This avoids OOM on large tables and leverages DuckDB's parallel CSV reader for ingestion speed.
 
-| Source (SQL) | JS Type | Target (DuckDB) | Strategy |
+### 2.3 File Format Support
+
+| Format | Inspect Strategy | Prepare Strategy | Note |
 | :--- | :--- | :--- | :--- |
-| `VARCHAR`, `TEXT` | `string` | `VARCHAR` | Direct. |
-| `INT`, `BIGINT` | `number`/`string` | `BIGINT` | Handle JS safe integer limits. |
-| `DECIMAL` | `string` | `DECIMAL` | **Critical**: Keep precision. |
-| `DATE` | `Date` (or string) | `DATE` | Extract `YYYY-MM-DD` part only. |
-| `TIME` | `string` | `TIME` | Keep as string `HH:mm:ss`. |
-| `DATETIME`, `TIMESTAMP` | `Date` | `TIMESTAMP` | Convert to UTC Epoch Micros (BigInt). |
-| `BOOL` | `boolean` | `BOOLEAN` | Direct. |
-| `BLOB`, `BYTEA` | `Buffer` | `BLOB` | Encode as Hex/Base64 if needed. |
-| `UUID` | `string` | `UUID` | DuckDB native UUID type. |
-| `JSON` | `object` | `VARCHAR` | `JSON.stringify`. |
+| **Excel (.xlsx)** | `ExcelJS` Stream | Worker -> CSV | Low memory footprint. |
+| **Excel (.xls)** | `ExcelJS` Buffer | Worker -> CSV | Compatibility mode. |
+| **CSV** | DuckDB `DESCRIBE` | Identity + Encoding Check | Supports GBK/GB18030. |
+| **JSON** | `fs.readFile` | DuckDB `read_json_auto` | Auto-detects array/newline. |
+| **Parquet** | DuckDB `DESCRIBE` | DuckDB `read_parquet` | **Zero-Copy**, extremely fast. |
 
 ---
 
-## 3. UI Changes
+## 3. UI/UX Improvements
 
-### 3.1 Schema Editor 2.0
-*   **Grid Layout**: Updated column list to show "Alias" and "Visibility" controls.
-*   **Eye Icon**: A toggle icon 👁️/👁️‍🗨️ to set `isVisibleToAI`.
-*   **Edit Mode**: Click alias/description to edit inline.
+### 3.1 The "Shopping Cart" Wizard
+*   **Unified List**: Files and Database tables coexist in the same task list.
+*   **Auto-Preloading**: Tasks automatically transition from `Pending` -> `Preparing` -> `Ready` without blocking the UI.
+*   **Non-Blocking**: Users can continue adding sources while previous ones are processing.
 
-### 3.2 Ingestion Wizard Upgrade
-*   **Physical Ignore**: In the "Preview" step, add a checkbox column "Import?".
-    *   If unchecked: The column is dropped during `CREATE TABLE` (via `SELECT * EXCLUDE` or explicit column list).
-*   **Connector Tab**: Add a new tab "Database" alongside "File Upload".
+### 3.2 Visual Feedback
+*   **Real-time Stats**: Row/Column counts displayed immediately upon readiness.
+*   **Ignore Column**: In Preview, use a **Ban Icon** (🚫) to explicitly exclude columns. Visual dimming applied to ignored columns.
 
 ---
 
-## 4. Implementation Plan
+## 4. Implementation Status
 
-1.  **Phase 1: Semantic Core**
-    *   Update `TableSchema` types.
-    *   Upgrade Schema Editor UI.
-    *   Implement `analyzeSemantics` API (AI Bridge).
-2.  **Phase 2: Prompt Engineering**
-    *   Update `generateSystemPrompt` to respect visibility and aliases.
-3.  **Phase 3: Connectors**
-    *   Install `pg`, `mysql2`.
-    *   Implement `DBConnectorService` in Main process.
-    *   Add Connector UI in Wizard.
+*   [x] **Semantic Schema**: `ColumnSemantic` structure added.
+*   [x] **AI Analysis**: `analyzeSemantics` API implemented.
+*   [x] **Unified Pipeline**: `FileService` refactored to 3-stage architecture.
+*   [x] **Parquet Support**: Added via DuckDB Native.
+*   [x] **CSV Encoding**: Robust detection for Chinese characters.
+*   [x] **Database Connectors**: MySQL/PostgreSQL streaming implementation.
+*   [x] **Wizard UX**: Auto-preloading and unified task list.

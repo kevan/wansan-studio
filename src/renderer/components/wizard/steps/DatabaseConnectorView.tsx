@@ -6,7 +6,6 @@ import { Input } from '../../ui/input'
 import {
   AlertCircle,
   Check,
-  ChevronRight,
   Database,
   Loader2,
   Plus,
@@ -21,17 +20,29 @@ import { IngestionTask } from '@shared/types/wizard'
 
 export function DatabaseConnectorView() {
   const { dbConnections, addDBConnection, removeDBConnection } = useSettingsStore()
-  const { setTasks, setStep } = useWizardStore()
+  const { tasks, setTasks, mode } = useWizardStore()
   const { t } = useTranslation('common')
 
   const [selectedConnId, setSelectedConnId] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
-  const [isSyncing, setIsSyncing] = useState(false)
   const [tables, setTables] = useState<Array<{ name: string; schema?: string }>>([])
   const [isLoadingTables, setIsLoadingTables] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [testSuccess, setTestSuccess] = useState(false)
+
+  // 1. Recover state (Optional: Auto-select conn if selection exists)
+  useEffect(() => {
+    if (tasks.length > 0) {
+      const dbTask = tasks.find(t => t.connectionId)
+      if (dbTask && dbTask.connectionId) {
+        const conn = dbConnections.find(c => c.id === dbTask.connectionId)
+        if (conn && !selectedConnId) {
+          setSelectedConnId(conn.id)
+        }
+      }
+    }
+  }, [tasks, dbConnections])
 
   // New Connection Form
   const [newConn, setNewConn] = useState<Partial<DBConnectionConfig>>({
@@ -101,47 +112,38 @@ export function DatabaseConnectorView() {
     setSelectedConnId(id)
   }
 
-  const handleSyncTable = async (tableName: string) => {
-    if (!selectedConn) return
-    setIsSyncing(true)
-    setError(null)
-    try {
-      // 1. Backend Sync (Snapshot)
-      const localTableName = `t_${tableName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`
-      const res = await window.electronAPI.syncDBTable(selectedConn, tableName, localTableName)
-      
-      if (!res.success || !res.data) {
-        throw new Error(res.error || 'Sync failed')
-      }
+  const isTableSelected = (tableName: string) => {
+    if (!selectedConnId) return false
+    return tasks.some(t => t.sourceName === tableName && t.connectionId === selectedConnId)
+  }
 
-      // 2. Convert to IngestionTask
-      const task: IngestionTask = {
-        id: crypto.randomUUID(),
-        sourceName: tableName,
-        fileName: `${selectedConn.name} (${selectedConn.type})`,
-        filePath: `db://${selectedConn.id}/${tableName}`, // Virtual path
-        tableName: localTableName,
-        finalTableName: localTableName,
-        finalDisplayName: tableName,
-        columns: res.data.columns.map(c => ({
-          name: c.name,
-          type: c.type as any,
-          isPrimaryKey: false // TODO: Support PK detection
-        })),
-        previewData: [], // Backend already synced, we don't need preview here or we fetch later
-        rowCount: res.data.rowCount,
-        mode: 'import',
-        status: 'pending'
-      }
-
-      // 3. Update Wizard
-      setTasks([task])
-      setStep('preview') // Move to preview step
-    } catch (e: any) {
-      setError(e.message)
-    } finally {
-      setIsSyncing(false)
+  const handleToggleTable = (tableName: string) => {
+    if (!selectedConnId || !selectedConn) return
+    
+    if (isTableSelected(tableName)) {
+      // Remove task
+      setTasks(tasks.filter(t => !(t.sourceName === tableName && t.connectionId === selectedConnId)))
+      return
     }
+
+    // Add Empty Task (Waiting for Sync)
+    const task: IngestionTask = {
+      id: crypto.randomUUID(),
+      sourceName: tableName,
+      fileName: `${selectedConn.name} (${selectedConn.type})`,
+      connectionId: selectedConnId,
+      filePath: '', // Pending sync
+      tableName: '', 
+      finalTableName: '', 
+      finalDisplayName: tableName,
+      columns: [], // Pending sync
+      previewData: [],
+      rowCount: 0,
+      mode: mode, // From store
+      status: 'waiting_for_sync'
+    }
+
+    setTasks([...tasks, task])
   }
 
   return (
@@ -376,45 +378,44 @@ export function DatabaseConnectorView() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {tables.map(table => (
-                    <div
-                      key={table.name}
-                      onClick={() => !isSyncing && handleSyncTable(table.name)}
-                      className={cn(
-                        "group p-4 bg-white border border-zinc-200 rounded-2xl hover:border-indigo-400 hover:bg-indigo-50/30 transition-all cursor-pointer shadow-sm flex items-center justify-between",
-                        isSyncing && "opacity-50 cursor-not-allowed"
-                      )}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="p-2 bg-zinc-50 group-hover:bg-indigo-100 rounded-xl transition-colors">
-                          <Database className="w-4 h-4 text-zinc-400 group-hover:text-indigo-600" />
+                  {tables.map(table => {
+                    const isSelected = isTableSelected(table.name)
+
+                    return (
+                      <div
+                        key={table.name}
+                        onClick={() => handleToggleTable(table.name)}
+                        className={cn(
+                          "group p-4 bg-white border rounded-2xl transition-all cursor-pointer shadow-sm flex items-center justify-between",
+                          isSelected ? "border-indigo-600 ring-1 ring-indigo-600 bg-indigo-50/20" : "border-zinc-200 hover:border-indigo-400 hover:bg-indigo-50/30"
+                        )}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={cn(
+                            "p-2 rounded-xl transition-colors",
+                            isSelected ? "bg-indigo-600 text-white" : "bg-zinc-50 group-hover:bg-indigo-100 text-zinc-400 group-hover:text-indigo-600"
+                          )}>
+                            <Database className="w-4 h-4" />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-bold text-zinc-900 truncate">{table.name}</span>
+                            {table.schema && (
+                              <span className="text-[10px] text-zinc-400 uppercase font-medium">{table.schema}</span>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-sm font-bold text-zinc-900 truncate">{table.name}</span>
-                          {table.schema && (
-                            <span className="text-[10px] text-zinc-400 uppercase font-medium">{table.schema}</span>
-                          )}
+                        <div className={cn(
+                          "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                          isSelected ? "bg-indigo-600 border-indigo-600 text-white" : "border-zinc-200"
+                        )}>
+                          {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                         </div>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
-
-            {/* Loading Overlay for Sync */}
-            {isSyncing && (
-              <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
-                <div className="p-8 bg-white rounded-3xl shadow-2xl border border-zinc-100 flex flex-col items-center gap-4 scale-110">
-                  <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
-                  <div className="text-center">
-                    <p className="text-sm font-black uppercase tracking-[0.2em] text-zinc-900">{t('connector.syncing_snapshot')}</p>
-                    <p className="text-xs text-zinc-400 mt-1 font-medium italic">{t('connector.sync_desc')}</p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-in fade-in">

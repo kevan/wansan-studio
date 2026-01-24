@@ -24,6 +24,7 @@ import { FilterParam } from './schemas/analysis'
 export interface IngestPreCheckParams {
   filePath: string
   targetTableName: string
+  sourceTableName?: string // [NEW] If data is already in a temp table (DB sync)
   sheetName?: string
   uniqueKeys?: string[]
   columnMapping: Record<string, string | null>
@@ -44,6 +45,7 @@ export interface IngestPreCheckResponse {
 export interface AppendDataParams {
   filePath: string
   targetTableName: string
+  sourceTableName?: string // [NEW]
   sheetName?: string
   uniqueKeys?: string[]
   strategy: 'ignore' | 'replace' | 'update'
@@ -55,7 +57,8 @@ export interface AppendDataParams {
 
 export interface CreateTableParams {
   filePath: string
-  tableName: string
+  tableName: string // Target Table Name
+  sourceTableName?: string // [NEW] If data is already in a temp table
   sheetName?: string
   columns: Array<{ name: string; type: string; isIgnored?: boolean }> // User-confirmed types and filters
   tempFilePath?: string // Cached CSV path
@@ -66,6 +69,7 @@ export interface CreateTableParams {
 export interface ValidateColumnTypesParams {
   filePath: string
   tempFilePath?: string
+  sourceTableName?: string // [NEW]
   columns: Array<{ name: string; type: string }>
   readOptions?: Record<string, any>
 }
@@ -79,6 +83,8 @@ export interface ElectronAPI {
   selectFiles: () => Promise<IPCResponse<{ path: string; size: number }[]>>
   selectDirectory: () => Promise<IPCResponse<string>>
   parseFile: (filePath: string) => Promise<ParseFileResponse>
+  inspectFile: (filePath: string) => Promise<IPCResponse<Array<{ sourceName: string, previewHeaders: string[], readOptions?: Record<string, any> }>>> // [NEW] Stage 1
+  prepareFile: (filePath: string, sourceName: string, readOptions?: Record<string, any>) => Promise<IPCResponse<{ tempFilePath: string, rowCount: number, columns: ColumnSchema[], preview: any[] }>> // [NEW] Stage 2
   checkFilesConsistency: (files: FileNode[]) => Promise<IPCResponse>
   validateColumnTypes: (
     params: ValidateColumnTypesParams

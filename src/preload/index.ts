@@ -12,6 +12,8 @@ const electronAPI: ElectronAPI = {
   selectFiles: () => ipcRenderer.invoke('select-files'), // 多文件选择
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
   parseFile: (filePath: string) => ipcRenderer.invoke('parse-file', filePath),
+  inspectFile: (filePath: string) => ipcRenderer.invoke('file:inspect', filePath),
+  prepareFile: (filePath: string, sourceName: string, readOptions?: Record<string, any>) => ipcRenderer.invoke('file:prepare', filePath, sourceName, readOptions),
 
   // 数据库操作
   runSQL: (sql: string) => ipcRenderer.invoke('run-sql', sql),

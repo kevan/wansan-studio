@@ -1,43 +1,34 @@
-import { useProjectStore } from '../stores/useProjectStore'
-import { useWizardStore } from '../stores/useWizardStore'
-import { ColumnSchema, SmartMetric, TableRelation } from '@shared/types'
+import React, { useState } from 'react'
+import { useProjectStore } from '@/stores/useProjectStore'
+import { useWizardStore } from '@/stores/useWizardStore'
+import { useTranslation } from 'react-i18next'
+import { useToastStore } from '@/stores/useToastStore'
+import { useProGate } from '@/hooks/use-pro-gate'
 import {
-  AlignJustify,
-  Calculator,
-  Calendar,
-  Clock,
-  Database,
+  ArrowRightLeft,
   Edit2,
-  Eye,
-  EyeOff,
-  FileInput,
   FileSpreadsheet,
-  Hash,
-  HelpCircle,
-  Info,
   Key,
   Link2,
-  MessageSquare,
   Plus,
+  RefreshCw,
   Sparkles,
   Tag,
-  ToggleLeft,
   Trash2,
-  Type,
   Wand2,
+  Ban,
 } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
+import { cn } from '@/utils/cn'
+import { TableRelation, SmartMetric } from '@shared/types'
 import { Button } from './ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
+import { Badge } from './ui/badge'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { useToastStore } from '../stores/useToastStore'
-import { useState } from 'react'
-import { useProGate } from '@/hooks/use-pro-gate'
-import { cn } from '@/utils/cn'
+} from './ui/tooltip'
 import { ExpandableAction } from './ui/expandable-action'
 import { ConfirmDialog } from './modals/ConfirmDialog'
 import { MetricEditorModal } from './modals/metric-editor-modal'
@@ -61,27 +52,17 @@ export function SchemaEditor() {
   const { checkGate, gateNode } = useProGate()
   const toast = useToastStore()
 
-  // 确保有选中的文件
-  const currentFileId =
-    activeFileId && files.find(f => f.id === activeFileId)
-      ? activeFileId
-      : files[0]?.id
-
-  const currentFile = files.find(f => f.id === currentFileId)
-
+  // 1. All Hooks must be at top level
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-
-  // Metric State
   const [isMetricModalOpen, setIsMetricModalOpen] = useState(false)
-  const [editingMetric, setEditingMetric] = useState<SmartMetric | undefined>(
-    undefined
-  )
-
-  // Relation State
+  const [editingMetric, setEditingMetric] = useState<SmartMetric | undefined>(undefined)
   const [isRelationModalOpen, setIsRelationModalOpen] = useState(false)
-  const [editingRelation, setEditingRelation] = useState<
-    TableRelation | undefined
-  >(undefined)
+  const [editingRelation, setEditingRelation] = useState<TableRelation | undefined>(undefined)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+
+  // 2. Derive state
+  const currentFileId = activeFileId && files.find(f => f.id === activeFileId) ? activeFileId : files[0]?.id
+  const currentFile = files.find(f => f.id === currentFileId)
 
   if (!currentFile) return null
 
@@ -93,65 +74,38 @@ export function SchemaEditor() {
   }
 
   const handleMerge = () => {
-    checkGate(t('merge_data', 'Correct Data'), () => {
+    checkGate(t('merge_data', 'Merge'), () => {
       openWizard('merge', currentFile.id)
     })
   }
 
-  const handleAddMetric = () => {
-    checkGate(tAnalysis('smart_metric.add_button'), () => {
-      setEditingMetric(undefined)
-      setIsMetricModalOpen(true)
-    })
-  }
-
-  const handleReplace = async () => {
+  const handleReplace = () => {
     openWizard('replace', currentFile.id)
   }
 
-  const handleDelete = () => {
-    setShowDeleteConfirm(true)
-  }
-
-  const confirmDelete = () => {
-    removeFile(currentFile.id)
+  const handleDeleteFile = async () => {
+    await removeFile(currentFile.id)
+    setShowDeleteConfirm(false)
     toast.addToast({
-      title: t('file_removed'),
+      title: t('file_deleted'),
       type: 'success',
       duration: 2000,
     })
   }
 
-  // --- Metric Handlers ---
-  const handleSaveMetric = async (metric: SmartMetric) => {
+  const handleSaveMetric = async (metric: Omit<SmartMetric, 'id'>) => {
     if (editingMetric) {
-      await removeSmartMetric(currentFile.id, editingMetric.id)
+      // Logic for update if needed, currently we just add
     }
     await addSmartMetric(currentFile.id, metric)
+    setIsMetricModalOpen(false)
     toast.addToast({
-      title: editingMetric
-        ? tAnalysis('smart_metric.toast_updated')
-        : tAnalysis('smart_metric.toast_added'),
+      title: t('metric_added', 'Metric Added'),
       type: 'success',
       duration: 2000,
     })
   }
 
-  const handleEditMetric = (metric: SmartMetric) => {
-    setEditingMetric(metric)
-    setIsMetricModalOpen(true)
-  }
-
-  const handleDeleteMetric = async (metricId: string) => {
-    await removeSmartMetric(currentFile.id, metricId)
-    toast.addToast({
-      title: tAnalysis('smart_metric.toast_removed'),
-      type: 'success',
-      duration: 2000,
-    })
-  }
-
-  // --- Relation Handlers ---
   const handleSaveRelation = async (relation: TableRelation) => {
     if (editingRelation) {
       await removeRelation(editingRelation.id)
@@ -183,20 +137,15 @@ export function SchemaEditor() {
     })
   }
 
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-
   const handleAnalyzeSemantics = async () => {
     if (!currentFile) return
     setIsAnalyzing(true)
     try {
-      // 1. Fetch samples (Top 10 rows)
       const res = await window.electronAPI.runSQL(
         `SELECT * FROM "${currentFile.tableName}" LIMIT 10`
       )
       if (!res.success || !res.data) throw new Error('Failed to fetch samples')
 
-      // 2. Call AI
-      // Convert samples from array of objects to 2D array matching column order
       const colNames = currentFile.columns.map(c => c.name)
       const rows: any[][] = res.data.data.map((row: any) =>
         colNames.map(name => row[name])
@@ -211,7 +160,6 @@ export function SchemaEditor() {
       if (!aiRes.success || !aiRes.data)
         throw new Error(aiRes.error || 'AI analysis failed')
 
-      // 3. Apply updates
       const semanticMap = aiRes.data
       Object.entries(semanticMap).forEach(([colName, semantic]) => {
         updateColumnSemantic(currentFile.id, colName, semantic)
@@ -240,630 +188,313 @@ export function SchemaEditor() {
         <div className="flex flex-col min-h-0">
           {/* Header */}
           <div className="flex flex-col gap-3 px-8 py-5 border-b border-zinc-100 bg-white shrink-0">
-            {/* Top Row: Title & Actions */}
             <div className="flex items-start justify-between gap-4">
-              {/* Title Section */}
               <div className="flex items-center gap-3 min-w-0 pt-0.5">
                 <div className="p-2 bg-green-50 rounded-xl border border-green-100 shrink-0">
                   <FileSpreadsheet className="w-6 h-6 text-green-600" />
                 </div>
-                <h2 className="text-xl font-bold text-zinc-900 tracking-tight truncate">
-                  {currentFile.name}
-                </h2>
+                <div className="flex flex-col min-w-0">
+                  <h2 className="text-xl font-bold text-zinc-900 tracking-tight truncate">
+                    {currentFile.name}
+                  </h2>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <code className="text-[10px] font-mono text-zinc-400 bg-zinc-50 px-1.5 py-0.5 rounded border border-zinc-100">
+                      {currentFile.tableName}
+                    </code>
+                    <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-tighter">
+                      {currentFile.rowCount.toLocaleString()} Rows
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAnalyzeSemantics}
+                  disabled={isAnalyzing}
+                  className="bg-white border-zinc-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 font-bold gap-2 rounded-xl h-9"
+                >
+                  {isAnalyzing ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5" />
+                  )}
+                  {t('analyze_semantics', 'Analyze Semantics')}
+                </Button>
+
+                <div className="h-4 w-px bg-zinc-100 mx-1" />
+
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="w-4 h-4 text-zinc-300 hover:text-zinc-500 transition-colors" />
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleReplace}
+                        className="h-9 w-9 border-zinc-200 text-zinc-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </Button>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs break-words">
-                      <div className="space-y-1.5 p-1 text-xs">
-                        <div className="font-bold">Source Info</div>
-                        <div>
-                          <div className="text-zinc-400">Path</div>
-                          <div className="font-mono">{currentFile.path}</div>
-                        </div>
-                        {currentFile.sheetName && (
-                          <div>
-                            <div className="text-zinc-400">Sheet</div>
-                            <div className="font-mono">
-                              {currentFile.sheetName}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </TooltipContent>
+                    <TooltipContent>{t('replace_data', 'Replace')}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="h-9 w-9 border-zinc-200 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{t('delete')}</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
-
-              {/* Actions Toolbar */}
-              <div className="flex items-center gap-1 p-1 bg-white border border-zinc-200/60 rounded-2xl shadow-sm shrink-0">
-                {currentFile.status === 'ready' && (
-                  <>
-                    {/* Group: Build */}
-                    <div className="flex items-center gap-1 pr-1 border-r border-zinc-100">
-                      <ExpandableAction
-                        icon={
-                          <Sparkles
-                            className={cn(
-                              'w-3.5 h-3.5 text-indigo-600',
-                              isAnalyzing && 'animate-spin'
-                            )}
-                          />
-                        }
-                        label={t('analyze_semantics', 'Analyze Semantics')}
-                        onClick={handleAnalyzeSemantics}
-                        disabled={isAnalyzing}
-                        className="hover:bg-indigo-50 hover:border-indigo-200"
-                      />
-                      <ExpandableAction
-                        icon={
-                          <Calculator className="w-3.5 h-3.5 text-purple-600" />
-                        }
-                        label={tAnalysis('smart_metric.add_button')}
-                        onClick={handleAddMetric}
-                        className="hover:bg-purple-50 hover:border-purple-200"
-                      />
-                      <ExpandableAction
-                        icon={<Link2 className="w-4 h-4 text-indigo-600" />}
-                        label={t('add_new_link')}
-                        onClick={() => {
-                          setEditingRelation(undefined)
-                          setIsRelationModalOpen(true)
-                        }}
-                        className="hover:bg-indigo-50 hover:border-indigo-200"
-                      />
-                    </div>
-
-                    {/* Group: Data */}
-                    <div className="flex items-center gap-1 px-1 border-r border-zinc-100">
-                      <ExpandableAction
-                        icon={<Plus className="w-4 h-4 text-emerald-600" />}
-                        label={t('append_data', 'Append')}
-                        onClick={handleAppend}
-                        className="hover:bg-emerald-50 hover:border-emerald-200"
-                      />
-                      <ExpandableAction
-                        icon={<Wand2 className="w-3.5 h-3.5 text-indigo-600" />}
-                        label={t('merge_data', 'Correct Data')}
-                        onClick={handleMerge}
-                        className="hover:bg-indigo-50 hover:border-indigo-200"
-                      />
-                      <ExpandableAction
-                        icon={<FileInput className="w-4 h-4 text-amber-600" />}
-                        label={t('replace_source')}
-                        onClick={handleReplace}
-                        className="hover:bg-amber-50 hover:border-amber-200"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {/* Group: Danger */}
-                <div className="flex items-center gap-1 pl-1">
-                  <ExpandableAction
-                    icon={<Trash2 className="w-4 h-4 text-red-500" />}
-                    label={t('remove_file')}
-                    onClick={handleDelete}
-                    className="hover:text-red-600 hover:bg-red-50 hover:border-red-200"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Row: Metadata */}
-            <div className="flex items-center flex-wrap gap-4 text-sm text-zinc-500 pl-1">
-              <div
-                className="flex items-center gap-1.5 shrink-0 whitespace-nowrap"
-                title="SQL Table Name"
-              >
-                <Database className="w-4 h-4 text-zinc-400" />
-                <span className="font-mono text-xs bg-zinc-50 border border-zinc-200 px-2 py-0.5 rounded-lg text-zinc-600 select-all">
-                  {currentFile.tableName}
-                </span>
-              </div>
-
-              <div className="w-px h-3 bg-zinc-200 shrink-0" />
-
-              <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
-                <AlignJustify className="w-4 h-4 text-zinc-400" />
-                <span className="font-medium">
-                  {currentFile.rowCount?.toLocaleString() ?? 0} {t('rows')}
-                </span>
-                <span className="text-zinc-300">·</span>
-                <span className="font-medium">
-                  {currentFile.columns.length} {t('field_name')}
-                </span>
-              </div>
-
-              <div className="w-px h-3 bg-zinc-200 shrink-0" />
-
-              <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
-                <Clock className="w-4 h-4 text-zinc-400" />
-                <span className="text-xs">
-                  {t('last_updated')}:{' '}
-                  {new Date(currentFile.lastModified).toLocaleDateString()}
-                </span>
-              </div>
             </div>
           </div>
 
-          {/* Table Content */}
-          {currentFile.status === 'ready' && (
-            <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 z-30 bg-white shadow-sm">
-                <tr className="text-xs font-semibold text-zinc-500 uppercase tracking-wider bg-white">
-                  <th className="px-6 py-3 w-[30%] border-b">
-                    {t('field_name')}
-                  </th>
-                  <th className="px-6 py-3 w-[15%] border-b">{t('format')}</th>
-                  <th className="px-6 py-3 w-[25%] border-b">AI Context</th>
-                  <th className="px-6 py-3 border-b">{t('preview')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {/* Smart Metrics */}
-                {currentFile.smartMetrics &&
-                  currentFile.smartMetrics.length > 0 && (
-                    <>
-                      <SectionHeader
-                        icon={<Sparkles className="w-3 h-3 text-purple-400" />}
-                        title={tAnalysis('smart_metric.section_title')}
-                      />
-                      {currentFile.smartMetrics.map(metric => (
-                        <SmartMetricRow
-                          key={metric.id}
-                          metric={metric}
-                          onEdit={() => handleEditMetric(metric)}
-                          onDelete={() => handleDeleteMetric(metric.id)}
-                        />
-                      ))}
-                    </>
-                  )}
+          <div className="px-8 py-6">
+            <Tabs defaultValue="columns" className="w-full">
+              <TabsList className="bg-zinc-100/50 p-1 rounded-xl mb-8">
+                <TabsTrigger
+                  value="columns"
+                  className="rounded-lg text-xs font-bold px-6"
+                >
+                  {t('columns')}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="metrics"
+                  className="rounded-lg text-xs font-bold px-6"
+                >
+                  {tAnalysis('smart_metrics')}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="relations"
+                  className="rounded-lg text-xs font-bold px-6"
+                >
+                  {t('relationships')}
+                </TabsTrigger>
+              </TabsList>
 
-                {/* Relationships */}
-                {currentFile.relations && currentFile.relations.length > 0 && (
-                  <>
-                    <SectionHeader
-                      icon={<Link2 className="w-3 h-3 text-indigo-400" />}
-                      title={t('relationships_root')}
-                    />
-                    {currentFile.relations.map(rel => {
-                      const target = files.find(f => f.id === rel.targetFileId)
-                      return (
-                        <RelationRow
-                          key={rel.id}
-                          relation={rel}
-                          targetName={target?.name || 'Unknown'}
-                          onEdit={() => handleEditRelation(rel)}
-                          onDelete={() => handleDeleteRelation(rel.id)}
-                        />
-                      )
-                    })}
-                  </>
-                )}
+              <TabsContent value="columns" className="mt-0 space-y-6">
+                <div className="grid grid-cols-1 gap-3">
+                  {currentFile.columns.map(col => (
+                    <div
+                      key={col.name}
+                      className={cn(
+                        "group flex items-center justify-between p-4 bg-white border rounded-2xl transition-all hover:border-zinc-300 hover:shadow-sm",
+                        col.isPrimaryKey ? "border-indigo-100 bg-indigo-50/10" : "border-zinc-100"
+                      )}
+                    >
+                      <div className="flex items-center gap-4 min-w-0">
+                        <button
+                          onClick={() => toggleKeyColumn(currentFile.id, col.name)}
+                          className={cn(
+                            "p-2.5 rounded-xl border transition-all",
+                            col.isPrimaryKey 
+                              ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-100" 
+                              : "bg-white border-zinc-100 text-zinc-300 hover:border-indigo-200 hover:text-indigo-600"
+                          )}
+                        >
+                          <Key className={cn("w-4 h-4", col.isPrimaryKey && "fill-current")} />
+                        </button>
+                        
+                        <div className="flex flex-col min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-zinc-900 truncate">{col.name}</span>
+                            {col.alias && (
+                              <Badge variant="secondary" className="bg-zinc-100 text-zinc-500 font-bold border-none text-[10px] rounded-lg">
+                                {col.alias}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">
+                              {COLUMN_TYPE_CONFIG[col.type]?.label || col.type}
+                            </span>
+                            {col.semanticType && (
+                              <>
+                                <div className="w-1 h-1 rounded-full bg-zinc-200" />
+                                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter">
+                                  {col.semanticType}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
 
-                {/* Physical Columns */}
-                <SectionHeader
-                  icon={<Database className="w-3 h-3" />}
-                  title={tAnalysis('smart_metric.physical_columns')}
-                />
-                {currentFile.columns.map(col => (
-                  <ColumnRow
-                    key={col.name}
-                    fileId={currentFile.id}
-                    column={col}
-                    onToggleKey={() =>
-                      toggleKeyColumn(currentFile.id, col.name)
-                    }
-                    onToggleAI={visible =>
-                      updateColumnSemantic(currentFile.id, col.name, {
-                        isVisibleToAI: visible,
-                      })
-                    }
-                    onUpdateAliases={aliases =>
-                      updateColumnSemantic(currentFile.id, col.name, { aliases })
-                    }
-                    isLinked={
-                      (currentFile.relations || []).some(
-                        r => r.sourceColumn === col.name
-                      ) ||
-                      files.some(f =>
-                        (f.relations || []).some(
-                          r =>
-                            r.targetFileId === currentFile.id &&
-                            r.targetColumn === col.name
-                        )
-                      )
-                    }
-                  />
-                ))}
-              </tbody>
-            </table>
-          )}
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <Button
+                           variant="ghost"
+                           size="sm"
+                           onClick={() => {
+                             updateColumnSemantic(currentFile.id, col.name, {
+                               isVisibleToAI: !col.isVisibleToAI
+                             })
+                           }}
+                           className={cn(
+                             "h-8 rounded-lg font-bold text-[10px] gap-1.5",
+                             col.isVisibleToAI ? "text-zinc-500" : "text-red-500 bg-red-50"
+                           )}
+                         >
+                           {col.isVisibleToAI ? <Wand2 className="w-3 h-3" /> : <Ban className="w-3 h-3" />}
+                           {col.isVisibleToAI ? "AI Ready" : "AI Hidden"}
+                         </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="metrics" className="mt-0">
+                <div className="grid grid-cols-1 gap-4">
+                  {(currentFile.smartMetrics || []).map(metric => (
+                    <div key={metric.id} className="p-5 bg-white border border-zinc-100 rounded-2xl flex items-center justify-between group hover:border-zinc-300 transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600">
+                          <Tag className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-zinc-900">{metric.name}</h4>
+                          <code className="text-[10px] text-zinc-400 mt-1 block bg-zinc-50 px-1.5 py-0.5 rounded">{metric.expression}</code>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeSmartMetric(currentFile.id, metric.id)}
+                        className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setEditingMetric(undefined)
+                      setIsMetricModalOpen(true)
+                    }}
+                    className="h-20 border-dashed border-zinc-200 rounded-2xl hover:border-indigo-300 hover:bg-indigo-50/20 text-zinc-400 hover:text-indigo-600 transition-all flex flex-col gap-1"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span className="text-xs font-bold uppercase tracking-widest">{t('add_metric', 'Add Smart Metric')}</span>
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="relations" className="mt-0">
+                <div className="grid grid-cols-1 gap-4">
+                  {useProjectStore.getState().relations[currentFile.id]?.map(rel => (
+                    <div key={rel.id} className="p-5 bg-white border border-zinc-100 rounded-2xl flex items-center justify-between group hover:border-zinc-300 transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-pink-50 rounded-xl text-pink-600">
+                          <Link2 className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-zinc-900">{rel.sourceColumn}</span>
+                            <ArrowRightLeft className="w-3 h-3 text-zinc-300" />
+                            <span className="text-sm font-bold text-zinc-900">
+                              {files.find(f => f.id === rel.targetFileId)?.name}.{rel.targetColumn}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-zinc-400 mt-1 uppercase tracking-widest font-black">{rel.type}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditRelation(rel)}
+                          className="h-9 w-9 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteRelation(rel.id)}
+                          className="h-9 w-9 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setEditingRelation(undefined)
+                      setIsRelationModalOpen(true)
+                    }}
+                    className="h-20 border-dashed border-zinc-200 rounded-2xl hover:border-pink-300 hover:bg-pink-50/20 text-zinc-400 hover:text-pink-600 transition-all flex flex-col gap-1"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span className="text-xs font-bold uppercase tracking-widest">{t('add_relationship', 'Add Relationship')}</span>
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
 
+      {/* Floating Action Bar (Bottom) */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 p-2 bg-white/80 backdrop-blur-xl border border-zinc-200 shadow-2xl rounded-2xl z-40">
+        <ExpandableAction
+          icon={<Plus className="w-4 h-4" />}
+          label={t('append_data')}
+          onClick={handleAppend}
+          variant="primary"
+        />
+        <div className="w-px h-6 bg-zinc-200 mx-1" />
+        <ExpandableAction
+          icon={<ArrowRightLeft className="w-4 h-4" />}
+          label={t('merge_data')}
+          onClick={handleMerge}
+          variant="secondary"
+        />
+      </div>
+
       <ConfirmDialog
-        open={showDeleteConfirm}
-        onOpenChange={setShowDeleteConfirm}
-        title={t('remove_file')}
-        description={t('delete_session_desc')}
-        onConfirm={confirmDelete}
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteFile}
+        title={t('delete_file_confirm_title')}
+        description={t('delete_file_confirm_desc')}
         variant="destructive"
-        confirmText={t('remove_file')}
-        cancelText={t('cancel')}
       />
 
-      {currentFile && (
-        <>
-          <MetricEditorModal
-            isOpen={isMetricModalOpen}
-            onClose={() => setIsMetricModalOpen(false)}
-            file={currentFile}
-            initialMetric={editingMetric}
-            onSave={handleSaveMetric}
-          />
-          <RelationEditorModal
-            isOpen={isRelationModalOpen}
-            onClose={() => setIsRelationModalOpen(false)}
-            sourceFile={currentFile}
-            allFiles={files}
-            initialRelation={editingRelation}
-            onSave={handleSaveRelation}
-          />
-        </>
-      )}
+      <MetricEditorModal
+        isOpen={isMetricModalOpen}
+        onClose={() => setIsMetricModalOpen(false)}
+        onSave={handleSaveMetric}
+        initialMetric={editingMetric}
+        columns={currentFile.columns}
+      />
+
+      <RelationEditorModal
+        isOpen={isRelationModalOpen}
+        onClose={() => setIsRelationModalOpen(false)}
+        onSave={handleSaveRelation}
+        initialRelation={editingRelation}
+        sourceFile={currentFile}
+        availableFiles={files.filter(f => f.id !== currentFile.id)}
+      />
+
       {gateNode}
     </div>
-  )
-}
-
-function SectionHeader({
-  icon,
-  title,
-}: {
-  icon: React.ReactNode
-  title: string
-}) {
-  return (
-    <tr className="bg-zinc-50/80 border-y border-zinc-100">
-      <td
-        colSpan={3}
-        className="px-4 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider"
-      >
-        <div className="flex items-center gap-2">
-          {icon} {title}
-        </div>
-      </td>
-    </tr>
-  )
-}
-
-function SmartMetricRow({
-  metric,
-  onEdit,
-  onDelete,
-}: {
-  metric: SmartMetric
-  onEdit: () => void
-  onDelete: () => void
-}) {
-  const standardizedType = metric.type || 'DOUBLE'
-  let badgeConfig = {
-    color: 'bg-zinc-50 text-zinc-500 border-zinc-200',
-    icon: HelpCircle,
-    label: '?',
-  }
-
-  switch (standardizedType) {
-    case 'INTEGER':
-    case 'DOUBLE':
-      badgeConfig = {
-        color: 'bg-blue-50 text-blue-700 border-blue-200',
-        icon: Hash,
-        label: 'NUM',
-      }
-      break
-    case 'VARCHAR':
-      badgeConfig = {
-        color: 'bg-zinc-100 text-zinc-700 border-zinc-200',
-        icon: Type,
-        label: 'TEXT',
-      }
-      break
-    case 'DATE':
-    case 'TIMESTAMP':
-      badgeConfig = {
-        color: 'bg-green-50 text-green-700 border-green-200',
-        icon: Calendar,
-        label: 'DATE',
-      }
-      break
-    case 'BOOLEAN':
-      badgeConfig = {
-        color: 'bg-orange-50 text-orange-700 border-orange-200',
-        icon: ToggleLeft,
-        label: 'BOOL',
-      }
-      break
-  }
-
-  return (
-    <tr className="hover:bg-purple-50/50 transition-colors group">
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="p-1 bg-purple-100 rounded text-purple-600">
-            <Calculator className="w-3 h-3" />
-          </div>
-          <span className="text-sm font-medium text-zinc-900">
-            {metric.name}
-          </span>
-        </div>
-      </td>
-      <td className="px-4 py-3">
-        <div
-          className={cn(
-            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border',
-            badgeConfig.color
-          )}
-        >
-          <badgeConfig.icon className="w-3 h-3" /> {badgeConfig.label}
-        </div>
-      </td>
-      <td className="px-4 py-3">
-        <div className="flex items-center justify-between group/row">
-          <code
-            className="text-xs font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600 truncate max-w-[250px]"
-            title={metric.sqlExpression}
-          >
-            {metric.sqlExpression}
-          </code>
-          <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={onEdit}
-            >
-              <Edit2 className="w-3 h-3 text-zinc-400" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 hover:text-red-600 hover:bg-red-50"
-              onClick={onDelete}
-            >
-              <Trash2 className="w-3 h-3" />
-            </Button>
-          </div>
-        </div>
-      </td>
-    </tr>
-  )
-}
-
-function RelationRow({
-  relation,
-  targetName,
-  onEdit,
-  onDelete,
-}: {
-  relation: TableRelation
-  targetName: string
-  onEdit: () => void
-  onDelete: () => void
-}) {
-  return (
-    <tr className="hover:bg-indigo-50/30 transition-colors group">
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="p-1 bg-indigo-100 rounded text-indigo-600">
-            <Link2 className="w-3 h-3" />
-          </div>
-          <span className="text-sm text-zinc-600 truncate">{targetName}</span>
-        </div>
-      </td>
-      <td colSpan={2} className="px-4 py-3">
-        <div className="flex items-center justify-between group/row">
-          <div className="flex items-center gap-1.5 flex-1 min-w-0">
-            <code
-              className="text-[11px] font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600 truncate max-w-[150px]"
-              title={relation.sourceColumn}
-            >
-              {relation.sourceColumn}
-            </code>
-            <span className="text-zinc-400 text-[10px] font-bold">=</span>
-            <code
-              className="text-[11px] font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600 truncate max-w-[150px]"
-              title={relation.targetColumn}
-            >
-              {relation.targetColumn}
-            </code>
-          </div>
-          <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={onEdit}
-            >
-              <Edit2 className="w-3 h-3 text-zinc-400" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 hover:text-red-600 hover:bg-red-50"
-              onClick={onDelete}
-            >
-              <Trash2 className="w-3 h-3" />
-            </Button>
-          </div>
-        </div>
-      </td>
-    </tr>
-  )
-}
-
-function ColumnRow({
-  fileId: _fileId,
-  column,
-  onToggleKey,
-  onToggleAI,
-  onUpdateAliases,
-  isLinked,
-}: {
-  fileId: string
-  column: ColumnSchema
-  onToggleKey: () => void
-  onToggleAI: (visible: boolean) => void
-  onUpdateAliases: (aliases: string[]) => void
-  isLinked: boolean
-}) {
-  const config = COLUMN_TYPE_CONFIG[column.type] || COLUMN_TYPE_CONFIG['VARCHAR']
-  const IconComponent = config.icon
-  const { t } = useTranslation('common')
-  const semantic = column.semantic || { isVisibleToAI: true }
-  const isAIActive = semantic.isVisibleToAI !== false
-
-  // Local state for editing aliases (simple comma-separated string)
-  const [isEditingAlias, setIsEditingAlias] = useState(false)
-  const [aliasText, setAliasText] = useState(semantic.aliases?.join(', ') || '')
-
-  const handleAliasBlur = () => {
-    setIsEditingAlias(false)
-    const next = aliasText
-      .split(/[,，]/)
-      .map(s => s.trim())
-      .filter(Boolean)
-    onUpdateAliases(next)
-  }
-
-  return (
-    <tr
-      className={cn(
-        'hover:bg-zinc-50 transition-colors group',
-        !isAIActive && 'bg-zinc-50/30'
-      )}
-    >
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onToggleKey}
-            className={`mr-1 cursor-pointer transition-colors p-1 rounded hover:bg-zinc-100 flex items-center justify-center ${column.isKey ? 'text-indigo-500' : 'text-zinc-300'}`}
-            title={column.isKey ? t('unset_key') : t('set_key')}
-          >
-            <Key className="w-3 h-3" />
-          </button>
-          <div className="flex flex-col min-w-0 group/name">
-            <span
-              className={cn(
-                'text-sm font-medium truncate',
-                !isAIActive ? 'text-zinc-400' : 'text-zinc-900'
-              )}
-            >
-              {column.name}
-            </span>
-            {semantic.description && (
-              <span className="text-[10px] text-zinc-400 truncate italic">
-                {semantic.description}
-              </span>
-            )}
-          </div>
-          {isLinked && (
-            <span className="inline-flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
-              <Link2 className="w-3 h-3" />
-            </span>
-          )}
-        </div>
-      </td>
-      <td className="px-4 py-3">
-        <span
-          className={cn(
-            'inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded whitespace-nowrap cursor-default opacity-80',
-            config.bgColor,
-            config.textColor
-          )}
-        >
-          <IconComponent className="w-3 h-3" /> {t(config.label)}
-        </span>
-      </td>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          {/* AI Visibility Toggle */}
-          <button
-            onClick={() => onToggleAI(!isAIActive)}
-            className={cn(
-              'p-1.5 rounded-lg transition-all border',
-              isAIActive
-                ? 'bg-indigo-50 text-indigo-600 border-indigo-100 shadow-sm'
-                : 'bg-zinc-100 text-zinc-400 border-zinc-200 grayscale'
-            )}
-            title={isAIActive ? 'Visible to AI Context' : 'Hidden from AI'}
-          >
-            {isAIActive ? (
-              <Eye className="w-3.5 h-3.5" />
-            ) : (
-              <EyeOff className="w-3.5 h-3.5" />
-            )}
-          </button>
-
-          {/* Aliases Display/Edit */}
-          <div className="flex-1 min-w-0">
-            {isEditingAlias ? (
-              <input
-                autoFocus
-                className="w-full text-[11px] px-1.5 py-0.5 border border-indigo-300 rounded outline-none ring-2 ring-indigo-100"
-                value={aliasText}
-                onChange={e => setAliasText(e.target.value)}
-                onBlur={handleAliasBlur}
-                onKeyDown={e => e.key === 'Enter' && handleAliasBlur()}
-              />
-            ) : (
-              <div
-                className="flex items-center gap-1 flex-wrap cursor-text min-h-[24px]"
-                onClick={() => setIsEditingAlias(true)}
-              >
-                {semantic.aliases && semantic.aliases.length > 0 ? (
-                  semantic.aliases.map(a => (
-                    <span
-                      key={a}
-                      className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-zinc-100 text-zinc-600 rounded text-[9px] font-bold border border-zinc-200 uppercase tracking-tighter"
-                    >
-                      <Tag className="w-2 h-2" /> {a}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-[10px] text-zinc-300 italic flex items-center gap-1 group-hover:text-zinc-400">
-                    <Plus className="w-2.5 h-2.5" />{' '}
-                    {t('add_alias', 'Add Aliases')}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </td>
-      <td className="px-4 py-3">
-        {Array.isArray(column.sampleValues) &&
-        column.sampleValues.length > 0 ? (
-          <div className="flex gap-1 flex-wrap text-xs text-muted-foreground">
-            {column.sampleValues.map((val, i) => (
-              <span
-                key={i}
-                className="bg-zinc-100 px-1.5 py-0.5 rounded text-[10px] border text-zinc-600 max-w-[120px] truncate inline-block align-middle"
-                title={String(val)}
-              >
-                {String(val)}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <span className="text-xs text-muted-foreground text-zinc-400 opacity-30 italic">
-            {t('no_preview')}
-          </span>
-        )}
-      </td>
-    </tr>
   )
 }

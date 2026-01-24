@@ -40,6 +40,12 @@ export function DataIngestionWizard() {
   const { t } = useTranslation('common')
   const toast = useToastStore()
 
+  const [isValidating, setIsValidating] = useState(false)
+  const [validationError, setValidationError] = useState<{
+    title: string;
+    message: string;
+  } | null>(null)
+
   const handleCancel = async () => {
     // Collect temp files from all tasks
     const tempFiles = tasks.map(t => t.tempFilePath).filter(Boolean) as string[]
@@ -176,7 +182,11 @@ export function DataIngestionWizard() {
             tableName: finalTableName,
             sheetName:
               task.sourceName === task.fileName ? undefined : task.sourceName,
-            columns: task.columns.map(c => ({ name: c.name, type: c.type })),
+            columns: task.columns.map(c => ({
+              name: c.name,
+              type: c.type,
+              isIgnored: c.isIgnored,
+            })),
             tempFilePath: task.tempFilePath, // Pass cached CSV path
             limitRows,
             readOptions: task.readOptions,
@@ -276,12 +286,6 @@ export function DataIngestionWizard() {
     }
   }
 
-  const [isValidating, setIsValidating] = useState(false)
-  const [validationError, setValidationError] = useState<{
-    title: string
-    message: string
-  } | null>(null)
-
   const handleNext = async () => {
     // Multi-task navigation within a step
     if (step === 'preview') {
@@ -301,27 +305,20 @@ export function DataIngestionWizard() {
 
           if (!res.success || !res.data?.valid) {
             const rawError = res.error || res.data?.error || ''
-
             const detail = res.data?.errorDetail
-
             const displayTitle = t('wizard.type_validation_failed')
-
             let displayDesc = rawError.split('\n')[0]
 
             if (detail) {
               displayDesc = t('wizard.type_conversion_error', {
                 column: detail.column,
-
                 value: detail.value,
-
                 type: detail.type,
               })
             }
 
             setValidationError({ title: displayTitle, message: displayDesc })
-
             setIsValidating(false)
-
             return // Block navigation
           }
         } catch (e) {
@@ -341,7 +338,22 @@ export function DataIngestionWizard() {
 
     // Step transitions
     if (step === 'select') {
-      if (tasks.length > 0) setStep('preview')
+      const isSyncing = tasks.some(t => t.status === 'syncing' || t.status === 'waiting_for_sync')
+      const hasErrors = tasks.some(t => t.status === 'error')
+      
+      if (isSyncing) {
+        // UI is already showing loading state, just block navigation
+        return 
+      }
+
+      if (hasErrors) {
+        useUIStore.getState().showError(t('wizard.fix_errors'), 'Please remove failed tasks before proceeding.')
+        return
+      }
+
+      if (tasks.length === 0) return
+
+      setStep('preview')
     } else if (step === 'preview') {
       setStep('finalize')
     } else if (step === 'finalize') {
@@ -350,63 +362,43 @@ export function DataIngestionWizard() {
   }
 
   const handleBack = () => {
-    // Multi-task navigation within a step
     if (step === 'preview') {
       if (currentTaskIndex > 0) {
         prevTask()
         return
       }
     }
-
-    // Step transitions
     if (step === 'preview') setStep('select')
     else if (step === 'finalize') setStep('preview')
   }
 
   const isNextDisabled = useMemo(() => {
     const currentTask = tasks[currentTaskIndex]
-    if (!currentTask) return true
-
     if (step === 'select') return tasks.length === 0
+    if (!currentTask) return true
 
     if (step === 'preview' && mode === 'merge') {
       const hasMergeKeys = (currentTask.mergeKeys || []).length > 0
-      const hasUpdateColumns = Object.entries(
-        currentTask.columnMapping || {}
-      ).some(
-        ([targetCol, sourceCol]) =>
-          sourceCol !== null &&
-          !(currentTask.mergeKeys || []).includes(targetCol)
+      const hasUpdateColumns = Object.entries(currentTask.columnMapping || {}).some(
+        ([targetCol, sourceCol]) => sourceCol !== null && !(currentTask.mergeKeys || []).includes(targetCol)
       )
       return !hasMergeKeys || !hasUpdateColumns
     }
 
-    // Append Mode: Ensure at least one column is mapped
     if (step === 'preview' && mode === 'append') {
-      const hasMappings = Object.values(currentTask.columnMapping || {}).some(
-        source => source !== null
-      )
+      const hasMappings = Object.values(currentTask.columnMapping || {}).some(source => source !== null)
       return !hasMappings
     }
 
     if (step === 'finalize' && mode === 'import') {
-      // Check collision with existing files
-      const collisionWithFiles = files.some(
-        f => f.tableName === currentTask.finalTableName
-      )
-      // Check collision with other tasks in the wizard
-      const collisionWithTasks = tasks.some(
-        (t, idx) =>
-          idx !== currentTaskIndex &&
-          t.finalTableName === currentTask.finalTableName
-      )
-
-      return (
-        !currentTask?.finalTableName || collisionWithFiles || collisionWithTasks
-      )
+      const collisionWithFiles = files.some(f => f.tableName === currentTask.finalTableName)
+      const collisionWithTasks = tasks.some((t, idx) => idx !== currentTaskIndex && t.finalTableName === currentTask.finalTableName)
+      return !currentTask?.finalTableName || collisionWithFiles || collisionWithTasks
     }
     return false
   }, [step, tasks, currentTaskIndex, mode, files])
+
+  const isSyncing = tasks.some(t => t.status === 'syncing')
 
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && handleCancel()}>
@@ -438,70 +430,43 @@ export function DataIngestionWizard() {
         </div>
 
         <div className="px-8 py-5 border-t border-zinc-100 bg-white flex justify-between shrink-0">
-          <Button
-            variant="ghost"
-            onClick={handleCancel}
-            className="text-zinc-500"
-          >
+          <Button variant="ghost" onClick={handleCancel} className="text-zinc-500">
             {t('cancel')}
           </Button>
           <div className="flex gap-3">
             <Button
               variant="outline"
               onClick={handleBack}
-              disabled={step === 'select' && currentTaskIndex === 0}
+              disabled={(step === 'select' && currentTaskIndex === 0) || isSyncing}
               className="border-zinc-200"
             >
               {t('wizard.back')}
             </Button>
             <Button
               onClick={handleNext}
-              disabled={isNextDisabled || isValidating}
+              disabled={isNextDisabled || isValidating || isSyncing}
               className="bg-black hover:bg-zinc-800 text-white px-8 font-bold"
             >
-              {isValidating && (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              )}
+              {(isValidating || isSyncing) && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               {step === 'finalize'
-                ? mode === 'append'
-                  ? t('wizard.append_now')
-                  : mode === 'replace'
-                    ? t('wizard.replace_now')
-                    : mode === 'merge'
-                      ? t('wizard.merge_now')
-                      : t('wizard.import_now')
-                : tasks.length > 1 &&
-                    step === 'preview' &&
-                    currentTaskIndex < tasks.length - 1
-                  ? t('wizard.next_task')
-                  : t('wizard.next')}
+                ? mode === 'append' ? t('wizard.append_now') : mode === 'replace' ? t('wizard.replace_now') : mode === 'merge' ? t('wizard.merge_now') : t('wizard.import_now')
+                : tasks.length > 1 && step === 'preview' && currentTaskIndex < tasks.length - 1 ? t('wizard.next_task') : t('wizard.next')}
             </Button>
           </div>
         </div>
       </DialogContent>
 
-      {/* Type Validation Error Confirmation Dialog */}
-      <Dialog
-        open={!!validationError}
-        onOpenChange={open => !open && setValidationError(null)}
-      >
+      <Dialog open={!!validationError} onOpenChange={open => !open && setValidationError(null)}>
         <DialogContent className="max-w-md p-6">
           <div className="flex flex-col items-center text-center gap-4 py-4">
             <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-600">
               <AlertCircle className="w-6 h-6" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-lg font-bold text-zinc-900">
-                {validationError?.title}
-              </h3>
-              <p className="text-sm text-zinc-500 leading-relaxed">
-                {validationError?.message}
-              </p>
+              <h3 className="text-lg font-bold text-zinc-900">{validationError?.title}</h3>
+              <p className="text-sm text-zinc-500 leading-relaxed">{validationError?.message}</p>
             </div>
-            <Button
-              className="mt-2 w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold"
-              onClick={() => setValidationError(null)}
-            >
+            <Button className="mt-2 w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold" onClick={() => setValidationError(null)}>
               {t('confirm')}
             </Button>
           </div>

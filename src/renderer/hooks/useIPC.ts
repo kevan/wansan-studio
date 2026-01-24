@@ -23,9 +23,11 @@ import { InsightGenerationContext } from '@shared/types/dashboard.ts'
  */
 const mockIPC: ElectronAPI = {
   invoke: async () => ({ success: true }),
-  selectFile: async () => ({ success: true, data: '' }),
-  selectFiles: async () => ({ success: true, data: [] }),
-  selectDirectory: async () => ({ success: true, data: '/mock/dir' }),
+  selectFile: () => Promise.resolve({ success: true, data: '' }),
+  selectFiles: () => Promise.resolve({ success: true, data: [] }),
+  inspectFile: () => Promise.resolve({ success: true, data: [] }),
+  prepareFile: () => Promise.resolve({ success: true, data: { tempFilePath: '', rowCount: 0, columns: [], preview: [] } }),
+  selectDirectory: () => Promise.resolve({ success: true, data: '' }),
   parseFile: async () => ({ success: true, data: [] }),
   runSQL: async (): Promise<RunSQLResponse> => {
     await new Promise(r => setTimeout(r, 500))

@@ -115,27 +115,21 @@ export async function ingestExcelFile(
   }) => void,
   prefix: string = 't_',
   typesParam?: string,
-  limitRows?: number
-): Promise<TableSchema[]> {
-  // Resolve worker path reliably using app.getAppPath()
-  // This works for both Dev (root/dist/...) and Prod (app.asar/dist/...)
+  limitRows?: number,
+  type: 'inspect' | 'convert' = 'convert' // [NEW]
+): Promise<any[]> {
   const workerPath = path.join(
     app.getAppPath(),
     'dist/main/workers/excelWorker.js'
   )
 
-  // Use a dedicated subdirectory for temp files
   const tempDir = await TempFileManager.ensureTempDir()
-  console.log('[Ingestion] Using temp dir:', tempDir)
 
   return new Promise((resolve, reject) => {
-    console.log('[Ingestion] Forking worker at:', workerPath)
-    const worker = fork(workerPath, [], {
-      execArgv: [], // No special args needed
-    })
+    const worker = fork(workerPath, [], { execArgv: [] })
 
-    console.log('[Ingestion] Sending payload to worker...')
     worker.send({
+      type, // [NEW]
       filePath,
       outputDir: tempDir,
       targetSheetName,
@@ -144,23 +138,19 @@ export async function ingestExcelFile(
     })
 
     worker.on('message', async (message: any) => {
-      console.log('[Ingestion] Received message type:', message.type)
       if (message.type === 'progress') {
-        if (onProgress) {
-          onProgress({
-            rowCount: message.rowCount,
-            isPercentage: message.isPercentage,
-            progress: message.progress,
-          })
-        }
+        if (onProgress) onProgress(message)
         return
       }
 
       if (message.success) {
-        console.log(
-          '[Ingestion] Worker reported success. Processing results...'
-        )
+        if (type === 'inspect') {
+          resolve(message.data) // [{ sourceName, previewHeaders }]
+          return
+        }
+
         const results: TableSchema[] = []
+// ... (rest of convert logic remains same)
         const { data } = message
 
         try {
@@ -248,7 +238,11 @@ export async function ingestExcelFile(
           reject(dbError)
         }
       } else {
-        reject(new Error(message.error))
+        const err = new Error(message.error || 'Unknown Worker Error')
+        if (message.stack) {
+           err.stack = message.stack
+        }
+        reject(err)
       }
     })
 

@@ -12,10 +12,20 @@ export interface ColumnConfig {
   validationMessage?: string
 }
 
+export type IngestionStatus = 
+  | 'pending' 
+  | 'waiting_for_sync' // Selected but data not fetched
+  | 'syncing' // [NEW] Fetching data...
+  | 'ready' // [NEW] Data fetched, ready for preview
+  | 'processing' // Final ingestion
+  | 'completed' 
+  | 'error'
+
 export interface IngestionTask {
   id: string
   sourceName: string // Sheet name or file name
   fileName: string
+  connectionId?: string // [NEW] For DB tasks
   filePath: string
   tempFilePath?: string // Path to cached temp file (e.g. converted CSV)
   tableName: string // Temp table name in DB
@@ -40,7 +50,7 @@ export interface IngestionTask {
       extra: string[]
     }
   }
-  status: 'pending' | 'processing' | 'completed' | 'error'
+  status: IngestionStatus
   error?: string
   readOptions?: Record<string, any>
 }
@@ -49,16 +59,15 @@ export interface WizardState {
   isOpen: boolean
   step: WizardStep
   mode: WizardMode
-  targetTableId?: string // Add this
-
-  // Source Data
+  targetTableId?: string
+  // For file mode
   selectedFiles: { path: string; name: string; size: number }[]
-
-  // Tasks (One per sheet/file)
+  
   tasks: IngestionTask[]
   currentTaskIndex: number
   tempTableNames: string[] // Track created temp tables
 
   // UI Helpers
   isProcessing: boolean
+  isDbSelectorOpen: boolean // [NEW] Control DB Selection Dialog
 }
