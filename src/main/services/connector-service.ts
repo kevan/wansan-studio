@@ -14,6 +14,31 @@ export interface DBTableInfo {
 }
 
 /**
+ * Helper to correctly quote table names.
+ * Postgres: "schema"."table" or "table"
+ * MySQL: `table`
+ */
+function escapeTableName(fullTableName: string, type: 'postgres' | 'mysql'): string {
+  if (type === 'postgres') {
+    if (fullTableName.includes('.')) {
+      const parts = fullTableName.split('.')
+      return `"${parts[0]}"."${parts[1]}"`
+    }
+    return `"${fullTableName}"`
+  } else {
+    return `\`${fullTableName}\``
+  }
+}
+
+function parseTableId(fullId: string): { schema?: string; table: string } {
+  if (fullId.includes('.')) {
+    const [schema, table] = fullId.split('.')
+    return { schema, table }
+  }
+  return { table: fullId }
+}
+
+/**
  * 高性能 CSV 格式化器，支持流式处理
  * 确保大数据量下内存占用极低，且正确处理 CSV 转义
  */
@@ -138,141 +163,100 @@ export class DBConnectorService {
   /**
    * 获取表结构和预览数据
    */
-  async previewTable(config: DBConnectionConfig, tableName: string) {
-    const password = secureGet(`db_pass_${config.id}`) || ''
-    
-    if (config.type === 'postgres') {
-      const { Client } = await import('pg')
-      const client = new Client({ host: config.host, port: config.port, user: config.user, password, database: config.database })
-      await client.connect()
+    async previewTable(config: DBConnectionConfig, tableName: string) {
+      const password = secureGet(`db_pass_${config.id}`) || ''
+      const escapedName = escapeTableName(tableName, config.type)
       
-      const colRes = await client.query(`
-        SELECT column_name, data_type, is_nullable
-        FROM information_schema.columns 
-        WHERE table_name = $1
-      `, [tableName])
-      
-      const dataRes = await client.query(`SELECT * FROM "${tableName}" LIMIT 100`)
-      const countRes = await client.query(`SELECT COUNT(*) as count FROM "${tableName}"`) 
-      
-      await client.end()
-      
-      return {
-        columns: colRes.rows.map(r => ({
-          name: r.column_name,
-          type: normalizeDuckDBType(r.data_type),
-          nullable: r.is_nullable === 'YES'
-        })),
-        preview: dataRes.rows,
-        rowCount: parseInt(countRes.rows[0].count)
-      }
-    } else {
-      const mysql = await import('mysql2/promise')
-      const conn = await mysql.createConnection({
-        host: config.host,
-        port: config.port,
-        user: config.user,
-        password,
-        database: config.database,
-        charset: 'UTF8MB4',
-        decimalNumbers: true
-      })
-      
-      await conn.query("SET NAMES 'utf8mb4'")
-      
-      const [cols] = await conn.execute(`DESCRIBE 
-${tableName}
-`)
-      const [data] = await conn.execute(`SELECT * FROM 
-${tableName}
- LIMIT 100`)
-      const [count] = await conn.execute(`SELECT COUNT(*) as count FROM 
-${tableName}
-`)
-      
-      await conn.end()
-      
-      return {
-        columns: (cols as any[]).map(r => ({
-          name: r.Field,
-          type: normalizeDuckDBType(r.Type),
-          nullable: r.Null === 'YES'
-        })),
-        preview: data as any[],
-        rowCount: (count as any[])[0].count
+      if (config.type === 'postgres') {
+        const { Client } = await import('pg')
+        const client = new Client({ host: config.host, port: config.port, user: config.user, password, database: config.database })
+        await client.connect()
+        
+        const { schema, table } = parseTableId(tableName)
+        const colQuery = `
+          SELECT column_name, data_type, is_nullable
+          FROM information_schema.columns 
+          WHERE table_name =    
+          ${schema ? 'AND table_schema = $2' : ''}
+        `
+        const params = schema ? [table, schema] : [table]
+        const colRes = await client.query(colQuery, params)
+        
+        const dataRes = await client.query(`SELECT * FROM ${escapedName} LIMIT 100`)
+        const countRes = await client.query(`SELECT COUNT(*) as count FROM ${escapedName}`) 
+        
+        await client.end()
+        
+        return {
+          columns: colRes.rows.map(r => ({
+            name: r.column_name,
+            type: normalizeDuckDBType(r.data_type),
+            nullable: r.is_nullable === 'YES'
+          })),
+          preview: dataRes.rows,
+          rowCount: parseInt(countRes.rows[0].count)
+        }
+      } else {
+        const mysql = await import('mysql2/promise')
+        const conn = await mysql.createConnection({
+          host: config.host, port: config.port, user: config.user, password, database: config.database,
+          charset: 'UTF8MB4', decimalNumbers: true
+        })
+        await conn.query("SET NAMES 'utf8mb4'")
+        const [cols] = await conn.execute(`DESCRIBE ${escapedName}`)
+        const [data] = await conn.execute(`SELECT * FROM ${escapedName} LIMIT 100`)
+        const [count] = await conn.execute(`SELECT COUNT(*) as count FROM ${escapedName}`)
+        await conn.end()
+        return {
+          columns: (cols as any[]).map(r => ({
+            name: r.Field,
+            type: normalizeDuckDBType(r.Type),
+            nullable: r.Null === 'YES'
+          })),
+          preview: data as any[],
+          rowCount: (count as any[])[0].count
+        }
       }
     }
-  }
 
   /**
    * Sync table data to local DuckDB (Snapshot Mode)
    * Using Streaming to support massive datasets.
    * v1.6.2: Stops at CSV generation to align with Excel workflow.
    */
-  async syncTable(config: DBConnectionConfig, tableName: string, localTableName: string) {
-    const preview = await this.previewTable(config, tableName)
-    const columnNames = preview.columns.map(c => c.name)
-    
-    // 1. Prepare Temp CSV File
-    const tempFileName = `db_cache_${Date.now()}.csv`
-    const tempPath = path.join(app.getPath('temp'), tempFileName)
-    const writeStream = fs.createWriteStream(tempPath)
-    
-    console.log(`[Connector] Streaming sync to disk: ${tableName} -> ${tempPath}`)
-
-    try {
-      if (config.type === 'postgres') {
-          const { Client } = await import('pg')
-          const QueryStream = (await import('pg-query-stream')).default
-          const client = new Client({ 
-            host: config.host, 
-            port: config.port, 
-            user: config.user, 
-            password: secureGet(`db_pass_${config.id}`) || '', 
-            database: config.database 
-          })
-          await client.connect()
-          const query = new QueryStream(`SELECT * FROM "${tableName}"`)
-          const stream = client.query(query)
-          
-          await pipeline(stream, new CSVFormatter(columnNames), writeStream)
-          await client.end()
-      } else {
-          const mysql = await import('mysql2')
-          const conn = mysql.createConnection({ 
-            host: config.host, 
-            port: config.port, 
-            user: config.user, 
-            password: secureGet(`db_pass_${config.id}`) || '', 
-            database: config.database, 
-            charset: 'UTF8MB4',
-            decimalNumbers: true
-          })
-          
-          await new Promise((resolve, reject) => {
-            conn.query("SET NAMES 'utf8mb4'", (err) => err ? reject(err) : resolve(true))
-          })
-          
-          const stream = conn.query(`SELECT * FROM \`${tableName}\``).stream()
-          
-          await pipeline(stream, new CSVFormatter(columnNames), writeStream)
-          conn.end()
+    async syncTable(config: DBConnectionConfig, tableName: string, localTableName: string) {
+      const preview = await this.previewTable(config, tableName)
+      const columnNames = preview.columns.map(c => c.name)
+      const escapedName = escapeTableName(tableName, config.type)
+      
+      const tempFileName = `db_cache_${Date.now()}.csv`
+      const tempPath = path.join(app.getPath('temp'), tempFileName)
+      const writeStream = fs.createWriteStream(tempPath)
+      
+      console.log(`[Connector] Streaming sync to disk: ${tableName} -> ${tempPath}`)
+  
+      try {
+        if (config.type === 'postgres') {
+            const { Client } = await import('pg')
+            const QueryStream = (await import('pg-query-stream')).default
+            const client = new Client({ host: config.host, port: config.port, user: config.user, password: secureGet(`db_pass_${config.id}`) || '', database: config.database })
+            await client.connect()
+            const query = new QueryStream(`SELECT * FROM ${escapedName}`)
+            const stream = client.query(query)
+            await pipeline(stream, new CSVFormatter(columnNames), writeStream)
+            await client.end()
+        } else {
+            const mysql = await import('mysql2')
+            const conn = mysql.createConnection({ host: config.host, port: config.port, user: config.user, password: secureGet(`db_pass_${config.id}`) || '', database: config.database, charset: 'UTF8MB4', decimalNumbers: true })
+            await new Promise((res, rej) => conn.query("SET NAMES 'utf8mb4'", (err) => err ? rej(err) : res(true)))
+            const stream = conn.query(`SELECT * FROM ${escapedName}`).stream()
+            await pipeline(stream, new CSVFormatter(columnNames), writeStream)
+            conn.end()
+        }
+        return { success: true, rowCount: preview.rowCount, columns: preview.columns, preview: preview.preview, tempFilePath: tempPath }
+      } catch (error) {
+        console.error('[Connector] Streaming sync failed:', error)
+        await fs.unlink(tempPath).catch(() => {})
+        throw error
       }
-
-      console.log(`[Connector] CSV generation complete: ${tempPath}`)
-
-      return { 
-        success: true, 
-        rowCount: preview.rowCount, 
-        columns: preview.columns,
-        preview: preview.preview,
-        tempFilePath: tempPath // [IMPORTANT] Return path instead of table name
-      }
-    } catch (error) {
-      console.error('[Connector] Streaming sync failed:', error)
-      // Cleanup on failure
-      await fs.unlink(tempPath).catch(() => {})
-      throw error
-    }
-  }
-}
+    }}

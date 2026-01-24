@@ -1,36 +1,59 @@
--- 1. 显式设置会话编码
-SET NAMES utf8mb4;
-SET character_set_client = utf8mb4;
-
--- 2. 确保数据库级别也是 utf8mb4 (如果已创建则修改)
-ALTER DATABASE test_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- 3. 创建表时显式指定编码
-CREATE TABLE products (
+-- Basic Users Table
+CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    `uuid` CHAR(36) NOT NULL,
-    `产品名称` VARCHAR(255) NOT NULL,
-    `category` VARCHAR(100),
-    `price` DECIMAL(10, 2),
-    `库存数量` INT,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'active'
+);
 
-CREATE TABLE order_logs (
-    log_id BIGINT PRIMARY KEY,
-    `order_sn` VARCHAR(100),
-    `status` VARCHAR(20),
-    `raw_payload` TEXT,
-    `remark` TEXT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO users (username, email) VALUES 
+('alice', 'alice@example.com'),
+('bob', 'bob@example.com');
 
--- 4. 插入数据
-INSERT INTO products (`uuid`, `产品名称`, `category`, `price`, `库存数量`) VALUES
-('550e8400-e29b-41d4-a716-446655440000', '高性能笔记本', 'Electronics', 8999.00, 50),
-('550e8400-e29b-41d4-a716-446655440001', '人体工学椅', 'Furniture', 1200.50, 100),
-('550e8400-e29b-41d4-a716-446655440002', '4K显示器', 'Electronics', 2500.00, 30);
+-- Large Orders Table
+CREATE TABLE orders (
+    order_id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_id INT,
+    amount DECIMAL(10, 2),
+    order_date TIMESTAMP,
+    region VARCHAR(20),
+    notes TEXT
+);
 
-INSERT INTO order_logs (log_id, `order_sn`, `status`, `remark`) VALUES
-(1, 'ORD20250101001', 'SUCCESS', '用户反馈非常好'),
-(2, 'ORD20250101002', 'PENDING', '等待支付中'),
-(3, 'ORD20250101003', 'FAILED', '库存不足导致失败');
+-- Procedure to generate 100,000 rows (MySQL is slower than PG for inserts, stick to 100k for quick init)
+DELIMITER $$
+CREATE PROCEDURE GenerateOrders()
+BEGIN
+    DECLARE i INT DEFAULT 0;
+    WHILE i < 100000 DO
+        INSERT INTO orders (customer_id, amount, order_date, region, notes)
+        VALUES (
+            FLOOR(RAND() * 1000),
+            ROUND(RAND() * 10000, 2),
+            NOW() - INTERVAL FLOOR(RAND() * 365) DAY,
+            ELT(FLOOR(1 + RAND() * 4), 'North', 'South', 'East', 'West'),
+            MD5(RAND())
+        );
+        SET i = i + 1;
+    END WHILE;
+END$$
+
+CREATE PROCEDURE CreateMassiveTables()
+BEGIN
+    DECLARE i INT DEFAULT 1;
+    DECLARE t_name VARCHAR(64);
+    
+    WHILE i <= 100 DO
+        SET t_name = CONCAT('report_202', (i % 5), '_', LPAD((i % 12 + 1), 2, '0'), '_', i);
+        SET @sql = CONCAT('CREATE TABLE ', t_name, ' (id INT PRIMARY KEY, summary TEXT, val DECIMAL(10,2))');
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+        SET i = i + 1;
+    END WHILE;
+END$$
+DELIMITER ;
+
+CALL GenerateOrders();
+CALL CreateMassiveTables();

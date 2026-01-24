@@ -543,7 +543,7 @@ export function SchemaEditor() {
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-none shadow-xl">
                   {BUSINESS_TYPES.map((type) => (
-                    <SelectItem key={type} value={type} className="rounded-lg">
+                    <SelectItem key={type} value={type}>
                       {type}
                     </SelectItem>
                   ))}
