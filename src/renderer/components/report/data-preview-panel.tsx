@@ -21,7 +21,7 @@ export function DataPreviewPanel() {
           keywordCase: 'upper',
         })
         setSql(formatted)
-      } catch (e) {
+      } catch {
         setSql(initialSql)
       }
     }

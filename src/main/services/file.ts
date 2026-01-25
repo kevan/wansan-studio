@@ -108,7 +108,7 @@ export class FileService {
           `DESCRIBE SELECT * FROM ${reader}('${safePath}', ${opts})`
         )
         detectedOptions = { format: 'auto', auto_detect: true }
-      } catch (e) {
+      } catch {
         throw new Error('Invalid JSON file')
       }
     } else if (ext === '.parquet') {

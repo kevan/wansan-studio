@@ -18,52 +18,29 @@ We extend the `ColumnSchema` to hold semantic metadata and clean up legacy field
 // src/shared/types.ts
 
 export interface ColumnSemantic {
-  /** 
-   * User-friendly aliases or synonyms 
-   * e.g. ["营收", "收入", "Sales Revenue"] for column "amt"
-   */
+  /** User-friendly aliases or synonyms e.g. ["营收", "Sales Revenue"] */
   aliases?: string[];
-  
-  /** 
-   * High-level business type hint for visualization
-   * e.g. "Currency", "City", "User_ID", "Category"
-   */
+  /** High-level business type hint e.g. "Currency", "City", "User_ID" */
   businessType?: string;
-  
-  /**
-   * Description of the column's business logic
-   */
+  /** Description of the column's business logic */
   description?: string;
-  
-  /**
-   * Whether this column is visible to the AI Context.
-   * If false, it is EXCLUDED from the prompt sent to LLM.
-   * Default: true.
-   */
+  /** Whether this column is visible to AI Context. Default: true. */
   isVisibleToAI?: boolean;
 }
 
 export interface ColumnSchema {
   name: string;
   type: string; // DuckDB Type
-  // ... existing fields
-  
-  /** @deprecated Use relations structure instead */
-  isKey?: boolean; 
-  
-  /** @deprecated Use semantic.aliases instead */
-  alias?: string; 
-
   semantic?: ColumnSemantic; // [NEW]
+  isPrimaryKey?: boolean; // [V1.6] Sync from source DB
 }
 ```
 
-### 1.2 AI Auto-Tagging (On-Demand)
-
-*   **Trigger**: A "✨ Analyze Semantics" button in the Schema Editor toolbar.
-*   **Input**: Table Name, Column Names & Types, Sample Data.
-*   **Prompt**: "Analyze schema and samples to infer business meaning, suggest aliases, and identify sensitive columns."
-*   **Output**: JSON list of `ColumnSemantic` updates.
+### 1.2 Interactive Management & Persistence
+*   **AI Auto-Tagging**: A "✨ Analyze Semantics" button uses AI to infer meanings from schema and samples.
+*   **Manual Tuning**: Users can manually override AI suggestions via the **Schema Editor**.
+*   **Persistence**: All logic is stored in `semantic.json` within the `.wansan` bundle, ensuring settings survive app restarts.
+*   **Context Pruning**: Ability to hide specific columns from AI to reduce tokens and prevent confusion.
 
 ---
 

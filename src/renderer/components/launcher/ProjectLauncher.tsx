@@ -102,7 +102,7 @@ export function ProjectLauncher() {
     try {
       const path = await projectService.selectDirectory()
       if (path) setTargetPath(path)
-    } catch (e) {
+    } catch {
       // User cancelled
     }
   }

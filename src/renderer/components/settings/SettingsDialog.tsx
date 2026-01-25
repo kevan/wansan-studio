@@ -41,9 +41,7 @@ import { DomainKnowledgeTab } from './domain-knowledge-tab'
 
 type VerifyStatus = 'idle' | 'loading' | 'success' | 'error'
 
-interface SettingsDialogProps {
-  // trigger?: React.ReactNode
-}
+type SettingsDialogProps = Record<string, never>
 
 export function SettingsDialog(_props: SettingsDialogProps) {
   const settings = useSettingsStore()

@@ -14,7 +14,7 @@ function log(msg: string, ...args: any[]) {
   const text = `[${timestamp}] ${msg} ${args.length ? JSON.stringify(args, null, 2) : ''}\n`
   try {
     fs.appendFileSync(LOG_FILE, text)
-  } catch (e) {
+  } catch {
     // ignore
   }
   console.log(msg, ...args)
@@ -26,7 +26,7 @@ function logError(msg: string, err: any) {
   const text = `[${timestamp}] [ERROR] ${msg}\n${errorDetails}\n`
   try {
     fs.appendFileSync(LOG_FILE, text)
-  } catch (e) {
+  } catch {
     // ignore
   }
   console.error(msg, err)

@@ -39,7 +39,7 @@ export function setupFetchLogger() {
             )
           }
         }
-      } catch (e) {
+      } catch {
         /* ignore body errors */
       }
 

@@ -29,7 +29,7 @@ export const Analytics = {
           ...properties,
         }),
       }).catch(err => console.error('Telemetry failed', err))
-    } catch (e) {
+    } catch {
       // Fail silently
     }
   },

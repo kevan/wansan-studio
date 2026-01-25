@@ -324,7 +324,7 @@ export function processSampleValue(val: unknown, columnType?: ColumnType): unkno
     try {
       const summary = summarizeJson(val)
       return JSON.stringify(summary)
-    } catch (e) {
+    } catch {
       return String(val)
     }
   }
@@ -343,14 +343,14 @@ export function processSampleValue(val: unknown, columnType?: ColumnType): unkno
         const parsed = JSON.parse(val)
         const summary = summarizeJson(parsed)
         return JSON.stringify(summary)
-      } catch (e) {
-        // Try to handle \"unescaped\" JSON
+      } catch {
+        // Try to handle unescaped JSON
         try {
           const unescaped = val.replace(/\\"/g, '"')
           const parsed = JSON.parse(unescaped)
           const summary = summarizeJson(parsed)
           return JSON.stringify(summary)
-        } catch (e2) {
+        } catch {
           // Ignore parse errors
         }
       }

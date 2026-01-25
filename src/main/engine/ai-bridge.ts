@@ -267,7 +267,7 @@ Fix the SQL. Ensure all table/column names are double-quoted and match the schem
   try {
     const cleanedJson = extractJSON(resultJson)
     return FixSQLResultSchema.parse(parse(cleanedJson))
-  } catch (e) {
+  } catch {
     throw new Error(`Failed to parse fix result: ${resultJson}`)
   }
 }

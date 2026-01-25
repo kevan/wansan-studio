@@ -65,12 +65,8 @@ export function parseAIResponse<T>(rawContent: any): T {
   const cleaned = extractJSON(rawContent)
   try {
     return JSON.parse(cleaned) as T
-  } catch (e) {
-    console.error('[JSON Utils] Parse failed after extraction:', cleaned)
-    const preview =
-      typeof rawContent === 'string'
-        ? rawContent.slice(0, 100)
-        : 'Non-string content'
-    throw new Error(`Failed to parse AI JSON response: ${preview}...`)
+  } catch {
+    // If simple parse fails, try more robust ways or throw
+    throw new Error('Failed to parse AI response as JSON')
   }
 }

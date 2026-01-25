@@ -252,7 +252,7 @@ const MessageItem = React.memo(
                               return format(message.planSql, {
                                 language: 'postgresql',
                               })
-                            } catch (e) {
+                            } catch {
                               return message.planSql
                             }
                           })()}

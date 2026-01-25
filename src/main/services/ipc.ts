@@ -186,7 +186,7 @@ export function setupIPC(
       }
 
       return { success: true, data: result.filePaths[0] }
-    } catch (error) {
+    } catch {
       return { success: false, error: 'File selection error' }
     }
   })
@@ -235,7 +235,7 @@ export function setupIPC(
       }
 
       return { success: true, data: result.filePaths[0] }
-    } catch (error) {
+    } catch {
       return { success: false, error: 'Directory selection error' }
     }
   })
@@ -250,7 +250,7 @@ export function setupIPC(
           sheetName
         )
         return { success: true, data: result }
-      } catch (error) {
+      } catch {
         return { success: false, error: 'Failed to generate unique table name' }
       }
     }
@@ -425,7 +425,7 @@ export function setupIPC(
     try {
       const config = aiService.getConfig()
       return { success: true, data: config }
-    } catch (error) {
+    } catch {
       return { success: false, error: 'Failed to get AI config' }
     }
   })
@@ -435,7 +435,7 @@ export function setupIPC(
     try {
       aiService.setConfig(config)
       return { success: true }
-    } catch (error) {
+    } catch {
       return { success: false, error: 'Failed to set AI config' }
     }
   })
@@ -445,7 +445,7 @@ export function setupIPC(
     try {
       aiService.clearConfig()
       return { success: true }
-    } catch (error) {
+    } catch {
       return { success: false, error: 'Failed to clear AI config' }
     }
   })
@@ -547,7 +547,7 @@ export function setupIPC(
   ipcMain.handle('get-path', async (_event, name: any) => {
     try {
       return { success: true, data: app.getPath(name) }
-    } catch (error) {
+    } catch {
       return { success: false, error: 'Failed to get path' }
     }
   })

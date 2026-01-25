@@ -61,7 +61,7 @@ export const useMigrationStore = create<MigrationState>(set => ({
             foundKey = key
             break
           }
-        } catch (e) {
+        } catch {
           // ignore
         }
       }
@@ -100,7 +100,7 @@ export const useMigrationStore = create<MigrationState>(set => ({
     try {
       const path = await projectService.selectDirectory()
       if (path) set({ targetPath: path })
-    } catch (e) {
+    } catch {
       // User cancelled or error
     }
   },

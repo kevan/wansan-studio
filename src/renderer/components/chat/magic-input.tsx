@@ -371,7 +371,7 @@ export function MagicInput({
               type: 'success',
               duration: 2000,
             })
-          } catch (e) {
+          } catch {
             addToast({
               title: tCommon('reload_failed'),
               description: tCommon('refresh_failed_desc'),
@@ -511,7 +511,7 @@ export function MagicInput({
               type: 'success',
               duration: 2000,
             })
-          } catch (e) {
+          } catch {
             addToast({
               title: tCommon('reload_failed'),
               description: tCommon('refresh_failed_desc'),

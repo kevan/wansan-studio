@@ -185,7 +185,7 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
             onChange(formatted)
           }
           sqlToRun = formatted
-        } catch (e) {
+        } catch {
           // Ignore format error
         }
         handleRunPreview(sqlToRun, true)
@@ -218,7 +218,7 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
           denseOperators: true,
         })
         onChange(formatted)
-      } catch (e) {
+      } catch {
         // Ignore formatting errors
       }
     }
