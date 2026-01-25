@@ -216,12 +216,12 @@ export function SchemaEditor() {
                     {currentFile.rowCount?.toLocaleString() || 0} {t('rows')}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-md border border-blue-100 whitespace-nowrap">
-                  <Layout className="w-2.5 h-2.5" />
-                  <span className="text-[10px] font-black uppercase tracking-tight">
-                    {currentFile.columns.length} {t('columns')}
-                  </span>
-                </div>
+                {/*<div className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-md border border-blue-100 whitespace-nowrap">*/}
+                {/*  <Layout className="w-2.5 h-2.5" />*/}
+                {/*  <span className="text-[10px] font-black uppercase tracking-tight">*/}
+                {/*    {currentFile.columns.length} {t('columns')}*/}
+                {/*  </span>*/}
+                {/*</div>*/}
               </div>
             </div>
           </div>

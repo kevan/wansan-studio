@@ -86,14 +86,16 @@ export function ReportWidgetContainer({
         </div>
         
         <div className="flex items-center gap-2 opacity-0 group-hover/header:opacity-100 transition-opacity">
-            {/* Inline Layout Switcher */}
-            <button 
-                onClick={toggleLayout}
-                className="p-2 text-zinc-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                title={isSplit ? t('layout_flow') : t('layout_split')}
-            >
-                {isSplit ? <Rows className="w-4 h-4" /> : <Columns className="w-4 h-4" />}
-            </button>
+            {/* Inline Layout Switcher - Only show when insight is available */}
+            {reportData.insight && (
+              <button 
+                  onClick={toggleLayout}
+                  className="p-2 text-zinc-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                  title={isSplit ? t('layout_flow') : t('layout_split')}
+              >
+                  {isSplit ? <Rows className="w-4 h-4" /> : <Columns className="w-4 h-4" />}
+              </button>
+            )}
             
             {/* Remove Button */}
             {onRemove && !readOnly && (
