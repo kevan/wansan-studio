@@ -26,6 +26,8 @@ export interface IngestionTask {
   sourceName: string // Sheet name or file name
   fileName: string
   connectionId?: string // [NEW] For DB tasks
+  originalTableName?: string // [NEW] Source table name
+  dbSchema?: string // [NEW] Source database schema
   filePath: string
   tempFilePath?: string // Path to cached temp file (e.g. converted CSV)
   tableName: string // Temp table name in DB

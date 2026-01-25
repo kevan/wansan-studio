@@ -28,7 +28,10 @@ export async function loadDemoData(
     const fileNode: FileNode = {
       id: fileId,
       name: 'Superstore_Demo.csv',
-      path: 'DEMO_MEMORY',
+      source: {
+        type: 'local_file',
+        path: 'DEMO_MEMORY',
+      },
       status: 'ready',
       tableName: tableName,
       columns: (result as any).data?.columns || [],

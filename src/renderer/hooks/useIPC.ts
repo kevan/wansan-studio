@@ -76,12 +76,14 @@ const mockIPC: ElectronAPI = {
   clearAIConfig: async (): Promise<IPCResponse> => {
     return { success: true }
   },
-  verifyAIConnection: async () => ({ success: true, data: true }),
-  checkFilesConsistency: async (files: FileNode[]): Promise<IPCResponse> => {
-    console.log('Mock checkFilesConsistency', files)
-    return { success: true }
+  verifyAIConnection: async (config?: any) => {
+    console.log('Mock verifyAIConnection', config)
+    return { success: true, data: true }
   },
-  validateColumnTypes: async () => ({ success: true, data: { valid: true } }),
+  validateColumnTypes: async (params: any) => {
+    console.log('Mock validateColumnTypes', params)
+    return { success: true, data: { valid: true } }
+  },
   reIngestFile: async (
     fileId: string,
     filePath: string,
@@ -208,6 +210,23 @@ function getIpc() {
     return mockIPC
   }
   throw new Error('Electron API not available')
+}
+
+/**
+ * A helper hook for simple IPC queries
+ */
+function useIPC<T>(method: keyof ElectronAPI, args: any[]) {
+  return useQuery({
+    queryKey: [method, ...args],
+    queryFn: async () => {
+      const fn = getIpc()[method] as any
+      const response = await fn(...args)
+      if (!response.success) {
+        throw new Error(response.error || `IPC error in ${method}`)
+      }
+      return response.data as T
+    },
+  })
 }
 
 export function useRunSQL() {
@@ -363,19 +382,22 @@ export function useReIngestFile() {
       tableName,
       sheetName,
       columns,
+      readOptions,
     }: {
       fileId: string
       filePath: string
       tableName: string
       sheetName?: string
       columns?: ColumnSchema[]
+      readOptions?: Record<string, any>
     }) => {
       const response = await getIpc().reIngestFile(
         fileId,
         filePath,
         tableName,
         sheetName,
-        columns
+        columns,
+        readOptions
       )
       if (!response.success) {
         throw new Error(response.error || 'Failed to re-ingest file')
@@ -403,16 +425,12 @@ export function useContextAnalysis() {
   })
 }
 
-export function useCheckFilesConsistency() {
-  return useMutation({
-    mutationFn: async (files: FileNode[]) => {
-      const response = await getIpc().checkFilesConsistency(files)
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to check consistency')
-      }
-      return response.data
-    },
-  })
+export function useGetAppVersion() {
+  return useIPC('getAppVersion', [])
+}
+
+export function useGetMainLogs() {
+  return useIPC('getMainLogs', [])
 }
 
 export function useGenerateInsight() {

@@ -68,17 +68,25 @@ export function useDataRehydrate() {
               // Now we show the loading UI because we are actually restoring
               setRestoring(true)
 
-              const result = await reIngestFile({
-                fileId: file.id,
-                filePath: file.path,
-                tableName: file.tableName,
-                sheetName: file.sheetName,
-                columns: file.columns,
-              })
+              // [REFACTOR] Conditional Re-ingestion based on source type
+              if (file.source.type === 'local_file') {
+                const result = await reIngestFile({
+                  fileId: file.id,
+                  filePath: file.source.path,
+                  tableName: file.tableName,
+                  sheetName: file.source.subResource,
+                  columns: file.columns,
+                  readOptions: file.source.readOptions,
+                })
 
-              if (cancelled) return
-              reloadFile(file.id, result)
-              restoredCount++
+                if (cancelled) return
+                reloadFile(file.id, result)
+                restoredCount++
+              } else if (file.source.type === 'database') {
+                // For DB sources, we might need a db:re-sync API
+                // For now, mark as stale/error if table is missing
+                throw new Error('Database table missing. Manual re-sync required.')
+              }
             }
           } catch (error) {
             if (cancelled) return

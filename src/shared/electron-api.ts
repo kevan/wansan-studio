@@ -85,7 +85,6 @@ export interface ElectronAPI {
   parseFile: (filePath: string) => Promise<ParseFileResponse>
   inspectFile: (filePath: string) => Promise<IPCResponse<Array<{ sourceName: string, previewHeaders: string[], readOptions?: Record<string, any> }>>> // [NEW] Stage 1
   prepareFile: (filePath: string, sourceName: string, readOptions?: Record<string, any>) => Promise<IPCResponse<{ tempFilePath: string, rowCount: number, columns: ColumnSchema[], preview: any[] }>> // [NEW] Stage 2
-  checkFilesConsistency: (files: FileNode[]) => Promise<IPCResponse>
   validateColumnTypes: (
     params: ValidateColumnTypesParams
   ) => Promise<

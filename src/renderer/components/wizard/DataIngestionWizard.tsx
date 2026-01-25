@@ -153,6 +153,19 @@ export function DataIngestionWizard() {
           const displayName =
             task.finalDisplayName || cleanDisplayName(task.fileName, task.sourceName)
 
+          // Construct structured source config
+          const sourceConfig: any = task.connectionId ? {
+            type: 'database',
+            connectionId: task.connectionId,
+            table: task.originalTableName || '',
+            schema: task.dbSchema
+          } : {
+            type: 'local_file',
+            path: task.filePath,
+            subResource: task.sourceName === task.fileName ? undefined : task.sourceName,
+            readOptions: task.readOptions
+          }
+
           // Use reloadFile to safely update schema and validate relations
           useProjectStore.getState().reloadFile(targetFile.id, {
             lastModified: Date.now(),
@@ -161,12 +174,9 @@ export function DataIngestionWizard() {
 
           // Update other metadata that reloadFile doesn't handle
           updateFile(targetFile.id, {
-            path: task.filePath,
+            source: sourceConfig, // [REFACTOR] Update structured source
             name: task.finalDisplayName || displayName,
-            sheetName:
-              task.sourceName === task.fileName ? undefined : task.sourceName,
             rowCount: result.data.rowCount,
-            readOptions: task.readOptions,
           })
 
           addedFileIds.push(targetFile.id)
@@ -213,16 +223,26 @@ export function DataIngestionWizard() {
           const displayName =
             task.finalDisplayName || cleanDisplayName(task.fileName, task.sourceName)
 
+          // Construct structured source config
+          const sourceConfig: any = task.connectionId ? {
+            type: 'database',
+            connectionId: task.connectionId,
+            table: task.originalTableName || '',
+            schema: task.dbSchema
+          } : {
+            type: 'local_file',
+            path: task.filePath,
+            subResource: task.sourceName === task.fileName ? undefined : task.sourceName,
+            readOptions: task.readOptions
+          }
+
           const fileId = addFile({
             name: task.finalDisplayName || displayName,
-            path: task.filePath,
             tableName: finalTableName,
-            sheetName:
-              task.sourceName === task.fileName ? undefined : task.sourceName,
+            source: sourceConfig, // [REFACTOR]
             status: 'ready',
             columns: columns as any,
             rowCount: result.data.rowCount,
-            readOptions: task.readOptions,
           })
           addedFileIds.push(fileId)
         }

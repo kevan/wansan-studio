@@ -13,6 +13,7 @@ import {
   FileSpreadsheet,
   GitMerge,
   Hash,
+  Info,
   Key,
   Layout,
   Link2,
@@ -32,6 +33,7 @@ import { Badge } from './ui/badge'
 import { ConfirmDialog } from './modals/ConfirmDialog'
 import { MetricEditorModal } from './modals/metric-editor-modal'
 import { RelationEditorModal } from './modals/RelationEditorModal'
+import { DataLineageDialog } from './modals/DataLineageDialog'
 import { COLUMN_TYPE_CONFIG } from '@/src/lib/constants'
 import {
   Dialog,
@@ -82,14 +84,18 @@ export function SchemaEditor() {
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showAnalyzeConfirm, setShowAnalyzeConfirm] = useState(false)
+  const [showLineage, setShowLineage] = useState(false)
   const [isMetricModalOpen, setIsMetricModalOpen] = useState(false)
   const [editingMetric, setEditingMetric] = useState<SmartMetric | undefined>(
     undefined
   )
+
   const [isRelationModalOpen, setIsRelationModalOpen] = useState(false)
+
   const [editingRelation, setEditingRelation] = useState<
     TableRelation | undefined
   >(undefined)
+
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   const [editingColumn, setEditingColumn] = useState<ColumnSchema | null>(null)
@@ -102,6 +108,7 @@ export function SchemaEditor() {
     activeFileId && files.find(f => f.id === activeFileId)
       ? activeFileId
       : files[0]?.id
+
   const currentFile = files.find(f => f.id === currentFileId)
 
   if (!currentFile) return null
@@ -239,12 +246,18 @@ export function SchemaEditor() {
                 {currentFile.name}
               </h2>
               <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-zinc-50 text-zinc-500 rounded-md border border-zinc-100 whitespace-nowrap">
-                  <Database className="w-2.5 h-2.5 opacity-70" />
+                <button
+                  onClick={() => setShowLineage(true)}
+                  className="flex items-center gap-1 px-1.5 py-0.5 bg-zinc-50 text-zinc-500 rounded-md border border-zinc-100 whitespace-nowrap hover:bg-zinc-100 hover:text-zinc-900 transition-all cursor-help group"
+                  title={t('data_lineage')}
+                >
+                  <Database className="w-2.5 h-2.5 opacity-70 group-hover:text-indigo-600" />
                   <code className="text-[10px] font-mono">
                     {currentFile.tableName}
                   </code>
-                </div>
+                  <Info className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 ml-0.5" />
+                </button>
+
                 <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-md border border-emerald-100 whitespace-nowrap">
                   <Hash className="w-2.5 h-2.5" />
                   <span className="text-[10px] font-black uppercase tracking-tight">
@@ -624,6 +637,13 @@ export function SchemaEditor() {
         description={t('analyze_confirm_desc')}
         variant="default"
       />
+
+      <DataLineageDialog
+        open={showLineage}
+        onOpenChange={setShowLineage}
+        file={currentFile}
+      />
+
       <MetricEditorModal
         isOpen={isMetricModalOpen}
         onClose={() => setIsMetricModalOpen(false)}

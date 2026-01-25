@@ -1,4 +1,33 @@
-import { SmartMetric, TableRelation } from '../types'
+import { DataSourceConfig, SmartMetric, TableRelation } from '../types'
+
+export interface AssetManifest {
+  id: string
+  name: string
+  tableName: string
+  
+  // [REFACTOR] New structured source
+  source?: DataSourceConfig
+  
+  // Legacy fields (for backward compatibility during load)
+  originalPath?: string
+  sheetName?: string
+  
+  status?: string // SyncStatus
+  rowCount?: number
+  lastModified?: number
+  createdAt?: number
+  columns: Array<{
+    name: string
+    type: string
+    safeName: string
+    sampleValues?: any[]
+    nullable?: boolean
+    isKey?: boolean
+    isPrimaryKey?: boolean
+    alias?: string
+    semantic?: any // ColumnSemantic
+  }>
+}
 
 export interface ProjectManifest {
   meta: {
@@ -9,27 +38,7 @@ export interface ProjectManifest {
     updatedAt: number
     engine: 'native'
   }
-  assets: Array<{
-    id: string
-    name: string
-    originalPath: string // Absolute path
-    tableName: string
-    sheetName?: string
-    status?: string // SyncStatus
-    rowCount?: number
-    lastModified?: number
-    createdAt?: number
-    columns: Array<{
-      name: string
-      type: string
-      safeName: string
-      sampleValues?: any[]
-      nullable?: boolean
-      isKey?: boolean
-      isPrimaryKey?: boolean
-      alias?: string
-    }>
-  }>
+  assets: AssetManifest[]
   settings: {
     theme?: 'light' | 'dark'
   }

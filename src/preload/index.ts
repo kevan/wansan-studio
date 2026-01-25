@@ -73,8 +73,6 @@ const electronAPI: ElectronAPI = {
     ipcRenderer.invoke('verify-ai-connection', config),
 
   // 文件同步
-  checkFilesConsistency: (files: any[]) =>
-    ipcRenderer.invoke('check-files-consistency', files),
   validateColumnTypes: (params: any) =>
     ipcRenderer.invoke('validate-column-types', params),
   reIngestFile: (

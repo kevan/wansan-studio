@@ -5,7 +5,6 @@ import { AIService } from './ai-service'
 import { getDeviceId } from './device'
 import { secureSet, secureGet, secureClear } from './secure-storage'
 import { executeSQL } from '../engine/executor'
-import { checkFilesConsistency } from '../engine/file-watcher'
 import { ingestJsonData, getUniqueTableName } from '../engine/ingestion'
 import { exportWebReport } from './web-export'
 import { exportExcel } from './excel-export'
@@ -564,23 +563,6 @@ export function setupIPC(
   ipcMain.handle('get-main-logs', async () => {
     return { success: true, data: getMainLogs() }
   })
-
-  // 检查文件一致性
-  ipcMain.handle(
-    'check-files-consistency',
-    async (_event, files: FileNode[]) => {
-      try {
-        const changedIds = await checkFilesConsistency(files)
-        return { success: true, data: changedIds }
-      } catch (error) {
-        console.error('Check files consistency error:', error)
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }
-      }
-    }
-  )
 
   ipcMain.handle('validate-column-types', async (_event, params: any) => {
     try {

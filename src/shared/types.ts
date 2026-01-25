@@ -152,12 +152,30 @@ export interface TableRelation {
   autoDetected?: boolean
 }
 
+export interface LocalFileSource {
+  type: 'local_file'
+  path: string
+  subResource?: string // e.g. Excel sheet name
+  format?: 'excel' | 'csv' | 'parquet'
+  fingerprint?: string // For change detection
+  readOptions?: Record<string, any> // e.g. encoding
+}
+
+export interface DatabaseSource {
+  type: 'database'
+  connectionId: string
+  schema?: string
+  table: string // Original table name
+}
+
+export type DataSourceConfig = LocalFileSource | DatabaseSource
+
 export interface FileNode {
   id: string
   name: string
-  path: string
-  tableName: string // DuckDB table name
-  sheetName?: string // Excel Sheet Name
+  tableName: string // DuckDB table name (local)
+  source: DataSourceConfig // [REFACTOR] Structured source config
+  
   status: SyncStatus
   progress?: number // 0-100
   size?: number
@@ -168,7 +186,6 @@ export interface FileNode {
   createdAt: number
   smartMetrics?: SmartMetric[] // Persisted metrics
   relations?: TableRelation[] // NEW: Stored per-file
-  readOptions?: Record<string, any> // Options used to read the file (e.g. encoding)
 }
 
 export interface ReloadResult {

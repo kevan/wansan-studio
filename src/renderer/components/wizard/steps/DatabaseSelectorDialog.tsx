@@ -105,7 +105,7 @@ export function DatabaseSelectorDialog() {
   const [searchQuery, setSearchQuery] = useState('')
   const [collapsedSchemas, setCollapsedSchemas] = useState<Set<string>>(new Set())
   
-  const [localSelection, setLocalSelection] = useState<Record<string, Set<string>>>({})
+  const [localSelection, setLocalSelection] = useState<Record<string, Record<string, { name: string; schema?: string }>>>({})
 
   useEffect(() => {
     if (isDbSelectorOpen) {
@@ -182,24 +182,36 @@ export function DatabaseSelectorDialog() {
     if (!selectedConnId) return
     const fullId = getFullId(table)
     setLocalSelection(prev => {
-      const currentSet = new Set(prev[selectedConnId] || [])
-      if (currentSet.has(fullId)) currentSet.delete(fullId)
-      else currentSet.add(fullId)
-      return { ...prev, [selectedConnId]: currentSet }
+      const connSelection = { ...(prev[selectedConnId] || {}) }
+      if (connSelection[fullId]) {
+        delete connSelection[fullId]
+      } else {
+        connSelection[fullId] = table
+      }
+      return { ...prev, [selectedConnId]: connSelection }
     })
   }, [selectedConnId, getFullId])
 
   const handleConfirm = () => {
     const newTasks: IngestionTask[] = []
-    Object.entries(localSelection).forEach(([connId, tableSet]) => {
+    Object.entries(localSelection).forEach(([connId, tableMap]) => {
       const conn = dbConnections.find(c => c.id === connId)
       if (!conn) return
-      tableSet.forEach(fullId => {
+      Object.values(tableMap).forEach(table => {
+        const fullId = getFullId(table)
         const exists = tasks.some(t => t.connectionId === connId && t.sourceName === fullId)
         if (!exists) {
           newTasks.push({
-            id: crypto.randomUUID(), sourceName: fullId, fileName: `${conn.name} (${conn.type})`,
-            connectionId: connId, filePath: '', tableName: '', finalTableName: '', finalDisplayName: fullId,
+            id: crypto.randomUUID(), 
+            sourceName: fullId, 
+            fileName: `${conn.name} (${conn.type})`,
+            connectionId: connId, 
+            originalTableName: table.name,
+            dbSchema: table.schema,
+            filePath: '', 
+            tableName: '', 
+            finalTableName: '', 
+            finalDisplayName: fullId,
             columns: [], previewData: [], rowCount: 0, mode, status: 'waiting_for_sync'
           })
         }
@@ -208,7 +220,7 @@ export function DatabaseSelectorDialog() {
     setTasks([...tasks, ...newTasks]); setDbSelectorOpen(false)
   }
 
-  const totalSelected = Object.values(localSelection).reduce((acc, set) => acc + set.size, 0)
+  const totalSelected = Object.values(localSelection).reduce((acc, map) => acc + Object.keys(map).length, 0)
 
   return (
     <Dialog open={isDbSelectorOpen} onOpenChange={setDbSelectorOpen}>
@@ -336,7 +348,7 @@ export function DatabaseSelectorDialog() {
                      const isCollapsed = collapsedSchemas.has(schema)
                      const schemaTables = groupedTables.groups[schema]
                      const isOnlyOneGroup = groupedTables.sortedSchemas.length === 1 && schema === 'default'
-                     const groupSelectedCount = schemaTables.filter(t => localSelection[selectedConnId!]?.has(getFullId(t))).length
+                     const groupSelectedCount = schemaTables.filter(t => localSelection[selectedConnId!]?.[getFullId(t)]).length
 
                      return (
                        <div key={schema} className="mb-2 last:mb-0">
@@ -360,7 +372,7 @@ export function DatabaseSelectorDialog() {
                            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-3">
                              {schemaTables.map(table => {
                                const fullId = getFullId(table)
-                               const isSelected = localSelection[selectedConnId!]?.has(fullId)
+                               const isSelected = !!localSelection[selectedConnId!]?.[fullId]
                                const isAlreadyInTasks = tasks.some(t => t.connectionId === selectedConnId && t.sourceName === fullId)
                                return (
                                  <TableItemCard 

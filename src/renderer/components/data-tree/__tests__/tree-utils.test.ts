@@ -16,7 +16,10 @@ describe('tree-utils', () => {
       const mockFile: FileNode = {
         id: 'file_1',
         name: 'test.csv',
-        path: '/tmp/test.csv',
+        source: {
+          type: 'local_file',
+          path: '/tmp/test.csv',
+        },
         tableName: 't_test',
         status: 'ready',
         createdAt: 123456,
@@ -45,7 +48,7 @@ describe('tree-utils', () => {
       const mockFile1: FileNode = {
         id: 'f1',
         name: 'orders',
-        path: '',
+        source: { type: 'local_file', path: '' },
         tableName: 't_orders',
         status: 'ready',
         createdAt: 0,
@@ -62,7 +65,7 @@ describe('tree-utils', () => {
       const mockFile2: FileNode = {
         id: 'f2',
         name: 'users',
-        path: '',
+        source: { type: 'local_file', path: '' },
         tableName: 't_users',
         status: 'ready',
         createdAt: 0,

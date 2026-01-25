@@ -8,7 +8,14 @@ import {
   ProjectManifest,
   SemanticLayer,
 } from '@shared/types/project-manifest'
-import { FileNode, SmartMetric, SyncStatus, TableRelation } from '@shared/types'
+import {
+  DataSourceConfig,
+  FileNode,
+  LocalFileSource,
+  SmartMetric,
+  SyncStatus,
+  TableRelation,
+} from '@shared/types'
 import { ProjectData, Session } from '@shared/types/project'
 import { ReportData } from '@shared/types/dashboard'
 import { Analytics } from '../services/analytics'
@@ -36,9 +43,8 @@ export function useProjectIO() {
     const assets = state.files.map(f => ({
       id: f.id,
       name: f.name,
-      originalPath: f.path,
       tableName: f.tableName,
-      sheetName: f.sheetName,
+      source: f.source, // [REFACTOR] Save structured source
       status: f.status, // Add status
       rowCount: f.rowCount, // Add rowCount
       lastModified: f.lastModified, // Add lastModified
@@ -128,12 +134,24 @@ export function useProjectIO() {
         const relations = data.semantic.relations[asset.id] || []
         const now = Date.now()
 
+        // [REFACTOR] Compatibility Layer: Construct source from legacy fields if needed
+        let source: DataSourceConfig
+        if (asset.source) {
+          source = asset.source
+        } else {
+          // Fallback for v1.0-v1.5 projects: assume Local File
+          source = {
+            type: 'local_file',
+            path: asset.originalPath || '',
+            subResource: asset.sheetName,
+          } as LocalFileSource
+        }
+
         return {
           id: asset.id,
           name: asset.name,
-          path: asset.originalPath,
           tableName: asset.tableName,
-          sheetName: asset.sheetName,
+          source, // Structured Source
           status: (asset.status || 'ready') as SyncStatus, // Use saved status
           progress: 100, // Always 100 on load
           size: 0, // Not saved yet, can re-fetch if needed

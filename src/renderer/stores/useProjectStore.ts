@@ -6,6 +6,7 @@ import { ReportData, ReportWidget } from '@shared/types/dashboard'
 import {
   ColumnSchema,
   ContextAnalysisResult,
+  DataSourceConfig,
   FileNode,
   SelectedNode,
   SmartMetric,
@@ -104,7 +105,7 @@ export interface ProjectState extends ProjectData {
     selectedPrompts: string[]
   }) => Promise<void>
   addFile: (
-    file: Partial<FileNode> & { name: string; path: string; tableName: string }
+    file: Partial<FileNode> & { name: string; source: DataSourceConfig; tableName: string }
   ) => string
   removeFile: (id: string) => Promise<void>
   updateFile: (id: string, updates: Partial<FileNode>) => void
@@ -784,9 +785,32 @@ export const useProjectStore = create<ProjectState>()(
       setSuggestedPrompts: prompts => set({ suggestedPrompts: prompts }),
 
       addFile: file => {
-        const existing = get().files.find(
-          f => f.path === file.path && f.sheetName === file.sheetName
-        )
+        // [REFACTOR] Support structured source checking
+        const existing = get().files.find(f => {
+          if (file.source && f.source.type === file.source.type) {
+            if (
+              f.source.type === 'local_file' &&
+              file.source.type === 'local_file'
+            ) {
+              return (
+                f.source.path === file.source.path &&
+                f.source.subResource === file.source.subResource
+              )
+            }
+            if (
+              f.source.type === 'database' &&
+              file.source.type === 'database'
+            ) {
+              return (
+                f.source.connectionId === file.source.connectionId &&
+                f.source.table === file.source.table &&
+                f.source.schema === file.source.schema
+              )
+            }
+          }
+          return false
+        })
+
         if (existing) {
           throw new Error(`File "${file.name}" is already imported.`)
         }
@@ -804,7 +828,13 @@ export const useProjectStore = create<ProjectState>()(
           files: [...state.files, newFile],
         }))
 
-        const ext = file.name.split('.').pop()?.toLowerCase() || 'unknown'
+        // Analytics tracking based on source type
+        let ext = 'unknown'
+        if (file.source?.type === 'local_file') {
+          ext = file.source.path.split('.').pop()?.toLowerCase() || 'unknown'
+        } else if (file.source?.type === 'database') {
+          ext = 'db_table'
+        }
         Analytics.track('file_imported', { file_type: ext })
         return id
       },
@@ -1227,6 +1257,12 @@ export const useProjectStore = create<ProjectState>()(
           return 'error'
         }
 
+        // [REFACTOR] Only support local file replacement for now
+        if (file.source.type !== 'local_file') {
+          console.error('replaceFile: Only local files can be replaced')
+          return 'error'
+        }
+
         try {
           // Optimistic update status
           set(state => ({
@@ -1250,10 +1286,11 @@ export const useProjectStore = create<ProjectState>()(
 
             // Find best matching sheet/table from the parsed result
             let candidate = parseRes.data[0]
-            if (file.sheetName) {
+            const sheetName = file.source.subResource
+            if (sheetName) {
               // Try to find the same sheet name
               const match = parseRes.data.find(
-                (d: any) => d.sheetName === file.sheetName
+                (d: any) => d.sheetName === sheetName
               )
               if (match) candidate = match
             }
@@ -1293,9 +1330,9 @@ export const useProjectStore = create<ProjectState>()(
             fileId,
             newPath,
             file.tableName,
-            file.sheetName,
+            file.source.subResource,
             file.columns,
-            file.readOptions // Pass saved read options (e.g. encoding)
+            file.source.readOptions // Pass saved read options (e.g. encoding)
           )
 
           if (!result.success || !result.data) {
@@ -1330,7 +1367,11 @@ export const useProjectStore = create<ProjectState>()(
               f.id === fileId
                 ? {
                     ...f,
-                    path: newPath,
+                    // [REFACTOR] Update path in source object
+                    source: {
+                      ...f.source,
+                      path: newPath,
+                    },
                     rowCount: rowCount,
                     status: 'ready',
                     error: undefined,

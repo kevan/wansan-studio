@@ -48,7 +48,19 @@ export function FileSelectionStep() {
         const conn = dbConnections.find(c => c.id === task.connectionId)
         if (!conn) throw new Error('Connection not found')
 
-        const hintTableName = `t_${task.sourceName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`
+        // Clean parts
+        const cleanName = (s: string) => s.toLowerCase().replace(/[^a-z0-9_\u4e00-\u9fa5]/g, '_').replace(/^_+|_+$/g, '')
+        const sourceParts = task.sourceName.split('.') // schema.table or table
+        const tablePart = sourceParts.length > 1 ? sourceParts.slice(1).join('_') : sourceParts[0]
+        const schemaPart = sourceParts.length > 1 ? sourceParts[0] : ''
+        
+        // Format: t_{schema}_{table} or t_{table}
+        // Minimalist approach: Connection name is context, not content.
+        let hintTableName = `t_${cleanName(tablePart)}`
+        if (schemaPart && schemaPart !== 'public' && schemaPart !== 'default') {
+           hintTableName = `t_${cleanName(schemaPart)}_${cleanName(tablePart)}`
+        }
+
         const res = await window.electronAPI.syncDBTable(conn, task.sourceName, hintTableName)
         
         if (!res.success || !res.data) throw new Error(res.error || `Failed to sync ${task.sourceName}`)
@@ -73,16 +85,35 @@ export function FileSelectionStep() {
 
       let finalTableName = task.finalTableName
       if (!finalTableName) {
-         const uniqueNameRes = await window.electronAPI.getUniqueTableName(task.fileName, task.sourceName)
-         finalTableName = uniqueNameRes.success ? uniqueNameRes.data : `t_${Date.now()}`
+         if (task.connectionId) {
+            // Use the hint we generated above
+            const cleanName = (s: string) => s.toLowerCase().replace(/[^a-z0-9_\u4e00-\u9fa5]/g, '_').replace(/^_+|_+$/g, '')
+            const sourceParts = task.sourceName.split('.')
+            const tablePart = sourceParts.length > 1 ? sourceParts.slice(1).join('_') : sourceParts[0]
+            const schemaPart = sourceParts.length > 1 ? sourceParts[0] : ''
+            
+            let baseName = `t_${cleanName(tablePart)}`
+            if (schemaPart && schemaPart !== 'public' && schemaPart !== 'default') {
+               baseName = `t_${cleanName(schemaPart)}_${cleanName(tablePart)}`
+            }
+            // Ensure uniqueness
+            const uniqueRes = await window.electronAPI.getUniqueTableName(baseName)
+            finalTableName = uniqueRes.success ? uniqueRes.data : baseName
+         } else {
+            // For files, clean the display name
+            const baseName = task.finalDisplayName || task.fileName
+            const uniqueRes = await window.electronAPI.getUniqueTableName(baseName, task.sourceName === task.fileName ? undefined : task.sourceName)
+            finalTableName = uniqueRes.success ? uniqueRes.data : `t_${Date.now()}`
+         }
       }
 
       useWizardStore.getState().updateTask(currentIndex, {
         status: 'ready',
-        filePath: tempFilePath,
+        // filePath: tempFilePath, // FIX: Do not overwrite original path
         tempFilePath: tempFilePath,
-        finalTableName: finalTableName || task.finalTableName,
-        tableName: finalTableName || task.tableName, 
+        finalTableName: finalTableName, // Use simplified name
+        tableName: finalTableName, // Sync temp table name for consistency if possible, or keep separate? 
+                                   // Actually tableName is used for preview queries. If we synced DB to hintTableName, we should use it.
         columns: columns.map((c: any) => ({
           name: c.name,
           type: c.type as any,
@@ -154,10 +185,10 @@ export function FileSelectionStep() {
           return {
             id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             fileName: file.name,
-            filePath: file.path,
+            filePath: file.path, // Internal wizard state
             sourceName: item.sourceName,
             finalDisplayName: displayName,
-            status: 'waiting_for_sync', // Triggers Stage 2
+            status: 'waiting_for_sync', 
             columns,
             previewData: [],
             rowCount: 0,
