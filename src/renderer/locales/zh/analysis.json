@@ -52,5 +52,6 @@
     "physical_columns": "物理列",
     "linked_to": "已关联:",
     "no_links": "无关联"
-  }
+  },
+  "smart_metrics": "智能指标"
 }

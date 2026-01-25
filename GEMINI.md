@@ -68,7 +68,13 @@ graph TD
 2.  **NEVER** log raw SQL results to external services.
 3.  **Local Execution**: All data processing happens in the embedded DuckDB instance.
 
-### 5.2 Development Guidelines
+### 5.2 Safety & Quality Protocols (STRICT MANDATES)
+1.  **Zero-Omission Policy**: NEVER use ellipses (`...`) or `// skip lines` placeholders in any file-writing tool calls. Provide the full, executable content.
+2.  **Atomic Modification**: For files exceeding 100 lines, prioritize using multiple small `replace` calls instead of a single `write_file` to minimize the risk of accidental code deletion.
+3.  **Destructive Guardrails**: Any operation that performs physical deletion (`fs.remove`, `DROP TABLE`, etc.) MUST include path validation (e.g., ensuring paths are within `os.tmpdir()`) to prevent user data loss.
+4.  **Immediate Verification**: Execute `npm run type-check` immediately after modifying `.tsx` or `.ts` files to catch syntax or logic regressions early.
+
+### 5.3 Development Guidelines
 *   **I18n**: Use `i18next` with namespaces (`common`, `analysis`, `settings`).
 *   **Type Safety**: All IPC payloads must be typed in `src/shared/electron-api.ts`.
 *   **Temp Files**: Strict lifecycle management via `TempFileManager` to prevent disk bloat.

@@ -318,23 +318,23 @@ export function FileSelectionStep() {
                        
                        {task.status === 'waiting_for_sync' && (
                          <span className="text-[9px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
-                           Pending
+                           {t('wizard.status_pending', 'Pending')}
                          </span>
                        )}
                        {task.status === 'syncing' && (
                          <span className="flex items-center gap-1 text-[9px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
-                           <Loader2 className="w-2.5 h-2.5 animate-spin" /> Preparing
+                           <Loader2 className="w-2.5 h-2.5 animate-spin" /> {t('wizard.status_preparing', 'Preparing')}
                          </span>
                        )}
                        {task.status === 'ready' && (
                          <span className="flex items-center gap-1 text-[9px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
-                           <Check className="w-2.5 h-2.5" /> Ready
+                           <Check className="w-2.5 h-2.5" /> {t('wizard.status_ready', 'Ready')}
                          </span>
                        )}
                        {task.status === 'error' && (
                          <div className="flex items-center gap-1.5">
                            <span className="text-[9px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider truncate max-w-[150px]" title={task.error}>
-                             Error
+                             {t('wizard.status_error', 'Error')}
                            </span>
                            <button 
                              onClick={() => syncTask(task)}

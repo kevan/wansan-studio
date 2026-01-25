@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface ConfirmDialogProps {
   open: boolean
@@ -26,10 +27,12 @@ export function ConfirmDialog({
   title,
   description,
   onConfirm,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText,
+  cancelText,
   variant = 'default',
 }: ConfirmDialogProps) {
+  const { t } = useTranslation('common')
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -39,7 +42,7 @@ export function ConfirmDialog({
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {cancelText}
+            {cancelText || t('cancel')}
           </Button>
           <Button
             variant={variant === 'destructive' ? 'destructive' : 'default'}
@@ -48,7 +51,7 @@ export function ConfirmDialog({
               onOpenChange(false)
             }}
           >
-            {confirmText}
+            {confirmText || t('confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

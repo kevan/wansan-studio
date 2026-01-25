@@ -13,14 +13,12 @@ import {
   RefreshCw,
   Server,
   Trash2,
-  X,
-  ShieldCheck,
   Globe,
   Settings2,
   Search,
   ChevronDown,
   ChevronRight,
-  LayoutGrid
+  ShieldCheck
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { DBConnectionConfig } from '@shared/types'
@@ -38,7 +36,6 @@ const BUSINESS_TYPES = [
   { id: 'mysql', name: 'MySQL', icon: 'M' }
 ]
 
-// --- Optimized Sub-component with Memoization ---
 interface TableItemProps {
   name: string
   schema?: string
@@ -49,6 +46,7 @@ interface TableItemProps {
 }
 
 const TableItemCard = React.memo(({ name, schema, fullId, isSelected, isAlreadyInTasks, onToggle }: TableItemProps) => {
+  const { t } = useTranslation('common')
   return (
     <TooltipProvider>
       <Tooltip delayDuration={500}>
@@ -72,7 +70,7 @@ const TableItemCard = React.memo(({ name, schema, fullId, isSelected, isAlreadyI
             <div className="flex flex-col min-w-0 flex-1">
               <span className="text-[13px] font-bold text-zinc-900 truncate block leading-none">{name}</span>
               {isAlreadyInTasks ? (
-                <span className="text-[9px] text-indigo-500 font-black uppercase tracking-tighter mt-1">In Project</span>
+                <span className="text-[9px] text-indigo-500 font-black uppercase tracking-tighter mt-1">{t('selected_data')}</span>
               ) : (
                 <span className="text-[9px] text-zinc-400 font-mono mt-1 truncate">{schema || 'default'}</span>
               )}
@@ -219,10 +217,10 @@ export function DatabaseSelectorDialog() {
         onEscapeKeyDown={(e) => e.preventDefault()}
         className="max-w-5xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl border-none rounded-3xl bg-white"
       >
-        <div className="flex h-full min-h-0">
+        <div className="flex h-full min-h-0 text-zinc-900">
           <div className="w-64 border-r border-zinc-100 flex flex-col bg-zinc-50/50 shrink-0">
             <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-white/50">
-              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('connector.saved_connections', 'Connectors')}</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('connector.saved_connections')}</span>
               <button onClick={() => { setIsCreating(true); setSelectedConnId(null); setError(null); setTestSuccess(false) }}
                 className="p-1.5 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all">
                 <Plus className="w-4 h-4" />
@@ -255,18 +253,17 @@ export function DatabaseSelectorDialog() {
             {isCreating ? (
               <div className="flex-1 flex flex-col min-h-0 animate-in fade-in slide-in-from-right-4">
                 <div className="p-8 border-b border-zinc-50 shrink-0">
-                  <h2 className="text-2xl font-bold text-zinc-900 tracking-tight">{t('connector.new_connection', 'New Connector')}</h2>
-                  <p className="text-sm text-zinc-500 mt-1">Configure your external database access.</p>
+                  <h2 className="text-2xl font-bold text-zinc-900 tracking-tight">{t('connector.new_connection')}</h2>
+                  <p className="text-sm text-zinc-500 mt-1">{t('connector.landing_desc')}</p>
                 </div>
                 <div className="flex-1 overflow-y-auto p-8 space-y-8">
-                  {/* Form fields... (simplified for brevity but intact) */}
                   <div className="grid grid-cols-2 gap-8">
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Connection Name</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('connector.form_name')}</Label>
                       <Input placeholder="e.g. Production DB" value={newConn.name} onChange={e => setNewConn(p => ({...p, name: e.target.value}))} className="rounded-xl border-zinc-100 focus:ring-indigo-500 h-11" />
                     </div>
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Database Type</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('format')}</Label>
                       <div className="flex bg-zinc-100/50 p-1 rounded-xl h-11">
                          {BUSINESS_TYPES.map(type => (
                            <button key={type.id} onClick={() => setNewConn(p => ({...p, type: type.id as any, port: type.id === 'postgres' ? 5432 : 3306}))} 
@@ -281,36 +278,36 @@ export function DatabaseSelectorDialog() {
                   <div className="h-px bg-zinc-100" />
                   <div className="grid grid-cols-4 gap-4">
                     <div className="col-span-3 space-y-3">
-                      <Label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400"><Globe className="w-3 h-3" /> Host</Label>
+                      <Label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400"><Globe className="w-3 h-3" /> {t('connector.form_host')}</Label>
                       <Input placeholder="localhost" value={newConn.host} onChange={e => setNewConn(p => ({...p, host: e.target.value}))} className="rounded-xl border-zinc-100 h-11" />
                     </div>
                     <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Port</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('connector.form_port')}</Label>
                       <Input placeholder="5432" type="number" value={newConn.port} onChange={e => setNewConn(p => ({...p, port: parseInt(e.target.value)}))} className="rounded-xl border-zinc-100 h-11" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-3">
-                      <Label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400"><Database className="w-3 h-3" /> Database</Label>
+                      <Label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400"><Database className="w-3 h-3" /> {t('connector.form_db')}</Label>
                       <Input value={newConn.database} onChange={e => setNewConn(p => ({...p, database: e.target.value}))} className="rounded-xl border-zinc-100 h-11" />
                     </div>
                     <div className="space-y-3">
-                      <Label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400"><Settings2 className="w-3 h-3" /> User</Label>
+                      <Label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400"><Settings2 className="w-3 h-3" /> {t('connector.form_user')}</Label>
                       <Input value={newConn.user} onChange={e => setNewConn(p => ({...p, user: e.target.value}))} className="rounded-xl border-zinc-100 h-11" />
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <Label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400"><ShieldCheck className="w-3 h-3" /> Password</Label>
+                    <Label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400"><ShieldCheck className="w-3 h-3" /> {t('connector.form_pass')}</Label>
                     <Input type="password" value={password} onChange={e => setPassword(e.target.value)} className="rounded-xl border-zinc-100 h-11" />
                   </div>
-                  {testSuccess && <div className="p-4 bg-emerald-50 text-emerald-700 rounded-2xl text-sm font-bold">Connection Successful!</div>}
+                  {testSuccess && <div className="p-4 bg-emerald-50 text-emerald-700 rounded-2xl text-sm font-bold">{t('settings_verify_connected')}</div>}
                   {error && <div className="p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-bold">{error}</div>}
                 </div>
                 <div className="p-8 border-t border-zinc-50 flex justify-end gap-3 shrink-0">
                    <Button variant="outline" onClick={handleTestConnection} disabled={isTesting} className="rounded-xl h-12 px-6 font-bold border-zinc-200">
-                      {isTesting ? <Loader2 className="animate-spin w-4 h-4 mr-2"/> : <RefreshCw className="w-4 h-4 mr-2" />} Test Connection
+                      {isTesting ? <Loader2 className="animate-spin w-4 h-4 mr-2"/> : <RefreshCw className="w-4 h-4 mr-2" />} {t('connector.btn_test')}
                    </Button>
-                   <Button onClick={handleSaveConnection} disabled={!newConn.name || !newConn.host} className="bg-indigo-600 text-white rounded-xl h-12 px-10 font-bold shadow-lg shadow-indigo-100">Create</Button>
+                   <Button onClick={handleSaveConnection} disabled={!newConn.name || !newConn.host} className="bg-indigo-600 text-white rounded-xl h-12 px-10 font-bold shadow-lg shadow-indigo-100">{t('confirm')}</Button>
                 </div>
               </div>
             ) : selectedConn ? (
@@ -326,10 +323,10 @@ export function DatabaseSelectorDialog() {
                    <div className="flex items-center gap-3">
                      <div className="relative">
                         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-                        <Input placeholder={`Search ${groupedTables.totalCount} tables...`} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 h-10 w-56 rounded-xl border-zinc-100 text-xs shadow-sm" />
+                        <Input placeholder={t('connector.search_tables', { count: groupedTables.totalCount })} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 h-10 w-56 rounded-xl border-zinc-100 text-xs shadow-sm" />
                      </div>
                      <Button variant="outline" size="sm" onClick={() => fetchTables(selectedConn.id)} disabled={isLoadingTables} className="rounded-xl border-zinc-200 font-bold h-10">
-                       <RefreshCw className={cn("w-3.5 h-3.5 mr-2", isLoadingTables && "animate-spin")} /> Refresh
+                       <RefreshCw className={cn("w-3.5 h-3.5 mr-2", isLoadingTables && "animate-spin")} /> {t('rerun')}
                      </Button>
                    </div>
                 </div>
@@ -344,13 +341,13 @@ export function DatabaseSelectorDialog() {
                      return (
                        <div key={schema} className="mb-2 last:mb-0">
                          {!isOnlyOneGroup && (
-                           <div className="sticky top-[-1px] bg-white/90 backdrop-blur-md border-b border-zinc-100 z-20 px-8 py-3 flex items-center justify-between group">
+                           <div className="sticky top-[-1px] bg-white border-b border-zinc-100 z-20 px-8 py-3 flex items-center justify-between group">
                              <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCollapsedSchemas(prev => { const n = new Set(prev); if (n.has(schema)) n.delete(schema); else n.add(schema); return n; })}>
                                <div className="p-1 rounded-md hover:bg-zinc-100 text-zinc-400 transition-colors">
                                  {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                                </div>
                                <div className="flex items-center gap-2">
-                                 <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{schema}</h3>
+                                 <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{t('connector.schema_group', { name: schema })}</h3>
                                  <div className="bg-indigo-50 text-indigo-600 text-[9px] px-2 py-0.5 rounded-full font-black">
                                    {groupSelectedCount} / {schemaTables.length}
                                  </div>
@@ -385,7 +382,7 @@ export function DatabaseSelectorDialog() {
                    {groupedTables.totalCount === 0 && !isLoadingTables && (
                       <div className="py-32 text-center">
                         <Database className="w-12 h-12 text-zinc-100 mx-auto mb-4" />
-                        <p className="text-sm text-zinc-400 font-bold">No tables match your search.</p>
+                        <p className="text-sm text-zinc-400 font-bold">{t('connector.no_tables_match')}</p>
                       </div>
                    )}
                 </div>
@@ -393,7 +390,7 @@ export function DatabaseSelectorDialog() {
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-zinc-400 animate-in fade-in duration-700">
                 <div className="w-20 h-20 bg-zinc-50 rounded-full flex items-center justify-center mb-6"><Server className="w-8 h-8 opacity-20" /></div>
-                <p className="text-sm font-bold uppercase tracking-widest opacity-40">Select or create a connector</p>
+                <p className="text-sm font-bold uppercase tracking-widest opacity-40">{t('connector.no_connections')}</p>
               </div>
             )}
           </div>
@@ -402,25 +399,17 @@ export function DatabaseSelectorDialog() {
         <div className="p-6 border-t border-zinc-100 bg-white flex justify-between items-center shrink-0">
           <div className="flex items-center gap-3">
             <div className={cn("w-2.5 h-2.5 rounded-full", totalSelected > 0 ? "bg-indigo-600 animate-pulse" : "bg-zinc-200")} />
-            <span className="text-sm font-black text-zinc-900">{totalSelected} <span className="text-zinc-400 font-bold text-xs uppercase ml-1">Tables selected</span></span>
+            <span className="text-sm font-black text-zinc-900">{totalSelected} <span className="text-zinc-400 font-bold text-xs uppercase ml-1">{t('connector.selected_tables', { count: totalSelected })}</span></span>
           </div>
           <div className="flex gap-3">
-            <Button variant="ghost" onClick={() => setDbSelectorOpen(false)} className="rounded-xl font-bold px-6">Cancel</Button>
+            <Button variant="ghost" onClick={() => setDbSelectorOpen(false)} className="rounded-xl font-bold px-6">{t('cancel')}</Button>
             <Button onClick={handleConfirm} disabled={totalSelected === 0} 
               className="bg-zinc-900 hover:bg-black text-white rounded-xl px-10 font-bold shadow-xl shadow-zinc-100 transition-all disabled:opacity-30 h-12">
-              Add {totalSelected} Tables
+              {t('confirm')} ({totalSelected})
             </Button>
           </div>
         </div>
       </DialogContent>
     </Dialog>
-  )
-}
-
-function Badge({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <span className={cn("inline-flex items-center px-2 py-0.5 rounded text-xs font-medium", className)}>
-      {children}
-    </span>
   )
 }
