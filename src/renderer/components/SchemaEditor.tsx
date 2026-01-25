@@ -17,7 +17,6 @@ import {
   Key,
   Layout,
   Link2,
-  MessageSquare,
   Plus,
   RefreshCw,
   Sparkles,
@@ -34,37 +33,8 @@ import { ConfirmDialog } from './modals/ConfirmDialog'
 import { MetricEditorModal } from './modals/metric-editor-modal'
 import { RelationEditorModal } from './modals/RelationEditorModal'
 import { DataLineageDialog } from './modals/DataLineageDialog'
+import { SemanticEditorModal } from './modals/SemanticEditorModal'
 import { COLUMN_TYPE_CONFIG } from '@/src/lib/constants'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from './ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select'
-import { Input } from './ui/input'
-import { Label } from './ui/label'
-import { Textarea } from './ui/textarea'
-
-const BUSINESS_TYPES = [
-  'ID',
-  'Code',
-  'Money',
-  'Category',
-  'Text',
-  'Date',
-  'Time',
-  'Quantity',
-  'Location',
-  'Other',
-]
 
 export function SchemaEditor() {
   const files = useProjectStore(s => s.files)
@@ -99,10 +69,6 @@ export function SchemaEditor() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   const [editingColumn, setEditingColumn] = useState<ColumnSchema | null>(null)
-  const [editAliases, setEditAliases] = useState<string[]>([])
-  const [newAliasInput, setNewAliasInput] = useState('')
-  const [editDesc, setEditDescription] = useState('')
-  const [editBusinessType, setEditBusinessType] = useState('')
 
   const currentFileId =
     activeFileId && files.find(f => f.id === activeFileId)
@@ -172,28 +138,14 @@ export function SchemaEditor() {
   }
   const handleOpenSemanticEdit = (col: ColumnSchema) => {
     setEditingColumn(col)
-    setEditAliases(col.semantic?.aliases || [])
-    setEditDescription(col.semantic?.description || '')
-    setEditBusinessType(col.semantic?.businessType || 'Other')
-    setNewAliasInput('')
   }
-  const handleAddAlias = () => {
-    const val = newAliasInput.trim()
-    if (val && !editAliases.includes(val)) {
-      setEditAliases([...editAliases, val])
-      setNewAliasInput('')
-    }
-  }
-  const handleRemoveAlias = (aliasToRemove: string) => {
-    setEditAliases(editAliases.filter(a => a !== aliasToRemove))
-  }
-  const handleSaveSemantic = () => {
+  const handleSaveSemantic = (data: {
+    aliases: string[]
+    description: string
+    businessType: string
+  }) => {
     if (!editingColumn) return
-    updateColumnSemantic(currentFile.id, editingColumn.name, {
-      aliases: editAliases,
-      description: editDesc,
-      businessType: editBusinessType,
-    })
+    updateColumnSemantic(currentFile.id, editingColumn.name, data)
     setEditingColumn(null)
     toast.addToast({
       title: t('semantic_updated', 'Metadata Updated'),
@@ -367,12 +319,12 @@ export function SchemaEditor() {
           >
             <div className="flex flex-col">
               {/* Sticky List Header */}
-              <div className="sticky top-[64px] z-10 bg-zinc-50 border-b border-zinc-200 px-8 py-2.5 flex items-center gap-4 text-[10px] font-black uppercase text-zinc-400 tracking-widest shrink-0 shadow-sm">
-                <div className="w-16 shrink-0">{t('list_status')}</div>
-                <div className="w-48 shrink-0">{t('list_field_type')}</div>
-                <div className="flex-1">{t('list_semantic_samples')}</div>
-                <div className="w-12 text-right">{t('list_edit')}</div>
-              </div>
+              {/*<div className="sticky top-[64px] z-10 bg-zinc-50 border-b border-zinc-200 px-8 py-2.5 flex items-center gap-4 text-[10px] font-black uppercase text-zinc-400 tracking-widest shrink-0 shadow-sm">*/}
+              {/*  <div className="w-16 shrink-0">{t('list_status')}</div>*/}
+              {/*  <div className="w-48 shrink-0">{t('list_field_type')}</div>*/}
+              {/*  <div className="flex-1">{t('list_semantic_samples')}</div>*/}
+              {/*  <div className="w-12 text-right">{t('list_edit')}</div>*/}
+              {/*</div>*/}
 
               <div className="px-4 py-6">
                 <div className="flex flex-col border border-zinc-100 rounded-2xl overflow-hidden divide-y divide-zinc-50 z-0 relative">
@@ -660,114 +612,12 @@ export function SchemaEditor() {
         allFiles={files}
       />
 
-      {/* Manual Semantic Edit Modal */}
-      <Dialog
-        open={!!editingColumn}
-        onOpenChange={open => !open && setEditingColumn(null)}
-      >
-        <DialogContent className="max-w-md rounded-3xl border-none shadow-2xl p-8 text-zinc-900">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-indigo-600" />
-              {t('edit_semantic')}
-            </DialogTitle>
-            <p className="text-xs text-zinc-500 leading-relaxed mt-2">
-              {t('edit_semantic_desc')}
-            </p>
-          </DialogHeader>
-          <div className="space-y-6 py-4">
-            <div className="space-y-3">
-              <Label className="text-xs font-bold uppercase tracking-widest text-zinc-400">
-                {t('field_alias')}
-              </Label>
-              <div className="flex flex-wrap gap-2 mb-2 min-h-[32px]">
-                {editAliases.map((alias, idx) => (
-                  <Badge
-                    key={idx}
-                    variant="secondary"
-                    className="bg-indigo-50 text-indigo-600 font-bold px-2 py-1 gap-1 rounded-lg border-none group/tag"
-                  >
-                    {alias}
-                    <button
-                      onClick={() => handleRemoveAlias(alias)}
-                      className="text-indigo-300 hover:text-indigo-600 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  value={newAliasInput}
-                  onChange={e => setNewAliasInput(e.target.value)}
-                  onKeyDown={e =>
-                    e.key === 'Enter' && (e.preventDefault(), handleAddAlias())
-                  }
-                  placeholder={t('add_alias')}
-                  className="rounded-xl border-zinc-100 focus:ring-indigo-500 flex-1"
-                />
-                <Button
-                  variant="outline"
-                  onClick={handleAddAlias}
-                  className="rounded-xl border-zinc-100 text-zinc-400 hover:text-indigo-600"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-zinc-400">
-                {t('format')}
-              </Label>
-              <Select
-                value={editBusinessType}
-                onValueChange={setEditBusinessType}
-              >
-                <SelectTrigger className="rounded-xl border-zinc-100">
-                  <SelectValue placeholder="Select type..." />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-none shadow-xl">
-                  {BUSINESS_TYPES.map(type => (
-                    <SelectItem key={type} value={type}>
-                      {t(`business_type.${type.toLowerCase()}`, type)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-zinc-400">
-                {t('field_description')}
-              </Label>
-              <Textarea
-                value={editDesc}
-                onChange={e => setEditDescription(e.target.value)}
-                placeholder={t(
-                  'field_description_placeholder',
-                  'Describe the logic or meaning of this column...'
-                )}
-                className="rounded-xl border-zinc-100 min-h-[100px] focus:ring-indigo-500"
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => setEditingColumn(null)}
-              className="rounded-xl font-bold"
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              onClick={handleSaveSemantic}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-8 font-bold"
-            >
-              {t('save')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SemanticEditorModal
+        isOpen={!!editingColumn}
+        onClose={() => setEditingColumn(null)}
+        onSave={handleSaveSemantic}
+        column={editingColumn}
+      />
       {gateNode}
     </div>
   )
