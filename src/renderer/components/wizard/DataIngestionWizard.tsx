@@ -216,6 +216,7 @@ export function DataIngestionWizard() {
               sampleValues: c.sampleValues || [], // Use fresh samples from DB
               isKey: userConfig?.isPrimaryKey || false,
               isPrimaryKey: userConfig?.isPrimaryKey || false,
+              semantic: userConfig?.description ? { description: userConfig.description } : undefined // [NEW] Persist description
             }
           })
 

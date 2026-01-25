@@ -115,6 +115,7 @@
       "note_body": "Data will be stored in your local project bundle. Once imported, you can perform multi-table analysis using AI. Large datasets might take a few moments to index."
     },
     "set_unique_key": "Mark as Unique (Multi-select)",
+    "unset_unique_key": "Unmark Unique",
     "set_match_key": "Matching Criteria (Multi-select)",
     "unset_match_key": "Unset Matching Criteria",
     "target_label": "TARGET",

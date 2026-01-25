@@ -352,7 +352,7 @@ const ColumnPreviewHead = ({
                     ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
                     : 'bg-white border-zinc-200 text-zinc-300 hover:text-indigo-600 hover:border-indigo-200'
                 )}
-                title={t('wizard.set_unique_key')}
+                title={column.isPrimaryKey ? t('wizard.unset_unique_key', 'Unset Unique Key') : t('wizard.set_unique_key')}
               >
                 <Key
                   className={cn(

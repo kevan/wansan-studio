@@ -59,8 +59,11 @@ export async function ingestJsonData(
 ): Promise<TableSchema> {
   try {
     const jsonContent = JSON.stringify(rows)
-    const tempFileName = `temp_${Date.now()}.json`
-    const tempPath = path.join(app.getPath('temp'), tempFileName)
+    
+    // [OPTIMIZATION] Use centralized temp manager
+    await TempFileManager.ensureTempDir()
+    const tempPath = TempFileManager.getTempFilePath('.json')
+    
     await fs.writeFile(tempPath, jsonContent)
     // DuckDB expects forward slashes
     const loadPath = tempPath.replace(/\\/g, '/')
@@ -74,8 +77,7 @@ export async function ingestJsonData(
     )
 
     // [OPTIMIZATION] Free resources
-    const cleanupPath = path.join(app.getPath('temp'), tempFileName)
-    await fs.unlink(cleanupPath).catch(() => {})
+    await TempFileManager.secureUnlink(tempPath)
 
     return fetchTableSchema(databaseService, tableName, 'Imported JSON Data')
   } catch (error) {

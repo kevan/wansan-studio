@@ -7,6 +7,7 @@ import fs from 'fs-extra'
 import { app } from 'electron'
 import { pipeline } from 'stream/promises'
 import { Transform } from 'stream'
+import { TempFileManager } from '../utils/temp-manager'
 
 export interface DBTableInfo {
   name: string
@@ -173,11 +174,29 @@ export class DBConnectorService {
         await client.connect()
         
         const { schema, table } = parseTableId(tableName)
+        // [ENHANCED] Fetch PKs and Comments
         const colQuery = `
-          SELECT column_name, data_type, is_nullable
-          FROM information_schema.columns 
-          WHERE table_name = $1 
-          ${schema ? 'AND table_schema = $2' : ''}
+          SELECT 
+            c.column_name, 
+            c.data_type, 
+            c.is_nullable,
+            pg_catalog.col_description(format('%s.%s', c.table_schema, c.table_name)::regclass::oid, c.ordinal_position) as column_comment,
+            CASE WHEN pk.column_name IS NOT NULL THEN true ELSE false END as is_pk
+          FROM information_schema.columns c
+          LEFT JOIN (
+            SELECT kcu.column_name, kcu.table_schema, kcu.table_name
+            FROM information_schema.table_constraints tco
+            JOIN information_schema.key_column_usage kcu 
+              ON kcu.constraint_name = tco.constraint_name
+              AND kcu.table_schema = tco.table_schema
+              AND kcu.table_name = tco.table_name
+            WHERE tco.constraint_type = 'PRIMARY KEY'
+          ) pk ON c.column_name = pk.column_name 
+              AND c.table_schema = pk.table_schema 
+              AND c.table_name = pk.table_name
+          WHERE c.table_name = $1 
+          ${schema ? 'AND c.table_schema = $2' : ''}
+          ORDER BY c.ordinal_position
         `
         const params = schema ? [table, schema] : [table]
         const colRes = await client.query(colQuery, params)
@@ -191,7 +210,9 @@ export class DBConnectorService {
           columns: colRes.rows.map(r => ({
             name: r.column_name,
             type: normalizeDuckDBType(r.data_type),
-            nullable: r.is_nullable === 'YES'
+            nullable: r.is_nullable === 'YES',
+            isPrimaryKey: r.is_pk,
+            description: r.column_comment || undefined
           })),
           preview: dataRes.rows,
           rowCount: parseInt(countRes.rows[0].count)
@@ -203,7 +224,8 @@ export class DBConnectorService {
           charset: 'UTF8MB4', decimalNumbers: true
         })
         await conn.query("SET NAMES 'utf8mb4'")
-        const [cols] = await conn.execute(`DESCRIBE ${escapedName}`)
+        // [ENHANCED] MySQL SHOW FULL COLUMNS includes Comment and Key info
+        const [cols] = await conn.execute(`SHOW FULL COLUMNS FROM ${escapedName}`)
         const [data] = await conn.execute(`SELECT * FROM ${escapedName} LIMIT 100`)
         const [count] = await conn.execute(`SELECT COUNT(*) as count FROM ${escapedName}`)
         await conn.end()
@@ -211,7 +233,9 @@ export class DBConnectorService {
           columns: (cols as any[]).map(r => ({
             name: r.Field,
             type: normalizeDuckDBType(r.Type),
-            nullable: r.Null === 'YES'
+            nullable: r.Null === 'YES',
+            isPrimaryKey: r.Key === 'PRI',
+            description: r.Comment || undefined
           })),
           preview: data as any[],
           rowCount: (count as any[])[0].count
@@ -229,8 +253,8 @@ export class DBConnectorService {
       const columnNames = preview.columns.map(c => c.name)
       const escapedName = escapeTableName(tableName, config.type)
       
-      const tempFileName = `db_cache_${Date.now()}.csv`
-      const tempPath = path.join(app.getPath('temp'), tempFileName)
+      await TempFileManager.ensureTempDir()
+      const tempPath = TempFileManager.getTempFilePath('.csv')
       const writeStream = fs.createWriteStream(tempPath)
       
       console.log(`[Connector] Streaming sync to disk: ${tableName} -> ${tempPath}`)
@@ -256,7 +280,7 @@ export class DBConnectorService {
         return { success: true, rowCount: preview.rowCount, columns: preview.columns, preview: preview.preview, tempFilePath: tempPath }
       } catch (error) {
         console.error('[Connector] Streaming sync failed:', error)
-        await fs.unlink(tempPath).catch(() => {})
+        await TempFileManager.secureUnlink(tempPath)
         throw error
       }
     }}

@@ -117,7 +117,8 @@ export function FileSelectionStep() {
         columns: columns.map((c: any) => ({
           name: c.name,
           type: c.type as any,
-          isPrimaryKey: false 
+          isPrimaryKey: c.isPrimaryKey || false, // [FIX] Use DB PK
+          description: c.description // [NEW] Pass comment
         })),
         previewData: preview || [],
         rowCount: rowCount,

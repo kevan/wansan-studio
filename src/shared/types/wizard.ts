@@ -7,6 +7,7 @@ export interface ColumnConfig {
   name: string
   type: ColumnType
   isPrimaryKey: boolean
+  description?: string // [NEW] Database comment
   isIgnored?: boolean // [NEW] Physical exclusion from import
   validationStatus?: 'idle' | 'validating' | 'success' | 'error'
   validationMessage?: string
