@@ -114,40 +114,7 @@ export class FileService {
     } else if (ext === '.parquet') {
       reader = 'read_parquet'
     } else if (ext === '.csv') {
-      // [Auto-Detect Encoding]
-      const strategies = [
-        { name: 'Default', options: { auto_detect: true } },
-        { name: 'GBK', options: { encoding: 'GBK', auto_detect: true } },
-        {
-          name: 'GB18030',
-          options: { encoding: 'GB18030', auto_detect: true },
-        },
-        {
-          name: 'IgnoreErrors',
-          options: { ignore_errors: true, auto_detect: true },
-        },
-      ]
-
-      let lastError: any
-      let winningStrategy = null
-
-      for (const strategy of strategies) {
-        try {
-          const optStr = Object.entries(strategy.options)
-            .map(([k, v]) => `${k}=${typeof v === 'string' ? `'${v}'` : v}`)
-            .join(', ')
-          const sql = `DESCRIBE SELECT * FROM read_csv_auto('${safePath}', ${optStr})`
-          await this.databaseService.query(sql)
-          winningStrategy = strategy
-          break
-        } catch (e) {
-          lastError = e
-        }
-      }
-
-      if (!winningStrategy)
-        throw new Error(`Failed to parse CSV: ${lastError?.message}`)
-      detectedOptions = winningStrategy.options
+      detectedOptions = await this.detectCsvEncoding(safePath)
     }
 
     // Final Read
@@ -590,5 +557,42 @@ export class FileService {
       `SELECT COUNT(*) as count FROM "${targetTableName}" `
     )
     return { rowCount: Number(count[0].count) }
+  }
+
+  private async detectCsvEncoding(safePath: string): Promise<Record<string, any>> {
+    const strategies = [
+      { name: 'Default', options: { auto_detect: true } },
+      { name: 'GBK', options: { encoding: 'GBK', auto_detect: true } },
+      {
+        name: 'GB18030',
+        options: { encoding: 'GB18030', auto_detect: true },
+      },
+      {
+        name: 'IgnoreErrors',
+        options: { ignore_errors: true, auto_detect: true },
+      },
+      // Fallback: If strict auto_detect fails, try more lenient settings?
+      // Currently we stick to the defines strategies.
+    ]
+
+    let lastError: any
+
+    for (const strategy of strategies) {
+      try {
+        const optStr = Object.entries(strategy.options)
+          .map(([k, v]) => `${k}=${typeof v === 'string' ? `'${v}'` : v}`)
+          .join(', ')
+        
+        // Use DESCRIBE to validate the read strategy rapidly
+        await this.databaseService.query(
+          `DESCRIBE SELECT * FROM read_csv_auto('${safePath}', ${optStr})`
+        )
+        return strategy.options
+      } catch (e) {
+        lastError = e
+      }
+    }
+
+    throw new Error(`Failed to parse CSV: ${lastError?.message || 'Unknown error'}`)
   }
 }

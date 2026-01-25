@@ -17,6 +17,23 @@ We extend the `ColumnSchema` to hold semantic metadata and clean up legacy field
 ```typescript
 // src/shared/types.ts
 
+// [NEW] Structured Source Config (Refactored in v1.6)
+export interface LocalFileSource {
+  type: 'local_file';
+  path: string;
+  format?: 'excel' | 'csv' | 'parquet';
+  readOptions?: Record<string, any>; // e.g. { encoding: 'GBK' }
+}
+
+export interface DatabaseSource {
+  type: 'database';
+  connectionId: string;
+  schema?: string;
+  table: string;
+}
+
+export type DataSourceConfig = LocalFileSource | DatabaseSource;
+
 export interface ColumnSemantic {
   /** User-friendly aliases or synonyms e.g. ["营收", "Sales Revenue"] */
   aliases?: string[];
@@ -79,6 +96,7 @@ We use Node.js drivers (`pg`, `mysql2`) to stream data into the Staging Phase.
 
 *   **Architecture**: `Stream` -> `fs.createWriteStream` -> `DuckDB read_csv_auto`.
 *   **Why**: This avoids OOM on large tables and leverages DuckDB's parallel CSV reader for ingestion speed.
+*   **Security**: All temporary files are managed by `TempFileManager` with strict path validation and automatic cleanup.
 
 ### 2.3 File Format Support
 
@@ -103,14 +121,21 @@ We use Node.js drivers (`pg`, `mysql2`) to stream data into the Staging Phase.
 *   **Real-time Stats**: Row/Column counts displayed immediately upon readiness.
 *   **Ignore Column**: In Preview, use a **Ban Icon** (🚫) to explicitly exclude columns. Visual dimming applied to ignored columns.
 
+### 3.3 Data Lineage (Traceability)
+*   **Visual Graph**: A node-link diagram showing the flow from `Source File` -> `Staging CSV` -> `DuckDB Table`.
+*   **Metadata Inspection**: Users can view file size, modification time, and sync status at each stage.
+*   **Transparency**: Explicitly shows *where* the data resides on the generic filesystem, building trust for the "Local-First" promise.
+
 ---
 
 ## 4. Implementation Status
 
 *   [x] **Semantic Schema**: `ColumnSemantic` structure added.
 *   [x] **AI Analysis**: `analyzeSemantics` API implemented.
-*   [x] **Unified Pipeline**: `FileService` refactored to 3-stage architecture.
-*   [x] **Parquet Support**: Added via DuckDB Native.
-*   [x] **CSV Encoding**: Robust detection for Chinese characters.
+*   [x] **Unified Pipeline**: `FileService` refactored to 3-stage architecture with `DataSourceConfig`.
+*   [x] **Parquet Support**: Added via DuckDB Native and Zero-Copy ingestion.
+*   [x] **CSV Encoding**: Robust detection (GBK/GB18030) for legacy systems.
 *   [x] **Database Connectors**: MySQL/PostgreSQL streaming implementation.
 *   [x] **Wizard UX**: Auto-preloading and unified task list.
+*   [x] **Data Lineage**: Visual Dialog implemented (v1.6).
+*   [x] **Secure Temp Files**: `TempFileManager` with path validation.

@@ -269,57 +269,63 @@ export function FileSelectionStep() {
     setTasks(tasks.filter(t => t.id !== id))
   }
 
+  function renderEmptyState() {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-in fade-in zoom-in-95 duration-300">
+        <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mb-8 border-4 border-white shadow-xl">
+          <Upload className="w-10 h-10 text-indigo-600" />
+        </div>
+
+        <h3 className="text-2xl font-bold text-zinc-900 mb-3 tracking-tight">
+          {t('wizard.select_title')}
+        </h3>
+        <p className="text-zinc-500 max-w-md mb-10 leading-relaxed">
+          {t('wizard.select_desc')}
+        </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <Button
+            size="lg"
+            onClick={handleSelectFiles}
+            disabled={isParsing}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl px-10 h-14 font-bold text-lg shadow-lg shadow-indigo-100 hover:scale-105 transition-all active:scale-95"
+          >
+            {isParsing ? (
+              <Loader2 className="w-6 h-6 animate-spin mr-3" />
+            ) : (
+              <Plus className="w-6 h-6 mr-3" />
+            )}
+            {t('wizard.select_files')}
+          </Button>
+
+          {isDBAvailable && (
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setDbSelectorOpen(true)}
+              className="rounded-2xl px-10 h-14 font-bold text-lg border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 transition-all"
+            >
+              <Database className="w-6 h-6 mr-3 text-pink-500" />
+              {t('wizard.connect_db')}
+            </Button>
+          )}
+        </div>
+
+        <div className="mt-12 flex items-center gap-8 opacity-40 grayscale group hover:grayscale-0 transition-all duration-500">
+          <FileSpreadsheet className="w-8 h-8" />
+          <FileText className="w-8 h-8" />
+          <Layers className="w-8 h-8" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full bg-white">
       <DatabaseSelectorDialog />
 
       {tasks.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-in fade-in zoom-in-95 duration-300">
-          <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mb-8 border-4 border-white shadow-xl">
-            <Upload className="w-10 h-10 text-indigo-600" />
-          </div>
-
-          <h3 className="text-2xl font-bold text-zinc-900 mb-3 tracking-tight">
-            {t('wizard.select_title')}
-          </h3>
-          <p className="text-zinc-500 max-w-md mb-10 leading-relaxed">
-            {t('wizard.select_desc')}
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Button
-              size="lg"
-              onClick={handleSelectFiles}
-              disabled={isParsing}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl px-10 h-14 font-bold text-lg shadow-lg shadow-indigo-100 hover:scale-105 transition-all active:scale-95"
-            >
-              {isParsing ? (
-                <Loader2 className="w-6 h-6 animate-spin mr-3" />
-              ) : (
-                <Plus className="w-6 h-6 mr-3" />
-              )}
-              {t('wizard.select_files')}
-            </Button>
-
-            {isDBAvailable && (
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => setDbSelectorOpen(true)}
-                className="rounded-2xl px-10 h-14 font-bold text-lg border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 transition-all"
-              >
-                <Database className="w-6 h-6 mr-3 text-pink-500" />
-                {t('wizard.connect_db')}
-              </Button>
-            )}
-          </div>
-
-          <div className="mt-12 flex items-center gap-8 opacity-40 grayscale group hover:grayscale-0 transition-all duration-500">
-            <FileSpreadsheet className="w-8 h-8" />
-            <FileText className="w-8 h-8" />
-            <Layers className="w-8 h-8" />
-          </div>
-        </div>
+        renderEmptyState()
       ) : (
         <div className="flex-1 flex flex-col overflow-hidden animate-in slide-in-from-right-4 duration-500">
           <div className="px-12 py-8 flex justify-between items-center bg-zinc-50/50 border-b border-zinc-100">

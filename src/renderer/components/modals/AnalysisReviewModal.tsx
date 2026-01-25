@@ -60,18 +60,17 @@ export function AnalysisReviewModal({
   // Initialize selections when result changes or modal opens
   useEffect(() => {
     if (isOpen && result) {
-      // Default: Select ALL high confidence relations (> 0.7)
+      // Default: Select ALL high confidence relations (> 0.8)
       const relIndices = new Set<number>()
       result.relationships.forEach((r, i) => {
-        if (r.confidence > 0.7) relIndices.add(i)
+        if (r.confidence > 0.8) relIndices.add(i)
       })
       setSelectedRelations(relIndices)
 
-      // Default: Select ALL metrics (that don't look like subqueries for safety)
+      // Default: Select ALL high confidence metrics (> 0.8)
       const metricIndices = new Set<number>()
       ;(result.metrics || []).forEach((m, i) => {
-        const isSubquery = /SELECT|FROM|JOIN/i.test(m.sqlExpression)
-        if (!isSubquery) metricIndices.add(i)
+        if (m.confidence !== undefined && m.confidence > 0.8) metricIndices.add(i)
       })
       setSelectedMetrics(metricIndices)
 
@@ -89,7 +88,11 @@ export function AnalysisReviewModal({
   if (isOpen && !isAnalyzing && !result) {
     return (
       <Dialog open={isOpen} onOpenChange={open => !open && onCancel()}>
-        <DialogContent className="sm:max-w-md p-6 border-zinc-200 shadow-2xl bg-white">
+        <DialogContent 
+          className="sm:max-w-md p-6 border-zinc-200 shadow-2xl bg-white"
+          onPointerDownOutside={e => e.preventDefault()}
+          onEscapeKeyDown={e => e.preventDefault()}
+        >
           <div className="flex flex-col items-center text-center gap-6 py-6">
             <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-sm animate-in zoom-in duration-300">
               <Sparkles className="w-8 h-8 text-indigo-600" />
@@ -400,7 +403,11 @@ export function AnalysisReviewModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && onCancel()}>
-      <DialogContent className="sm:max-w-4xl p-0 gap-0 overflow-hidden border-zinc-200 shadow-2xl bg-white">
+      <DialogContent 
+        className="sm:max-w-4xl p-0 gap-0 overflow-hidden border-zinc-200 shadow-2xl bg-white"
+        onPointerDownOutside={e => e.preventDefault()}
+        onEscapeKeyDown={e => e.preventDefault()}
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-zinc-100 bg-gradient-to-b from-white to-zinc-50/50">
           <div className="flex items-start gap-4">

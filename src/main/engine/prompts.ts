@@ -181,7 +181,9 @@ Your goal is to analyze the provided table schemas to:
 
 ### 🧮 PART 2: SMART METRICS (SINGLE TABLE ONLY)
 Look for columns **within the same table** that can be combined to form standard business metrics.
--   **CRITICAL CONSTRAINT**: The SQL Expression MUST be a simple formula using ONLY columns from the current \`tableName\`.
+-   **CRITICAL CONSTRAINT**: The SQL Expression MUST be a valid formula using ONLY columns from the current \`tableName\`.
+-   **NO "NULL" ALLOWED**: If a metric cannot be calculated due to missing columns, **DO NOT SUGGEST IT**. Never return "NULL" as \`sqlExpression\`.
+-   **CONFIDENCE THRESHOLD**: Only suggest metrics where you have high confidence (> 0.7). If you are unsure or the data is missing, omit the metric entirely.
 -   **STRICT FORBIDDEN**: NEVER use \`SELECT\`, \`FROM\`, \`JOIN\`, or any subqueries.
 -   **STRICT FORBIDDEN**: NEVER reference other tables in the expression.
 -   **SCOPE**: Only suggest metrics that can be calculated using fields already present in the same row of the same table.

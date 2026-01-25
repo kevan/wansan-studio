@@ -5,6 +5,7 @@ import { useToastStore } from '../stores/useToastStore'
 import type { FileNode } from '../../shared/types'
 import { useWorkbenchStore } from '../stores/useWorkbenchStore'
 import { useTranslation } from 'react-i18next'
+import { mapFileToSchema } from '../utils/schema-mapper'
 
 export function useAutoLink() {
   const analysisMutation = useContextAnalysis()
@@ -58,16 +59,7 @@ export function useAutoLink() {
         return
       }
 
-      const schemas = filesToUse.map(f => ({
-        tableName: f.tableName,
-        description: f.name,
-        columns: f.columns.map(c => ({
-          name: c.name,
-          safeName: c.safeName,
-          type: c.type,
-          sampleValues: c.sampleValues,
-        })),
-      }))
+      const schemas = filesToUse.map(f => mapFileToSchema(f))
 
       try {
         const result = await analysisMutation.mutateAsync({
