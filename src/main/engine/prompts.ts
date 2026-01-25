@@ -320,7 +320,20 @@ export function serializeSchemas(schemas: TableSchema[]): string {
         : viewNote
           ? ` (Source: ${viewNote})`
           : ''
-      return `Table: "${displayTableName}"${descStr}\nColumns:\n${columnsStr}${joinedHint}`
+      // [NEW] Add Relationships
+      let relationsStr = ''
+      if (table.relations && table.relations.length > 0) {
+        relationsStr =
+          '\nRelationships:\n' +
+          table.relations
+            .map(
+              r =>
+                `- JOIN "${r.targetTable}" ON "${displayTableName}"."${r.sourceColumn}" = "${r.targetTable}"."${r.targetColumn}"`
+            )
+            .join('\n')
+      }
+
+      return `Table: "${displayTableName}"${descStr}\nColumns:\n${columnsStr}${joinedHint}${relationsStr}`
     })
     .join('\n\n')
 }

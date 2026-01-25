@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { ChatInterface } from './ChatInterface'
-import { TableSchema, RelationSuggestion } from '../../shared/types'
+import { TableSchema } from '../../shared/types'
 import { useChatStore } from '../stores/useChatStore'
 import { useProjectStore } from '../stores/useProjectStore'
 import { SmartFilterModal } from './modals/SmartFilterModal'
@@ -42,50 +42,12 @@ export function ChatStream() {
 
   // Map store files to TableSchema for AI - Memoized
   const schemas: TableSchema[] = useMemo(
-    () => readyFiles.map(mapFileToSchema),
+    () => readyFiles.map(f => mapFileToSchema(f, files)),
     [readyFiles]
   )
 
-  // Convert internal relations to API expected format - Memoized
-  const apiRelations: RelationSuggestion[] = useMemo(() => {
-    const relations = files.flatMap(f =>
-      (f.relations || []).map(r => ({
-        id: r.id,
-        fileAId: f.id,
-        columnA: r.sourceColumn,
-        fileBId: r.targetFileId,
-        columnB: r.targetColumn,
-        autoDetected: r.autoDetected,
-      }))
-    )
-
-    return relations
-      .map(r => {
-        const fileA = files.find(f => f.id === r.fileAId)
-        const fileB = files.find(f => f.id === r.fileBId)
-
-        if (
-          !fileA ||
-          !fileB ||
-          fileA.status !== 'ready' ||
-          fileB.status !== 'ready'
-        )
-          return null
-
-        return {
-          sourceTable: fileA.tableName,
-          sourceColumn: r.columnA,
-          targetTable: fileB.tableName,
-          targetColumn: r.columnB,
-          confidence: 1.0,
-          reason: 'User confirmed or auto-detected in session',
-        }
-      })
-      .filter((r): r is RelationSuggestion => r !== null)
-  }, [files])
-
   const onQuerySubmit = (query: string) => {
-    sendMessage(query, undefined, schemas, apiRelations)
+    sendMessage(query, undefined, schemas)
   }
 
   // Get current columns for autocomplete - Memoized

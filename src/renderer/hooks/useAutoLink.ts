@@ -59,7 +59,9 @@ export function useAutoLink() {
         return
       }
 
-      const schemas = filesToUse.map(f => mapFileToSchema(f))
+      const schemas = filesToUse.map(f =>
+        mapFileToSchema(f, filesToUse, { skipMetrics: true, skipRelations: true })
+      )
 
       try {
         const result = await analysisMutation.mutateAsync({

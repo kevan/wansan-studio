@@ -1,11 +1,10 @@
-import { useProjectStore, selectAllRelations } from './useProjectStore'
+import { useProjectStore } from './useProjectStore'
 import { useSettingsStore } from './useSettingsStore'
 import { useToastStore } from './useToastStore'
 import { Analytics } from '../services/analytics'
 import type { ChatMessage } from '../components/ChatInterface'
 import type {
   AIAnalysisResult,
-  RelationSuggestion,
   TableSchema,
   InsightResult,
 } from '@shared/types'
@@ -36,7 +35,6 @@ interface ChatStore {
     text: string,
     hiddenPrompt?: string,
     schemas?: TableSchema[],
-    relations?: RelationSuggestion[],
     languageOverride?: 'en' | 'zh'
   ) => Promise<void>
   retryMessage: (messageId: string, originalQuery: string) => Promise<void>
@@ -222,7 +220,6 @@ const sendMessage = async (
   text: string,
   hiddenPrompt?: string,
   schemas?: TableSchema[],
-  relations?: RelationSuggestion[],
   languageOverride?: 'en' | 'zh'
 ) => {
   const { messages, replyToId } = getSessionState()
@@ -269,36 +266,8 @@ const sendMessage = async (
   const abortController = new AbortController()
   useProjectStore.getState().setAbortController(abortController)
 
-  const resolvedSchemas = schemas ?? readyFiles.map(mapFileToSchema)
-
-  const resolvedRelations =
-    relations ??
-    selectAllRelations(useProjectStore.getState())
-      .map(rel => {
-        const fileA = fileState.files.find(f => f.id === rel.fileAId)
-        const fileB = fileState.files.find(f => f.id === rel.fileBId)
-        if (
-          !fileA ||
-          !fileB ||
-          fileA.status !== 'ready' ||
-          fileB.status !== 'ready'
-        )
-          return null
-
-        // Use the masked names from mapFileToSchema to keep consistency
-        const schemaA = mapFileToSchema(fileA)
-        const schemaB = mapFileToSchema(fileB)
-
-        return {
-          sourceTable: schemaA.tableName,
-          sourceColumn: rel.columnA,
-          targetTable: schemaB.tableName,
-          targetColumn: rel.columnB,
-          confidence: 1,
-          reason: 'User confirmed or auto-detected in session',
-        } satisfies RelationSuggestion
-      })
-      .filter((r): r is RelationSuggestion => r !== null)
+  const resolvedSchemas =
+    schemas ?? readyFiles.map(f => mapFileToSchema(f, fileState.files))
 
   // Determine Context
   const manualContextMsg =
@@ -364,7 +333,6 @@ const sendMessage = async (
     const planResponse = await window.electronAPI.askAI(
       resolvedPrompt,
       resolvedSchemas,
-      resolvedRelations,
       context,
       language,
       combinedRules,
@@ -543,33 +511,7 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
   const abortController = new AbortController()
   useProjectStore.getState().setAbortController(abortController)
 
-  const schemas = readyFiles.map(mapFileToSchema)
-
-  const relations = selectAllRelations(useProjectStore.getState())
-    .map(rel => {
-      const fileA = fileState.files.find(f => f.id === rel.fileAId)
-      const fileB = fileState.files.find(f => f.id === rel.fileBId)
-      if (
-        !fileA ||
-        !fileB ||
-        fileA.status !== 'ready' ||
-        fileB.status !== 'ready'
-      )
-        return null
-
-      const schemaA = mapFileToSchema(fileA)
-      const schemaB = mapFileToSchema(fileB)
-
-      return {
-        sourceTable: schemaA.tableName,
-        sourceColumn: rel.columnA,
-        targetTable: schemaB.tableName,
-        targetColumn: rel.columnB,
-        confidence: 1,
-        reason: 'User confirmed or auto-detected in session',
-      } satisfies RelationSuggestion
-    })
-    .filter((r): r is RelationSuggestion => r !== null)
+  const schemas = readyFiles.map(f => mapFileToSchema(f, fileState.files))
 
   const precedingMessages = messages.slice(0, targetMsgIndex)
   const contextMsg = [...precedingMessages]
@@ -603,7 +545,6 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
     const planResponse = await window.electronAPI.askAI(
       resolvedPrompt,
       schemas,
-      relations,
       context,
       language,
       combinedRules,
@@ -777,7 +718,7 @@ const autoFixMessage = async (
   try {
     const fileState = useProjectStore.getState()
     const readyFiles = fileState.files.filter(f => f.status === 'ready')
-    const schemas = readyFiles.map(mapFileToSchema)
+    const schemas = readyFiles.map(f => mapFileToSchema(f, fileState.files))
 
     if (!sqlToFix)
       throw new Error(i18n.t('error_no_sql_to_fix', { ns: 'chat' }))

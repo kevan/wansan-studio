@@ -44,7 +44,6 @@ export async function generateAnalysis(
   const {
     userQuery,
     schemas,
-    relations,
     prevContext,
     language = 'en',
     domainRules = [],
@@ -61,9 +60,12 @@ export async function generateAnalysis(
   const schemaContext = serializeSchemas(schemas)
   const currentDate = new Date().toISOString().split('T')[0]
 
+  // [NEW] Aggregate relationships from all schemas
+  const allRelations = schemas.flatMap(s => s.relations || [])
+
   const relationsContext =
-    relations.length > 0
-      ? relations
+    allRelations.length > 0
+      ? allRelations
           .map(
             r =>
               `- Table "${r.sourceTable}" can act as Fact Table, joining to Dimension Table "${r.targetTable}" via: ON "${r.sourceTable}"."${r.sourceColumn}" = "${r.targetTable}"."${r.targetColumn}"`

@@ -57,6 +57,7 @@ export interface TableSchema {
   description?: string // Original file name for AI context (e.g., "Sales 2023.xlsx")
   columns: ColumnSchema[]
   smartMetrics?: SmartMetric[] // Metrics to be displayed in the schema
+  relations?: RelationSuggestion[] // Relationships where this table is the source
   tempFilePath?: string // Path to temporary file (e.g. converted CSV) for cleanup
   sheetName?: string // Source sheet name for Excel files
   readOptions?: Record<string, any> // Options used to read the file (e.g. { encoding: 'GBK' })
@@ -65,7 +66,6 @@ export interface TableSchema {
 export interface AIAnalysisContext {
   userQuery: string
   schemas: TableSchema[]
-  relations: RelationSuggestion[]
   prevContext?: { lastSql: string; lastQuery: string }
   language?: 'en' | 'zh'
   domainRules?: DomainRule[]

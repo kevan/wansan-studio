@@ -16,7 +16,6 @@ import { getMainLogs } from '../utils/logger'
 import type {
   TableSchema,
   ColumnSchema,
-  RelationSuggestion,
   DomainRule,
   AIConfig,
   DBConnectionConfig,
@@ -291,7 +290,6 @@ export function setupIPC(
       _event,
       userQuery: string,
       schemas: TableSchema[],
-      relations: RelationSuggestion[],
       context?: { lastSql: string; lastQuery: string },
       language?: 'en' | 'zh',
       domainRules: DomainRule[] = [],
@@ -301,7 +299,6 @@ export function setupIPC(
         const result = await aiService.generatePlan({
           userQuery,
           schemas,
-          relations,
           prevContext: context,
           language,
           domainRules,

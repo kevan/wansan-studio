@@ -3,7 +3,6 @@ import {
   AppConfig,
   ColumnSchema,
   DomainRule,
-  RelationSuggestion,
   ReloadResult,
   TableSchema,
 } from './types'
@@ -177,9 +176,8 @@ export interface ElectronAPI {
     schema: TableSchema[]
   ) => Promise<IPCResponse<string>>
   askAI: (
-    query: string,
+    userQuery: string,
     schemas: TableSchema[],
-    relations: RelationSuggestion[],
     context?: { lastSql: string; lastQuery: string },
     language?: 'en' | 'zh',
     domainRules?: DomainRule[],
