@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
 import {
   ArrowUp,
@@ -181,7 +181,7 @@ export function MagicInput({
     }
   }
 
-  const handleExportMarkdown = async () => {
+  const handleExportMarkdown = useCallback(async () => {
     checkGate('Markdown Export', async () => {
       try {
         addToast({
@@ -224,9 +224,9 @@ export function MagicInput({
         })
       }
     })
-  }
+  }, [checkGate, addToast, t, messages, activeSession?.title, tCommon])
 
-  const handleExportExcel = async () => {
+  const handleExportExcel = useCallback(async () => {
     checkGate('Excel Export', async () => {
       try {
         addToast({
@@ -279,7 +279,7 @@ export function MagicInput({
         })
       }
     })
-  }
+  }, [checkGate, addToast, tCommon, messages, activeSession?.title])
 
   const readyTables = useMemo(
     () => files.filter(f => f.status === 'ready'),

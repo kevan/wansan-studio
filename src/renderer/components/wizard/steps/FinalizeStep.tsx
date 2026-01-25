@@ -101,10 +101,14 @@ export function FinalizeStep() {
     runPreCheck()
   }, [
     currentTaskIndex,
-    JSON.stringify(pkNames),
-    targetFile?.id,
+    pkNames, // JSON.stringify(pkNames) extracted implicitly if I rely on array ref (useMemo above handles it)
+             // But wait, useMemo returns new array? No, useMemo dependency [mode, targetFile, ...]
+             // If I use JSON.stringify in dep array it triggers warning.
+             // I should rely on pkNames reference from useMemo.
+    targetFile,
     mode,
-    JSON.stringify(currentTask?.columnMapping),
+    currentTask,
+    updateTask
   ])
 
   // --- REPLACE MODE DIFF LOGIC ---

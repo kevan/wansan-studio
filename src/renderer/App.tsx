@@ -67,9 +67,11 @@ function App() {
   const currentProjectPath = useProjectStore(s => s.currentProjectPath)
   const projectName = useProjectStore(s => s.meta.name)
   const isProjectLoaded = useProjectStore(s => s.isProjectLoaded)
-  
+
   const analysisReviewResult = useProjectStore(s => s.analysisReviewResult)
-  const setAnalysisReviewResult = useProjectStore(s => s.setAnalysisReviewResult)
+  const setAnalysisReviewResult = useProjectStore(
+    s => s.setAnalysisReviewResult
+  )
   const applyAnalysisResult = useProjectStore(s => s.applyAnalysisResult)
   const isSmartModelingOpen = useProjectStore(s => s.isSmartModelingOpen)
   const setSmartModelingOpen = useProjectStore(s => s.setSmartModelingOpen)
@@ -199,7 +201,7 @@ function App() {
     }
   }
 
-  const togglePresentation = () => {
+  const togglePresentation = useCallback(() => {
     if (isPresentationMode) {
       window.electronAPI?.windowControl?.('exit-fullscreen')
       setIsPresentationMode(false)
@@ -207,7 +209,7 @@ function App() {
       window.electronAPI?.windowControl?.('enter-fullscreen')
       setIsPresentationMode(true)
     }
-  }
+  }, [isPresentationMode])
 
   useEffect(() => {
     if (isStoreReady && language && i18n.language !== language) {
@@ -355,7 +357,9 @@ function App() {
             isOpen={isSmartModelingOpen}
             result={analysisReviewResult}
             isAnalyzing={isAnalyzing}
-            onStartAnalysis={() => runAnalysis(useProjectStore.getState().files)}
+            onStartAnalysis={() =>
+              runAnalysis(useProjectStore.getState().files)
+            }
             onCancel={() => {
               setSmartModelingOpen(false)
               setAnalysisReviewResult(null)
@@ -560,13 +564,13 @@ function App() {
                   className={`bg-white dark:bg-zinc-950 transition-all duration-500 pr-0.5 ${isPresentationMode ? 'min-w-0 border-none' : ''}`}
                 >
                   <main className="wansan-canvas h-full flex flex-col relative bg-white dark:bg-zinc-950 transition-colors">
-                    < MainContent />
+                    <MainContent />
                   </main>
                 </Panel>
 
                 <PanelResizeHandle className="w-2 flex justify-center bg-transparent hover:bg-zinc-50 transition-colors cursor-col-resize group focus:outline-none z-10">
-              <div className="w-px h-full bg-zinc-200 group-hover:bg-zinc-300 transition-colors" />
-            </PanelResizeHandle>
+                  <div className="w-px h-full bg-zinc-200 group-hover:bg-zinc-300 transition-colors" />
+                </PanelResizeHandle>
 
                 {/* 右侧 Report Canvas */}
                 <Panel

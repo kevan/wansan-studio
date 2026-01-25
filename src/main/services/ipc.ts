@@ -16,7 +16,6 @@ import { getMainLogs } from '../utils/logger'
 import type {
   TableSchema,
   ColumnSchema,
-  FileNode,
   RelationSuggestion,
   DomainRule,
   AIConfig,
@@ -66,14 +65,12 @@ export function setupIPC(
     async (
       _event,
       config: DBConnectionConfig,
-      tableName: string,
-      localTableName: string
+      tableName: string
     ) => {
       try {
         const result = await connectorService.syncTable(
           config,
-          tableName,
-          localTableName
+          tableName
         )
         return { success: true, data: result }
       } catch (error) {

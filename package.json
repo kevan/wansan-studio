@@ -25,8 +25,9 @@
     "dist:win": "rimraf dist_electron && npm run build && electron-builder --config electron-builder.yml --win",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "lint:slim": "eslint src --ext .ts,.tsx --rule '{\"@typescript-eslint/no-explicit-any\": \"off\"}'",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "type-check": "tsc --noEmit",
+    "type-check": "npm run lint:slim && tsc --noEmit",
     "test": "cross-env NODE_ENV=development vitest --run",
     "build:export": "vite build --config vite.export.config.ts"
   },

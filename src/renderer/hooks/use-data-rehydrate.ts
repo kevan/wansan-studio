@@ -175,5 +175,7 @@ export function useDataRehydrate() {
     setRestoring,
     updateFile,
     isProjectLoaded,
+    addToast,
+    t,
   ])
 }

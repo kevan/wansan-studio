@@ -1,5 +1,4 @@
 import fs from 'fs-extra'
-import os from 'os'
 import { basename, extname } from 'path'
 import { NativeDatabaseService } from './native-db-service'
 import { TempFileManager } from '../utils/temp-manager'
@@ -194,7 +193,7 @@ export class FileService {
   }
 
   // Legacy parseFile (keep for safety)
-  async parseFile(filePath: string, onProgress?: (info: any) => void) {
+  async parseFile(filePath: string, _onProgress?: (info: any) => void) {
     const res = await this.prepareFile(filePath, basename(filePath))
     return [
       {
@@ -269,7 +268,6 @@ export class FileService {
     }
     const ext = extname(filePath).toLowerCase()
     const stats = await fs.stat(filePath)
-    let columns: ColumnSchema[] = []
 
     // [FIX] DuckDB uses 'types' for CSV but 'columns' for JSON
     const paramName = ext === '.json' ? 'columns' : 'types'

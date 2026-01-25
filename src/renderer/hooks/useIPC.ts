@@ -11,7 +11,6 @@ import { ElectronAPI } from '@shared/electron-api'
 import type {
   AIConfig,
   ColumnSchema,
-  FileNode,
   InsightResult,
   TableSchema,
 } from '@shared/types'

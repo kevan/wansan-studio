@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import debounce from 'lodash.debounce'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useProjectIO } from './useProjectIO'
@@ -31,10 +31,11 @@ export function useAutoSave() {
   }, [currentProjectPath, saveProject])
 
   // Debounced save (2000ms)
-  const debouncedSave = useCallback(
-    debounce(() => {
-      performSave()
-    }, 2000),
+  const debouncedSave = useMemo(
+    () =>
+      debounce(() => {
+        performSave()
+      }, 2000),
     [performSave]
   )
 

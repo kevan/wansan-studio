@@ -2,9 +2,7 @@ import { DBConnectionConfig } from '@shared/types'
 import { NativeDatabaseService } from './native-db-service'
 import { secureGet } from './secure-storage'
 import { normalizeDuckDBType } from '@shared/type-utils'
-import path from 'path'
 import fs from 'fs-extra'
-import { app } from 'electron'
 import { pipeline } from 'stream/promises'
 import { Transform } from 'stream'
 import { TempFileManager } from '../utils/temp-manager'
@@ -248,7 +246,7 @@ export class DBConnectorService {
    * Using Streaming to support massive datasets.
    * v1.6.2: Stops at CSV generation to align with Excel workflow.
    */
-    async syncTable(config: DBConnectionConfig, tableName: string, localTableName: string) {
+    async syncTable(config: DBConnectionConfig, tableName: string) {
       const preview = await this.previewTable(config, tableName)
       const columnNames = preview.columns.map(c => c.name)
       const escapedName = escapeTableName(tableName, config.type)

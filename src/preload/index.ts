@@ -106,8 +106,8 @@ const electronAPI: ElectronAPI = {
   testDBConnection: (config: any, password?: string) =>
     ipcRenderer.invoke('db:test-connection', config, password),
   listDBTables: (config: any) => ipcRenderer.invoke('db:list-tables', config),
-  syncDBTable: (config: any, tableName: string, localTableName: string) =>
-    ipcRenderer.invoke('db:sync-table', config, tableName, localTableName),
+  syncDBTable: (config: any, tableName: string) =>
+    ipcRenderer.invoke('db:sync-table', config, tableName),
 
   // 导出功能
   exportPDF: (data: any) => ipcRenderer.invoke('export-pdf', data),

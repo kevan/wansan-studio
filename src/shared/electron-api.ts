@@ -1,23 +1,22 @@
 import {
-  ReloadResult,
-  DomainRule,
-  ColumnSchema,
-  TableSchema,
-  RelationSuggestion,
-  AppConfig,
   AIConfig,
-  FileNode,
+  AppConfig,
+  ColumnSchema,
+  DomainRule,
+  RelationSuggestion,
+  ReloadResult,
+  TableSchema,
 } from './types'
 import { InsightGenerationContext } from './types/dashboard'
 import {
-  IPCResponse,
-  RunSQLResponse,
-  ParseFileResponse,
   AIConfigResponse,
-  GetSchemaResponse,
-  AskAIResponse,
   AnalyzeContextResponse,
+  AskAIResponse,
   ExportExcelPayload,
+  GetSchemaResponse,
+  IPCResponse,
+  ParseFileResponse,
+  RunSQLResponse,
 } from './api-types'
 import { FilterParam } from './schemas/analysis'
 
@@ -83,11 +82,30 @@ export interface ElectronAPI {
   selectFiles: () => Promise<IPCResponse<{ path: string; size: number }[]>>
   selectDirectory: () => Promise<IPCResponse<string>>
   parseFile: (filePath: string) => Promise<ParseFileResponse>
-  inspectFile: (filePath: string) => Promise<IPCResponse<Array<{ sourceName: string, previewHeaders: string[], readOptions?: Record<string, any> }>>> // [NEW] Stage 1
-  prepareFile: (filePath: string, sourceName: string, readOptions?: Record<string, any>) => Promise<IPCResponse<{ tempFilePath: string, rowCount: number, columns: ColumnSchema[], preview: any[] }>> // [NEW] Stage 2
-  validateColumnTypes: (
-    params: ValidateColumnTypesParams
+  inspectFile: (
+    filePath: string
   ) => Promise<
+    IPCResponse<
+      Array<{
+        sourceName: string
+        previewHeaders: string[]
+        readOptions?: Record<string, any>
+      }>
+    >
+  > // [NEW] Stage 1
+  prepareFile: (
+    filePath: string,
+    sourceName: string,
+    readOptions?: Record<string, any>
+  ) => Promise<
+    IPCResponse<{
+      tempFilePath: string
+      rowCount: number
+      columns: ColumnSchema[]
+      preview: any[]
+    }>
+  > // [NEW] Stage 2
+  validateColumnTypes: (params: ValidateColumnTypesParams) => Promise<
     IPCResponse<{
       valid: boolean
       error?: string
@@ -134,8 +152,7 @@ export interface ElectronAPI {
   ) => Promise<IPCResponse<Array<{ name: string; schema?: string }>>>
   syncDBTable: (
     config: import('./types').DBConnectionConfig,
-    tableName: string,
-    localTableName: string
+    tableName: string
   ) => Promise<
     IPCResponse<{
       rowCount: number
@@ -195,7 +212,9 @@ export interface ElectronAPI {
     columns: Array<{ name: string; type: string }>
     mode: 'generate' | 'refine'
   }) => Promise<IPCResponse<string>>
-  generateInsight: (context: InsightGenerationContext) => Promise<IPCResponse<string>>
+  generateInsight: (
+    context: InsightGenerationContext
+  ) => Promise<IPCResponse<string>>
 
   // AI Config
   getAIConfig: () => Promise<AIConfigResponse>

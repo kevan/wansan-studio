@@ -5,7 +5,7 @@
 
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import { Tree, TreeApi } from 'react-arborist'
-import { useProjectStore } from '../../stores/useProjectStore'
+import { useProjectStore } from '@/stores/useProjectStore.ts'
 import { buildTreeData, TreeNodeData, parseNodeId } from './tree-utils'
 import { TreeNode } from './TreeNode'
 import { useTranslation } from 'react-i18next'
@@ -142,7 +142,7 @@ export function DataTreeManager({
         }
       }
     },
-    [setActiveFile, setSelectedNode, setView, relations]
+    [setActiveFile, setSelectedNode, setView, relations, isRestoring]
   )
 
   // 禁用拖拽移动（暂不实现）

@@ -16,6 +16,8 @@ export function useSmartOptions(
   const [loading, setLoading] = useState(false)
   const files = useProjectStore(s => s.files)
 
+  const displayColsKey = JSON.stringify(displayColumns)
+
   useEffect(() => {
     let active = true
     const fetchData = async () => {
@@ -25,7 +27,6 @@ export function useSmartOptions(
       }
 
       // 1. Validation
-      // Handle v_ prefix (Smart Metrics View)
       const isView = table.startsWith('v_')
       const rawTableName = isView ? table.slice(2) : table
 
@@ -34,15 +35,12 @@ export function useSmartOptions(
       )
 
       if (!file) {
-        // Table not found in metadata
         if (active) setOptions([])
         return
       }
 
       const availableCols = new Set(file.columns.map(c => c.name))
 
-      // If it's a view, we skip strict column validation because columns might be joined/calculated
-      // If it's a raw table, we strictly check columns to prevent SQL errors
       if (!isView) {
         if (!availableCols.has(column)) {
           if (active) setOptions([])
@@ -50,8 +48,6 @@ export function useSmartOptions(
         }
       }
 
-      // For views, we can't easily validate displayColumns against the file.columns (they might be virtual)
-      // So we only filter if it's NOT a view.
       const validDisplayCols = isView
         ? displayColumns
         : displayColumns.filter(c => availableCols.has(c))
@@ -99,7 +95,7 @@ export function useSmartOptions(
     return () => {
       active = false
     }
-  }, [table, column, JSON.stringify(displayColumns), searchTerm, files])
+  }, [table, column, displayColsKey, searchTerm, files, displayColumns])
 
   return { options, loading }
 }

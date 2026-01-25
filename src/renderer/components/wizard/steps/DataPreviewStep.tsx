@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react'
-import { useWizardStore } from '../../../stores/useWizardStore'
-import { useProjectStore } from '../../../stores/useProjectStore'
+import { useWizardStore } from '@/stores/useWizardStore.ts'
+import { useProjectStore } from '@/stores/useProjectStore.ts'
 import {
   Table,
   TableBody,
@@ -82,7 +82,7 @@ export function DataPreviewStep() {
 
       updateTask(currentTaskIndex, updates)
     }
-  }, [currentTask?.id, targetFile?.id, mode, updateTask, currentTaskIndex])
+  }, [currentTask?.id, targetFile?.id, mode, updateTask, currentTaskIndex, currentTask, targetFile])
 
   if (!currentTask) return null
 
@@ -376,20 +376,20 @@ const ColumnPreviewHead = ({
             </button>
           </div>
         </div>
-        
+
         {isIgnored ? (
           <div className="h-8 px-3 flex items-center text-[9px] font-black bg-zinc-100 border border-zinc-200 text-zinc-400 uppercase rounded-lg italic tracking-tighter">
             {t('wizard.ignored_col', 'Excluding Column')}
           </div>
         ) : (
-          <Select 
+          <Select
             value={
               // Priority 1: Exact match with a standard type
-              (COLUMN_TYPE_CONFIG[column.type as ColumnType]?.isStandard ? column.type : 
+              (COLUMN_TYPE_CONFIG[column.type as ColumnType]?.isStandard ? column.type :
               // Priority 2: Match by uiLabel to find the standard equivalent
-              Object.entries(COLUMN_TYPE_CONFIG).find(([_, cfg]) => cfg.uiLabel === COLUMN_TYPE_CONFIG[column.type as ColumnType]?.uiLabel && cfg.isStandard)?.[0]) 
+              Object.entries(COLUMN_TYPE_CONFIG).find(([_, cfg]) => cfg.uiLabel === COLUMN_TYPE_CONFIG[column.type as ColumnType]?.uiLabel && cfg.isStandard)?.[0])
               || column.type
-            } 
+            }
             onValueChange={onTypeChange}
           >
             <SelectTrigger className="h-8 text-[10px] font-bold bg-white border-zinc-200 uppercase shadow-sm rounded-lg hover:border-zinc-300 transition-all">
@@ -485,7 +485,7 @@ const ColumnMappingHead = ({
                 </span>
               ) : null}
             </div>
-            
+
             {/* Column Name */}
             <span
               className={cn(

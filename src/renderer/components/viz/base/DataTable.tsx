@@ -38,7 +38,7 @@ export function DataTable({
   highlightedItems = [],
 }: ReportTableProps) {
   const { t } = useTranslation('common')
-  const safeData = data || []
+  const safeData = React.useMemo(() => data || [], [data])
 
   // Runtime compatibility: Reconstruct columnFields if missing
   const effectiveColumnFields = React.useMemo(() => {
