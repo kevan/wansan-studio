@@ -6,6 +6,7 @@ import {
   FileSpreadsheet,
   FileJson,
   FileText,
+  FileArchive,
   Link2,
   Type,
   Hash,
@@ -98,18 +99,26 @@ export function TreeNode({ node, style, dragHandle }: TreeNodeProps) {
   }
 
   const getFileIcon = () => {
-    if (data.type === 'file' && data.fileId) {
-      const file = files.find(f => f.id === data.fileId)
-      if (file) {
-        const extension = file.name.toLowerCase()
-        if (extension.endsWith('.json')) {
-          return <FileJson className="w-4 h-4 text-orange-500" />
-        } else if (extension.endsWith('.csv')) {
-          return <FileText className="w-4 h-4 text-blue-500" />
-        }
-      }
+    if (data.sourceType === 'database') {
+      return <Database className="w-4 h-4 text-pink-500" />
     }
-    return <FileSpreadsheet className="w-4 h-4 text-green-600" />
+
+    const format = data.format
+    if (format === 'json') {
+      return <FileJson className="w-4 h-4 text-orange-500" />
+    }
+    if (format === 'csv') {
+      return <FileText className="w-4 h-4 text-blue-500" />
+    }
+    if (format === 'parquet') {
+      return <FileArchive className="w-4 h-4 text-amber-600" />
+    }
+    if (format === 'excel') {
+      return <FileSpreadsheet className="w-4 h-4 text-green-600" />
+    }
+
+    // Default Fallback
+    return <FileSpreadsheet className="w-4 h-4 text-zinc-400" />
   }
 
   // --- Interaction ---

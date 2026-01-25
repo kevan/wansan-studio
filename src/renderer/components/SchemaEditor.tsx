@@ -15,7 +15,6 @@ import {
   Hash,
   Info,
   Key,
-  Layout,
   Link2,
   Plus,
   RefreshCw,

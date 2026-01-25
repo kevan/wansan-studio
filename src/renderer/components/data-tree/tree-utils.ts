@@ -15,6 +15,8 @@ export interface TreeNodeData {
   isKey?: boolean // Is Primary Key (or similar concept in our simple app)
   isForeignKey?: boolean // Is part of a relation
   status?: SyncStatus
+  format?: string // [NEW] 'excel' | 'csv' | 'parquet' | 'json'
+  sourceType?: 'local_file' | 'database' // [NEW]
 }
 
 export const NODE_TYPES = {
@@ -58,6 +60,20 @@ export function buildTreeData(
       fileId: file.id,
       children: columnNodes,
       status: file.status,
+      sourceType: file.source.type,
+      format:
+        file.source.type === 'local_file'
+          ? file.source.format ||
+            (file.name.toLowerCase().endsWith('.csv')
+              ? 'csv'
+              : file.name.toLowerCase().endsWith('.json')
+                ? 'json'
+                : file.name.toLowerCase().endsWith('.parquet')
+                  ? 'parquet'
+                  : file.name.toLowerCase().match(/\.xlsx?$/)
+                    ? 'excel'
+                    : undefined)
+          : undefined,
     }
   })
 

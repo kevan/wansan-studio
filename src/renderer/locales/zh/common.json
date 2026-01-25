@@ -466,6 +466,13 @@
   "enter_license": "输入激活码",
   "import_failed": "导入失败",
   "invalid_metadata_table": "无效的文件元数据：缺少表名",
+  "data_lineage": "数据血缘",
+  "data_lineage_desc": "追溯此数据集的物理来源。",
+  "original_database": "原始数据库",
+  "source_table_raw": "源数据表",
+  "physical_path": "物理路径",
+  "worksheet_entity": "工作表 / 实体",
+  "show_in_folder": "在文件夹中显示",
   "sidebar": {
     "electron_api_unavailable": "Electron API 不可用",
     "uploading": "正在上传...",
