@@ -186,7 +186,7 @@ async function handleMessage(msg: DBRequest) {
           ])) as any[]
 
           // [Safety] Limit rows to prevent IPC/JSON CPU exhaustion
-          const MAX_ROWS = 10000
+          const MAX_ROWS = 200000
           if (rows.length > MAX_ROWS) {
             log(`[DB-Worker] Result truncated: ${rows.length} > ${MAX_ROWS}`)
             rows = rows.slice(0, MAX_ROWS)

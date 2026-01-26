@@ -50,6 +50,7 @@ export function mapFileToSchema(
   return {
     tableName: exposedTableName,
     description: hasMetrics ? `${file.name} (Enriched View)` : file.name,
+    rowCount: file.rowCount, // Pass rowCount for AI optimization
     columns: file.columns.map(col => ({
       ...col,
       sampleValues: (col.sampleValues || []).map(val =>

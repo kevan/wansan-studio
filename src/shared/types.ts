@@ -56,6 +56,7 @@ export interface TableSchema {
   tableName: string // Normalized table name (e.g., "t_orders")
   description?: string // Original file name for AI context (e.g., "Sales 2023.xlsx")
   columns: ColumnSchema[]
+  rowCount?: number // [NEW] Total rows in the table, used for AI optimization
   smartMetrics?: SmartMetric[] // Metrics to be displayed in the schema
   relations?: RelationSuggestion[] // Relationships where this table is the source
   tempFilePath?: string // Path to temporary file (e.g. converted CSV) for cleanup

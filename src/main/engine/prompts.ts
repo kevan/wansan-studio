@@ -48,6 +48,15 @@ const VISUALIZATION_RULES = `
     -   This will create a multi-series chart where each "region" is a separate line/bar.
 `
 
+const PERFORMANCE_RULES = `
+### 🚀 PERFORMANCE OPTIMIZATION RULES
+1.  **ROW COUNT AWARENESS**: Check the table description for row counts.
+2.  **LARGE TABLES (> 100,000 rows)**:
+    -   **AGGREGATION FIRST**: Always prefer aggregated queries (GROUP BY) over raw data selection.
+    -   **LIMIT CLAUSE**: If the user asks for raw data (e.g., "Show me orders"), you **MUST** append \`LIMIT 100\` unless explicitly instructed otherwise (e.g., "Export all").
+    -   **DISTINCT COUNTS**: Use \`APPROX_COUNT_DISTINCT(col)\` instead of \`COUNT(DISTINCT col)\` for high-cardinality columns to ensure speed.
+`
+
 // --- 2. DYNAMIC GENERATORS ---
 
 const getDomainContext = (rules: DomainRule[]) => {
@@ -139,6 +148,7 @@ export const getAnalysisSystemPrompt = (
     getLocalizationRule(language),
     SMART_FILTER_CREATION_RULES,
     SQL_SYNTAX_RULES,
+    PERFORMANCE_RULES, // [NEW] Inject Performance Rules
     CALCULATION_RULES,
     VISUALIZATION_RULES,
     ANALYSIS_OUTPUT_FORMAT(suggestionCount),
@@ -160,6 +170,7 @@ export const getFixSystemPrompt = (
     SQL_SYNTAX_RULES, // Syntax is key for fixing
     SMART_FILTER_CREATION_RULES, // Enable creation if hardcoded values are wrong
     SMART_FILTER_PRESERVATION_RULES, // Preserve templates if already present
+    PERFORMANCE_RULES, // [NEW] Fixes should also be performant
     // No Viz/Calculation rules needed for pure SQL fix
   ].join('\n')
 }
@@ -323,6 +334,11 @@ export function serializeSchemas(schemas: TableSchema[]): string {
         ? '\n  [Info] This Wide Table includes joined columns from related tables (format: "fk__col").'
         : ''
 
+      // [NEW] Row Count Info
+      const rowCountStr = table.rowCount
+        ? `\nRows: ${table.rowCount.toLocaleString()}${table.rowCount > 100000 ? ' [LARGE TABLE: Prefer Aggregation/LIMIT]' : ''}`
+        : ''
+
       const descStr = table.description
         ? ` (Source: "${table.description}"${viewNote})`
         : viewNote
@@ -341,7 +357,7 @@ export function serializeSchemas(schemas: TableSchema[]): string {
             .join('\n')
       }
 
-      return `Table: "${displayTableName}"${descStr}\nColumns:\n${columnsStr}${joinedHint}${relationsStr}`
+      return `Table: "${displayTableName}"${descStr}${rowCountStr}\nColumns:\n${columnsStr}${joinedHint}${relationsStr}`
     })
     .join('\n\n')
 }
