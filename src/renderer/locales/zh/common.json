@@ -140,6 +140,7 @@
   "connector": {
     "title": "数据库连接器",
     "new_connection": "新建连接",
+    "edit_connection": "编辑连接",
     "saved_connections": "已保存连接",
     "no_connections": "暂无保存的连接。",
     "form_name": "连接名称",
@@ -150,9 +151,11 @@
     "form_db": "数据库名",
     "btn_test": "测试连接",
     "btn_save": "保存并连接",
+    "btn_update": "更新连接",
     "btn_refresh": "刷新列表",
     "select_table": "选择数据表",
     "fetching_schema": "正在获取表结构...",
+    "loading_more": "正在加载更多数据表...",
     "syncing_snapshot": "正在同步数据快照",
     "sync_desc": "正在建立与 DuckDB 的桥梁...",
     "landing_desc": "连接您的本地 MySQL 或 PostgreSQL 数据库，通过 AI 进行实时数据分析。",
@@ -164,7 +167,11 @@
     "connection_group": "通用配置",
     "auth_group": "身份验证",
     "db_group": "目标数据库",
-    "postgres_schema_hint": "PostgreSQL 默认使用 'public' 模式"
+    "postgres_schema_hint": "PostgreSQL 默认使用 'public' 模式",
+    "advanced_options": "高级选项",
+    "form_ssl": "启用 SSL (rejectUnauthorized=false)",
+    "form_params": "附加连接参数",
+    "form_params_placeholder": "例如: charset=utf8mb4&timeout=5000"
   },
   "list_status": "状态",
   "list_field_type": "字段与类型",

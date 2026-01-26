@@ -217,6 +217,8 @@ export interface DBConnectionConfig {
   port: number
   user: string
   database: string
+  ssl?: boolean // [NEW] Enable SSL
+  params?: string // [NEW] Extra connection parameters (e.g. key=value&key2=value2)
   // Note: password is stored in secure-storage with key: `db_pass_${id}`
 }
 

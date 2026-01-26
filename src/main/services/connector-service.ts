@@ -73,6 +73,20 @@ class CSVFormatter extends Transform {
   }
 }
 
+function parseExtraParams(paramsStr?: string): Record<string, string> {
+  const params: Record<string, string> = {}
+  if (!paramsStr) return params
+  
+  const pairs = paramsStr.split('&')
+  for (const pair of pairs) {
+    const [key, value] = pair.split('=')
+    if (key) {
+      params[decodeURIComponent(key)] = decodeURIComponent(value || '')
+    }
+  }
+  return params
+}
+
 export class DBConnectorService {
   constructor(private databaseService: NativeDatabaseService) {}
 
@@ -81,6 +95,7 @@ export class DBConnectorService {
    */
   async testConnection(config: DBConnectionConfig, passwordOverride?: string): Promise<boolean> {
     const password = passwordOverride || secureGet(`db_pass_${config.id}`) || ''
+    const extra = parseExtraParams(config.params)
     
     if (config.type === 'postgres') {
       const { Client } = await import('pg')
@@ -91,6 +106,8 @@ export class DBConnectorService {
         password: password,
         database: config.database,
         connectionTimeoutMillis: 5000,
+        ssl: config.ssl ? { rejectUnauthorized: false } : undefined,
+        ...extra
       })
       try {
         await client.connect()
@@ -111,6 +128,8 @@ export class DBConnectorService {
           database: config.database,
           connectTimeout: 5000,
           charset: 'UTF8MB4',
+          ssl: config.ssl ? { rejectUnauthorized: false } : undefined,
+          ...extra
         })
         await connection.query("SET NAMES 'utf8mb4'")
         await connection.end()
@@ -127,10 +146,19 @@ export class DBConnectorService {
    */
   async listTables(config: DBConnectionConfig): Promise<DBTableInfo[]> {
     const password = secureGet(`db_pass_${config.id}`) || ''
+    const extra = parseExtraParams(config.params)
     
     if (config.type === 'postgres') {
       const { Client } = await import('pg')
-      const client = new Client({ host: config.host, port: config.port, user: config.user, password, database: config.database })
+      const client = new Client({ 
+        host: config.host, 
+        port: config.port, 
+        user: config.user, 
+        password, 
+        database: config.database,
+        ssl: config.ssl ? { rejectUnauthorized: false } : undefined,
+        ...extra
+      })
       await client.connect()
       const res = await client.query(`
         SELECT table_name as name, table_schema as schema 
@@ -149,6 +177,8 @@ export class DBConnectorService {
         password: password,
         database: config.database,
         charset: 'UTF8MB4',
+        ssl: config.ssl ? { rejectUnauthorized: false } : undefined,
+        ...extra
       })
       await connection.query("SET NAMES 'utf8mb4'")
       const [rows] = await connection.execute('SHOW TABLES')
@@ -165,10 +195,19 @@ export class DBConnectorService {
     async previewTable(config: DBConnectionConfig, tableName: string) {
       const password = secureGet(`db_pass_${config.id}`) || ''
       const escapedName = escapeTableName(tableName, config.type)
+      const extra = parseExtraParams(config.params)
       
       if (config.type === 'postgres') {
         const { Client } = await import('pg')
-        const client = new Client({ host: config.host, port: config.port, user: config.user, password, database: config.database })
+        const client = new Client({ 
+          host: config.host, 
+          port: config.port, 
+          user: config.user, 
+          password, 
+          database: config.database,
+          ssl: config.ssl ? { rejectUnauthorized: false } : undefined,
+          ...extra
+        })
         await client.connect()
         
         const { schema, table } = parseTableId(tableName)
@@ -219,7 +258,9 @@ export class DBConnectorService {
         const mysql = await import('mysql2/promise')
         const conn = await mysql.createConnection({
           host: config.host, port: config.port, user: config.user, password, database: config.database,
-          charset: 'UTF8MB4', decimalNumbers: true
+          charset: 'UTF8MB4', decimalNumbers: true,
+          ssl: config.ssl ? { rejectUnauthorized: false } : undefined,
+          ...extra
         })
         await conn.query("SET NAMES 'utf8mb4'")
         // [ENHANCED] MySQL SHOW FULL COLUMNS includes Comment and Key info
