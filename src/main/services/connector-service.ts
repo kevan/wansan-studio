@@ -113,8 +113,11 @@ export class DBConnectorService {
         await client.connect()
         await client.end()
         return true
-      } catch (e) {
+      } catch (e: any) {
         console.error('[Connector] PG Connection failed:', e)
+        if (e.message?.includes('received invalid response: 4a')) {
+          console.error('[Connector] Hint: You might be connecting to a non-Postgres service, or there is an SSL mismatch (try enabling/disabling SSL).')
+        }
         throw e
       }
     } else {
@@ -134,8 +137,11 @@ export class DBConnectorService {
         await connection.query("SET NAMES 'utf8mb4'")
         await connection.end()
         return true
-      } catch (e) {
+      } catch (e: any) {
         console.error('[Connector] MySQL Connection failed:', e)
+        if (e.code === 'ER_ACCESS_DENIED_ERROR') {
+           console.error('[Connector] Hint: Check your username and password.')
+        }
         throw e
       }
     }
@@ -148,44 +154,49 @@ export class DBConnectorService {
     const password = secureGet(`db_pass_${config.id}`) || ''
     const extra = parseExtraParams(config.params)
     
-    if (config.type === 'postgres') {
-      const { Client } = await import('pg')
-      const client = new Client({ 
-        host: config.host, 
-        port: config.port, 
-        user: config.user, 
-        password, 
-        database: config.database,
-        ssl: config.ssl ? { rejectUnauthorized: false } : undefined,
-        ...extra
-      })
-      await client.connect()
-      const res = await client.query(`
-        SELECT table_name as name, table_schema as schema 
-        FROM information_schema.tables 
-        WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
-        ORDER BY table_name
-      `)
-      await client.end()
-      return res.rows
-    } else {
-      const mysql = await import('mysql2/promise')
-      const connection = await mysql.createConnection({
-        host: config.host,
-        port: config.port,
-        user: config.user,
-        password: password,
-        database: config.database,
-        charset: 'UTF8MB4',
-        ssl: config.ssl ? { rejectUnauthorized: false } : undefined,
-        ...extra
-      })
-      await connection.query("SET NAMES 'utf8mb4'")
-      const [rows] = await connection.execute('SHOW TABLES')
-      await connection.end()
-      return (rows as any[]).map(row => ({
-        name: Object.values(row)[0] as string
-      }))
+    try {
+      if (config.type === 'postgres') {
+        const { Client } = await import('pg')
+        const client = new Client({ 
+          host: config.host, 
+          port: config.port, 
+          user: config.user, 
+          password, 
+          database: config.database,
+          ssl: config.ssl ? { rejectUnauthorized: false } : undefined,
+          ...extra
+        })
+        await client.connect()
+        const res = await client.query(`
+          SELECT table_name as name, table_schema as schema 
+          FROM information_schema.tables 
+          WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
+          ORDER BY table_name
+        `)
+        await client.end()
+        return res.rows
+      } else {
+        const mysql = await import('mysql2/promise')
+        const connection = await mysql.createConnection({
+          host: config.host,
+          port: config.port,
+          user: config.user,
+          password: password,
+          database: config.database,
+          charset: 'UTF8MB4',
+          ssl: config.ssl ? { rejectUnauthorized: false } : undefined,
+          ...extra
+        })
+        await connection.query("SET NAMES 'utf8mb4'")
+        const [rows] = await connection.execute('SHOW TABLES')
+        await connection.end()
+        return (rows as any[]).map(row => ({
+          name: Object.values(row)[0] as string
+        }))
+      }
+    } catch (e: any) {
+      console.error(`[Connector] listTables failed for ${config.name} (${config.type}):`, e)
+      throw e
     }
   }
 

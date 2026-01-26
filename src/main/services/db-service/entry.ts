@@ -60,7 +60,7 @@ async function loadDuckDB() {
   try {
     log('[DB-Worker] Loading @duckdb/node-api...')
 
-    // [FIX] REMOVED process.chdir logic. 
+    // [FIX] REMOVED process.chdir logic.
     // In Electron packaged builds, __filename points inside app.asar.
     // process.chdir() into an ASAR archive is not supported and throws ENOENT.
     // Native modules are handled by Electron's module loader automatically.
@@ -166,9 +166,31 @@ async function handleMessage(msg: DBRequest) {
             )
           }
 
+          const QUERY_TIMEOUT = 30000 // 30 seconds
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(
+              () => reject(new Error(`Query timed out after ${QUERY_TIMEOUT / 1000}s`)),
+              QUERY_TIMEOUT
+            )
+          })
+
           // log('Running SQL:', payload.sql) // Optional: might be verbose
-          const result = await connection.run(payload.sql)
-          const rows = await result.getRowObjectsJS()
+          const result = (await Promise.race([
+            connection.run(payload.sql),
+            timeoutPromise,
+          ])) as any
+
+          let rows = (await Promise.race([
+            result.getRowObjectsJS(),
+            timeoutPromise,
+          ])) as any[]
+
+          // [Safety] Limit rows to prevent IPC/JSON CPU exhaustion
+          const MAX_ROWS = 10000
+          if (rows.length > MAX_ROWS) {
+            log(`[DB-Worker] Result truncated: ${rows.length} > ${MAX_ROWS}`)
+            rows = rows.slice(0, MAX_ROWS)
+          }
 
           // Extract column metadata
           const columnNames = result.columnNames()
