@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef } from 'react'
 import {
   Code,
   Download,
+  FileSpreadsheet,
   FileText,
   Image,
   Pin,
@@ -28,7 +29,8 @@ import type { ChatMessage } from '../../ChatInterface'
 import { useTranslation } from 'react-i18next'
 import { ExpandableAction } from '../../ui/expandable-action'
 import { useGenerateInsight } from '@/hooks/useIPC'
-import { dataToCSV } from '@/utils/export-utils'
+import { dataToCSV, captureChartInfo, formatInsight } from '@/utils/export-utils'
+import { sanitizeFilename } from '@shared/naming-utils'
 import { toPng } from 'html-to-image'
 import {
   DropdownMenu,
@@ -266,6 +268,70 @@ export const ChatReportCard = React.memo(function ChatReportCard({
     }
   }
 
+  const handleExportExcel = async () => {
+    if (!reportData?.tableData) return
+    
+    setIsExporting(true)
+    try {
+      addToast({
+        type: 'info',
+        title: t('common:export_generating_file'),
+        description: t('common:exporting_excel'),
+        duration: 2000,
+      })
+
+      const chartInfo = await captureChartInfo(messageId)
+      
+      const insightLabels = {
+        summary: t('common:insight_summary'),
+        findings: t('common:insight_findings'),
+        recommendation: t('common:insight_recommendation')
+      }
+
+      const sheet = {
+        name: sanitizeFilename(reportData.title || 'Analysis', 'Sheet').slice(0, 31),
+        data: reportData.tableData,
+        columns: reportData.columnFields || [],
+        insight: formatInsight(reportData.insight, insightLabels),
+        chartImage: chartInfo?.dataUrl,
+        chartWidth: chartInfo?.width,
+        chartHeight: chartInfo?.height
+      }
+
+      const fileName = `${sanitizeFilename(reportData.title || 'Analysis', 'Report')}.xlsx`
+      
+      const result = await window.electronAPI.exportExcel({
+        filename: fileName,
+        sheets: [sheet],
+        insightTitle: t('common:insights')
+      })
+
+      if (result.success && result.data) {
+        const filePath = result.data as string
+        addToast({
+          type: 'success',
+          title: t('common:export_success'),
+          description: filePath,
+          action: {
+            label: t('common:open_folder'),
+            onClick: () => window.electronAPI.showItemInFolder(filePath),
+          },
+        })
+      } else if (result.error !== 'Cancelled') {
+        throw new Error(result.error)
+      }
+    } catch (e: any) {
+      console.error(e)
+      addToast({
+        type: 'error',
+        title: t('common:export_failed'),
+        description: e.message || String(e),
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   const handleExportPNG = async () => {
     if (!cardRef.current) return
     
@@ -418,6 +484,10 @@ export const ChatReportCard = React.memo(function ChatReportCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportExcel} className="gap-2">
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>{t('common:export_excel')}</span>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportCSV} className="gap-2">
                 <FileText className="w-4 h-4" />
                 <span>{t('common:export_csv')}</span>

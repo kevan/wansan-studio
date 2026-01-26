@@ -33,7 +33,7 @@ export function dataToCSV(data: any[], columns?: string[]): string {
 /**
  * Capture a chart as base64 and its dimensions from a container ID.
  */
-async function captureChartInfo(exportId: string): Promise<{ dataUrl: string; width: number; height: number } | undefined> {
+export async function captureChartInfo(exportId: string): Promise<{ dataUrl: string; width: number; height: number } | undefined> {
   const container = document.querySelector(`[data-export-id="${exportId}"]`)
   if (!container) return undefined
 
@@ -50,7 +50,7 @@ async function captureChartInfo(exportId: string): Promise<{ dataUrl: string; wi
 /**
  * Formats structured AI insight into a plain string for Excel.
  */
-function formatInsight(
+export function formatInsight(
   insight: any,
   labels: { summary: string; findings: string; recommendation: string }
 ): string | undefined {

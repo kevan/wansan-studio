@@ -23,11 +23,10 @@ const SQL_SYNTAX_RULES = `
 3.  **DATE HANDLING**:
     -   If type is \`DATE\`/\`TIMESTAMP\`, use directly.
     -   If type is \`VARCHAR\` containing dates, use \`strptime("date_col", '%Y-%m-%d')\`.
-4.  **LIMITATION**: Always add \`LIMIT 100\` unless user asks for all.
-5.  **JOIN STRATEGY**: 
+4.  **JOIN STRATEGY**: 
     -   **ALWAYS use \`LEFT JOIN\`** by default.
     -   Never use \`INNER JOIN\` unless explicitly asked.
-6.  **SMART VIEW STRATEGY**:
+5.  **SMART VIEW STRATEGY**:
     -   Tables starting with "v_" (e.g., "v_orders") are **Enriched Views**. Always query them first.
     -   When joining "v_" tables, **STRICTLY** use table aliases to avoid ambiguous columns.
 `
