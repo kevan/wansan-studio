@@ -10,6 +10,7 @@ import {
   AnalysisResultSchema,
   ContextAnalysisResultSchema,
   FixSQLResultSchema,
+  InsightResultSchema,
 } from '@shared/schemas/analysis.ts'
 import {
   CONTEXT_ANALYSIS_SYSTEM_PROMPT,
@@ -19,10 +20,11 @@ import {
 } from './prompts.ts'
 import { isDev } from '../utils/env'
 import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources'
-import { parse, safeStringify } from '@shared/serialization.ts'
+import { parse } from '@shared/serialization.ts'
 import { extractJSON } from '@shared/utils/json-utils'
 import { autospaceInsight } from '@shared/utils/autospace'
-import { InsightGenerationContext } from '@shared/types/dashboard'
+import { InsightGenerationContext, InsightResult } from '@shared/types/dashboard'
+import { ZodSchema } from 'zod'
 
 function getModelToUse(preferredModel?: string) {
   const envModel = process.env.OPENAI_MODEL
@@ -34,6 +36,41 @@ function getModelToUse(preferredModel?: string) {
     })
   }
   return preferredModel || envModel || 'gpt-4-turbo-preview'
+}
+
+/**
+ * Universal helper to call OpenAI and parse/validate the response.
+ */
+async function callAIAndParse<T>(
+  openai: OpenAI,
+  body: ChatCompletionCreateParamsNonStreaming,
+  schema: ZodSchema<T>
+): Promise<T> {
+  if (isDev()) {
+    console.log('[AI Bridge] Request Body:', JSON.stringify(body, null, 2))
+  }
+
+  const response = await openai.chat.completions.create(body)
+  const resultJson = response.choices[0].message.content
+
+  if (!resultJson) {
+    throw new Error('AI returned an empty response.')
+  }
+
+  if (isDev()) {
+    console.log('[AI Bridge] Raw Response:', resultJson)
+  }
+
+  try {
+    const cleanedJson = extractJSON(resultJson)
+    const parsedResult = parse(cleanedJson)
+    return schema.parse(parsedResult)
+  } catch (error) {
+    console.error('Failed to parse or validate AI response:', error)
+    throw new Error(
+      `AI returned invalid JSON or structure. Raw response: ${resultJson}`
+    )
+  }
 }
 
 export async function generateAnalysis(
@@ -50,13 +87,6 @@ export async function generateAnalysis(
     suggestionCount = 3,
   } = context
 
-  if (isDev()) {
-    console.log(
-      'generateAnalysis pre request - schemas:',
-      safeStringify(schemas, 2)
-    )
-    console.log('generateAnalysis context:', prevContext)
-  }
   const schemaContext = serializeSchemas(schemas)
   const currentDate = new Date().toISOString().split('T')[0]
 
@@ -96,12 +126,11 @@ ${relationsContext}${contextSection}
 "${userQuery}"
 
 ### 🤖 YOUR RESPONSE (JSON)`
-  const modelToUse = getModelToUse(model)
 
   const languageNote = language === 'zh' ? 'Chinese (Simplified)' : 'English'
 
   const body: ChatCompletionCreateParamsNonStreaming = {
-    model: modelToUse,
+    model: getModelToUse(model),
     messages: [
       {
         role: 'system',
@@ -115,29 +144,8 @@ OUTPUT RULE:
     ],
     response_format: { type: 'json_object' },
   }
-  if (isDev()) {
-    console.log('generateAnalysis pre request - body', body)
-  }
-  const response = await openai.chat.completions.create(body)
 
-  const resultJson = response.choices[0].message.content
-  if (!resultJson) {
-    throw new Error('AI returned an empty response.')
-  }
-  if (isDev()) {
-    console.log('generateAnalysis post request - resultJson:', resultJson)
-  }
-
-  try {
-    const cleanedJson = extractJSON(resultJson)
-    const parsedResult = parse(cleanedJson)
-    return AnalysisResultSchema.parse(parsedResult)
-  } catch (error) {
-    console.error('Failed to parse or validate AI response:', error)
-    throw new Error(
-      `AI returned invalid JSON or structure. Raw response: ${resultJson}`
-    )
-  }
+  return await callAIAndParse(openai, body, AnalysisResultSchema)
 }
 
 /**
@@ -149,15 +157,7 @@ export async function analyzeContext(
   model?: string,
   language: 'en' | 'zh' = 'en'
 ): Promise<ContextAnalysisResult> {
-  if (isDev()) {
-    console.log(
-      'analyzeContext pre request - schemas:',
-      safeStringify(schemas, 2)
-    )
-  }
-
   const schemaContext = serializeSchemas(schemas)
-
   const languageNote = language === 'zh' ? 'Chinese (Simplified)' : 'English'
 
   const userPrompt = `### 📂 DATABASE SCHEMA
@@ -183,33 +183,8 @@ OUTPUT RULE:
     ],
     response_format: { type: 'json_object' },
   }
-  if (isDev()) {
-    console.log('analyzeContext pre request - body', body)
-  }
 
-  const response = await openai.chat.completions.create(body)
-
-  const resultJson = response.choices[0].message.content
-  if (!resultJson) {
-    throw new Error('AI returned an empty response for context analysis.')
-  }
-  if (isDev()) {
-    console.log('analyzeContext post request - resultJson:', resultJson)
-  }
-
-  try {
-    const cleanedJson = extractJSON(resultJson)
-    const rawResult = parse(cleanedJson)
-    return ContextAnalysisResultSchema.parse(rawResult)
-  } catch (error) {
-    console.error(
-      'Failed to parse or validate AI response for context analysis:',
-      error
-    )
-    throw new Error(
-      `AI returned invalid JSON or structure for context analysis. Raw response: ${resultJson}`
-    )
-  }
+  return await callAIAndParse(openai, body, ContextAnalysisResultSchema)
 }
 
 export async function fixSQL(
@@ -255,23 +230,8 @@ Fix the SQL. Ensure all table/column names are double-quoted and match the schem
     ],
     response_format: { type: 'json_object' },
   }
-  if (isDev()) {
-    console.log('fixSQL pre request - body', body)
-  }
 
-  const response = await openai.chat.completions.create(body)
-  const resultJson = response.choices[0].message.content
-
-  if (!resultJson) throw new Error('AI returned empty response for SQL fix')
-  if (isDev()) {
-    console.log('fixSQL post request - resultJson:', resultJson)
-  }
-  try {
-    const cleanedJson = extractJSON(resultJson)
-    return FixSQLResultSchema.parse(parse(cleanedJson))
-  } catch {
-    throw new Error(`Failed to parse fix result: ${resultJson}`)
-  }
+  return await callAIAndParse(openai, body, FixSQLResultSchema)
 }
 
 /**
@@ -349,7 +309,7 @@ export async function generateInsight(
   openai: OpenAI,
   context: InsightGenerationContext,
   model?: string
-): Promise<any> {
+): Promise<InsightResult> {
   const {
     chartTitle,
     chartType,
@@ -481,28 +441,8 @@ Please prioritize these instructions.`
     response_format: { type: 'json_object' },
   }
 
-  if (isDev()) {
-    console.log('generateInsight pre request - body', body)
-  }
+  const result = await callAIAndParse(openai, body, InsightResultSchema)
 
-  const response = await openai.chat.completions.create(body)
-  const resultJson = response.choices[0].message.content
-
-  if (!resultJson) {
-    throw new Error('AI returned empty response for insight generation')
-  }
-
-  if (isDev()) {
-    console.log('generateInsight post request - result:', resultJson)
-  }
-
-  try {
-    const cleanedJson = extractJSON(resultJson)
-    const rawResult = parse(cleanedJson)
-    // Apply autospace for better Chinese-English mixed text typography
-    return autospaceInsight(rawResult)
-  } catch (error) {
-    console.error('Failed to parse AI insight JSON:', error)
-    throw new Error(`AI returned invalid JSON for insight: ${resultJson}`)
-  }
+  return autospaceInsight(result)
 }
+

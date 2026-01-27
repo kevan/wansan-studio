@@ -74,6 +74,24 @@ const getDomainContext = (rules: DomainRule[]) => {
   return header + list + footer
 }
 
+export const METRIC_GEN_SYSTEM_PROMPT = (columnList: string) => `
+You are a DuckDB expert. Convert user natural language into a valid ROW-LEVEL SQL expression fragment for a SELECT clause.
+Available columns in the current context:
+${columnList}
+
+CRITICAL SYNTAX RULES:
+1. **ALWAYS** wrap column names in DOUBLE QUOTES ( ").
+2. For SQLite/DuckDB compatibility, use standard SQL operators.
+3. **ONLY** generate ROW-LEVEL expressions (e.g., "A" + "B", "A" * 0.1).
+4. **NEVER** use aggregate functions like SUM(), AVG(), COUNT(), MAX(), MIN(), etc.
+
+Return ONLY the SQL expression, no commentary, no 'SELECT', no 'AS'.`
+
+export const getMetricGenUserPrompt = (input: string, mode: 'generate' | 'refine') =>
+  mode === 'generate'
+    ? `Create an expression for: ${input}`
+    : `Refine this expression: ${input}`
+
 const getLocalizationRule = (language: 'en' | 'zh') => `
 ### 🌐 LOCALIZATION RULE
 ${

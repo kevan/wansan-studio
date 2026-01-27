@@ -2,6 +2,7 @@ import Store from 'electron-store'
 import type { ClientOptions } from 'openai'
 import { OpenAI } from 'openai'
 import { BrowserWindow } from 'electron'
+import { AsyncLocalStorage } from 'async_hooks'
 import {
   analyzeContext,
   fixSQL,
@@ -9,10 +10,15 @@ import {
   generateInsight,
 } from '../engine/ai-bridge'
 import { analyzeSemantics as analyzeSemanticsEngine } from '../engine/semantic-engine'
+import {
+  METRIC_GEN_SYSTEM_PROMPT,
+  getMetricGenUserPrompt,
+} from '../engine/prompts'
 import crypto from 'crypto'
 import { secureGet, secureSet } from './secure-storage'
 import { getAppUserAgent } from '../utils/env'
 import { tokenManager } from './token-manager'
+import { TokenActionType } from '../../shared/types/token-audit'
 import type {
   AIAnalysisContext,
   AIAnalysisResult,
@@ -27,6 +33,17 @@ import { BatchProcessor } from './batch-processor'
 
 // --- Security Config (Must match obfuscate-tool.js) ---
 const MASTER_SALT = 'wansan-studio-2025-special-security-salt'
+
+interface AuditContext {
+  projectPath: string | null
+  action: TokenActionType
+  snapshot?: {
+    table?: string
+    column?: string
+    row_count?: number
+    prompt_preview?: string
+  }
+}
 
 function decryptBuiltinKey(obfuscated: string): string {
   try {
@@ -79,9 +96,71 @@ export class AIService {
   private builtinConfig: AIConfig | null = null
   private batchProcessor: BatchProcessor | null = null
 
+  // [V1.7] Audit Infrastructure
+  private auditStore = new AsyncLocalStorage<AuditContext>()
+  private auditedClient: OpenAI | null = null
+
   constructor() {
     this.initBuiltinConfig()
     this.loadConfig()
+    this.initAuditedClient()
+  }
+
+  /**
+   * Initializes a persistent proxied OpenAI client that reads audit context 
+   * from AsyncLocalStorage automatically.
+   */
+  private initAuditedClient() {
+    const baseClient = this.requireOpenAI()
+
+    this.auditedClient = new Proxy(baseClient, {
+      get: (target, prop, receiver) => {
+        if (prop === 'chat') {
+          return new Proxy(target.chat, {
+            get: (chatTarget, chatProp) => {
+              if (chatProp === 'completions') {
+                return new Proxy(chatTarget.completions, {
+                  get: (compTarget, compProp) => {
+                    if (compProp === 'create') {
+                      return async (...args: any[]) => {
+                        const response = await (compTarget.create as any)(...args)
+                        const context = this.auditStore.getStore()
+
+                        if (response && response.usage && context) {
+                          tokenManager
+                            .logTransaction(context.projectPath, {
+                              action: context.action,
+                              model: response.model || this.model,
+                              inputTokens: response.usage.prompt_tokens,
+                              outputTokens: response.usage.completion_tokens,
+                              snapshot: context.snapshot || {
+                                prompt_preview: args[0]?.messages?.[1]?.content?.substring(0, 100),
+                              },
+                            })
+                            .catch(err => console.error('[AuditedClient] Log failed', err))
+                        }
+                        return response
+                      }
+                    }
+                    return Reflect.get(compTarget, compProp)
+                  },
+                })
+              }
+              return Reflect.get(chatTarget, chatProp)
+            },
+          })
+        }
+        return Reflect.get(target, prop, receiver)
+      },
+    })
+  }
+
+  /**
+   * Wrapper to run an AI task within a specific audit context.
+   */
+  private async withAudit<T>(context: AuditContext, task: (client: OpenAI) => Promise<T>): Promise<T> {
+    if (!this.auditedClient) this.initAuditedClient()
+    return this.auditStore.run(context, () => task(this.auditedClient!))
   }
 
   public setBatchProcessor(processor: BatchProcessor) {
@@ -160,6 +239,8 @@ export class AIService {
       this.openai = null
       console.warn('AI Service: Not configured (missing API Key).')
     }
+    // Re-init audited client when base client changes
+    if (this.openai) this.initAuditedClient()
   }
 
   private requireOpenAI(): OpenAI {
@@ -193,51 +274,27 @@ export class AIService {
     }
   }
 
-  async generatePlan(context: AIAnalysisContext, projectPath: string | null): Promise<AIAnalysisResult> {
-    const client = this.requireOpenAI()
-    
-    // [V1.7] Token Audit - Pre-flight check (Optional/Estimated)
-    // For chat, we don't block usually, but we could check hard limit.
-    const budget = tokenManager.checkBudget(0.05) // Assume $0.05 buffer
-    if (!budget.allowed) {
-      throw new Error(budget.reason)
-    }
+  async generatePlan(
+    context: AIAnalysisContext,
+    projectPath: string | null
+  ): Promise<AIAnalysisResult> {
+    const budget = tokenManager.checkBudget(0.05)
+    if (!budget.allowed) throw new Error(budget.reason)
 
-    const aiResult = await generateAnalysis(client, context, this.model)
-    
-    // [V1.7] Log Usage
-    const rawResult = aiResult as any
-    if (rawResult.usage) {
-      await tokenManager.logTransaction(projectPath, {
-        action: 'chat',
-        model: this.model,
-        inputTokens: rawResult.usage.prompt_tokens || 0,
-        outputTokens: rawResult.usage.completion_tokens || 0,
-        snapshot: {
-          prompt_preview: context.userQuery.substring(0, 100)
+    return this.withAudit(
+      {
+        projectPath,
+        action: 'data_analysis',
+        snapshot: { prompt_preview: context.userQuery },
+      },
+      async client => {
+        const aiResult = await generateAnalysis(client, context, this.model)
+        return {
+          status: aiResult.error ? 'error' : 'success',
+          ...aiResult,
         }
-      })
-    }
-
-    return {
-      status: aiResult.error ? 'error' : 'success',
-      ...aiResult,
-    }
-  }
-
-  async generateText(prompt: string, systemPrompt?: string): Promise<string> {
-    const client = this.requireOpenAI()
-    const response = await client.chat.completions.create({
-      model: this.model,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt || 'You are a helpful assistant.',
-        },
-        { role: 'user', content: prompt },
-      ],
-    })
-    return response.choices[0].message.content || ''
+      }
+    )
   }
 
   async fixQuery(
@@ -252,37 +309,17 @@ export class AIService {
     is_template?: boolean
     missing_params?: any[]
   }> {
-    const client = this.requireOpenAI()
-    const result = await fixSQL(
-      client,
-      originalSql,
-      error,
-      schemas,
-      this.model,
-      domainRules
-    )
-
-    // [V1.7] Log Usage
-    // Note: fixSQL currently doesn't return usage in its signature.
-    // We might need to update fixSQL signature or estimate here.
-    // For now, assume fixSQL is upgraded or we just skip logging exact tokens until engine update.
-    // However, to follow mandates, let's assume fixSQL returns usage or we update it later.
-    // Since I cannot update engine/ai-bridge.ts in this Atomic call, I will add a TODO or try to patch if `result` has usage (it might if typed loosely).
-    
-    const rawResult = result as any
-    if (rawResult.usage) {
-       await tokenManager.logTransaction(projectPath, {
+    return this.withAudit(
+      {
+        projectPath,
         action: 'sql_fix',
-        model: this.model,
-        inputTokens: rawResult.usage.prompt_tokens || 0,
-        outputTokens: rawResult.usage.completion_tokens || 0,
         snapshot: {
-          prompt_preview: `Fix SQL: ${originalSql.substring(0, 50)}`
-        }
-      })
-    }
-
-    return result
+          prompt_preview: `Error: ${error.substring(0, 100)}`,
+          column: originalSql,
+        },
+      },
+      client => fixSQL(client, originalSql, error, schemas, this.model, domainRules)
+    )
   }
 
   async getContextAnalysis(
@@ -290,23 +327,14 @@ export class AIService {
     language: 'en' | 'zh' = 'en',
     projectPath: string | null
   ): Promise<ContextAnalysisResult> {
-    const client = this.requireOpenAI()
-    const result = await analyzeContext(client, schemas, this.model, language)
-    
-    // [V1.7] Log Usage
-    const rawResult = result as any
-    if (rawResult.usage) {
-        await tokenManager.logTransaction(projectPath, {
-        action: 'chat', // Context analysis is part of chat prep
-        model: this.model,
-        inputTokens: rawResult.usage.prompt_tokens || 0,
-        outputTokens: rawResult.usage.completion_tokens || 0,
-        snapshot: {
-            prompt_preview: 'Context Analysis'
-        }
-        })
-    }
-    return result
+    return this.withAudit(
+      {
+        projectPath,
+        action: 'context_analysis',
+        snapshot: { prompt_preview: `Analyzing ${schemas.length} tables` },
+      },
+      client => analyzeContext(client, schemas, this.model, language)
+    )
   }
 
   async analyzeSemantics(
@@ -315,34 +343,20 @@ export class AIService {
     language: 'en' | 'zh' = 'zh',
     projectPath: string | null
   ) {
-    if (!this.openai) throw new Error('AI not configured')
-
     const langName = language === 'zh' ? 'Chinese (Simplified)' : 'English'
 
-    const result = await analyzeSemanticsEngine(
-      this.openai,
-      this.model || 'gpt-4o',
-      tableName,
-      columns,
-      langName
-    )
-
-     // [V1.7] Log Usage
-    const rawResult = result as any
-    if (rawResult.usage) {
-        await tokenManager.logTransaction(projectPath, {
-        action: 'batch_extract', // Semantics is a form of extraction
-        model: this.model,
-        inputTokens: rawResult.usage.prompt_tokens || 0,
-        outputTokens: rawResult.usage.completion_tokens || 0,
+    return this.withAudit(
+      {
+        projectPath,
+        action: 'semantic_analyze',
         snapshot: {
-            table: tableName,
-            prompt_preview: 'Semantic Analysis'
-        }
-        })
-    }
-
-    return result
+          table: tableName,
+          prompt_preview: `Inferring meanings for ${columns.length} columns`,
+        },
+      },
+      client =>
+        analyzeSemanticsEngine(client, this.model || 'gpt-4o', tableName, columns, langName)
+    )
   }
 
   setConfig(config: AIConfig) {
@@ -405,85 +419,52 @@ export class AIService {
     projectPath: string | null
   }): Promise<string> {
     const { input, columns, mode, projectPath } = options
-    const client = this.requireOpenAI()
-    const columnList = columns.map(c => `- ${c.name} (${c.type})`).join('\n')
-    const quotingRule = `
-CRITICAL SYNTAX RULES:
-1. **ALWAYS** wrap column names in DOUBLE QUOTES ( ").
-2. For SQLite/DuckDB compatibility, use standard SQL operators.
-3. **ONLY** generate ROW-LEVEL expressions (e.g., "A" + "B", "A" * 0.1).
-4. **NEVER** use aggregate functions like SUM(), AVG(), COUNT(), MAX(), MIN(), etc.
-`
 
-    const systemPrompt = `You are a DuckDB expert. Convert user natural language into a valid ROW-LEVEL SQL expression fragment for a SELECT clause.
-    Available columns in the current context:
-    ${columnList}
-    
-    ${quotingRule}
-    
-    Return ONLY the SQL expression, no commentary, no 'SELECT', no 'AS'.`
+    return this.withAudit(
+      { projectPath, action: 'metric_gen', snapshot: { prompt_preview: input } },
+      async client => {
+        const columnList = columns.map(c => `- ${c.name} (${c.type})`).join('\n')
+        const systemPrompt = METRIC_GEN_SYSTEM_PROMPT(columnList)
+        const userPrompt = getMetricGenUserPrompt(input, mode)
 
-    const userPrompt =
-      mode === 'generate'
-        ? `Create an expression for: ${input}`
-        : `Refine this expression: ${input}`
-
-    const response = await client.chat.completions.create({
-      model: this.model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0,
-    })
-
-    const content = response.choices[0].message.content?.trim() || ''
-
-    // [V1.7] Log Usage
-    if (response.usage) {
-        await tokenManager.logTransaction(projectPath, {
-            action: 'chat',
-            model: this.model,
-            inputTokens: response.usage.prompt_tokens || 0,
-            outputTokens: response.usage.completion_tokens || 0,
-            snapshot: {
-                prompt_preview: `Metric: ${input}`
-            }
+        const response = await client.chat.completions.create({
+          model: this.model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0,
         })
-    }
 
-    return content
+        return response.choices[0].message.content?.trim() || ''
+      }
+    )
   }
 
   /**
    * Generate natural language insight from aggregated chart data.
    * This is part of the AI Insight feature with explicit user consent.
    */
-  async generateChartInsight(context: InsightGenerationContext, projectPath: string | null): Promise<any> {
-    const client = this.requireOpenAI()
-    // Ensure default values if not provided in context (though Interface defines them as optional, engine handles them)
-    const enrichedContext = {
-      ...context,
-      language: context.language || 'en',
-      domainRules: context.domainRules || [],
-    }
-    const result = await generateInsight(client, enrichedContext, this.model)
-
-    // [V1.7] Log Usage
-    const rawResult = result as any
-    if (rawResult.usage) {
-        await tokenManager.logTransaction(projectPath, {
-            action: 'insight_gen',
-            model: this.model,
-            inputTokens: rawResult.usage.prompt_tokens || 0,
-            outputTokens: rawResult.usage.completion_tokens || 0,
-            snapshot: {
-                prompt_preview: `Insight for ${context.chartType}`
-            }
-        })
-    }
-
-    return result
+  async generateChartInsight(
+    context: InsightGenerationContext,
+    projectPath: string | null
+  ): Promise<any> {
+    return this.withAudit(
+      {
+        projectPath,
+        action: 'insight_gen',
+        snapshot: { prompt_preview: context.chartTitle || context.chartType },
+      },
+      client => {
+        // Ensure default values if not provided in context
+        const enrichedContext = {
+          ...context,
+          language: context.language || 'en',
+          domainRules: context.domainRules || [],
+        }
+        return generateInsight(client, enrichedContext, this.model)
+      }
+    )
   }
 
   // [V1.7] Preview Extraction
@@ -492,11 +473,12 @@ CRITICAL SYNTAX RULES:
     prompt: string,
     projectPath: string | null
   ): Promise<{ results: string[]; estimatedCost: number }> {
-    const client = this.requireOpenAI()
-    
-    // Construct Prompt
-    const inputsStr = inputData.map((v, i) => `${i + 1}. ${String(v)}`).join('\n')
-    const sysPrompt = `You are a data extraction engine.
+    return this.withAudit(
+      { projectPath, action: 'batch_extract', snapshot: { prompt_preview: prompt } },
+      async client => {
+        // Construct Prompt
+        const inputsStr = inputData.map((v, i) => `${i + 1}. ${String(v)}`).join('\n')
+        const sysPrompt = `You are a data extraction engine.
     Process the following list of inputs based on the user's instruction.
     
     Input Format:
@@ -508,50 +490,43 @@ CRITICAL SYNTAX RULES:
     Example: ["Result1", "Result2"]
     
     Handle NULLs or errors gracefully (e.g. return null or "N/A").`
-    
-    const userPrompt = `Instruction: ${prompt}\n\nInputs:\n${inputsStr}`
-    
-    // Pre-flight check (Optional)
-    const estInputTokens = (prompt.length + inputsStr.length) / 4
-    const estOutputTokens = estInputTokens // Rough guess
-    const estimatedCost = tokenManager.calculateCost(this.model, estInputTokens, estOutputTokens)
 
-    const response = await client.chat.completions.create({
-      model: this.model,
-      messages: [
-        { role: 'system', content: sysPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      temperature: 0
-    })
-    
-    const content = response.choices[0].message.content || '[]'
-    
-    // Log Usage
-    if (response.usage) {
-        await tokenManager.logTransaction(projectPath, {
-            action: 'batch_extract',
-            model: this.model,
-            inputTokens: response.usage.prompt_tokens,
-            outputTokens: response.usage.completion_tokens,
-            snapshot: {
-                prompt_preview: `Preview: ${prompt}`
-            }
+        const userPrompt = `Instruction: ${prompt}\n\nInputs:\n${inputsStr}`
+
+        // Pre-flight check (Optional)
+        const estInputTokens = (prompt.length + inputsStr.length) / 4
+        const estOutputTokens = estInputTokens // Rough guess
+        const estimatedCost = tokenManager.calculateCost(
+          this.model,
+          estInputTokens,
+          estOutputTokens
+        )
+
+        const response = await client.chat.completions.create({
+          model: this.model,
+          messages: [
+            { role: 'system', content: sysPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0,
         })
-    }
 
-    try {
-      // Clean potential markdown code blocks
-      const jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim()
-      const results = JSON.parse(jsonStr)
-      if (Array.isArray(results)) {
-        return { results, estimatedCost }
+        const content = response.choices[0].message.content || '[]'
+
+        try {
+          // Clean potential markdown code blocks
+          const jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim()
+          const results = JSON.parse(jsonStr)
+          if (Array.isArray(results)) {
+            return { results, estimatedCost }
+          }
+          return { results: [], estimatedCost }
+        } catch (e) {
+          console.error('Failed to parse extraction preview', e)
+          return { results: [], estimatedCost }
+        }
       }
-      return { results: [], estimatedCost }
-    } catch (e) {
-      console.error('Failed to parse extraction preview', e)
-      return { results: [], estimatedCost }
-    }
+    )
   }
 
   // [V1.7] Start Batch Job
@@ -564,9 +539,9 @@ CRITICAL SYNTAX RULES:
     window?: BrowserWindow
   ): Promise<{ jobId: string }> {
     if (!this.batchProcessor) throw new Error('Batch Processor not initialized')
-    
+
     const jobId = 'job_' + Date.now()
-    
+
     // Run in background (don't await)
     this.batchProcessor.runExtraction({
       tableName,
@@ -578,7 +553,7 @@ CRITICAL SYNTAX RULES:
     }).catch(err => {
       console.error(`[AIService] Batch job ${jobId} failed:`, err)
     })
-    
+
     return { jobId }
   }
 

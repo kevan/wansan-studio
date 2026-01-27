@@ -6,11 +6,14 @@ export interface TokenCost {
 }
 
 export type TokenActionType = 
-  | 'chat' 
+  | 'data_analysis' 
   | 'batch_extract' 
   | 'auto_clean' 
   | 'sql_fix' 
   | 'insight_gen'
+  | 'metric_gen'
+  | 'context_analysis'
+  | 'semantic_analyze'
 
 export interface TokenTransaction {
   id: string // UUID

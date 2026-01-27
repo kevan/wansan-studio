@@ -42,7 +42,7 @@ export function AIExtractorDialog({
   const [prompt, setPrompt] = useState('')
   const [newColumnName, setNewColumnName] = useState('')
   const [isPreviewing, setIsPreviewing] = useState(false)
-  const [previewData, setPreviewData] = useState<any[]>([])
+  const [previewData, setPreviewData] = useState<unknown[]>([])
   const [previewResult, setPreviewResult] = useState<string[]>([])
   const [estimatedCost, setEstimatedCost] = useState<number | null>(null)
 
@@ -61,11 +61,6 @@ export function AIExtractorDialog({
     if (!prompt.trim() || !column) return
     setIsPreviewing(true)
     try {
-      // Mock preview for now, or call IPC
-      // In real implementation: await window.electronAPI.aiPreviewExtract(...)
-      // For Phase 3 step 1, we simulate it or connect to real backend if ready.
-      // Let's assume we will connect it shortly.
-      
       const res = await window.electronAPI.aiPreviewExtract(
         tableName, 
         column.name, 
@@ -73,7 +68,7 @@ export function AIExtractorDialog({
         prompt
       )
       
-      if (res.success) {
+      if (res.success && res.data) {
         setPreviewResult(res.data.results)
         setEstimatedCost(res.data.estimatedCost)
       } else {
