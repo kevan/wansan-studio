@@ -36,7 +36,7 @@ export class BatchProcessor {
     try {
       // 1. Ensure Sidecar Table exists
       await this.db.exec(`CREATE TABLE IF NOT EXISTS "${sidecarName}" (_ws_row_id BIGINT PRIMARY KEY)`)
-      
+
       // 2. Add Target Column to Sidecar if not exists
       const cols = await this.db.query(`PRAGMA table_info('${sidecarName}')`) as TableInfo[]
       if (!cols.some(c => c.column_name === targetColumnName)) {
@@ -50,7 +50,7 @@ export class BatchProcessor {
         LEFT JOIN "${sidecarName}" t2 ON t1._ws_row_id = t2._ws_row_id
         WHERE t2."${targetColumnName}" IS NULL
       `) as { count: number | bigint }[]
-      
+
       const total = Number(countRes[0].count)
       let processed = 0
 
@@ -74,12 +74,12 @@ export class BatchProcessor {
 
         // Call AI
         const aiRes = await this.ai.previewExtraction(vals, prompt, projectPath)
-        
+
         // Write results to sidecar
         for (let i = 0; i < ids.length; i++) {
           const id = ids[i]
           const result = aiRes.results[i] ?? null
-          
+
           // Use UPSERT logic
           await this.db.exec(`
             INSERT INTO "${sidecarName}" (_ws_row_id, "${targetColumnName}") 
@@ -89,11 +89,6 @@ export class BatchProcessor {
         }
 
         processed += rows.length
-        
-        // Update View (Every 5 batches)
-        if (processed % (batchSize * 5) === 0 || processed >= total) {
-            await this.fileService.rebuildFileView(tableName)
-        }
 
         // Send Progress to UI
         if (window) {
@@ -108,8 +103,6 @@ export class BatchProcessor {
         }
       }
 
-      // Final View Rebuild
-      await this.fileService.rebuildFileView(tableName)
       console.log(`[BatchProcessor] Job completed for ${tableName}`)
 
     } catch (error) {

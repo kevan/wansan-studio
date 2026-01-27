@@ -290,8 +290,8 @@ export function serializeSchemas(schemas: TableSchema[]): string {
 
       let columnsStr = table.columns
         .filter(col => {
-          // [NEW] Respect Visibility
-          return col.semantic?.isVisibleToAI !== false
+          // [NEW] Respect Visibility & Internal Columns
+          return col.semantic?.isVisibleToAI !== false && col.name !== '_ws_row_id'
         })
         .map(col => {
           let hint = ''

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AIConfigResponse,
   AnalyzeContextResponse,
@@ -237,6 +237,7 @@ function useIPC<T>(method: keyof ElectronAPI, args: any[]) {
 }
 
 export function useRunSQL() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (sql: string) => {
       const response = await getIpc().runSQL(sql)
@@ -245,12 +246,19 @@ export function useRunSQL() {
       }
       return response.data
     },
+    // If SQL modifies schema (e.g. CREATE/DROP), invalidate schema cache
+    onSuccess: (_, sql) => {
+      const upper = sql.toUpperCase()
+      if (upper.includes('CREATE') || upper.includes('DROP') || upper.includes('ALTER')) {
+        queryClient.invalidateQueries({ queryKey: ['getSchema'] })
+      }
+    }
   })
 }
 
 export function useGetSchema() {
   return useQuery({
-    queryKey: ['schema'],
+    queryKey: ['getSchema'],
     queryFn: async () => {
       const response = await getIpc().getSchema()
       if (!response.success) {
@@ -258,10 +266,12 @@ export function useGetSchema() {
       }
       return response.data
     },
+    staleTime: 30000, // Metadata can stay fresh for 30s
   })
 }
 
 export function useDeleteTable() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (tableName: string) => {
       const response = await getIpc().deleteTable(tableName)
@@ -270,6 +280,9 @@ export function useDeleteTable() {
       }
       return response.data
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['getSchema'] })
+    }
   })
 }
 

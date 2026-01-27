@@ -2,6 +2,7 @@ import path from 'path'
 import fs from 'fs-extra'
 import { v4 as uuidv4 } from 'uuid'
 import { NativeDatabaseService } from './native-db-service'
+import { MigrationService } from './migration-service'
 
 import {
   ProjectManifest,
@@ -136,6 +137,10 @@ export class ProjectManager {
     // 1. Connect DB First!
     const dbPath = path.join(projectPath, 'source.duckdb')
     await this.nativeDB.initialize(dbPath)
+
+    // [V1.7] Data Structure Migration
+    const migration = new MigrationService(this.nativeDB)
+    await migration.upgradeToV17()
 
     // 2. Read Meta Data
     let manifest: ProjectManifest

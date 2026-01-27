@@ -836,6 +836,19 @@ export const useProjectStore = create<ProjectState>()(
           ext = 'db_table'
         }
         Analytics.track('file_imported', { file_type: ext })
+        
+        // [V1.7] Initial View Build (Fire and Forget)
+        // We need to ensure the v_table exists immediately for Data Grid
+        setTimeout(() => {
+            const currentState = get()
+            const addedFile = currentState.files.find(f => f.id === id)
+            if (addedFile) {
+                const relations = selectAllRelations(currentState)
+                DuckDBViewManager.rebuildView(addedFile, currentState.files, relations)
+                    .catch(e => console.error('Initial view build failed', e))
+            }
+        }, 0)
+
         return id
       },
 
@@ -845,9 +858,13 @@ export const useProjectStore = create<ProjectState>()(
 
         if (file) {
           try {
+            // 1. Physical Delete: Main Table, Sidecar, and Sequence (via cascade backend)
             await window.electronAPI.deleteTable(file.tableName)
+            
+            // 2. Logic Delete: View
+            await window.electronAPI.runSQL(`DROP VIEW IF EXISTS "v_${file.tableName}"`)
           } catch (e) {
-            console.error('Failed to drop table', e)
+            console.error('Failed to drop resources', e)
           }
         }
 
@@ -938,7 +955,7 @@ export const useProjectStore = create<ProjectState>()(
           return
         }
         const id = generateId()
-        const newRelation = { ...data, id, joinType: 'LEFT' as const } // Default join type
+        const newRelation = { ...data, id, joinType: 'LEFT' as const }
 
         set(state => ({
           files: state.files.map(f =>
@@ -948,26 +965,21 @@ export const useProjectStore = create<ProjectState>()(
           ),
         }))
 
-        // Rebuild View
+        // Rebuild View & Update viewSchema
         const updatedState = get()
-        const updatedSource = updatedState.files.find(
-          f => f.id === sourceFileId
-        )
+        const updatedSource = updatedState.files.find(f => f.id === sourceFileId)
         if (updatedSource) {
-          const allRelations = updatedState.files.flatMap(f =>
-            (f.relations || []).map(r => ({
-              id: r.id,
-              fileAId: f.id,
-              columnA: r.sourceColumn,
-              fileBId: r.targetFileId,
-              columnB: r.targetColumn,
-            }))
-          )
-          await DuckDBViewManager.rebuildView(
+          const allRelations = selectAllRelations(updatedState)
+          const viewSchema = await DuckDBViewManager.rebuildView(
             updatedSource,
             updatedState.files,
-            allRelations as any
+            allRelations
           )
+          set(prev => ({
+            files: prev.files.map(f =>
+              f.id === sourceFileId ? { ...f, viewSchema } : f
+            ),
+          }))
         }
       },
 
@@ -990,20 +1002,17 @@ export const useProjectStore = create<ProjectState>()(
           const state = get()
           const file = state.files.find(f => f.id === sourceFileId)
           if (file) {
-            const allRelations = state.files.flatMap(f =>
-              (f.relations || []).map(r => ({
-                id: r.id,
-                fileAId: f.id,
-                columnA: r.sourceColumn,
-                fileBId: r.targetFileId,
-                columnB: r.targetColumn,
-              }))
-            )
-            await DuckDBViewManager.rebuildView(
+            const allRelations = selectAllRelations(state)
+            const viewSchema = await DuckDBViewManager.rebuildView(
               file,
               state.files,
-              allRelations as any
+              allRelations
             )
+            set(prev => ({
+              files: prev.files.map(f =>
+                f.id === sourceFileId ? { ...f, viewSchema } : f
+              ),
+            }))
           }
         }
       },
@@ -1022,39 +1031,31 @@ export const useProjectStore = create<ProjectState>()(
 
         if (updatedFile) {
           try {
-            const allRelations = state.files.flatMap(f =>
-              (f.relations || []).map(r => ({
-                id: r.id,
-                fileAId: f.id,
-                columnA: r.sourceColumn,
-                fileBId: r.targetFileId,
-                columnB: r.targetColumn,
-              }))
-            )
-
-            const typeMap = await DuckDBViewManager.rebuildView(
+            const allRelations = selectAllRelations(state)
+            const viewSchema = await DuckDBViewManager.rebuildView(
               updatedFile,
               state.files,
-              allRelations as any
+              allRelations
             )
-            const inferredType = typeMap.get(metric.safeName)
-
-            if (inferredType) {
-              set(prev => ({
-                files: prev.files.map(f =>
-                  f.id === fileId
-                    ? {
-                        ...f,
-                        smartMetrics: (f.smartMetrics || []).map(m =>
-                          m.id === metric.id
-                            ? { ...m, type: inferredType as any }
-                            : m
-                        ),
-                      }
-                    : f
-                ),
-              }))
-            }
+            
+            // Infer Type
+            const inferredCol = viewSchema.find(c => c.name === metric.name)
+            
+            set(prev => ({
+              files: prev.files.map(f =>
+                f.id === fileId
+                  ? {
+                      ...f,
+                      viewSchema, // Update View Schema
+                      smartMetrics: (f.smartMetrics || []).map(m =>
+                        m.id === metric.id
+                          ? { ...m, type: (inferredCol?.type || 'DOUBLE') as any }
+                          : m
+                      ),
+                    }
+                  : f
+              ),
+            }))
           } catch (e) {
             console.error('Failed to sync metric type', e)
           }
@@ -1079,20 +1080,17 @@ export const useProjectStore = create<ProjectState>()(
         const updatedFile = state.files.find(f => f.id === fileId)
 
         if (updatedFile) {
-          const allRelations = state.files.flatMap(f =>
-            (f.relations || []).map(r => ({
-              id: r.id,
-              fileAId: f.id,
-              columnA: r.sourceColumn,
-              fileBId: r.targetFileId,
-              columnB: r.targetColumn,
-            }))
-          )
-          await DuckDBViewManager.rebuildView(
+          const allRelations = selectAllRelations(state)
+          const viewSchema = await DuckDBViewManager.rebuildView(
             updatedFile,
             state.files,
-            allRelations as any
+            allRelations
           )
+          set(prev => ({
+            files: prev.files.map(f =>
+              f.id === fileId ? { ...f, viewSchema } : f
+            ),
+          }))
         }
       },
 
@@ -1112,20 +1110,17 @@ export const useProjectStore = create<ProjectState>()(
         const state = get()
         const updatedFile = state.files.find(f => f.id === fileId)
         if (updatedFile) {
-          const allRelations = state.files.flatMap(f =>
-            (f.relations || []).map(r => ({
-              id: r.id,
-              fileAId: f.id,
-              columnA: r.sourceColumn,
-              fileBId: r.targetFileId,
-              columnB: r.targetColumn,
-            }))
-          )
-          await DuckDBViewManager.rebuildView(
+          const allRelations = selectAllRelations(state)
+          const viewSchema = await DuckDBViewManager.rebuildView(
             updatedFile,
             state.files,
-            allRelations as any
+            allRelations
           )
+          set(prev => ({
+            files: prev.files.map(f =>
+              f.id === fileId ? { ...f, viewSchema } : f
+            ),
+          }))
         }
       },
 
@@ -1379,6 +1374,14 @@ export const useProjectStore = create<ProjectState>()(
                 : f
             ),
           }))
+
+          // [V1.7] Rebuild View to ensure Sidecar & Metrics are synced
+          const updatedState = get()
+          const updatedFile = updatedState.files.find(f => f.id === fileId)
+          if (updatedFile) {
+            const relations = selectAllRelations(updatedState)
+            await DuckDBViewManager.rebuildView(updatedFile, updatedState.files, relations)
+          }
 
           return 'completed'
         } catch (error: any) {

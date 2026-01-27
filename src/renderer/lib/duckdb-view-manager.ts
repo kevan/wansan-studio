@@ -1,4 +1,4 @@
-import { ColumnType, FileNode } from '@shared/types'
+import { ColumnSchema, ColumnType, FileNode } from '@shared/types'
 import { Relation } from '@shared/types/project'
 import { getJoinedColumnName } from '@shared/naming-utils'
 import { normalizeDuckDBType } from '@shared/type-utils.ts'
@@ -65,7 +65,7 @@ function resolveExpression(expression: string, colMap: Map<string, string>) {
     const physicalPath = colMap.get(userCol)!
     // Match the column name either quoted or unquoted as a whole word
     const escaped = escapeRegExp(userCol)
-    const regex = new RegExp(`("${escaped}")|(\\b${escaped}\\b)`, 'g')
+    const regex = new RegExp(`("${escaped}")|(\b${escaped}\b)`, 'g')
     resolvedExpr = resolvedExpr.replace(regex, physicalPath)
   })
 
@@ -75,28 +75,13 @@ function resolveExpression(expression: string, colMap: Map<string, string>) {
 export const DuckDBViewManager = {
   /**
    * Rebuilds the "Wide View" (v_{tableName}) for a given file.
+   * Returns the full schema of the view (Columns + Types).
    */
   rebuildView: async (
     file: FileNode,
     allFiles: FileNode[],
     relations: Relation[]
-  ): Promise<Map<string, string>> => {
-    // ONLY build view if smartMetrics are configured
-    if (!file.smartMetrics || file.smartMetrics.length === 0) {
-      // If no smart metrics, drop the view if it exists and return empty map
-      try {
-        await window.electronAPI.runSQL(
-          `DROP VIEW IF EXISTS "v_${file.tableName}"`
-        )
-      } catch (e) {
-        console.warn(
-          `[DuckDBViewManager] Failed to drop view v_${file.tableName}:`,
-          e
-        )
-      }
-      return new Map<string, string>()
-    }
-
+  ): Promise<ColumnSchema[]> => {
     const { colMap, selectDimensionClauses, joinClauses } = prepareViewContext(
       file,
       allFiles,
@@ -121,8 +106,8 @@ export const DuckDBViewManager = {
           joinClauses.push(`LEFT JOIN "${sidecarName}" AS T_AI ON T1._ws_row_id = T_AI._ws_row_id`)
           
           sidecarCols.forEach((colName: string) => {
-            sidecarSelects.push(`T_AI."${colName}"`)
-            colMap.set(colName, `T_AI."${colName}"`)
+            sidecarSelects.push(`T_AI."${colName}" `)
+            colMap.set(colName, `T_AI."${colName}" `)
           })
         }
       }
@@ -142,7 +127,6 @@ export const DuckDBViewManager = {
 
     // [V1.7] Smart Time Intelligence
     // If a column is a date/timestamp, and we have a numeric column, generate YoY/MoM hints
-    // For now, we look for 'TIMESTAMP' or 'DATE' types in file.columns
     const timeCol = file.columns.find(c => ['TIMESTAMP', 'DATE'].includes(c.type))
     const numericCols = file.columns.filter(c => ['DOUBLE', 'DECIMAL', 'INTEGER', 'BIGINT'].includes(c.type))
     
@@ -166,14 +150,20 @@ export const DuckDBViewManager = {
     try {
       await window.electronAPI.runSQL(sql)
       const descRes = await window.electronAPI.runSQL(`DESCRIBE "${viewName}" `)
-      const typeMap = new Map<string, string>()
+      
+      const viewColumns: ColumnSchema[] = []
 
       if (descRes.success && descRes.data) {
         descRes.data.data.forEach((row: any) => {
-          typeMap.set(row.column_name, row.column_type)
+          viewColumns.push({
+            name: row.column_name,
+            safeName: row.column_name,
+            type: normalizeDuckDBType(row.column_type),
+            sampleValues: [] // View schema doesn't need samples, base columns have them
+          })
         })
       }
-      return typeMap
+      return viewColumns
     } catch (e) {
       console.error('[DuckDBViewManager] Rebuild failed:', e)
       throw e

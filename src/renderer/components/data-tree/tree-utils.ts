@@ -42,16 +42,18 @@ export function buildTreeData(
       if (rel.fileBId === file.id) relatedColumns.add(rel.columnB)
     })
 
-    const columnNodes: TreeNodeData[] = file.columns.map(col => ({
-      id: `col:${file.id}:${col.name}`,
-      name: col.name,
-      type: 'column',
-      fileId: file.id,
-      columnName: col.name,
-      columnType: col.type,
-      isKey: col.isPrimaryKey,
-      isForeignKey: relatedColumns.has(col.name),
-    }))
+    const columnNodes: TreeNodeData[] = file.columns
+      .filter(col => col.name !== '_ws_row_id')
+      .map(col => ({
+        id: `col:${file.id}:${col.name}`,
+        name: col.name,
+        type: 'column',
+        fileId: file.id,
+        columnName: col.name,
+        columnType: col.type,
+        isKey: col.isPrimaryKey,
+        isForeignKey: relatedColumns.has(col.name),
+      }))
 
     return {
       id: `file:${file.id}`,

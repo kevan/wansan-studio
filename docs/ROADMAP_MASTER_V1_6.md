@@ -38,6 +38,10 @@
 ### 3. Auto-Cleaning Agent
 *   **Feature**: AI suggests cleaning rules during ingestion (e.g., "Standardize Date Formats", "Fix Typos").
 
+### 4. Smart Time Intelligence (智能时间增强) [Implemented]
+*   **Native Logic**: Built-in MoM (Month-over-Month) and YoY (Year-over-Year) templates using Window Functions (`lag()`).
+*   **Implementation**: Automatically injected via logical views (`v_`) in V1.7 architecture.
+
 ---
 
 ## 📈 v1.8: The "Insight" Update (深度分析)
@@ -48,11 +52,7 @@
 *   **Scenario**: "Why did Sales drop in Q3?"
 *   **Analysis**: System automatically drills down into dimensions (Region, Product) to find the segment with the largest negative contribution.
 
-### 2. Smart Time Intelligence
-*   **Native Logic**: Built-in MoM (Month-over-Month) and YoY (Year-over-Year) templates using Window Functions (`lag()`).
-*   **Time Awareness**: Auto-recognition of Fiscal Years and Quarters.
-
-### 3. Auto-Analyst (主动概览)
+### 2. Auto-Analyst (主动概览)
 *   **Feature**: Upon import, AI proactively scans data to generate a "First Impression Report" (Key metrics, Trends, Outliers) without user prompting.
 
 ---
@@ -81,3 +81,14 @@
 | **v1.7** | **Augmentation** | AI cleans dirty data & extracts tags from text. |
 | **v1.8** | **Insight** | AI explains "Why" things changed (Attribution). |
 | **v2.0** | **Sovereignty** | Full offline AI (Ollama) & Plugin Ecosystem. |
+
+---
+
+## 🛠️ Standalone Optimizations & Backlog (待优化项)
+
+### 1. Heuristic Ingestion (启发式摄入增强)
+*   **痛点**: 来自旧系统的 CSV 文件中，数值包含千分位逗号且未加引号（如 `2,300`），导致 DuckDB 列探测失败或错位。
+*   **目标**: 实现类似 WPS/Excel 的高容错识别。
+*   **策略**: 采用两阶段探测，结合 AI 语义分析来消除“逗号”是分隔符还是数据值的歧义。
+*   **优先级**: 后续迭代优化。
+

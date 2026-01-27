@@ -367,8 +367,10 @@ export function SchemaEditor() {
 
               <div className="px-4 py-6">
                 <div className="flex flex-col border border-zinc-100 rounded-2xl overflow-hidden divide-y divide-zinc-50 z-0 relative">
-                  {currentFile.columns.map(col => {
-                    const isVisible = col.semantic?.isVisibleToAI !== false
+                  {currentFile.columns
+                    .filter(col => col.name !== '_ws_row_id')
+                    .map(col => {
+                      const isVisible = col.semantic?.isVisibleToAI !== false
                     return (
                       <div
                         key={col.name}

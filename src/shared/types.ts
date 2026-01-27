@@ -187,6 +187,12 @@ export interface FileNode {
   createdAt: number
   smartMetrics?: SmartMetric[] // Persisted metrics
   relations?: TableRelation[] // NEW: Stored per-file
+  
+  /** 
+   * [V1.7] Cache of the logical view columns (including Sidecar & Metrics).
+   * This is the "True Schema" that AI should see.
+   */
+  viewSchema?: ColumnSchema[]
 }
 
 export interface ReloadResult {

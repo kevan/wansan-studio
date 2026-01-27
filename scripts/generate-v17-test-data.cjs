@@ -12,7 +12,10 @@ const data = [
   ['2025-02-02', '非常失望，实物和图片严重不符。', '$45.00', 1800],
 ];
 
-const csvContent = data.map(row => row.join(',')).join('\n');
+// Wrap each field in double quotes and escape existing double quotes
+const csvContent = data.map(row => 
+  row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')
+).join('\n');
 const filePath = path.join(process.cwd(), 'test_v17_augmentation.csv');
 
 fs.writeFileSync(filePath, csvContent);

@@ -335,9 +335,6 @@ export class FileService {
         `CREATE TABLE "${tableName}" AS SELECT nextval('${seqName}') AS _ws_row_id, * FROM ${loadSql}`
       )
       
-      // [V1.7] Rebuild View
-      await this.rebuildFileView(tableName)
-
       const columnsResult = await this.databaseService.query(
         `PRAGMA table_info('${tableName}');`
       )
@@ -419,9 +416,6 @@ export class FileService {
       )
     }
 
-    // [V1.7] Rebuild View
-    await this.rebuildFileView(tableName)
-
     const count = await this.databaseService.query(
       `SELECT COUNT(*) as count FROM "${tableName}" `
     )
@@ -445,48 +439,6 @@ export class FileService {
       })
     )
     return { rowCount: Number(count[0].count), columns: finalCols }
-  }
-
-  /**
-   * [V1.7] Rebuilds the logic view for a file.
-   * Joins the raw table with sidecar tables (AI augmentation).
-   * The view name is always `v_{tableName}`.
-   */
-  async rebuildFileView(tableName: string): Promise<void> {
-    const sidecarName = `${tableName}_ext_ai`
-    const viewName = `v_${tableName}`
-    
-    // 1. Check if sidecar exists
-    const sidecarExistsRes = await this.databaseService.query(
-      `SELECT table_name FROM information_schema.tables WHERE table_name = '${sidecarName}'`
-    )
-    const hasSidecar = sidecarExistsRes.length > 0
-
-    if (!hasSidecar) {
-      // Simple view: SELECT * FROM main
-      await this.databaseService.exec(`CREATE OR REPLACE VIEW "${viewName}" AS SELECT * FROM "${tableName}"`)
-      return
-    }
-
-    // 2. Get sidecar columns (excluding _ws_row_id)
-    const sidecarColsRes = await this.databaseService.query(`PRAGMA table_info('${sidecarName}')`)
-    const sidecarCols = sidecarColsRes
-      .filter((c: any) => c.name !== '_ws_row_id')
-      .map((c: any) => `t2."${c.name}"`)
-
-    const sidecarSelect = sidecarCols.length > 0 ? `, ${sidecarCols.join(', ')}` : ''
-
-    // 3. Create Joined View
-    await this.databaseService.exec(`
-      CREATE OR REPLACE VIEW "${viewName}" AS
-      SELECT 
-        t1.*
-        ${sidecarSelect}
-      FROM "${tableName}" t1
-      LEFT JOIN "${sidecarName}" t2 ON t1._ws_row_id = t2._ws_row_id
-    `)
-    
-    console.log(`[FileService] Rebuilt view ${viewName} (Sidecar: ${hasSidecar})`)
   }
 
   async cleanupStaging(tables: string[], files?: string[]) {
