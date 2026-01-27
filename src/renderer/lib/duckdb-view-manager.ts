@@ -103,13 +103,54 @@ export const DuckDBViewManager = {
       relations
     )
 
-    const selectClauses = [`T1.*`, ...selectDimensionClauses]
+    // [V1.7] Check for Sidecar (AI Augmentation)
+    const sidecarName = `${file.tableName}_ext_ai`
+    const sidecarSelects: string[] = []
+    try {
+      const sidecarExistsRes = await window.electronAPI.runSQL(
+        `SELECT table_name FROM information_schema.tables WHERE table_name = '${sidecarName}'`
+      )
+      if (sidecarExistsRes.success && sidecarExistsRes.data && sidecarExistsRes.data.data.length > 0) {
+        // Fetch Sidecar Columns
+        const sidecarColsRes = await window.electronAPI.runSQL(`PRAGMA table_info('${sidecarName}')`)
+        if (sidecarColsRes.success && sidecarColsRes.data) {
+          const sidecarCols = sidecarColsRes.data.data
+            .filter((c: any) => c.column_name !== '_ws_row_id') // Use column_name for PRAGMA result
+            .map((c: any) => c.column_name)
+          
+          joinClauses.push(`LEFT JOIN "${sidecarName}" AS T_AI ON T1._ws_row_id = T_AI._ws_row_id`)
+          
+          sidecarCols.forEach((colName: string) => {
+            sidecarSelects.push(`T_AI."${colName}"`)
+            colMap.set(colName, `T_AI."${colName}"`)
+          })
+        }
+      }
+    } catch (e) {
+      console.warn(`[DuckDBViewManager] Failed to check sidecar for ${file.tableName}:`, e)
+    }
+
+    const selectClauses = [`T1.*`, ...sidecarSelects, ...selectDimensionClauses]
 
     // Add Smart Metrics
     if (file.smartMetrics && file.smartMetrics.length > 0) {
       file.smartMetrics.forEach(metric => {
         const resolvedExpr = resolveExpression(metric.sqlExpression, colMap)
         selectClauses.push(`(${resolvedExpr}) AS "${metric.name}" `)
+      })
+    }
+
+    // [V1.7] Smart Time Intelligence
+    // If a column is a date/timestamp, and we have a numeric column, generate YoY/MoM hints
+    // For now, we look for 'TIMESTAMP' or 'DATE' types in file.columns
+    const timeCol = file.columns.find(c => ['TIMESTAMP', 'DATE'].includes(c.type))
+    const numericCols = file.columns.filter(c => ['DOUBLE', 'DECIMAL', 'INTEGER', 'BIGINT'].includes(c.type))
+    
+    if (timeCol && numericCols.length > 0) {
+      numericCols.slice(0, 2).forEach(numCol => {
+        // MoM (Growth Rate)
+        const momExpr = `("${numCol.name}" - LAG("${numCol.name}") OVER (ORDER BY "${timeCol.name}")) / NULLIF(LAG("${numCol.name}") OVER (ORDER BY "${timeCol.name}"), 0)`
+        selectClauses.push(`(${momExpr}) AS "${numCol.name}_MoM"`)
       })
     }
 

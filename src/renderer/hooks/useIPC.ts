@@ -68,6 +68,14 @@ const mockIPC: ElectronAPI = {
       ],
     } as any,
   }),
+  aiPreviewExtract: async () => ({
+    success: true,
+    data: { results: ['Mock Result 1', 'Mock Result 2'], estimatedCost: 0.05 },
+  }),
+  aiBatchExtract: async () => ({
+    success: true,
+    data: { jobId: 'mock-job-id' },
+  }),
   getAIConfig: async (): Promise<AIConfigResponse> => {
     return { success: true, data: {} }
   },

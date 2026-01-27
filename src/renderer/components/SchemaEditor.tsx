@@ -33,6 +33,7 @@ import { MetricEditorModal } from './modals/metric-editor-modal'
 import { RelationEditorModal } from './modals/RelationEditorModal'
 import { DataLineageDialog } from './modals/DataLineageDialog'
 import { SemanticEditorModal } from './modals/SemanticEditorModal'
+import { AIExtractorDialog } from './modals/AIExtractorDialog'
 import { COLUMN_TYPE_CONFIG } from '@/src/lib/constants'
 
 export function SchemaEditor() {
@@ -69,6 +70,9 @@ export function SchemaEditor() {
 
   const [editingColumn, setEditingColumn] = useState<ColumnSchema | null>(null)
 
+  // [V1.7] AI Extractor State
+  const [aiExtractColumn, setAiExtractColumn] = useState<ColumnSchema | null>(null)
+
   const currentFileId =
     activeFileId && files.find(f => f.id === activeFileId)
       ? activeFileId
@@ -96,6 +100,42 @@ export function SchemaEditor() {
     setShowDeleteConfirm(false)
     toast.addToast({ title: t('file_deleted'), type: 'success' })
   }
+  
+  // [V1.7] Handle Execution
+  const handleRunExtract = async (prompt: string, newColumnName: string) => {
+    if (!aiExtractColumn || !currentFile) return
+    
+    // We start the background job via IPC
+    try {
+      const res = await (window.electronAPI as any).aiBatchExtract(
+        currentFile.tableName,
+        aiExtractColumn.name,
+        newColumnName,
+        prompt
+      )
+      
+      if (res.success) {
+         toast.addToast({
+            title: t('ai_job_started', 'Extraction Started'),
+            description: t('ai_job_desc', 'AI is processing your data in the background.'),
+            type: 'success',
+          })
+      } else {
+         toast.addToast({
+            title: t('ai_job_failed', 'Failed to start job'),
+            description: res.error,
+            type: 'error',
+          })
+      }
+    } catch (e: any) {
+        toast.addToast({
+            title: 'Error',
+            description: e.message,
+            type: 'error',
+          })
+    }
+  }
+
   const handleAddMetric = () => {
     setEditingMetric(undefined)
     setIsMetricModalOpen(true)
@@ -428,7 +468,18 @@ export function SchemaEditor() {
                             </div>
                           </div>
                         </div>
-                        <div className="w-12 shrink-0 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-20 shrink-0 text-right opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end gap-1">
+                          {/* [V1.7] AI Extract Button */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setAiExtractColumn(col)}
+                            title={t('ai_extract_tooltip', 'AI Extract')}
+                            className="h-8 w-8 text-purple-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                          </Button>
+
                           <Button
                             variant="ghost"
                             size="icon"
@@ -616,6 +667,14 @@ export function SchemaEditor() {
         onClose={() => setEditingColumn(null)}
         onSave={handleSaveSemantic}
         column={editingColumn}
+      />
+
+      <AIExtractorDialog
+        isOpen={!!aiExtractColumn}
+        onClose={() => setAiExtractColumn(null)}
+        onRun={handleRunExtract}
+        column={aiExtractColumn}
+        tableName={currentFile.tableName}
       />
       {gateNode}
     </div>

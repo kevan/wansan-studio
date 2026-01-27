@@ -1,5 +1,7 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { ElectronAPI } from '../shared/electron-api'
+import { DomainRule, TableSchema } from '../shared/types'
+import { InsightGenerationContext } from '../shared/types/dashboard'
 
 // 定义暴露给渲染进程的 API
 const electronAPI: ElectronAPI = {
@@ -12,8 +14,13 @@ const electronAPI: ElectronAPI = {
   selectFiles: () => ipcRenderer.invoke('select-files'), // 多文件选择
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
   parseFile: (filePath: string) => ipcRenderer.invoke('parse-file', filePath),
-  inspectFile: (filePath: string) => ipcRenderer.invoke('file:inspect', filePath),
-  prepareFile: (filePath: string, sourceName: string, readOptions?: Record<string, any>) => ipcRenderer.invoke('file:prepare', filePath, sourceName, readOptions),
+  inspectFile: (filePath: string) =>
+    ipcRenderer.invoke('file:inspect', filePath),
+  prepareFile: (
+    filePath: string,
+    sourceName: string,
+    readOptions?: Record<string, any>
+  ) => ipcRenderer.invoke('file:prepare', filePath, sourceName, readOptions),
 
   // 数据库操作
   runSQL: (sql: string) => ipcRenderer.invoke('run-sql', sql),
@@ -31,18 +38,16 @@ const electronAPI: ElectronAPI = {
   // AI 功能
   askAI: (
     query: string,
-    schemas: any[],
-    relations: any[],
+    schemas: TableSchema[],
     context?: { lastSql: string; lastQuery: string },
     language?: 'en' | 'zh',
-    domainRules?: any[],
+    domainRules?: DomainRule[],
     suggestionCount?: number
   ) =>
     ipcRenderer.invoke(
       'ask-ai',
       query,
       schemas,
-      relations,
       context,
       language,
       domainRules,
@@ -51,11 +56,11 @@ const electronAPI: ElectronAPI = {
   fixSQL: (
     originalSql: string,
     error: string,
-    schemas: any[],
-    domainRules?: any[]
+    schemas: TableSchema[],
+    domainRules?: DomainRule[]
   ) =>
     ipcRenderer.invoke('ask-ai-fix', originalSql, error, schemas, domainRules),
-  analyzeContext: (schemas: any[], language?: 'en' | 'zh') =>
+  analyzeContext: (schemas: TableSchema[], language?: 'en' | 'zh') =>
     ipcRenderer.invoke('analyze-context', schemas, language),
   analyzeSemantics: (tableName: string, columns: any[], language?: string) =>
     ipcRenderer.invoke('ai:analyze-semantics', tableName, columns, language),
@@ -64,8 +69,34 @@ const electronAPI: ElectronAPI = {
     columns: Array<{ name: string; type: string }>
     mode: 'generate' | 'refine'
   }) => ipcRenderer.invoke('ai:generate-metric-expression', options),
-  generateInsight: (context: any) =>
+  generateInsight: (context: InsightGenerationContext) =>
     ipcRenderer.invoke('ai:generate-insight', context),
+  aiPreviewExtract: (
+    tableName: string,
+    columnName: string,
+    sampleData: any[],
+    prompt: string
+  ) =>
+    ipcRenderer.invoke(
+      'ai:preview-extract',
+      tableName,
+      columnName,
+      sampleData,
+      prompt
+    ),
+  aiBatchExtract: (
+    tableName: string,
+    columnName: string,
+    targetColumnName: string,
+    prompt: string
+  ) =>
+    ipcRenderer.invoke(
+      'ai:batch-extract',
+      tableName,
+      columnName,
+      targetColumnName,
+      prompt
+    ),
   getAIConfig: () => ipcRenderer.invoke('get-ai-config'),
   setAIConfig: (config: any) => ipcRenderer.invoke('set-ai-config', config),
   clearAIConfig: () => ipcRenderer.invoke('clear-ai-config'),

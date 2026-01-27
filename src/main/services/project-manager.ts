@@ -40,6 +40,10 @@ export class ProjectManager {
     console.log('[ProjectManager] Pending saves cleared (or timed out).')
   }
 
+  public getCurrentProjectPath(): string | null {
+    return this.currentProjectPath
+  }
+
   async createProject(name: string, location: string): Promise<string> {
     const projectId = uuidv4()
     const projectDirName = `${name}.wansan`

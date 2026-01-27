@@ -243,7 +243,16 @@ export class FileService {
       : ''
 
     if (ext === '.xlsx' || ext === '.xls') {
-      const schemas = await ingestExcelFile(
+      // For Excel, we currently rely on the worker. The worker creates the table directly.
+      // Ideally, the worker should also support sequence generation or we wrap it here.
+      // However, ingestExcelFile logic is complex.
+      // Strategy: Let ingestExcelFile create the table (e.g. "t_123"), then we restructure it.
+      // Or we modify ingestExcelFile.
+      // Given ingestExcelFile is in another file, let's look at `createTableFromSource` which is generic.
+      // But reIngestFile calls ingestExcelFile directly.
+      // To ensure consistency, we should reconstruct the table here after ingestExcelFile returns.
+      
+      const _schemas = await ingestExcelFile(
         filePath,
         this.databaseService,
         basename(filePath),
@@ -253,11 +262,51 @@ export class FileService {
         't_',
         typesParam
       )
+      
+      // [V1.7] Post-processing: Ensure _ws_row_id exists
+      // The worker creates the table `tableName`. We need to add the ID column.
+      const seqName = this.getSequenceName(tableName)
+      await this.databaseService.exec(`CREATE SEQUENCE IF NOT EXISTS "${seqName}" START 1`)
+      
+      // Check if _ws_row_id already exists (unlikely unless worker adds it)
+      const hasId = await this.databaseService.query(`SELECT 1 FROM information_schema.columns WHERE table_name = '${tableName}' AND column_name = '_ws_row_id'`)
+      if (hasId.length === 0) {
+        const tempName = `${tableName}_temp_${Date.now()}`
+        await this.databaseService.exec(`ALTER TABLE "${tableName}" RENAME TO "${tempName}"`)
+        await this.databaseService.exec(`CREATE TABLE "${tableName}" AS SELECT nextval('${seqName}') AS _ws_row_id, * FROM "${tempName}"`)
+        await this.databaseService.exec(`DROP TABLE "${tempName}"`)
+      }
+
+      const columnsResult = await this.databaseService.query(
+        `PRAGMA table_info('${tableName}');`
+      )
+      // Re-fetch columns to include _ws_row_id
+       const finalCols = await Promise.all(
+        columnsResult.map(async (col: any) => {
+          const type = normalizeDuckDBType(col.type)
+          return {
+            name: col.name,
+            safeName: col.name,
+            type: type as ColumnType,
+            sampleValues: await getSampleValues(
+              this.databaseService,
+              tableName,
+              col.name,
+              type as ColumnType
+            ),
+          }
+        })
+      )
+
       return {
         lastModified: stats.mtimeMs,
-        newColumns: schemas[0]?.columns || [],
+        newColumns: finalCols,
       }
     } else {
+      const seqName = this.getSequenceName(tableName)
+      await this.databaseService.exec(`DROP SEQUENCE IF EXISTS "${seqName}"`)
+      await this.databaseService.exec(`CREATE SEQUENCE "${seqName}" START 1`)
+
       await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
       const safePath = filePath.replace(/\\/g, '/')
       const reader =
@@ -283,8 +332,12 @@ export class FileService {
       const loadSql = `${reader}('${safePath}'${typesParam ? ', ' + typesParam : ''}${opts ? ', ' + opts : ''})`
 
       await this.databaseService.exec(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM ${loadSql}`
+        `CREATE TABLE "${tableName}" AS SELECT nextval('${seqName}') AS _ws_row_id, * FROM ${loadSql}`
       )
+      
+      // [V1.7] Rebuild View
+      await this.rebuildFileView(tableName)
+
       const columnsResult = await this.databaseService.query(
         `PRAGMA table_info('${tableName}');`
       )
@@ -328,13 +381,19 @@ export class FileService {
 
     const limit = params.limitRows ? ` LIMIT ${params.limitRows}` : ''
 
+    // [V1.7] Sequence Management
+    const seqName = this.getSequenceName(tableName)
+    // Only drop if we are essentially replacing the table (which we are)
+    await this.databaseService.exec(`DROP SEQUENCE IF EXISTS "${seqName}"`) 
+    await this.databaseService.exec(`CREATE SEQUENCE "${seqName}" START 1`)
+
     await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}" `)
     if (sourceTableName) {
       const casted = activeCols
         .map(c => `CAST("${c.name}" AS ${c.type}) AS "${c.name}"`)
         .join(', ')
       await this.databaseService.exec(
-        `CREATE TABLE "${tableName}" AS SELECT ${casted} FROM "${sourceTableName}"${limit}`
+        `CREATE TABLE "${tableName}" AS SELECT nextval('${seqName}') AS _ws_row_id, ${casted} FROM "${sourceTableName}"${limit}`
       )
     } else {
       let reader = 'read_csv_auto'
@@ -356,9 +415,13 @@ export class FileService {
       const loadOptions =
         ext === '.parquet' ? '' : `, ${typesParam}${extraOptions}`
       await this.databaseService.exec(
-        `CREATE TABLE "${tableName}" AS SELECT ${colList} FROM ${reader}('${safeTarget}'${loadOptions})${limit}`
+        `CREATE TABLE "${tableName}" AS SELECT nextval('${seqName}') AS _ws_row_id, ${colList} FROM ${reader}('${safeTarget}'${loadOptions})${limit}`
       )
     }
+
+    // [V1.7] Rebuild View
+    await this.rebuildFileView(tableName)
+
     const count = await this.databaseService.query(
       `SELECT COUNT(*) as count FROM "${tableName}" `
     )
@@ -382,6 +445,48 @@ export class FileService {
       })
     )
     return { rowCount: Number(count[0].count), columns: finalCols }
+  }
+
+  /**
+   * [V1.7] Rebuilds the logic view for a file.
+   * Joins the raw table with sidecar tables (AI augmentation).
+   * The view name is always `v_{tableName}`.
+   */
+  async rebuildFileView(tableName: string): Promise<void> {
+    const sidecarName = `${tableName}_ext_ai`
+    const viewName = `v_${tableName}`
+    
+    // 1. Check if sidecar exists
+    const sidecarExistsRes = await this.databaseService.query(
+      `SELECT table_name FROM information_schema.tables WHERE table_name = '${sidecarName}'`
+    )
+    const hasSidecar = sidecarExistsRes.length > 0
+
+    if (!hasSidecar) {
+      // Simple view: SELECT * FROM main
+      await this.databaseService.exec(`CREATE OR REPLACE VIEW "${viewName}" AS SELECT * FROM "${tableName}"`)
+      return
+    }
+
+    // 2. Get sidecar columns (excluding _ws_row_id)
+    const sidecarColsRes = await this.databaseService.query(`PRAGMA table_info('${sidecarName}')`)
+    const sidecarCols = sidecarColsRes
+      .filter((c: any) => c.name !== '_ws_row_id')
+      .map((c: any) => `t2."${c.name}"`)
+
+    const sidecarSelect = sidecarCols.length > 0 ? `, ${sidecarCols.join(', ')}` : ''
+
+    // 3. Create Joined View
+    await this.databaseService.exec(`
+      CREATE OR REPLACE VIEW "${viewName}" AS
+      SELECT 
+        t1.*
+        ${sidecarSelect}
+      FROM "${tableName}" t1
+      LEFT JOIN "${sidecarName}" t2 ON t1._ws_row_id = t2._ws_row_id
+    `)
+    
+    console.log(`[FileService] Rebuilt view ${viewName} (Sidecar: ${hasSidecar})`)
   }
 
   async cleanupStaging(tables: string[], files?: string[]) {
@@ -519,18 +624,25 @@ export class FileService {
       .filter(([_, s]) => !!s)
       .map(([t, _]) => `"${t}"`)
       .join(' , ')
+
+    // [V1.7] Sequence Handling
+    const seqName = this.getSequenceName(targetTableName)
+
     if (uniqueKeys && uniqueKeys.length > 0) {
       if (strategy === 'replace') {
+        // Replace strategy means "Remove duplicates, then insert"
         const join = uniqueKeys
           .map(k => `"${targetTableName}"."${k}" = src."${columnMapping[k]}"`)
           .join(' AND ')
         await this.databaseService.exec(
           `DELETE FROM "${targetTableName}" WHERE EXISTS (SELECT 1 FROM ${sourceSql} AS src WHERE ${join})`
         )
+        // Insert new with nextval
         await this.databaseService.exec(
-          `INSERT INTO "${targetTableName}" (${targetCols}) SELECT ${selects} FROM ${sourceSql}`
+          `INSERT INTO "${targetTableName}" (_ws_row_id, ${targetCols}) SELECT nextval('${seqName}'), ${selects} FROM ${sourceSql}`
         )
       } else if (strategy === 'update') {
+        // Update strategy keeps original IDs, so no nextval needed
         const set = Object.keys(columnMapping)
           .filter(k => !uniqueKeys.includes(k) && columnMapping[k])
           .map(k => `"${k}" = src."${columnMapping[k]}"`)
@@ -542,21 +654,43 @@ export class FileService {
           `UPDATE "${targetTableName}" SET ${set} FROM ${sourceSql} AS src WHERE ${where}`
         )
       } else {
+        // Append (Skip Duplicates)
         const notEx = uniqueKeys
           .map(k => `tgt."${k}" = src."${columnMapping[k]}"`)
           .join(' AND ')
         await this.databaseService.exec(
-          `INSERT INTO "${targetTableName}" (${targetCols}) SELECT ${selects} FROM ${sourceSql} AS src WHERE NOT EXISTS (SELECT 1 FROM "${targetTableName}" AS tgt WHERE ${notEx})`
+          `INSERT INTO "${targetTableName}" (_ws_row_id, ${targetCols}) SELECT nextval('${seqName}'), ${selects} FROM ${sourceSql} AS src WHERE NOT EXISTS (SELECT 1 FROM "${targetTableName}" AS tgt WHERE ${notEx})`
         )
       }
-    } else
+    } else {
+      // Simple Append
       await this.databaseService.exec(
-        `INSERT INTO "${targetTableName}" (${targetCols}) SELECT ${selects} FROM ${sourceSql}`
+        `INSERT INTO "${targetTableName}" (_ws_row_id, ${targetCols}) SELECT nextval('${seqName}'), ${selects} FROM ${sourceSql}`
       )
+    }
     const count = await this.databaseService.query(
       `SELECT COUNT(*) as count FROM "${targetTableName}" `
     )
     return { rowCount: Number(count[0].count) }
+  }
+
+  private getSequenceName(tableName: string): string {
+    return `seq_${tableName}`
+  }
+
+  // [V1.7] Cascade Deletion
+  async deleteTable(tableName: string): Promise<void> {
+    const seqName = this.getSequenceName(tableName)
+    const sidecarName = `${tableName}_ext_ai`
+    
+    // 1. Drop Sidecar
+    await this.databaseService.exec(`DROP TABLE IF EXISTS "${sidecarName}"`)
+    
+    // 2. Drop Sequence
+    await this.databaseService.exec(`DROP SEQUENCE IF EXISTS "${seqName}"`)
+    
+    // 3. Drop Main Table
+    await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
   }
 
   private async detectCsvEncoding(safePath: string): Promise<Record<string, any>> {

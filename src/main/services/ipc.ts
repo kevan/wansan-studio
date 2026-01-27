@@ -22,10 +22,13 @@ import type {
 } from '@shared/types.ts'
 import { InsightGenerationContext } from '@shared/types/dashboard'
 
+import { ProjectManager } from './project-manager'
+
 export function setupIPC(
   databaseService: NativeDatabaseService,
   aiService: AIService,
-  connectorService: import('./connector-service').DBConnectorService
+  connectorService: import('./connector-service').DBConnectorService,
+  projectManager: ProjectManager
 ) {
   const fileService = new FileService(databaseService)
 
@@ -303,7 +306,7 @@ export function setupIPC(
           language,
           domainRules,
           suggestionCount,
-        })
+        }, projectManager.getCurrentProjectPath())
         return { success: true, data: result }
       } catch (error) {
         console.error('Generate analysis error:', error)
@@ -330,7 +333,8 @@ export function setupIPC(
           originalSql,
           error,
           schemas,
-          domainRules
+          domainRules,
+          projectManager.getCurrentProjectPath()
         )
         return { success: true, data: result }
       } catch (error) {
@@ -355,7 +359,10 @@ export function setupIPC(
       }
     ) => {
       try {
-        const result = await aiService.generateMetricExpression(options)
+        const result = await aiService.generateMetricExpression({
+          ...options,
+          projectPath: projectManager.getCurrentProjectPath()
+        })
         return { success: true, data: result }
       } catch (error) {
         console.error('Generate metric expression error:', error)
@@ -372,7 +379,7 @@ export function setupIPC(
     'analyze-context',
     async (_event, schemas: TableSchema[], language?: 'en' | 'zh') => {
       try {
-        const result = await aiService.getContextAnalysis(schemas, language)
+        const result = await aiService.getContextAnalysis(schemas, language, projectManager.getCurrentProjectPath())
         return { success: true, data: result }
       } catch (error) {
         console.error('Analyze context error:', error)
@@ -391,7 +398,8 @@ export function setupIPC(
           const result = await aiService.analyzeSemantics(
             tableName,
             columns,
-            language
+            language,
+            projectManager.getCurrentProjectPath()
           )
           return { success: true, data: result }
         } catch (e: any) {
@@ -405,7 +413,7 @@ export function setupIPC(
     'ai:generate-insight',
     async (_event, context: InsightGenerationContext) => {
       try {
-        const result = await aiService.generateChartInsight(context)
+        const result = await aiService.generateChartInsight(context, projectManager.getCurrentProjectPath())
         return { success: true, data: result }
       } catch (error) {
         console.error('Generate insight error:', error)
@@ -413,6 +421,43 @@ export function setupIPC(
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error',
         }
+      }
+    }
+  )
+
+  // [V1.7] AI Preview Extraction
+  ipcMain.handle(
+    'ai:preview-extract',
+    async (_event, tableName: string, columnName: string, sampleData: any[], prompt: string) => {
+      try {
+        const result = await aiService.previewExtraction(
+          sampleData, 
+          prompt, 
+          projectManager.getCurrentProjectPath()
+        )
+        return { success: true, data: result }
+      } catch (error: any) {
+        return { success: false, error: error.message }
+      }
+    }
+  )
+
+  // [V1.7] AI Batch Extraction
+  ipcMain.handle(
+    'ai:batch-extract',
+    async (event, tableName: string, columnName: string, targetColumnName: string, prompt: string) => {
+      try {
+        const result = await aiService.startBatchExtraction(
+          tableName,
+          columnName,
+          targetColumnName,
+          prompt,
+          projectManager.getCurrentProjectPath(),
+          BrowserWindow.fromWebContents(event.sender) || undefined
+        )
+        return { success: true, data: result }
+      } catch (error: any) {
+        return { success: false, error: error.message }
       }
     }
   )
@@ -800,9 +845,7 @@ export function setupIPC(
   // 删除表
   ipcMain.handle('delete-table', async (event, tableName: string) => {
     try {
-      // Sanitize table name to prevent SQL injection
-      // Double quotes are important for identifier safety
-      await databaseService.query(`DROP TABLE IF EXISTS "${tableName}"`)
+      await fileService.deleteTable(tableName)
       return { success: true }
     } catch (error) {
       console.error('Drop table failed:', error)

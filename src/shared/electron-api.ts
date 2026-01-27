@@ -213,6 +213,18 @@ export interface ElectronAPI {
   generateInsight: (
     context: InsightGenerationContext
   ) => Promise<IPCResponse<string>>
+  aiPreviewExtract: (
+    tableName: string,
+    columnName: string,
+    sampleData: any[],
+    prompt: string
+  ) => Promise<IPCResponse<{ results: string[]; estimatedCost: number }>>
+  aiBatchExtract: (
+    tableName: string,
+    columnName: string,
+    targetColumnName: string,
+    prompt: string
+  ) => Promise<IPCResponse<{ jobId: string }>>
 
   // AI Config
   getAIConfig: () => Promise<AIConfigResponse>
