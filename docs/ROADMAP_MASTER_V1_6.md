@@ -20,10 +20,6 @@
 *   **Format Support**: Native **Parquet** support with Hive-Partitioning write/read capability.
 *   **Robust Type System**: Enforce `DECIMAL` for currency and `INT64` for timestamps.
 
-### 3. Silent Reflection (反思层) [P2]
-*   **Pre-Execution Validation**: Use `EXPLAIN` to catch Binder Errors before execution.
-*   **Background Self-Healing**: Fix SQL silently without showing error screens to the user.
-
 ---
 
 ## 🧠 v1.7: The "Augmentation" Update (增强与清洗)
