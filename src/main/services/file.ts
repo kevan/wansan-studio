@@ -1,5 +1,6 @@
 import fs from 'fs-extra'
 import { basename, extname } from 'path'
+import readline from 'readline'
 import { NativeDatabaseService } from './native-db-service'
 import { TempFileManager } from '../utils/temp-manager'
 import {
@@ -99,13 +100,14 @@ export class FileService {
     // Branch B: Flat Files -> DuckDB Direct Read + Encoding Detection
     let reader = 'read_csv_auto'
     let detectedOptions: Record<string, any> | undefined = undefined
+    let activePath = safePath // Path to be used for reading (might be cleaned temp file)
 
     if (ext === '.json') {
       reader = 'read_json_auto'
       const opts = "format='auto', auto_detect=true"
       try {
         await this.databaseService.query(
-          `DESCRIBE SELECT * FROM ${reader}('${safePath}', ${opts})`
+          `DESCRIBE SELECT * FROM ${reader}('${activePath}', ${opts})`
         )
         detectedOptions = { format: 'auto', auto_detect: true }
       } catch {
@@ -114,7 +116,25 @@ export class FileService {
     } else if (ext === '.parquet') {
       reader = 'read_parquet'
     } else if (ext === '.csv') {
-      detectedOptions = await this.detectCsvEncoding(safePath)
+      try {
+        detectedOptions = await this.detectCsvEncoding(activePath)
+      } catch (e) {
+        // [V1.7] Heuristic Fallback: Try to clean the file (remove thousands separators)
+        console.warn('Standard CSV detection failed. Attempting heuristic cleaning...', e)
+        const cleanedPath = await this.applyHeuristicCleaning(filePath)
+        if (cleanedPath) {
+          try {
+             const cleanedSafePath = cleanedPath.replace(/\\/g, '/')
+             detectedOptions = await this.detectCsvEncoding(cleanedSafePath)
+             activePath = cleanedSafePath // Use the cleaned file for subsequent queries
+             console.log('Heuristic cleaning successful using file:', activePath)
+          } catch (cleanErr) {
+             throw new Error(`Failed to parse CSV even after heuristic cleaning: ${cleanErr.message}`)
+          }
+        } else {
+           throw e // Rethrow original error if heuristic didn't apply or fail
+        }
+      }
     }
 
     // Final Read
@@ -131,7 +151,7 @@ export class FileService {
       optionsStr = ', auto_detect=true'
     }
 
-    const readSql = `${reader}('${safePath}'${optionsStr})`
+    const readSql = `${reader}('${activePath}'${optionsStr})`
 
     const preview = await this.databaseService.query(
       `SELECT * FROM ${readSql} LIMIT 100`
@@ -151,11 +171,49 @@ export class FileService {
     }))
 
     return {
-      tempFilePath: filePath,
+      tempFilePath: activePath === safePath ? filePath : activePath, // Return the cleaned path if used
       rowCount: Number(countResult[0].count),
       columns,
       preview,
       readOptions: detectedOptions,
+    }
+  }
+
+  // [V1.7] Heuristic Cleaning for CSVs (Thousands Separator Removal)
+  private async applyHeuristicCleaning(filePath: string): Promise<string | null> {
+    try {
+      const fd = await fs.open(filePath, 'r')
+      const buffer = Buffer.alloc(4096)
+      const bytesRead = await fs.read(fd, buffer, 0, 4096, 0)
+      await fs.close(fd)
+      const sample = buffer.toString('utf8', 0, bytesRead.bytesRead)
+      
+      // Check for digit-comma-digit pattern (e.g. 1,000)
+      const hasThousands = /\d{1,3}(,\d{3})+/.test(sample)
+      if (!hasThousands) return null
+      
+      await TempFileManager.ensureTempDir()
+      const tempPath = TempFileManager.getTempFilePath('.csv')
+      const readStream = fs.createReadStream(filePath, { encoding: 'utf8' })
+      const writeStream = fs.createWriteStream(tempPath, { encoding: 'utf8' })
+      
+      const rl = readline.createInterface({
+        input: readStream,
+        crlfDelay: Infinity
+      })
+      
+      for await (const line of rl) {
+        // Remove commas that are surrounded by digits: 1,234 -> 1234
+        const cleaned = line.replace(/(\d),(?=\d{3})/g, '$1')
+        writeStream.write(cleaned + '\n')
+      }
+      
+      writeStream.end()
+      await new Promise(fulfill => writeStream.on('finish', () => fulfill(undefined)))
+      return tempPath
+    } catch (e) {
+      console.warn('Heuristic cleaning failed:', e)
+      return null
     }
   }
 

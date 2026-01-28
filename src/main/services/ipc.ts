@@ -23,6 +23,7 @@ import type {
 import { InsightGenerationContext } from '@shared/types/dashboard'
 
 import { ProjectManager } from './project-manager'
+import { tokenManager } from './token-manager'
 
 export function setupIPC(
   databaseService: NativeDatabaseService,
@@ -31,6 +32,32 @@ export function setupIPC(
   projectManager: ProjectManager
 ) {
   const fileService = new FileService(databaseService)
+
+  // Token Audit Handlers
+  ipcMain.handle('audit:get-config', async () => {
+    try {
+      return { success: true, data: tokenManager.getBudgetConfig() }
+    } catch (e: any) {
+      return { success: false, error: e.message }
+    }
+  })
+
+  ipcMain.handle('audit:set-config', async (_, config) => {
+    try {
+      tokenManager.setBudgetConfig(config)
+      return { success: true }
+    } catch (e: any) {
+      return { success: false, error: e.message }
+    }
+  })
+
+  ipcMain.handle('audit:get-usage', async () => {
+    try {
+      return { success: true, data: { dailyUsageUSD: tokenManager.getDailyUsage() } }
+    } catch (e: any) {
+      return { success: false, error: e.message }
+    }
+  })
 
   ipcMain.handle(
     'db:test-connection',

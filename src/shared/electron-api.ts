@@ -18,6 +18,7 @@ import {
   RunSQLResponse,
 } from './api-types'
 import { FilterParam } from './schemas/analysis'
+import { TokenBudgetConfig } from './types/token-audit'
 
 export interface IngestPreCheckParams {
   filePath: string
@@ -225,6 +226,11 @@ export interface ElectronAPI {
     targetColumnName: string,
     prompt: string
   ) => Promise<IPCResponse<{ jobId: string }>>
+
+  // Token Audit
+  getTokenConfig: () => Promise<IPCResponse<TokenBudgetConfig>>
+  setTokenConfig: (config: Partial<TokenBudgetConfig>) => Promise<IPCResponse>
+  getTokenUsage: () => Promise<IPCResponse<{ dailyUsageUSD: number }>>
 
   // AI Config
   getAIConfig: () => Promise<AIConfigResponse>

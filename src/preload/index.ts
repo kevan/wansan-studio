@@ -97,6 +97,12 @@ const electronAPI: ElectronAPI = {
       targetColumnName,
       prompt
     ),
+
+  // Token Audit
+  getTokenConfig: () => ipcRenderer.invoke('audit:get-config'),
+  setTokenConfig: (config: any) => ipcRenderer.invoke('audit:set-config', config),
+  getTokenUsage: () => ipcRenderer.invoke('audit:get-usage'),
+
   getAIConfig: () => ipcRenderer.invoke('get-ai-config'),
   setAIConfig: (config: any) => ipcRenderer.invoke('set-ai-config', config),
   clearAIConfig: () => ipcRenderer.invoke('clear-ai-config'),

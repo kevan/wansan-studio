@@ -79,6 +79,16 @@ const mockIPC: ElectronAPI = {
   getAIConfig: async (): Promise<AIConfigResponse> => {
     return { success: true, data: {} }
   },
+  getTokenConfig: async () => ({
+    success: true,
+    data: {
+      dailyHardLimitUSD: 5.0,
+      projectSoftLimitUSD: 1.0,
+      pricingOverrides: []
+    }
+  }),
+  setTokenConfig: async () => ({ success: true }),
+  getTokenUsage: async () => ({ success: true, data: { dailyUsageUSD: 0 } }),
   setAIConfig: async () => ({ success: true }),
   clearAIConfig: async (): Promise<IPCResponse> => {
     return { success: true }
