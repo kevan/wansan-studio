@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { QueryPanel } from './query-panel'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { useTranslation } from 'react-i18next'
@@ -13,6 +13,29 @@ export function DataPreviewPanel() {
 
   useEffect(() => {
     if (file) {
+      // const hasMetrics = file.smartMetrics && file.smartMetrics.length > 0
+      // const hasRelations = file.relations && file.relations.length > 0
+      // const hasViewSchema = file.viewSchema && file.viewSchema.length > 0
+      //
+      // const targetTable = (hasMetrics || hasRelations || hasViewSchema)
+      //   ? `v_${file.tableName}`
+      //   : file.tableName
+      //
+      // // [Optimization] Instead of SELECT *, pick columns to avoid joined-column clutter
+      // let selectClause = '*'
+      // if (hasViewSchema && file.viewSchema) {
+      //   // Only include columns that belong to the table, metrics, or AI sidecars
+      //   // Exclude columns from JOINs (which contain '__')
+      //   const ownColumns = file.viewSchema
+      //     .filter(c => !c.name.includes('__'))
+      //     .map(c => `"${c.name}"`)
+      //
+      //   if (ownColumns.length > 0) {
+      //     selectClause = ownColumns.join(', ')
+      //   }
+      // }
+      //
+      // const initialSql = `SELECT ${selectClause} FROM "${targetTable}" LIMIT 100`
       const initialSql = `SELECT * FROM "${file.tableName}" LIMIT 100`
       try {
         const formatted = format(initialSql, {
@@ -109,6 +132,14 @@ export function DataPreviewPanel() {
       </div>
     )
   }
+
+  // const hasMetrics = file.smartMetrics && file.smartMetrics.length > 0
+  // const hasRelations = file.relations && file.relations.length > 0
+  // const hasViewSchema = file.viewSchema && file.viewSchema.length > 0
+  //
+  // const currentExposedTable = (hasMetrics || hasRelations || hasViewSchema)
+  //   ? `v_${file.tableName}`
+  //   : file.tableName
 
   return (
     <div className="h-full w-full bg-white flex flex-col p-4 overflow-hidden">

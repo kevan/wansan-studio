@@ -35,7 +35,7 @@ export function mapFileToSchema(
             (!options?.skipMetrics &&
               targetFile.smartMetrics &&
               targetFile.smartMetrics.length > 0)
-          
+
           const targetName = targetHasView
             ? `v_${targetFile.tableName}`
             : targetFile.tableName
@@ -68,7 +68,7 @@ export function mapFileToSchema(
         // 1. Keep original columns
         const isOriginal = file.columns.some(c => c.name === viewCol.name)
         if (isOriginal) return true
-        
+
         // 2. Keep Sidecar/AI columns (usually don't have '__')
         // 3. Keep Time Intelligence (e.g. Sales_MoM)
         // 4. Remove Joined Columns (convention: table__col)

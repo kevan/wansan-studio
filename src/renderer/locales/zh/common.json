@@ -171,7 +171,9 @@
     "advanced_options": "高级选项",
     "form_ssl": "启用 SSL (rejectUnauthorized=false)",
     "form_params": "附加连接参数",
-    "form_params_placeholder": "例如: charset=utf8mb4&timeout=5000"
+    "form_params_placeholder": "例如: charset=utf8mb4&timeout=5000",
+    "password_required_after_reset": "配置不完整（重置后需重新输入密码）",
+    "error_password_missing": "找不到该连接的密码，请重新输入并保存。"
   },
   "list_status": "状态",
   "list_field_type": "字段与类型",

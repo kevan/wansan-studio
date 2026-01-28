@@ -103,7 +103,6 @@ export class AIService {
   constructor() {
     this.initBuiltinConfig()
     this.loadConfig()
-    this.initAuditedClient()
   }
 
   /**

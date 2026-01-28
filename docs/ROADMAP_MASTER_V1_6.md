@@ -42,6 +42,12 @@
 *   **Native Logic**: Built-in MoM (Month-over-Month) and YoY (Year-over-Year) templates using Window Functions (`lag()`).
 *   **Implementation**: Automatically injected via logical views (`v_`) in V1.7 architecture.
 
+### 5. Data Explorer (ERP/低代码式数据交互) [Strategic]
+*   **Goal**: Transform "Data Preview" from a static grid into an interactive "Data App".
+*   **Master-Detail View**: Display data as entities (e.g. Orders) with expandable sub-tables (e.g. Order Items) to handle complex joins intuitively.
+*   **Inline Editing**: Allow users to fix dirty data directly in the grid (write-back to DuckDB).
+*   **Entity Awareness**: AI recognizes the entity type (e.g. "Customer") and renders a specialized form view (Card/Profile) instead of just rows.
+
 ---
 
 ## 📈 v1.8: The "Insight" Update (深度分析)

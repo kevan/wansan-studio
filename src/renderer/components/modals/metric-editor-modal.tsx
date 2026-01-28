@@ -119,11 +119,13 @@ export function MetricEditorModal({
     groups.push({
       title: tAnalysis('smart_metric.current_table'),
       icon: Database,
-      columns: file.columns.map(col => ({
-        name: col.name,
-        type: col.type,
-        source: file.tableName,
-      })),
+      columns: file.columns
+        .filter(col => col.name !== '_ws_row_id')
+        .map(col => ({
+          name: col.name,
+          type: col.type,
+          source: file.tableName,
+        })),
     })
 
     // 2. Joined Columns
@@ -135,11 +137,13 @@ export function MetricEditorModal({
         groups.push({
           title: `${tAnalysis('smart_metric.linked_via')} ${prefix}`,
           icon: Link2,
-          columns: targetFile.columns.map(col => ({
-            name: getJoinedColumnName(prefix, col.name),
-            type: col.type,
-            source: targetFile.tableName,
-          })),
+          columns: targetFile.columns
+            .filter(col => col.name !== '_ws_row_id')
+            .map(col => ({
+              name: getJoinedColumnName(prefix, col.name),
+              type: col.type,
+              source: targetFile.tableName,
+            })),
         })
       }
     })
