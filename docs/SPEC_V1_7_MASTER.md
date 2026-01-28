@@ -68,24 +68,24 @@ LEFT JOIN sales_data_ext_ai t2 ON t1._ws_row_id = t2._ws_row_id;
 
 ---
 
-## 3. 功能特性：AI Column Extractor (AI 字段提取)
+## 3. 功能特性：AI Column Extractor (AI 字段提取) [Implemented]
 
 ### 3.1 交互流程 (The Flow)
-1.  **触发**：数据表格列头右键 -> `✨ AI 智能提取`。
-2.  **配置 (Modal)**：
+1.  **触发**：表结构编辑器 (Schema Editor) 字段右键 -> `✨ AI 智能提取`。
+2.  **配置 (Modal)**:
     *   **Input**: 左侧展示源列样本。
     *   **Prompt**: 支持自然语言或预设 Chips (情感分析/关键词/分类)。
     *   **Preview**: **实时试运行** (使用 5 行数据)，AI 自动推断目标列名和类型。
     *   **Estimate**: 显示“预计消耗 Token / 费用”。
-3.  **执行 (Execution)**：
+3.  **执行 (Execution)**:
     *   后端启动批处理任务 (Batch Job)。
-    *   UI 显示列头进度条。
-    *   数据分批写入 Sidecar 表，视图自动刷新。
+    *   UI 发送 IPC 事件 `ai:batch-extract` 启动。
+    *   数据分批写入 Sidecar 表 (`_ext_ai`)，视图自动刷新。
 
 ### 3.2 技术实现
-*   **Batching**: 每 50-100 行打包一个 Prompt，减少 HTTP 开销。
-*   **Caching**: 对重复的文本内容建立内存 Hash 缓存，避免重复收费。
-*   **Error Handling**: 单行失败不阻塞整体，标记为 `NULL` 或 `_ERROR_`。
+*   **Batching**: 采用后端 `BatchProcessor` 分批处理（默认 20 行/批）。
+*   **Progress**: 通过 IPC 事件 `ai:batch-progress` 实时回传进度到 UI。
+*   **Persistence**: 结果持久化在 Sidecar 表中，通过主表的 `_ws_row_id` 进行关联。
 
 ---
 
@@ -173,16 +173,19 @@ FROM sales_agg;
 
 ---
 
-## 6. 功能特性：Auto-Cleaning Agent (自动清洗)
+## 6. 功能特性：Heuristic Ingestion (启发式摄入增强)
 
-### 6.1 场景
-针对格式混乱的列（如 "2023.01.01", "2023-1-1" 混杂）。
+### 6.1 痛点
+来自旧系统的 CSV 文件中，数值常包含千分位逗号且未加引号（如 `2,300`），导致 DuckDB 默认的 CSV 嗅探器（Sniffer）将其误判为两列或报错。
 
-### 6.2 流程
-1.  **诊断**: AI 扫描列的前 100 行，识别异常模式。
-2.  **配方 (Recipe)**: AI 生成 DuckDB SQL 表达式。
-    *   *Example*: `strptime(regexp_replace(date_col, '\.', '-', 'g'), '%Y-%m-%d')`
-3.  **应用**: 将该 SQL 表达式应用到 View 中，生成一个新的 `cleaned_date` 列，隐藏原始列。
+### 6.2 解决方案：两阶段探测 (Two-Stage Detection)
+1.  **Stage 1: Strict Sniffing (标准探测)**
+    *   尝试使用 DuckDB 默认设置读取前 100 行。
+    *   如果列数一致且类型合理，直接通过。
+2.  **Stage 2: Heuristic Fallback (启发式兜底)**
+    *   如果 Stage 1 失败（列数不匹配或大量 NULL），启动 JS 层面的预解析。
+    *   **Regex Pattern**: 识别 `\d{1,3}(,\d{3})+(\.\d+)?` 模式。
+    *   **Action**: 自动将千分位逗号去除或用引号包裹，生成临时清洗后的 CSV，再喂给 DuckDB。
 
 ---
 

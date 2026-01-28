@@ -22,31 +22,41 @@
 
 ---
 
-## 🧠 v1.7: The "Augmentation" Update (增强与清洗)
+## 🧠 v1.7: The "Augmentation" Foundation (增强基础)
 
-**Goal**: Use local AI to turn "Dirty/Unstructured" data into "Analytical" data.
+**Goal**: Establish the core engine capabilities for data augmentation and basic cleaning.
 
-### 1. AI Column Extractor (非结构化转结构化) [Killer Feature]
-*   **Scenario**: An Excel file has a "Customer Feedback" column.
-*   **Feature**: AI generates a new virtual column `sentiment` (Positive/Negative) or `tags` from the text.
-*   **Tech**: Batch processing via LLM.
+### 1. AI Column Extractor (AI 字段提取) [Implemented]
+*   **Feature**: Transform unstructured text into new structured columns (e.g. sentiment, tags) via local batch processing.
+*   **Tech**: Uses the **Sidecar Table** architecture (`_ext_ai`) to store augmented data without modifying raw source files.
 
-### 2. Fuzzy Join (模糊关联)
-*   **Scenario**: Table A has "Alibaba", Table B has "Alibaba Group".
-*   **Solution**: Smart linking using DuckDB string similarity (`levenshtein`) assisted by AI.
-
-### 3. Auto-Cleaning Agent
-*   **Feature**: AI suggests cleaning rules during ingestion (e.g., "Standardize Date Formats", "Fix Typos").
-
-### 4. Smart Time Intelligence (智能时间增强) [Implemented]
+### 2. Smart Time Intelligence (智能时间增强) [Implemented]
 *   **Native Logic**: Built-in MoM (Month-over-Month) and YoY (Year-over-Year) templates using Window Functions (`lag()`).
 *   **Implementation**: Automatically injected via logical views (`v_`) in V1.7 architecture.
 
-### 5. Data Explorer (ERP/低代码式数据交互) [Strategic]
-*   **Goal**: Transform "Data Preview" from a static grid into an interactive "Data App".
-*   **Master-Detail View**: Display data as entities (e.g. Orders) with expandable sub-tables (e.g. Order Items) to handle complex joins intuitively.
+### 3. Heuristic Ingestion (启发式摄入增强)
+*   **Feature**: Advanced CSV/Excel parsing to handle edge cases like unquoted thousands separators (`2,300`).
+*   **Strategy**: Two-stage detection with AI semantic disambiguation.
+
+---
+
+## 🧹 v1.7.5: The "Interactive Wrangling" Update (交互式清洗)
+
+**Goal**: Transform Wansan into a "Data App" for interactive cleaning, leveraging the Data Explorer UI.
+
+### 1. Data Explorer (ERP/低代码式数据交互) [Core UI]
+*   **Master-Detail View**: Display data as entities (e.g. Orders) with expandable sub-tables (e.g. Order Items).
+*   **Virtual Grid**: High-performance rendering for million-row datasets with column profile histograms.
 *   **Inline Editing**: Allow users to fix dirty data directly in the grid (write-back to DuckDB).
-*   **Entity Awareness**: AI recognizes the entity type (e.g. "Customer") and renders a specialized form view (Card/Profile) instead of just rows.
+
+### 2. Rule-Based Cleaning (规则清洗)
+*   **Transformation UI**: Point-and-click interface for Split, Concat, Pivot/Unpivot without SQL.
+*   **Smart Deduplication**: Visual UI to identify and merge duplicate records based on fuzzy matching.
+*   **Pattern Standardization**: Enforce formatting (e.g., Phone Numbers, IDs) using Regex/Masks.
+
+### 3. AI Augmentation (AI 增强)
+*   **Fuzzy Join**: Smart linking using DuckDB string similarity (`levenshtein`) assisted by AI.
+*   **Auto-Cleaning Agent**: AI suggests cleaning rules during ingestion (e.g., "Standardize Date Formats").
 
 ---
 
@@ -59,7 +69,11 @@
 *   **Analysis**: System automatically drills down into dimensions (Region, Product) to find the segment with the largest negative contribution.
 
 ### 2. Auto-Analyst (主动概览)
-*   **Feature**: Upon import, AI proactively scans data to generate a "First Impression Report" (Key metrics, Trends, Outliers) without user prompting.
+*   **Feature**: Upon import, AI proactive scans data to generate a "First Impression Report" (Key metrics, Trends, Outliers) without user prompting.
+
+### 3. Wansan Connect Service (Postgres Proxy) [Integration]
+*   **Feature**: Expose the internal DuckDB instance as a local **PostgreSQL Server** (via wire protocol).
+*   **Value**: Allows Power BI, Tableau, and Excel to connect to Wansan Studio live (localhost:5432). Solves the file-lock issue and enables Wansan to act as the "AI Data Engine" for enterprise reporting tools.
 
 ---
 
@@ -84,17 +98,12 @@
 | Version | Theme | Key Value |
 | :--- | :--- | :--- |
 | **v1.6** | **Semantics** | AI understands "Business Speak" & connects to SQL DBs. |
-| **v1.7** | **Augmentation** | AI cleans dirty data & extracts tags from text. |
+| **v1.7** | **Foundation** | Smart Time Intelligence & Robust Ingestion. |
+| **v1.7.5** | **Wrangling** | Interactive Data Explorer & Rule/AI Cleaning. |
 | **v1.8** | **Insight** | AI explains "Why" things changed (Attribution). |
 | **v2.0** | **Sovereignty** | Full offline AI (Ollama) & Plugin Ecosystem. |
 
 ---
 
 ## 🛠️ Standalone Optimizations & Backlog (待优化项)
-
-### 1. Heuristic Ingestion (启发式摄入增强)
-*   **痛点**: 来自旧系统的 CSV 文件中，数值包含千分位逗号且未加引号（如 `2,300`），导致 DuckDB 列探测失败或错位。
-*   **目标**: 实现类似 WPS/Excel 的高容错识别。
-*   **策略**: 采用两阶段探测，结合 AI 语义分析来消除“逗号”是分隔符还是数据值的歧义。
-*   **优先级**: 后续迭代优化。
 
