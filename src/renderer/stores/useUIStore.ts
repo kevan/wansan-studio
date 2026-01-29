@@ -5,6 +5,8 @@ interface UIState {
   sidebarWidth: number // Percentage of sidebar width (e.g. 20)
   analysisSplit: number[] // [chat, dashboard]
   dataSplit: number[] // [schema, grid]
+  analysisLayoutMode: 'chat' | 'split' | 'board' // [NEW] Control analysis layout
+  isPresentationMode: boolean // [NEW] Window fullscreen state
   migrationState: {
     isMigrating: boolean
     progress: number
@@ -20,6 +22,8 @@ interface UIState {
   setSidebarWidth: (width: number) => void
   setAnalysisSplit: (layout: number[]) => void
   setDataSplit: (layout: number[]) => void
+  setAnalysisLayoutMode: (mode: 'chat' | 'split' | 'board') => void // [NEW]
+  setPresentationMode: (val: boolean) => void // [NEW]
   setMigrationState: (state: Partial<UIState['migrationState']>) => void
   showError: (title: string, message: string, details?: string) => void
   closeError: () => void
@@ -32,6 +36,8 @@ export const useUIStore = create<UIState>()(
       sidebarWidth: 20,
       analysisSplit: [40, 60],
       dataSplit: [40, 60],
+      analysisLayoutMode: 'split',
+      isPresentationMode: false,
       migrationState: {
         isMigrating: false,
         progress: 0,
@@ -46,6 +52,8 @@ export const useUIStore = create<UIState>()(
       setSidebarWidth: width => set({ sidebarWidth: width }),
       setAnalysisSplit: layout => set({ analysisSplit: layout }),
       setDataSplit: layout => set({ dataSplit: layout }),
+      setAnalysisLayoutMode: mode => set({ analysisLayoutMode: mode }),
+      setPresentationMode: val => set({ isPresentationMode: val }),
       setMigrationState: state =>
         set(prev => ({ migrationState: { ...prev.migrationState, ...state } })),
       showError: (title, message, details) =>
@@ -57,6 +65,7 @@ export const useUIStore = create<UIState>()(
           sidebarWidth: 20,
           analysisSplit: [40, 60],
           dataSplit: [40, 60],
+          analysisLayoutMode: 'split',
         }),
     }),
     {

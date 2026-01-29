@@ -168,15 +168,15 @@ export function ColumnsView({ file }: ColumnsViewProps) {
                           </Badge>
                         ))}
                     </div>
-                    <div className="flex-1 min-w-0 flex items-center gap-2 overflow-hidden opacity-40 group-hover:opacity-100 transition-opacity">
-                      <div className="w-px h-4 bg-zinc-200 shrink-0" />
+                    <div className="flex-1 min-w-0 flex items-center gap-4 overflow-hidden opacity-50 group-hover:opacity-100 transition-all duration-300">
+                      <div className="w-px h-3 bg-zinc-100 shrink-0" />
                       <div className="flex items-center gap-1.5 truncate">
                         {(col.sampleValues || [])
                           .slice(0, 3)
                           .map((val, i) => (
                             <span
                               key={i}
-                              className="text-[10px] font-mono bg-zinc-50 px-1.5 py-0.5 rounded border border-zinc-100/50 whitespace-nowrap text-zinc-600"
+                              className="text-[10px] font-medium text-zinc-500 bg-zinc-100/50 px-2 py-0.5 rounded-md whitespace-nowrap tabular-nums"
                             >
                               {typeof val === 'object'
                                 ? '{...}'
@@ -184,7 +184,7 @@ export function ColumnsView({ file }: ColumnsViewProps) {
                             </span>
                           ))}
                         {(col.sampleValues || []).length === 0 && (
-                          <span className="text-[10px] italic text-zinc-400">
+                          <span className="text-[10px] italic text-zinc-300">
                             {t('no_samples')}
                           </span>
                         )}

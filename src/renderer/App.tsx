@@ -13,9 +13,14 @@ import {
 import {
   CloudCheck,
   CloudOff,
+  Columns,
   Info,
+  LayoutDashboard,
   Loader2,
+  MessageSquare,
+  MonitorPlay,
   PanelLeft,
+  RotateCcw,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useDataRehydrate } from '@/hooks/use-data-rehydrate'
@@ -74,9 +79,16 @@ function App() {
   }, [checkStatus])
 
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
+  
+  const isPresentationMode = useUIStore(s => s.isPresentationMode)
+  const setPresentationMode = useUIStore(s => s.setPresentationMode)
 
   const sidebarWidth = useUIStore(s => s.sidebarWidth)
   const setSidebarWidth = useUIStore(s => s.setSidebarWidth)
+  const appMode = useProjectStore(s => s.appMode)
+  
+  const analysisLayoutMode = useUIStore(s => s.analysisLayoutMode)
+  const setAnalysisLayoutMode = useUIStore(s => s.setAnalysisLayoutMode)
 
   const leftPanelRef = useRef<ImperativePanelHandle>(null)
   const { t } = useTranslation('common')
@@ -132,6 +144,36 @@ function App() {
       setIsLeftCollapsed(true)
     }
   }
+
+  const togglePresentation = useCallback(() => {
+    if (isPresentationMode) {
+      window.electronAPI?.windowControl?.('exit-fullscreen')
+      setPresentationMode(false)
+    } else {
+      window.electronAPI?.windowControl?.('enter-fullscreen')
+      setPresentationMode(true)
+    }
+  }, [isPresentationMode, setPresentationMode])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isPresentationMode) {
+        togglePresentation()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isPresentationMode, togglePresentation])
+
+  // Sync presentation mode from window state
+  useEffect(() => {
+    if (!window.electronAPI) return
+    return window.electronAPI.onWindowStateChanged(({ isFullScreen }) => {
+        if (isFullScreen !== isPresentationMode) {
+            setPresentationMode(isFullScreen)
+        }
+    })
+  }, [isPresentationMode, setPresentationMode])
 
   useEffect(() => {
     if (isStoreReady && language && i18n.language !== language) {
@@ -299,19 +341,94 @@ function App() {
 
               {/* Layout Control Group */}
               <div className="flex items-center bg-zinc-100/50 dark:bg-zinc-800/50 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50">
-                {/* Toggle Left Sidebar */}
-                <button
-                  className={cn(
-                    'h-7 w-8 rounded-md flex items-center justify-center transition-all active:scale-95 group',
-                    isLeftCollapsed
-                      ? 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50'
-                      : 'text-zinc-900 bg-white shadow-sm border border-zinc-200/50 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600'
-                  )}
-                  onClick={toggleLeft}
-                  title={t('toggle_data_tree')}
-                >
-                  <PanelLeft className="h-3.5 w-3.5" />
-                </button>
+                {!isPresentationMode && (
+                  <>
+                    {/* Toggle Left Sidebar */}
+                    <button
+                      className={cn(
+                        'h-7 w-8 rounded-md flex items-center justify-center transition-all active:scale-95 group',
+                        isLeftCollapsed
+                          ? 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50'
+                          : 'text-zinc-900 bg-white shadow-sm border border-zinc-200/50 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-600'
+                      )}
+                      onClick={toggleLeft}
+                      title={t('toggle_data_tree')}
+                    >
+                      <PanelLeft className="h-3.5 w-3.5" />
+                    </button>
+
+                    {/* Analysis Mode Layout Controls */}
+                    {appMode === 'analysis' && (
+                        <>
+                            <div className="h-3 w-px bg-zinc-300 dark:bg-zinc-700 mx-1.5 opacity-50" />
+                            <div className="flex items-center bg-zinc-200/50 rounded-md p-0.5 gap-0.5">
+                              <button
+                                onClick={() => setAnalysisLayoutMode('chat')}
+                                className={cn(
+                                  'h-6 px-2 rounded-sm flex items-center justify-center transition-all text-[10px] font-medium gap-1.5',
+                                  analysisLayoutMode === 'chat'
+                                    ? 'bg-white text-zinc-900 shadow-sm'
+                                    : 'text-zinc-500 hover:text-zinc-700 hover:bg-zinc-200/50'
+                                )}
+                                title={t('focus_chat', 'Chat Only')}
+                              >
+                                <MessageSquare className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={() => setAnalysisLayoutMode('split')}
+                                className={cn(
+                                  'h-6 px-2 rounded-sm flex items-center justify-center transition-all text-[10px] font-medium gap-1.5',
+                                  analysisLayoutMode === 'split'
+                                    ? 'bg-white text-zinc-900 shadow-sm'
+                                    : 'text-zinc-500 hover:text-zinc-700 hover:bg-zinc-200/50'
+                                )}
+                                title={t('layout_split', 'Split View')}
+                              >
+                                <Columns className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={() => setAnalysisLayoutMode('board')}
+                                className={cn(
+                                  'h-6 px-2 rounded-sm flex items-center justify-center transition-all text-[10px] font-medium gap-1.5',
+                                  analysisLayoutMode === 'board'
+                                    ? 'bg-white text-zinc-900 shadow-sm'
+                                    : 'text-zinc-500 hover:text-zinc-700 hover:bg-zinc-200/50'
+                                )}
+                                title={t('dashboard_only', 'Dashboard')}
+                              >
+                                <LayoutDashboard className="h-3 w-3" />
+                              </button>
+                            </div>
+                        </>
+                    )}
+                  </>
+                )}
+                
+                {appMode === 'analysis' && (
+                    <>
+                        <div className="h-3 w-px bg-zinc-300 dark:bg-zinc-700 mx-1.5 opacity-50" />
+                        {/* Toggle Presentation Mode */}
+                        <button
+                          className={cn(
+                            'h-7 px-2 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-95',
+                            isPresentationMode
+                              ? 'bg-zinc-900 text-white shadow-md dark:bg-zinc-100 dark:text-zinc-900'
+                              : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200/50'
+                          )}
+                          onClick={togglePresentation}
+                          title={isPresentationMode ? t('exit') : t('present')}
+                        >
+                          {isPresentationMode ? (
+                            <RotateCcw className="h-3 w-3" />
+                          ) : (
+                            <MonitorPlay className="h-3 w-3" />
+                          )}
+                          <span className="hidden lg:inline">
+                            {isPresentationMode ? t('exit') : t('present')}
+                          </span>
+                        </button>
+                    </>
+                )}
               </div>
             </div>
           </header>
