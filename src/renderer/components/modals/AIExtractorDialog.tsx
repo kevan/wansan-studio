@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Dialog,
@@ -39,7 +39,13 @@ export function AIExtractorDialog({
   tableName
 }: AIExtractorDialogProps) {
   const { t } = useTranslation('common')
-  const { extractTemplates, addExtractTemplate, removeExtractTemplate, importExtractTemplates } = useSettingsStore()
+  const { 
+    extractTemplates, 
+    addExtractTemplate, 
+    removeExtractTemplate, 
+    importExtractTemplates,
+    useExtractTemplate: markTemplateUsed 
+  } = useSettingsStore()
   
   const [prompt, setPrompt] = useState('')
   const [newColumnName, setNewColumnName] = useState('')
@@ -51,6 +57,15 @@ export function AIExtractorDialog({
   // Save template state
   const [isSavingTemplate, setIsSavingTemplate] = useState(false)
   const [newTemplateName, setNewTemplateName] = useState('')
+
+  // Sort templates: recently used first, fallback to recently created
+  const sortedTemplates = useMemo(() => {
+    return [...extractTemplates].sort((a, b) => {
+      const timeA = a.lastUsedAt ?? a.createdAt ?? 0
+      const timeB = b.lastUsedAt ?? b.createdAt ?? 0
+      return timeB - timeA
+    })
+  }, [extractTemplates])
 
   // Load sample data when dialog opens
   useEffect(() => {
@@ -95,8 +110,9 @@ export function AIExtractorDialog({
     onClose()
   }
 
-  const applyPreset = (p: string) => {
+  const applyPreset = (templateId: string, p: string) => {
     setPrompt(p)
+    markTemplateUsed(templateId)
   }
 
   const handleSaveTemplate = () => {
@@ -131,33 +147,28 @@ export function AIExtractorDialog({
 
         <div className="flex flex-1 min-h-0 bg-zinc-50/50">
           {/* Left: Configuration - Input Zone */}
-          <div className="w-7/12 p-8 flex flex-col gap-6 overflow-y-auto bg-white border-r border-zinc-100 shadow-[20px_0_40px_-10px_rgba(0,0,0,0.02)] z-10">
+          <div className="w-7/12 flex flex-col bg-white border-r border-zinc-100 shadow-[20px_0_40px_-10px_rgba(0,0,0,0.02)] z-10">
             
-            {/* Target Column Name */}
-            <div className="space-y-3 bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 pl-1">
-                {t('target_column_name', 'New Column Name')}
-              </Label>
-              <Input 
-                value={newColumnName}
-                onChange={e => setNewColumnName(e.target.value)}
-                className="h-11 rounded-xl border-zinc-200 bg-white focus:ring-2 focus:ring-purple-500/20 font-medium text-base shadow-sm transition-all hover:border-purple-200"
-                placeholder="e.g. sentiment_score"
-              />
-            </div>
-
-            {/* Prompt Input */}
-            <div className="flex-1 flex flex-col min-h-0 gap-3">
-              <div className="flex justify-between items-center px-1">
-                 <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                  {t('prompt', 'Prompt / Instruction')}
+            {/* Top Bar: Column Name & Actions */}
+            <div className="px-6 py-4 border-b border-zinc-50 flex items-center justify-between gap-4 bg-white shrink-0">
+              <div className="flex-1 flex items-center gap-3">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 whitespace-nowrap shrink-0">
+                  {t('target_column_name')}
                 </Label>
-                
-                {/* Save as Template Control */}
+                <Input 
+                  value={newColumnName}
+                  onChange={e => setNewColumnName(e.target.value)}
+                  className="h-8 rounded-lg border-zinc-200 bg-zinc-50/50 focus:bg-white focus:ring-2 focus:ring-purple-500/20 font-medium text-sm shadow-none transition-all hover:border-purple-200 w-full max-w-[200px]"
+                  placeholder="e.g. sentiment_score"
+                />
+              </div>
+
+              {/* Save Template Action */}
+              <div className="shrink-0">
                 {isSavingTemplate ? (
                   <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-2 duration-200">
                     <Input 
-                      className="h-7 w-40 text-xs rounded-lg border-zinc-200 focus:ring-purple-500/20" 
+                      className="h-7 w-32 text-xs rounded-lg border-zinc-200 focus:ring-purple-500/20" 
                       placeholder={t('template_name_placeholder')}
                       value={newTemplateName}
                       onChange={e => setNewTemplateName(e.target.value)}
@@ -184,46 +195,52 @@ export function AIExtractorDialog({
                   </button>
                 )}
               </div>
-              
-              <div className="flex-1 relative group">
-                <Textarea 
-                  value={prompt}
-                  onChange={e => setPrompt(e.target.value)}
-                  placeholder={t('prompt_placeholder', 'e.g. Extract the email address from this text...')}
-                  className="w-full h-full min-h-[12rem] rounded-2xl border-zinc-200 resize-none p-5 font-medium text-base focus:ring-2 focus:ring-purple-500/20 leading-relaxed shadow-sm transition-all group-hover:border-zinc-300"
-                />
-                <div className="absolute bottom-4 right-4 flex gap-2">
-                   {/* Optional: Add insert variables or helpers here later */}
-                </div>
+            </div>
+
+            {/* Middle: Textarea (Flex-1) */}
+            <div className="flex-1 p-6 pb-2 min-h-0 flex flex-col">
+              <div className="flex justify-between items-center mb-2 px-1">
+                 <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                  {t('prompt')}
+                </Label>
               </div>
-              
-              {/* Templates */}
-              <div className="min-h-[3rem] p-1">
-                <div className="flex flex-wrap gap-2 items-center">
-                  {extractTemplates.length === 0 ? (
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => importExtractTemplates(SYSTEM_PRESETS_ZH)}
-                        className="text-[10px] font-medium px-3 py-1.5 bg-white text-zinc-500 hover:text-purple-600 hover:border-purple-200 rounded-lg border border-dashed border-zinc-200 transition-all flex items-center gap-1.5 hover:shadow-sm"
-                      >
-                        <Sparkles className="w-3 h-3 text-purple-400" />
-                        {t('import_presets_zh')}
-                      </button>
-                      <button 
-                        onClick={() => importExtractTemplates(SYSTEM_PRESETS_EN)}
-                        className="text-[10px] font-medium px-3 py-1.5 bg-white text-zinc-500 hover:text-purple-600 hover:border-purple-200 rounded-lg border border-dashed border-zinc-200 transition-all flex items-center gap-1.5 hover:shadow-sm"
-                      >
-                        <Sparkles className="w-3 h-3 text-purple-400" />
-                        {t('import_presets_en')}
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      {extractTemplates.map((tpl) => (
+              <Textarea 
+                value={prompt}
+                onChange={e => setPrompt(e.target.value)}
+                placeholder={t('prompt_placeholder', 'e.g. Extract the email address from this text...')}
+                className="w-full flex-1 rounded-2xl border-zinc-200 resize-none p-5 font-medium text-base focus:ring-2 focus:ring-purple-500/20 leading-relaxed shadow-sm transition-all hover:border-zinc-300"
+              />
+            </div>
+
+            {/* Bottom: Templates Toolbar */}
+            <div className="px-6 py-2 shrink-0">
+              <div className="flex flex-wrap gap-2 items-center min-h-[2rem]">
+                {extractTemplates.length === 0 ? (
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => importExtractTemplates(SYSTEM_PRESETS_ZH)}
+                      className="text-[10px] font-medium px-3 py-1 bg-zinc-50 text-zinc-500 hover:text-purple-600 hover:border-purple-200 rounded-full border border-dashed border-zinc-200 transition-all flex items-center gap-1.5"
+                    >
+                      <Sparkles className="w-3 h-3 text-purple-400" />
+                      {t('import_presets_zh')}
+                    </button>
+                    <button 
+                      onClick={() => importExtractTemplates(SYSTEM_PRESETS_EN)}
+                      className="text-[10px] font-medium px-3 py-1 bg-zinc-50 text-zinc-500 hover:text-purple-600 hover:border-purple-200 rounded-full border border-dashed border-zinc-200 transition-all flex items-center gap-1.5"
+                    >
+                      <Sparkles className="w-3 h-3 text-purple-400" />
+                      {t('import_presets_en')}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-wider mr-1">Templates:</span>
+                    <div className="flex-1 flex flex-wrap gap-2 max-h-[4.5rem] overflow-y-auto custom-scrollbar">
+                      {sortedTemplates.map((tpl) => (
                         <div key={tpl.id} className="group/tag relative">
                           <button
-                            onClick={() => applyPreset(tpl.prompt)}
-                            className="text-[11px] font-medium px-3 py-1.5 bg-zinc-50 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900 rounded-lg border border-zinc-200 transition-all hover:shadow-sm pr-7 truncate max-w-[12rem]"
+                            onClick={() => applyPreset(tpl.id, tpl.prompt)}
+                            className="text-[11px] font-medium px-3 py-1 bg-zinc-50 hover:bg-purple-50 text-zinc-600 hover:text-purple-700 rounded-full border border-zinc-200 hover:border-purple-200 transition-all pr-6 truncate max-w-[10rem]"
                           >
                             {tpl.label}
                           </button>
@@ -232,17 +249,17 @@ export function AIExtractorDialog({
                               e.stopPropagation()
                               removeExtractTemplate(tpl.id)
                             }}
-                            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-zinc-300 hover:text-red-500 opacity-0 group-hover/tag:opacity-100 transition-all p-0.5 rounded hover:bg-red-50"
+                            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-zinc-300 hover:text-red-500 opacity-0 group-hover/tag:opacity-100 transition-all p-0.5 rounded-full hover:bg-red-50"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
                       ))}
-
+                      
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className="text-[10px] px-2 py-1.5 bg-white hover:bg-zinc-50 text-zinc-400 hover:text-zinc-600 rounded-lg border border-dashed border-zinc-200 transition-colors">
-                            <MoreHorizontal className="w-4 h-4" />
+                          <button className="text-[10px] w-6 h-6 flex items-center justify-center bg-zinc-50 hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 rounded-full border border-zinc-200 transition-colors">
+                            <MoreHorizontal className="w-3 h-3" />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-48">
@@ -258,20 +275,23 @@ export function AIExtractorDialog({
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </>
-                  )}
-                </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
-            <Button 
-              onClick={handlePreview} 
-              disabled={isPreviewing || !prompt}
-              className="w-full bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl h-12 font-bold text-sm tracking-wide shadow-xl shadow-zinc-200 hover:shadow-2xl hover:shadow-zinc-300 transition-all"
-            >
-              {isPreviewing ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : <Play className="w-4 h-4 mr-2 fill-current"/>}
-              {t('generate_preview')}
-            </Button>
+            {/* Footer Action */}
+            <div className="p-6 pt-2 shrink-0">
+              <Button 
+                onClick={handlePreview} 
+                disabled={isPreviewing || !prompt}
+                className="w-full bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl h-11 font-bold text-sm tracking-wide shadow-lg shadow-zinc-200/50 hover:shadow-xl hover:shadow-zinc-300/50 transition-all"
+              >
+                {isPreviewing ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : <Play className="w-4 h-4 mr-2 fill-current"/>}
+                {t('generate_preview')}
+              </Button>
+            </div>
 
           </div>
 
@@ -294,44 +314,42 @@ export function AIExtractorDialog({
                )}
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 z-0">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 z-0 custom-scrollbar">
               {previewData.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-zinc-400 space-y-4">
-                  <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center">
-                    <Sparkles className="w-8 h-8 text-zinc-300" />
+                  <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center">
+                    <Sparkles className="w-6 h-6 text-zinc-300" />
                   </div>
-                  <p className="text-sm font-medium">{t('no_sample_data')}</p>
+                  <p className="text-xs font-medium">{t('no_sample_data')}</p>
                 </div>
               ) : (
                 previewData.map((val, idx) => (
-                  <div key={idx} className="group bg-white border border-zinc-100 rounded-2xl p-4 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:shadow-lg hover:shadow-purple-500/5 hover:border-purple-100 transition-all duration-300 flex flex-col gap-3">
-                    {/* Input Row */}
+                  <div key={idx} className="group bg-white border border-zinc-100 rounded-xl p-3 shadow-sm hover:shadow-md hover:border-purple-100 transition-all duration-300">
                     <div className="flex items-start gap-3">
-                      <div className="mt-1 w-1.5 h-1.5 rounded-full bg-zinc-200 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[9px] text-zinc-400 uppercase font-bold tracking-wider mb-0.5">{t('input')}</div>
-                        <div className="text-sm text-zinc-600 leading-relaxed break-words font-medium">{String(val)}</div>
+                      {/* Input (Left Small) */}
+                      <div className="w-1/3 shrink-0 flex flex-col gap-1">
+                        <div className="text-[8px] text-zinc-400 uppercase font-bold tracking-tighter">{t('input')}</div>
+                        <div className="text-xs text-zinc-500 leading-snug break-words line-clamp-3 font-medium">{String(val)}</div>
                       </div>
-                    </div>
-                    
-                    {/* Connection Line */}
-                    <div className="pl-[0.4rem] h-4 border-l-2 border-dashed border-zinc-100" />
 
-                    {/* Output Row */}
-                    <div className="flex items-start gap-3">
-                      <div className="mt-1 w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0 shadow-[0_0_8px_rgba(168,85,247,0.4)]" />
-                      <div className="flex-1 min-w-0 bg-purple-50/50 rounded-xl p-3 border border-purple-100/50">
-                        <div className="text-[9px] text-purple-400 uppercase font-bold tracking-wider mb-1 flex justify-between">
+                      {/* Arrow */}
+                      <div className="mt-4 shrink-0 text-zinc-300">
+                        <ArrowRight className="w-3 h-3" />
+                      </div>
+
+                      {/* Output (Right Larger) */}
+                      <div className="flex-1 min-w-0 bg-purple-50/30 rounded-lg p-2.5 border border-purple-100/50 group-hover:bg-purple-50/60 transition-colors">
+                        <div className="text-[8px] text-purple-400 uppercase font-bold tracking-tighter mb-1 flex justify-between items-center">
                           {t('output_ai')}
-                          <span className="opacity-0 group-hover:opacity-100 transition-opacity">✨</span>
+                          <Sparkles className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                         {previewResult[idx] ? (
-                          <div className="text-sm text-purple-900 font-semibold leading-relaxed break-words">{previewResult[idx]}</div>
+                          <div className="text-[13px] text-purple-900 font-semibold leading-relaxed break-words">{previewResult[idx]}</div>
                         ) : (
-                          <div className="flex gap-1 items-center h-5">
-                             <div className="w-1.5 h-1.5 bg-purple-200 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                             <div className="w-1.5 h-1.5 bg-purple-200 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                             <div className="w-1.5 h-1.5 bg-purple-200 rounded-full animate-bounce" />
+                          <div className="flex gap-1 items-center h-4">
+                             <div className="w-1 h-1 bg-purple-200 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                             <div className="w-1 h-1 bg-purple-200 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                             <div className="w-1 h-1 bg-purple-200 rounded-full animate-bounce" />
                           </div>
                         )}
                       </div>

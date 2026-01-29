@@ -106,6 +106,7 @@
     "jspdf": "^3.0.4",
     "lucide-react": "^0.556.0",
     "markdown-it": "^14.1.0",
+    "react-grab": "^0.0.98",
     "png2icons": "^2.0.1",
     "postcss": "^8.5.6",
     "prettier": "^3.1.1",
