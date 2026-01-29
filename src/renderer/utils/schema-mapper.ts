@@ -71,6 +71,8 @@ export function mapFileToSchema(
 
         // 2. Keep Sidecar/AI columns (usually don't have '__')
         // 3. Keep Time Intelligence (e.g. Sales_MoM)
+        if (viewCol.name.endsWith('_MoM') || viewCol.name.endsWith('_YoY')) return true
+
         // 4. Remove Joined Columns (convention: table__col)
         // Assumption: Joined columns contain '__'. Original/AI columns do not (or rarely).
         return !viewCol.name.includes('__')

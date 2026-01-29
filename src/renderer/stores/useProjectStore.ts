@@ -111,6 +111,7 @@ export interface ProjectState extends ProjectData {
   ) => string
   removeFile: (id: string) => Promise<void>
   updateFile: (id: string, updates: Partial<FileNode>) => void
+  bulkUpdateFiles: (updates: Record<string, Partial<FileNode>>) => void
   updateFileProgress: (id: string, progress: number) => void
   updateColumn: (
     fileId: string,
@@ -902,6 +903,13 @@ export const useProjectStore = create<ProjectState>()(
       updateFile: (id, updates) =>
         set(state => ({
           files: state.files.map(f => (f.id === id ? { ...f, ...updates } : f)),
+        })),
+
+      bulkUpdateFiles: updates =>
+        set(state => ({
+          files: state.files.map(f =>
+            updates[f.id] ? { ...f, ...updates[f.id] } : f
+          ),
         })),
 
       updateFileProgress: (id, progress) =>

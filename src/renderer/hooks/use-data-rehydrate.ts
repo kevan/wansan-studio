@@ -51,29 +51,29 @@ export function useDataRehydrate() {
 
       const readyFiles = currentFiles.filter(f => f.status === 'ready')
       let syncedCount = 0
+      const updates: Record<string, any> = {}
 
       for (const file of readyFiles) {
-        // Only rebuild if we have metrics OR relations involving this file as source
-        const hasRelations = (file.relations || []).length > 0
-        const hasMetrics = file.smartMetrics && file.smartMetrics.length > 0
-
-        // Always rebuild views for ready files to ensure "v_" tables exist for metrics/logic
-        // Even if no metrics yet, establishing the base view is cheap and safe.
-        if (hasMetrics || hasRelations) {
-          try {
-            await DuckDBViewManager.rebuildView(
-              file,
-              currentFiles,
-              currentRelations
-            )
-            syncedCount++
-          } catch (error) {
-            console.error(
-              `[Rehydrate] View sync failed for ${file.tableName}`,
-              error
-            )
-          }
+        // [V1.7] Always rebuild views for ready files to ensure "v_" tables exist for metrics/logic
+        // This ensures viewSchema is populated, which is required for AI context and Time Intelligence.
+        try {
+          const viewSchema = await DuckDBViewManager.rebuildView(
+            file,
+            currentFiles,
+            currentRelations
+          )
+          updates[file.id] = { viewSchema }
+          syncedCount++
+        } catch (error) {
+          console.error(
+            `[Rehydrate] View sync failed for ${file.tableName}`,
+            error
+          )
         }
+      }
+
+      if (Object.keys(updates).length > 0) {
+        useProjectStore.getState().bulkUpdateFiles(updates)
       }
 
       console.log(`[Rehydrate] View Sync finished. Synced ${syncedCount} views.`)

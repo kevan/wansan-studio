@@ -246,6 +246,11 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
     }
   }, [])
 
+  const printFileNodes = useCallback(() => {
+    const files = useProjectStore.getState().files
+    console.log('📂 Current Project FileNodes:', files)
+  }, [])
+
   useEffect(() => {
     const handleLanguageChange = (lng: string) => setLanguage(lng)
     i18n.on('languageChanged', handleLanguageChange)
@@ -405,6 +410,12 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
                 className="px-3 py-2 bg-blue-700 hover:bg-blue-600 rounded text-sm"
               >
                 🗄️ Print All Tables
+              </button>
+              <button
+                onClick={printFileNodes}
+                className="px-3 py-2 bg-purple-700 hover:bg-purple-600 rounded text-sm"
+              >
+                📂 Print FileNodes
               </button>
               <button
                 onClick={resetApp}

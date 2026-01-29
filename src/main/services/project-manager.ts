@@ -302,14 +302,16 @@ export class ProjectManager {
   }
 
   /**
-   * Safe atomic write: Write to .tmp then rename.
+   * Safe atomic write: Write to unique .tmp then rename.
    * Prevents empty files if write fails or process crashes.
+   * Using unique tmp name prevents race conditions between concurrent saves of the same file.
    */
   private async atomicWriteJSON(filePath: string, data: any): Promise<void> {
-    const tmpPath = `${filePath}.tmp`
+    const tmpPath = `${filePath}.${uuidv4().slice(0, 8)}.tmp`
     try {
       await fs.writeJSON(tmpPath, data, { spaces: 2 })
-      await fs.move(tmpPath, filePath, { overwrite: true })
+      // fs.rename is atomic on most systems (POSIX and Windows within same drive)
+      await fs.rename(tmpPath, filePath)
     } catch (error) {
       console.error(`[ProjectManager] Atomic write failed for ${filePath}`, error)
       // Try to clean up tmp file if it exists
