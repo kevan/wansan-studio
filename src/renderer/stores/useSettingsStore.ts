@@ -13,6 +13,7 @@ import type {
   AppConfig,
 } from '@shared/types'
 import { Analytics } from '../services/analytics'
+import { ExtractTemplate } from '../lib/ai-presets'
 
 export type SettingsLanguage = 'en' | 'zh'
 
@@ -29,6 +30,7 @@ export interface SettingsState {
   dismissedAnnouncementId: string | null
   ignoredUpdateVersion: string | null // [NEW]
   domainRules: DomainRule[]
+  extractTemplates: ExtractTemplate[] // [NEW]
   recentProjectPaths: string[]
   dbConnections: import('@shared/types').DBConnectionConfig[]
   isSpecialChannel: boolean
@@ -46,6 +48,9 @@ export interface SettingsState {
   removeDomainRule: (id: string) => void
   updateDomainRule: (id: string, content: string) => void
   reorderDomainRules: (oldIndex: number, newIndex: number) => void
+  addExtractTemplate: (template: Omit<ExtractTemplate, 'id'>) => void // [NEW]
+  removeExtractTemplate: (id: string) => void // [NEW]
+  importExtractTemplates: (templates: Omit<ExtractTemplate, 'id'>[]) => void // [NEW]
   addRecentProject: (path: string) => void
   removeRecentProject: (path: string) => void
   addDBConnection: (
@@ -139,6 +144,7 @@ const initialSettingsState: Omit<
   dismissedAnnouncementId: null,
   ignoredUpdateVersion: null,
   domainRules: [],
+  extractTemplates: [], // [NEW]
   recentProjectPaths: [],
   dbConnections: [],
   isSpecialChannel: false,
@@ -146,6 +152,9 @@ const initialSettingsState: Omit<
   showChartLabels: false,
   suggestionCount: 3,
   ignoreUpdate: () => {},
+  addExtractTemplate: () => {},
+  removeExtractTemplate: () => {},
+  importExtractTemplates: () => {},
 }
 
 export const SETTINGS_STORAGE_KEY = 'wansan-settings-v1'
@@ -155,6 +164,31 @@ export const useSettingsStore = create<SettingsState>()(
     (set, get) => ({
       ...initialSettingsState,
       // ... (loadSensitiveData and other actions)
+      addExtractTemplate: template =>
+        set(state => ({
+          extractTemplates: [
+            ...state.extractTemplates,
+            { ...template, id: crypto.randomUUID() },
+          ],
+        })),
+      removeExtractTemplate: id =>
+        set(state => ({
+          extractTemplates: state.extractTemplates.filter(t => t.id !== id),
+        })),
+      importExtractTemplates: templates =>
+        set(state => {
+          // Avoid duplicates by label
+          const existingLabels = new Set(
+            state.extractTemplates.map(t => t.label)
+          )
+          const newTemplates = templates
+            .filter(t => !existingLabels.has(t.label))
+            .map(t => ({ ...t, id: crypto.randomUUID() }))
+
+          return {
+            extractTemplates: [...state.extractTemplates, ...newTemplates],
+          }
+        }),
       addDBConnection: async (conn, password) => {
         const id = crypto.randomUUID()
         const newConn = { ...conn, id }
