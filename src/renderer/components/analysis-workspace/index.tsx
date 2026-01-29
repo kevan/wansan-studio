@@ -13,7 +13,7 @@ import { cn } from '@/utils/cn'
 import { useUIStore } from '@/stores/useUIStore'
 import { ChatStream } from '../ChatStream'
 import { DashboardCanvasV3 } from '../dashboard-v3'
-import { DataWorkspaceLayout } from '../DataWorkspaceLayout'
+import { FloatingActionLayout } from '../FloatingActionLayout'
 
 export function AnalysisWorkspace() {
   const { t } = useTranslation('common')
@@ -102,9 +102,9 @@ export function AnalysisWorkspace() {
                 isChatCollapsed && "min-w-0 border-none"
             )}
         >
-            <DataWorkspaceLayout showAction={false}>
+            <FloatingActionLayout showAction={false}>
                 <ChatStream />
-            </DataWorkspaceLayout>
+            </FloatingActionLayout>
         </Panel>
 
         <PanelResizeHandle className="w-1.5 flex justify-center bg-transparent hover:bg-zinc-100 transition-colors cursor-col-resize z-20 focus:outline-none group">

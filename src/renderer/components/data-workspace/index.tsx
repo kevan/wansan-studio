@@ -27,6 +27,7 @@ import { useToastStore } from '@/stores/useToastStore'
 import { DataLineageDialog } from '../modals/DataLineageDialog'
 import { useWizardStore } from '@/stores/useWizardStore'
 import { useProGate } from '@/hooks/use-pro-gate'
+import { FloatingActionLayout } from '../FloatingActionLayout'
 
 export function DataWorkspace() {
   const { t, i18n } = useTranslation('common')
@@ -183,70 +184,71 @@ export function DataWorkspace() {
       </header>
 
       {/* 2. Main Content Area with Tabs */}
-      <Tabs 
-        value={activeTab} 
-        onValueChange={setActiveTab} 
-        className="flex-1 flex flex-col min-h-0"
-      >
-        <div className="px-6 border-b border-zinc-100 bg-zinc-50/30 shrink-0">
-          <TabsList className="h-12 bg-transparent gap-6 p-0">
-            <TabsTrigger 
-              value="columns" 
-              className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2"
-            >
-              <FileCode className="w-3.5 h-3.5" />
-              {t('columns')}
-              <span className="bg-zinc-200/50 text-zinc-500 px-1.5 py-0.5 rounded-md text-[9px] font-black">
-                {currentFile.columns.length}
-              </span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="preview" 
-              className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2"
-            >
-              <Table className="w-3.5 h-3.5" />
-              {t('preview')}
-            </TabsTrigger>
-            <TabsTrigger 
-              value="metrics" 
-              className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2"
-            >
-              <Tag className="w-3.5 h-3.5" />
-              {tAnalysis('smart_metrics')}
-              <span className="bg-zinc-200/50 text-zinc-500 px-1.5 py-0.5 rounded-md text-[9px] font-black">
-                {(currentFile.smartMetrics || []).length}
-              </span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="relations" 
-              className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2"
-            >
-              <Link2 className="w-3.5 h-3.5" />
-              {t('relationships')}
-              <span className="bg-zinc-200/50 text-zinc-500 px-1.5 py-0.5 rounded-md text-[9px] font-black">
-                {(currentFile.relations || []).length}
-              </span>
-            </TabsTrigger>
-                    </TabsList>
-                  </div>
-          
-                  <TabsContent value="columns" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
-                     <ColumnsView file={currentFile} />
-                  </TabsContent>
-          
-                  <TabsContent value="preview" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
-                     <DataPreviewPanel />
-                  </TabsContent>
-          
-                  <TabsContent value="metrics" 
-           className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
-           <MetricsView file={currentFile} />
-        </TabsContent>
+      <FloatingActionLayout showAction={true}>
+        <Tabs 
+          value={activeTab} 
+          onValueChange={setActiveTab} 
+          className="flex-1 flex flex-col min-h-0"
+        >
+          <div className="px-6 border-b border-zinc-100 bg-zinc-50/30 shrink-0">
+            <TabsList className="h-12 bg-transparent gap-6 p-0">
+              <TabsTrigger 
+                value="columns" 
+                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2"
+              >
+                <FileCode className="w-3.5 h-3.5" />
+                {t('columns')}
+                <span className="bg-zinc-200/50 text-zinc-500 px-1.5 py-0.5 rounded-md text-[9px] font-black">
+                  {currentFile.columns.length}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="preview" 
+                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2"
+              >
+                <Table className="w-3.5 h-3.5" />
+                {t('preview')}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="metrics" 
+                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2"
+              >
+                <Tag className="w-3.5 h-3.5" />
+                {tAnalysis('smart_metrics')}
+                <span className="bg-zinc-200/50 text-zinc-500 px-1.5 py-0.5 rounded-md text-[9px] font-black">
+                  {(currentFile.smartMetrics || []).length}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="relations" 
+                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                {t('relationships')}
+                <span className="bg-zinc-200/50 text-zinc-500 px-1.5 py-0.5 rounded-md text-[9px] font-black">
+                  {(currentFile.relations || []).length}
+                </span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-        <TabsContent value="relations" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
-           <RelationsView file={currentFile} />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="columns" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
+             <ColumnsView file={currentFile} />
+          </TabsContent>
+
+          <TabsContent value="preview" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
+             <DataPreviewPanel />
+          </TabsContent>
+
+          <TabsContent value="metrics" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
+             <MetricsView file={currentFile} />
+          </TabsContent>
+
+          <TabsContent value="relations" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
+             <RelationsView file={currentFile} />
+          </TabsContent>
+        </Tabs>
+      </FloatingActionLayout>
 
       {/* Modals */}
       <ConfirmDialog
