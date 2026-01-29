@@ -34,6 +34,7 @@ export interface SmartFilterRequest {
 }
 
 export interface ProjectState extends ProjectData {
+  appMode: 'analysis' | 'data' // [NEW] Master Mode Switch
   sidebarMode: 'sessions' | 'data'
   layoutScenario: LayoutScenario
   editingReportId: string | null
@@ -51,6 +52,7 @@ export interface ProjectState extends ProjectData {
   isProjectLoaded: boolean // Transient flag to indicate project fully loaded
 
   // Actions
+  setAppMode: (mode: 'analysis' | 'data') => void // [NEW]
   setSidebarMode: (mode: 'sessions' | 'data') => void
   setView: (view: ViewMode) => void
   setActiveFile: (id: string | null) => void
@@ -186,6 +188,7 @@ const initialProjectState: ProjectData & {
   sessions: [],
   activeSessionId: '',
   activeView: 'chat',
+  appMode: 'analysis', // [NEW] Default to analysis
   activeFileId: null,
   widgetRegistry: {},
   currentProjectPath: null,
@@ -209,6 +212,24 @@ export const useProjectStore = create<ProjectState>()(
       smartFilterRequest: null,
       analysisReviewResult: null,
       isSmartModelingOpen: false,
+      appMode: 'analysis',
+
+      setAppMode: mode =>
+        set(_state => {
+          if (mode === 'data') {
+            return {
+              appMode: mode,
+              sidebarMode: 'data',
+              activeView: 'preview'
+            }
+          } else {
+            return {
+              appMode: mode,
+              sidebarMode: 'sessions',
+              activeView: 'chat'
+            }
+          }
+        }),
 
       setSidebarMode: mode =>
         set(_state => {
@@ -1509,6 +1530,7 @@ export const useProjectStore = create<ProjectState>()(
           activeSessionId: state.activeSessionId,
           sidebarMode: state.sidebarMode,
           activeView: state.activeView,
+          appMode: state.appMode,
         } as unknown as ProjectState
       },
       merge: (persistedState: any, currentState) => {

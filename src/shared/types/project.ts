@@ -1,6 +1,6 @@
 import { Message } from './chat'
 import { ReportWidget, ReportData } from './dashboard'
-import { FileNode, DomainRule } from '../types'
+import { FileNode, DomainRule, SmartMetric, TableRelation } from '../types'
 
 export interface Relation {
   id: string
@@ -11,7 +11,7 @@ export interface Relation {
   autoDetected?: boolean
 }
 
-export type ViewMode = 'chat' | 'schema'
+export type ViewMode = 'chat' | 'schema' | 'preview'
 
 export interface Session {
   id: string
@@ -29,18 +29,23 @@ export interface Session {
   }
 }
 
+export interface ProjectMeta {
+  id: string
+  name: string
+  version: string
+  created: number
+}
+
 export interface ProjectData {
-  meta: {
-    id: string
-    name: string
-    version: string
-    created: number
-  }
-  files: FileNode[] // Shared Data Assets (Now includes relations)
-  sessions: Session[] // Multi-Session Content
+  meta: ProjectMeta
+  files: FileNode[]
+  sessions: Session[]
   activeSessionId: string
   activeView: ViewMode
+  appMode?: 'analysis' | 'data' // [NEW] v1.7
   activeFileId: string | null
   widgetRegistry: Record<string, ReportData>
-  domainRules?: DomainRule[] // Project-level domain rules
+  smartMetrics?: SmartMetric[]
+  relations?: TableRelation[]
+  domainRules?: DomainRule[]
 }

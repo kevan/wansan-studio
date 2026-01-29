@@ -217,6 +217,7 @@
   "exit": "退出",
   "toggle_data_tree": "切换数据树",
   "project_name": "项目名称",
+  "schema": "表结构",
   "edit_schema": "编辑表结构：{{name}}",
   "row_col_count": "{{rows}} 行 · {{cols}} 列",
   "table_name_label": "表名：{{name}}",
@@ -512,7 +513,9 @@
     "file_too_large_title": "文件过大",
     "file_too_large_desc": "超出 Beta 限制 (100MB)。已跳过文件: {{files}}",
     "trial_limit_multi_sheet_title": "达到试用限制",
-    "trial_limit_multi_sheet_desc": "试用版不支持导入多张 Excel 工作表。请激活专业版以解锁完整功能。"
+    "trial_limit_multi_sheet_desc": "试用版不支持导入多张 Excel 工作表。请激活专业版以解锁完整功能。",
+    "mode_analysis": "智能分析",
+    "mode_data": "数据资产"
   },
   "update_modal_title": "需要重要更新",
   "update_modal_desc": "检测到新版本 ({{version}})。为了继续使用 Wansan Studio，请进行更新。更新包含重要功能和安全修复。",

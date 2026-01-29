@@ -2,9 +2,9 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 interface UIState {
-  sidebarLayout: number[] // [sidebar, main_content]
-  contentLayout: number[] // [chat, dashboard]
-  lastContentSplit: number[] // Remember split ratios [chat, dashboard]
+  sidebarWidth: number // Percentage of sidebar width (e.g. 20)
+  analysisSplit: number[] // [chat, dashboard]
+  dataSplit: number[] // [schema, grid]
   migrationState: {
     isMigrating: boolean
     progress: number
@@ -17,9 +17,9 @@ interface UIState {
     message: string
     details?: string
   }
-  setSidebarLayout: (layout: number[]) => void
-  setContentLayout: (layout: number[]) => void
-  setLastContentSplit: (layout: number[]) => void
+  setSidebarWidth: (width: number) => void
+  setAnalysisSplit: (layout: number[]) => void
+  setDataSplit: (layout: number[]) => void
   setMigrationState: (state: Partial<UIState['migrationState']>) => void
   showError: (title: string, message: string, details?: string) => void
   closeError: () => void
@@ -29,9 +29,9 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   persist(
     (set, get) => ({
-      sidebarLayout: [20, 80],
-      contentLayout: [40, 60],
-      lastContentSplit: [40, 60],
+      sidebarWidth: 20,
+      analysisSplit: [40, 60],
+      dataSplit: [40, 60],
       migrationState: {
         isMigrating: false,
         progress: 0,
@@ -43,9 +43,9 @@ export const useUIStore = create<UIState>()(
         title: '',
         message: '',
       },
-      setSidebarLayout: layout => set({ sidebarLayout: layout }),
-      setContentLayout: layout => set({ contentLayout: layout }),
-      setLastContentSplit: layout => set({ lastContentSplit: layout }),
+      setSidebarWidth: width => set({ sidebarWidth: width }),
+      setAnalysisSplit: layout => set({ analysisSplit: layout }),
+      setDataSplit: layout => set({ dataSplit: layout }),
       setMigrationState: state =>
         set(prev => ({ migrationState: { ...prev.migrationState, ...state } })),
       showError: (title, message, details) =>
@@ -54,13 +54,13 @@ export const useUIStore = create<UIState>()(
         set({ errorModal: { ...get().errorModal, isOpen: false } }),
       resetLayout: () =>
         set({
-          sidebarLayout: [20, 80],
-          contentLayout: [40, 60],
-          lastContentSplit: [40, 60],
+          sidebarWidth: 20,
+          analysisSplit: [40, 60],
+          dataSplit: [40, 60],
         }),
     }),
     {
-      name: 'wansan-ui-state',
+      name: 'wansan-ui-state-v2', // [BREAKING] Fresh state for v1.7 layout
     }
   )
 )

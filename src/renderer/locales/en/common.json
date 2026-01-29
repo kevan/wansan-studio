@@ -207,6 +207,7 @@
   "exit": "Exit",
   "toggle_data_tree": "Toggle Data Tree",
   "project_name": "Project Name",
+  "schema": "Schema",
   "edit_schema": "Edit Schema: {{name}}",
   "row_col_count": "{{rows}} rows · {{cols}} cols",
   "table_name_label": "Table: {{name}}",
@@ -505,7 +506,9 @@
     "file_too_large_title": "File Too Large",
     "file_too_large_desc": "Exceeded Beta limit (100MB). Skipped: {{files}}",
     "trial_limit_multi_sheet_title": "Trial Limit Reached",
-    "trial_limit_multi_sheet_desc": "Trial version does not support multiple Excel sheets. Please activate Pro for full access."
+    "trial_limit_multi_sheet_desc": "Trial version does not support multiple Excel sheets. Please activate Pro for full access.",
+    "mode_analysis": "Analysis",
+    "mode_data": "Data"
   },
   "update_modal_title": "Critical Update Required",
   "update_modal_desc": "A new version ({{version}}) is available and required to continue using Wansan Studio. Please update to access the latest features and security fixes.",
