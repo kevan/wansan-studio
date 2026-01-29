@@ -230,7 +230,11 @@ export interface ElectronAPI {
   // Token Audit
   getTokenConfig: () => Promise<IPCResponse<TokenBudgetConfig>>
   setTokenConfig: (config: Partial<TokenBudgetConfig>) => Promise<IPCResponse>
-  getTokenUsage: () => Promise<IPCResponse<{ dailyUsageUSD: number }>>
+  getTokenUsage: () => Promise<IPCResponse<{ 
+    dailyUsageUSD: number,
+    inputTokens: number,
+    outputTokens: number
+  }>>
 
   // AI Config
   getAIConfig: () => Promise<AIConfigResponse>

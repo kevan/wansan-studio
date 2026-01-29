@@ -18,60 +18,10 @@ import {
   getFixSystemPrompt,
   serializeSchemas,
 } from './prompts.ts'
-import { isDev } from '../utils/env'
 import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources'
-import { parse } from '@shared/serialization.ts'
-import { extractJSON } from '@shared/utils/json-utils'
 import { autospaceInsight } from '@shared/utils/autospace'
 import { InsightGenerationContext, InsightResult } from '@shared/types/dashboard'
-import { ZodSchema } from 'zod'
-
-function getModelToUse(preferredModel?: string) {
-  const envModel = process.env.OPENAI_MODEL
-  if (isDev()) {
-    console.log('[AI Bridge] getModelToUse debug:', {
-      preferredModel,
-      envModel,
-      allEnvKeys: Object.keys(process.env).filter(k => k.startsWith('OPENAI')),
-    })
-  }
-  return preferredModel || envModel || 'gpt-4-turbo-preview'
-}
-
-/**
- * Universal helper to call OpenAI and parse/validate the response.
- */
-async function callAIAndParse<T>(
-  openai: OpenAI,
-  body: ChatCompletionCreateParamsNonStreaming,
-  schema: ZodSchema<T>
-): Promise<T> {
-  if (isDev()) {
-    console.log('[AI Bridge] Request Body:', JSON.stringify(body, null, 2))
-  }
-
-  const response = await openai.chat.completions.create(body)
-  const resultJson = response.choices[0].message.content
-
-  if (!resultJson) {
-    throw new Error('AI returned an empty response.')
-  }
-
-  if (isDev()) {
-    console.log('[AI Bridge] Raw Response:', resultJson)
-  }
-
-  try {
-    const cleanedJson = extractJSON(resultJson)
-    const parsedResult = parse(cleanedJson)
-    return schema.parse(parsedResult)
-  } catch (error) {
-    console.error('Failed to parse or validate AI response:', error)
-    throw new Error(
-      `AI returned invalid JSON or structure. Raw response: ${resultJson}`
-    )
-  }
-}
+import { callAIAndParse, getModelToUse } from './ai-utils'
 
 export async function generateAnalysis(
   openai: OpenAI,
@@ -145,7 +95,8 @@ OUTPUT RULE:
     response_format: { type: 'json_object' },
   }
 
-  return await callAIAndParse(openai, body, AnalysisResultSchema)
+  const { data } = await callAIAndParse(openai, body, AnalysisResultSchema)
+  return data
 }
 
 /**
@@ -184,7 +135,8 @@ OUTPUT RULE:
     response_format: { type: 'json_object' },
   }
 
-  return await callAIAndParse(openai, body, ContextAnalysisResultSchema)
+  const { data } = await callAIAndParse(openai, body, ContextAnalysisResultSchema)
+  return data
 }
 
 export async function fixSQL(
@@ -231,7 +183,8 @@ Fix the SQL. Ensure all table/column names are double-quoted and match the schem
     response_format: { type: 'json_object' },
   }
 
-  return await callAIAndParse(openai, body, FixSQLResultSchema)
+  const { data } = await callAIAndParse(openai, body, FixSQLResultSchema)
+  return data
 }
 
 /**
@@ -441,8 +394,8 @@ Please prioritize these instructions.`
     response_format: { type: 'json_object' },
   }
 
-  const result = await callAIAndParse(openai, body, InsightResultSchema)
+  const { data } = await callAIAndParse(openai, body, InsightResultSchema)
 
-  return autospaceInsight(result)
+  return autospaceInsight(data)
 }
 

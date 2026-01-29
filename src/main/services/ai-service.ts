@@ -1,8 +1,8 @@
 import Store from 'electron-store'
-import type { ClientOptions } from 'openai'
 import { OpenAI } from 'openai'
 import { BrowserWindow } from 'electron'
 import { AsyncLocalStorage } from 'async_hooks'
+import { callAIAndParse } from '../engine/ai-utils'
 import {
   analyzeContext,
   fixSQL,
@@ -30,6 +30,7 @@ import type {
 } from '@shared/types.ts'
 import { InsightGenerationContext } from '@shared/types/dashboard'
 import { BatchProcessor } from './batch-processor'
+import { z } from 'zod'
 
 // --- Security Config (Must match obfuscate-tool.js) ---
 const MASTER_SALT = 'wansan-studio-2025-special-security-salt'
@@ -47,24 +48,17 @@ interface AuditContext {
 
 function decryptBuiltinKey(obfuscated: string): string {
   try {
-    const parts = obfuscated.split(':')
-    if (parts.length !== 3) return '' // Invalid format
-    const [ivBase64, authTagBase64, encryptedBase64] = parts
+    const [ivBase64, authTagBase64, encryptedBase64] = obfuscated.split(':')
+    if (!encryptedBase64) return ''
+
     const iv = Buffer.from(ivBase64, 'base64')
     const authTag = Buffer.from(authTagBase64, 'base64')
-    // Derive same key
-    const key = crypto.pbkdf2Sync(
-      MASTER_SALT,
-      'salt-pepper',
-      100000,
-      32,
-      'sha256'
-    )
+    const key = crypto.pbkdf2Sync(MASTER_SALT, 'salt-pepper', 100000, 32, 'sha256')
+
     const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
     decipher.setAuthTag(authTag)
-    let decrypted = decipher.update(encryptedBase64, 'base64', 'utf8')
-    decrypted += decipher.final('utf8')
-    return decrypted
+
+    return decipher.update(encryptedBase64, 'base64', 'utf8') + decipher.final('utf8')
   } catch (e) {
     console.error('[AI Service] Decryption failed:', e)
     return ''
@@ -110,40 +104,39 @@ export class AIService {
    * from AsyncLocalStorage automatically.
    */
   private initAuditedClient() {
-    const baseClient = this.requireOpenAI()
+    const base = this.requireOpenAI()
 
-    this.auditedClient = new Proxy(baseClient, {
+    const completionProxy = {
+      get: (target: any, prop: string) => {
+        if (prop !== 'create') return Reflect.get(target, prop)
+
+        return async (...args: any[]) => {
+          const response = await target.create(...args)
+          const context = this.auditStore.getStore()
+
+          if (response?.usage && context) {
+            tokenManager.logTransaction(context.projectPath, {
+              action: context.action,
+              model: response.model || this.model,
+              inputTokens: response.usage.prompt_tokens,
+              outputTokens: response.usage.completion_tokens,
+              snapshot: context.snapshot || {
+                prompt_preview: args[0]?.messages?.[1]?.content?.substring(0, 100),
+              },
+            }).catch(err => console.error('[Audit] Log failed', err))
+          }
+          return response
+        }
+      }
+    }
+
+    this.auditedClient = new Proxy(base, {
       get: (target, prop, receiver) => {
         if (prop === 'chat') {
           return new Proxy(target.chat, {
             get: (chatTarget, chatProp) => {
               if (chatProp === 'completions') {
-                return new Proxy(chatTarget.completions, {
-                  get: (compTarget, compProp) => {
-                    if (compProp === 'create') {
-                      return async (...args: any[]) => {
-                        const response = await (compTarget.create as any)(...args)
-                        const context = this.auditStore.getStore()
-
-                        if (response && response.usage && context) {
-                          tokenManager
-                            .logTransaction(context.projectPath, {
-                              action: context.action,
-                              model: response.model || this.model,
-                              inputTokens: response.usage.prompt_tokens,
-                              outputTokens: response.usage.completion_tokens,
-                              snapshot: context.snapshot || {
-                                prompt_preview: args[0]?.messages?.[1]?.content?.substring(0, 100),
-                              },
-                            })
-                            .catch(err => console.error('[AuditedClient] Log failed', err))
-                        }
-                        return response
-                      }
-                    }
-                    return Reflect.get(compTarget, compProp)
-                  },
-                })
+                return new Proxy(chatTarget.completions, completionProxy)
               }
               return Reflect.get(chatTarget, chatProp)
             },
@@ -167,79 +160,63 @@ export class AIService {
   }
 
   private initBuiltinConfig() {
-    try {
-      const baseUrl = process.env.VITE_BUILTIN_BASE_URL
-      const rawKey = process.env.VITE_BUILTIN_API_KEY
-      const models = process.env.VITE_BUILTIN_MODELS
+    const rawKey = process.env.VITE_BUILTIN_API_KEY
+    if (!rawKey) return
 
-      if (rawKey) {
-        // 1. Try decrypting with AES-GCM (for production/CI)
-        let apiKey = decryptBuiltinKey(rawKey)
-        // 2. Fallback: If decryption fails (returns empty string), try Base64 (for simpler dev setups)
-        if (!apiKey && !rawKey.includes(':')) {
-          try {
-            const decoded = Buffer.from(rawKey, 'base64').toString('utf-8')
-            if (/^[a-zA-Z0-9_\-.]+$/.test(decoded)) {
-              apiKey = decoded
-            }
-          } catch {
-            /* ignore */
-          }
-        }
-        // 3. Fallback: Use raw key if all else fails
-        if (!apiKey) {
-          apiKey = rawKey
-        }
-        this.builtinConfig = {
-          apiKey,
-          baseURL: baseUrl || '',
-          model: models?.split(',')[0] || '',
-          models: models?.split(',') || [],
-          provider: 'custom',
-          isManaged: true,
-        }
-        console.log(`[AI Service] Managed config loaded.`)
+    try {
+      // 1. Decrypt (Production/CI)
+      let apiKey = decryptBuiltinKey(rawKey)
+
+      // 2. Base64 Fallback (Dev)
+      if (!apiKey && !rawKey.includes(':')) {
+        const decoded = Buffer.from(rawKey, 'base64').toString('utf-8')
+        if (/^[a-zA-Z0-9_\-.]+$/.test(decoded)) apiKey = decoded
       }
+
+      // 3. Raw Fallback
+      apiKey = apiKey || rawKey
+
+      const models = (process.env.VITE_BUILTIN_MODELS || '').split(',')
+
+      this.builtinConfig = {
+        apiKey,
+        baseURL: process.env.VITE_BUILTIN_BASE_URL || '',
+        model: models[0] || '',
+        models,
+        provider: 'custom',
+        isManaged: true,
+      }
+      console.log(`[AI Service] Managed config loaded.`)
     } catch (e) {
       console.error('[AI Service] Failed to parse builtin config:', e)
     }
   }
 
   private loadConfig() {
-    const storedConfig = (store.get('aiConfig') as AIConfig) || {}
-    // Determine priority: Builtin (Managed) > Stored > Runtime Env > Default
-    let effectiveConfig: AIConfig = {}
-    if (this.builtinConfig) {
-      effectiveConfig = { ...this.builtinConfig }
-      // Allow overriding model from store if it exists
-      if (storedConfig.model) {
-        effectiveConfig.model = storedConfig.model
-      }
-    } else {
-      // Securely retrieve API Key from system keychain
-      const secureKey = secureGet('apiKey') || ''
-      effectiveConfig = {
-        apiKey: secureKey || process.env.OPENAI_API_KEY,
-        baseURL: storedConfig.baseURL || process.env.OPENAI_BASE_URL,
-        model: storedConfig.model || process.env.OPENAI_MODEL || '',
-      }
-    }
-    this.model = effectiveConfig.model || ''
-    if (effectiveConfig.apiKey) {
-      const options: ClientOptions = {
-        apiKey: effectiveConfig.apiKey,
-        baseURL: effectiveConfig.baseURL,
-        defaultHeaders: {
-          'User-Agent': getAppUserAgent(),
-        },
-      }
-      this.openai = new OpenAI(options)
+    const stored = (store.get('aiConfig') as AIConfig) || {}
+    
+    // Priority: Builtin (Managed) > Stored > Runtime Env
+    const effective: AIConfig = this.builtinConfig 
+      ? { ...this.builtinConfig, model: stored.model || this.builtinConfig.model }
+      : {
+          apiKey: secureGet('apiKey') || process.env.OPENAI_API_KEY || '',
+          baseURL: stored.baseURL || process.env.OPENAI_BASE_URL || '',
+          model: stored.model || process.env.OPENAI_MODEL || '',
+        }
+
+    this.model = effective.model
+    
+    if (effective.apiKey) {
+      this.openai = new OpenAI({
+        apiKey: effective.apiKey,
+        baseURL: effective.baseURL,
+        defaultHeaders: { 'User-Agent': getAppUserAgent() },
+      })
+      this.initAuditedClient()
     } else {
       this.openai = null
       console.warn('AI Service: Not configured (missing API Key).')
     }
-    // Re-init audited client when base client changes
-    if (this.openai) this.initAuditedClient()
   }
 
   private requireOpenAI(): OpenAI {
@@ -471,58 +448,32 @@ export class AIService {
     inputData: any[],
     prompt: string,
     projectPath: string | null
-  ): Promise<{ results: string[]; estimatedCost: number }> {
+  ): Promise<{ results: string[]; usage?: { input: number; output: number } }> {
     return this.withAudit(
       { projectPath, action: 'batch_extract', snapshot: { prompt_preview: prompt } },
       async client => {
-        // Construct Prompt
         const inputsStr = inputData.map((v, i) => `${i + 1}. ${String(v)}`).join('\n')
-        const sysPrompt = `You are a data extraction engine.
-    Process the following list of inputs based on the user's instruction.
-    
-    Input Format:
-    1. Value1
-    2. Value2
-    
-    Output Format:
-    Return ONLY a JSON array of strings, matching the order of inputs.
-    Example: ["Result1", "Result2"]
-    
-    Handle NULLs or errors gracefully (e.g. return null or "N/A").`
-
+        const systemPrompt = `You are a data extraction engine. Process inputs and return a JSON object with a "results" key containing an array of strings matching the input order. Format: { "results": ["Result1", "Result2"] }`
         const userPrompt = `Instruction: ${prompt}\n\nInputs:\n${inputsStr}`
 
-        // Pre-flight check (Optional)
-        const estInputTokens = (prompt.length + inputsStr.length) / 4
-        const estOutputTokens = estInputTokens // Rough guess
-        const estimatedCost = tokenManager.calculateCost(
-          this.model,
-          estInputTokens,
-          estOutputTokens
-        )
-
-        const response = await client.chat.completions.create({
-          model: this.model,
-          messages: [
-            { role: 'system', content: sysPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          temperature: 0,
-        })
-
-        const content = response.choices[0].message.content || '[]'
-
         try {
-          // Clean potential markdown code blocks
-          const jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim()
-          const results = JSON.parse(jsonStr)
-          if (Array.isArray(results)) {
-            return { results, estimatedCost }
+          const { data, usage } = await callAIAndParse(client, {
+            model: this.model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+            temperature: 0,
+            response_format: { type: 'json_object' }
+          }, z.object({ results: z.array(z.string()) }))
+
+          return { 
+            results: data.results, 
+            usage: usage ? { input: usage.prompt_tokens, output: usage.completion_tokens } : undefined 
           }
-          return { results: [], estimatedCost }
         } catch (e) {
-          console.error('Failed to parse extraction preview', e)
-          return { results: [], estimatedCost }
+          console.error('[AI Service] Failed to parse extraction preview', e)
+          return { results: [] }
         }
       }
     )

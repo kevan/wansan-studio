@@ -22,14 +22,6 @@ interface AIExtractorDialogProps {
   tableName: string
 }
 
-const PRESET_PROMPTS = [
-  { label: 'Sentiment Analysis', prompt: 'Analyze the sentiment of this text (Positive/Negative/Neutral).' },
-  { label: 'Extract Keywords', prompt: 'Extract top 3 key entities or topics from the text, separated by commas.' },
-  { label: 'Categorize', prompt: 'Classify this into one of these categories: [Tech, Health, Finance, Other].' },
-  { label: 'Translate to English', prompt: 'Translate this text into English.' },
-  { label: 'Clean Date', prompt: 'Standardize this date to YYYY-MM-DD format.' },
-]
-
 export function AIExtractorDialog({
   isOpen,
   onClose,
@@ -38,6 +30,14 @@ export function AIExtractorDialog({
   tableName
 }: AIExtractorDialogProps) {
   const { t } = useTranslation('common')
+
+  const PRESET_PROMPTS = [
+    { label: t('ai_extract_presets.sentiment'), prompt: t('ai_extract_presets.sentiment_prompt') },
+    { label: t('ai_extract_presets.keywords'), prompt: t('ai_extract_presets.keywords_prompt') },
+    { label: t('ai_extract_presets.categorize'), prompt: t('ai_extract_presets.categorize_prompt') },
+    { label: t('ai_extract_presets.translate'), prompt: t('ai_extract_presets.translate_prompt') },
+    { label: t('ai_extract_presets.clean_date'), prompt: t('ai_extract_presets.clean_date_prompt') },
+  ]
   
   const [prompt, setPrompt] = useState('')
   const [newColumnName, setNewColumnName] = useState('')
@@ -139,7 +139,7 @@ export function AIExtractorDialog({
               <Textarea 
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
-                placeholder="e.g. Extract the email address from this text..."
+                placeholder={t('prompt_placeholder', 'e.g. Extract the email address from this text...')}
                 className="flex-1 rounded-xl border-zinc-200 resize-none p-4 font-medium focus:ring-purple-500"
               />
               
@@ -163,7 +163,7 @@ export function AIExtractorDialog({
               className="w-full bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl h-10 font-bold"
             >
               {isPreviewing ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : <Play className="w-4 h-4 mr-2"/>}
-              {t('generate_preview', 'Generate Preview')}
+              {t('generate_preview')}
             </Button>
 
           </div>
@@ -171,8 +171,8 @@ export function AIExtractorDialog({
           {/* Right: Preview */}
           <div className="w-1/2 bg-zinc-50/30 flex flex-col">
             <div className="p-4 border-b border-zinc-100 flex justify-between items-center bg-white/50">
-               <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{t('preview_results', 'Preview Results')}</span>
-               {estimatedCost !== null && (
+               <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{t('preview_results')}</span>
+               {typeof estimatedCost === 'number' && (
                  <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 font-bold">
                    {t('estimated_cost')}: ${estimatedCost.toFixed(4)}
                  </Badge>
@@ -182,20 +182,20 @@ export function AIExtractorDialog({
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {previewData.length === 0 ? (
                 <div className="h-full flex items-center justify-center text-zinc-400 text-sm italic">
-                  No sample data available
+                  {t('no_sample_data')}
                 </div>
               ) : (
                 previewData.map((val, idx) => (
                   <div key={idx} className="bg-white border border-zinc-100 rounded-xl p-3 shadow-sm flex items-stretch gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="text-[10px] text-zinc-400 uppercase font-bold mb-1">Input</div>
+                      <div className="text-[10px] text-zinc-400 uppercase font-bold mb-1">{t('input')}</div>
                       <div className="text-sm text-zinc-700 break-words">{String(val)}</div>
                     </div>
                     <div className="w-6 flex items-center justify-center text-zinc-300">
                       <ArrowRight className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0 bg-purple-50/30 rounded-lg p-2 border border-purple-100/50">
-                      <div className="text-[10px] text-purple-400 uppercase font-bold mb-1">Output (AI)</div>
+                      <div className="text-[10px] text-purple-400 uppercase font-bold mb-1">{t('output_ai')}</div>
                       {previewResult[idx] ? (
                         <div className="text-sm text-purple-900 font-medium break-words">{previewResult[idx]}</div>
                       ) : (
@@ -212,7 +212,7 @@ export function AIExtractorDialog({
         <DialogFooter className="px-8 py-5 border-t border-zinc-100 bg-white">
           <div className="flex-1 text-xs text-zinc-400 flex items-center gap-2">
             <Sparkles className="w-3 h-3" />
-            <span>AI processing applies to <strong>all rows</strong>. Check budget before running.</span>
+            <span>{t('ai_extract_warning')}</span>
           </div>
           <Button
             variant="ghost"
@@ -226,7 +226,7 @@ export function AIExtractorDialog({
             disabled={!newColumnName || !prompt}
             className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl px-8 font-bold shadow-lg shadow-purple-200"
           >
-            {t('apply_extraction', 'Run Extraction')}
+            {t('apply_extraction')}
           </Button>
         </DialogFooter>
       </DialogContent>

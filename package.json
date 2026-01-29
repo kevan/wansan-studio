@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@duckdb/node-api": "^1.4.3-r.3",
+    "@radix-ui/react-switch": "^1.2.6",
     "electron-store": "^11.0.2",
     "electron-updater": "^6.1.7",
     "exceljs": "^4.4.0",

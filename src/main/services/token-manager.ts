@@ -7,36 +7,35 @@ import { TokenBudgetConfig, TokenAuditLog, TokenTransaction } from '../../shared
 // Schema for Global Token Settings
 interface StoreType {
   dailyUsageUSD: number
+  dailyInputTokens: number
+  dailyOutputTokens: number
   lastResetDate: string
   budgetConfig: TokenBudgetConfig
 }
 
 const storeSchema = {
   dailyUsageUSD: { type: 'number', default: 0 },
+  dailyInputTokens: { type: 'number', default: 0 },
+  dailyOutputTokens: { type: 'number', default: 0 },
   lastResetDate: { type: 'string', default: '' }, // YYYY-MM-DD
   budgetConfig: {
     type: 'object',
     properties: {
-      dailyHardLimitUSD: { type: 'number', default: 5.0 }, // $5.00 default hard limit
-      projectSoftLimitUSD: { type: 'number', default: 1.0 }, // $1.00 warning threshold
-      pricingOverrides: { type: 'array', default: [] }
+      isEnabled: { type: 'boolean', default: true },
+      dailyHardLimitUSD: { type: 'number', default: 5.0 },
+      projectSoftLimitUSD: { type: 'number', default: 1.0 },
+      basePricePer1M: { type: 'number', default: 1.0 }, // Standard $1 per 1M tokens
+      priceMultiplier: { type: 'number', default: 1.0 }  // User adjustable
     },
     default: {
+      isEnabled: true,
       dailyHardLimitUSD: 5.0,
       projectSoftLimitUSD: 1.0,
-      pricingOverrides: []
+      basePricePer1M: 1.0,
+      priceMultiplier: 1.0
     }
   }
 } as const
-
-// Default Pricing (can be overridden by store)
-const DEFAULT_PRICING = {
-  'gpt-4o': { input: 2.5, output: 10.0 }, // per 1M tokens
-  'gpt-4-turbo': { input: 10.0, output: 30.0 },
-  'gpt-3.5-turbo': { input: 0.5, output: 1.5 },
-  'deepseek-chat': { input: 0.14, output: 0.28 }, // Example cheap pricing
-  'default': { input: 1.0, output: 3.0 }
-}
 
 export class TokenManager {
   private store: Store<StoreType>
@@ -55,6 +54,8 @@ export class TokenManager {
     
     if (lastDate !== today) {
       this.store.set('dailyUsageUSD', 0)
+      this.store.set('dailyInputTokens', 0)
+      this.store.set('dailyOutputTokens', 0)
       this.store.set('lastResetDate', today)
     }
   }
@@ -73,14 +74,26 @@ export class TokenManager {
     return this.store.get('dailyUsageUSD') as number
   }
 
+  public getDailyTokens(): { input: number, output: number } {
+    this.checkDailyReset()
+    return {
+      input: this.store.get('dailyInputTokens') as number,
+      output: this.store.get('dailyOutputTokens') as number
+    }
+  }
+
   /**
    * Pre-flight Check: Can we afford this operation?
    * @returns { allowed: boolean, reason?: string }
    */
   public checkBudget(estimatedCostUSD: number): { allowed: boolean, reason?: string } {
     this.checkDailyReset()
-    const dailyUsage = this.getDailyUsage()
     const config = this.getBudgetConfig()
+    
+    // Bypass if disabled
+    if (config.isEnabled === false) return { allowed: true }
+
+    const dailyUsage = this.getDailyUsage()
     
     if (dailyUsage + estimatedCostUSD > config.dailyHardLimitUSD) {
       return { 
@@ -93,27 +106,16 @@ export class TokenManager {
   }
 
   /**
-   * Calculate cost based on model and tokens
+   * Calculate cost based on global base price and multiplier.
+   * Logic: (Total Tokens / 1M) * BasePrice * Multiplier
    */
-  public calculateCost(model: string, inputTokens: number, outputTokens: number): number {
+  public calculateCost(_model: string, inputTokens: number, outputTokens: number): number {
     const config = this.getBudgetConfig()
-    const overrides = config.pricingOverrides || []
+    const totalTokens = inputTokens + outputTokens
+    const basePrice = config.basePricePer1M ?? 1.0
+    const multiplier = config.priceMultiplier ?? 1.0
     
-    // 1. Check User Overrides
-    const userPrice = overrides.find(p => p.modelId === model)
-    if (userPrice) {
-      return (inputTokens / 1_000_000 * userPrice.inputPricePer1M) + 
-             (outputTokens / 1_000_000 * userPrice.outputPricePer1M)
-    }
-
-    // 2. Check Built-in Defaults
-    // Fuzzy match model name (e.g. 'gpt-4o-2024-05-13' -> 'gpt-4o')
-    const knownModels = Object.keys(DEFAULT_PRICING)
-    const matchedKey = knownModels.find(k => model.startsWith(k)) || 'default'
-    const price = DEFAULT_PRICING[matchedKey as keyof typeof DEFAULT_PRICING]
-
-    return (inputTokens / 1_000_000 * price.input) + 
-           (outputTokens / 1_000_000 * price.output)
+    return (totalTokens / 1_000_000) * basePrice * multiplier
   }
 
   /**
@@ -131,7 +133,12 @@ export class TokenManager {
     // 1. Update Global Stats
     this.checkDailyReset()
     const currentDaily = this.getDailyUsage()
+    const currentInput = this.store.get('dailyInputTokens') as number
+    const currentOutput = this.store.get('dailyOutputTokens') as number
+
     this.store.set('dailyUsageUSD', currentDaily + costUSD)
+    this.store.set('dailyInputTokens', currentInput + transaction.inputTokens)
+    this.store.set('dailyOutputTokens', currentOutput + transaction.outputTokens)
 
     // 2. Construct Record
     const record: TokenTransaction = {

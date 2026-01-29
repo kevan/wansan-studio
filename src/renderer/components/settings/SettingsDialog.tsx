@@ -218,7 +218,7 @@ export function SettingsDialog(_props: SettingsDialogProps) {
                 <BrainCircuit className="w-4 h-4" /> {t('tabs.domain')}
               </TabsTrigger>
               <TabsTrigger value="audit" className="flex gap-2">
-                <Coins className="w-4 h-4" /> {t('tabs.audit', 'Audit')}
+                <Coins className="w-4 h-4" /> {t('tabs.audit')}
               </TabsTrigger>
               <TabsTrigger value="general" className="flex gap-2">
                 <Settings2 className="w-4 h-4" /> {t('tabs.general')}

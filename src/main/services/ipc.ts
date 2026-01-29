@@ -53,7 +53,15 @@ export function setupIPC(
 
   ipcMain.handle('audit:get-usage', async () => {
     try {
-      return { success: true, data: { dailyUsageUSD: tokenManager.getDailyUsage() } }
+      const tokens = tokenManager.getDailyTokens()
+      return { 
+        success: true, 
+        data: { 
+          dailyUsageUSD: tokenManager.getDailyUsage(),
+          inputTokens: tokens.input,
+          outputTokens: tokens.output
+        } 
+      }
     } catch (e: any) {
       return { success: false, error: e.message }
     }
@@ -462,7 +470,23 @@ export function setupIPC(
           prompt, 
           projectManager.getCurrentProjectPath()
         )
-        return { success: true, data: result }
+
+        let estimatedCost = 0
+        if (result.usage) {
+          estimatedCost = tokenManager.calculateCost(
+            aiService.getConfig().model || 'gpt-4o',
+            result.usage.input,
+            result.usage.output
+          )
+        }
+
+        return { 
+          success: true, 
+          data: {
+            ...result,
+            estimatedCost
+          }
+        }
       } catch (error: any) {
         return { success: false, error: error.message }
       }

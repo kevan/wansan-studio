@@ -2,6 +2,8 @@ import { NativeDatabaseService } from './native-db-service'
 import { AIService } from './ai-service'
 import { FileService } from './file'
 import { BrowserWindow } from 'electron'
+import { CHARS_PER_TOKEN_EN, CHARS_PER_TOKEN_ZH } from '../engine/ai-utils'
+import { tokenManager } from './token-manager'
 
 export interface BatchJobParams {
   tableName: string
@@ -27,6 +29,70 @@ export class BatchProcessor {
     private ai: AIService,
     private fileService: FileService
   ) {}
+
+  /**
+   * Estimates the cost of a batch extraction job.
+   */
+  async estimateCost(params: Omit<BatchJobParams, 'window'>): Promise<{
+    totalRows: number
+    estimatedInputTokens: number
+    estimatedOutputTokens: number
+    estimatedCostUSD: number
+  }> {
+    const { tableName, columnName, targetColumnName, prompt } = params
+    const sidecarName = `${tableName}_ext_ai`
+
+    // 1. Get total count of rows needing processing
+    let total = 0
+    try {
+      const countRes = await this.db.query(`
+        SELECT COUNT(*) as count 
+        FROM "${tableName}" t1
+        LEFT JOIN (
+          SELECT * FROM information_schema.tables WHERE table_name = '${sidecarName}'
+        ) as s_exists ON 1=1
+        LEFT JOIN "${sidecarName}" t2 ON t1._ws_row_id = t2._ws_row_id
+        WHERE t2."${targetColumnName}" IS NULL OR t2._ws_row_id IS NULL
+      `) as { count: number | bigint }[]
+      total = Number(countRes[0].count)
+    } catch {
+      // Fallback: if sidecar doesn't exist yet, just count the main table
+      const countRes = await this.db.query(`SELECT COUNT(*) as count FROM "${tableName}"`) as { count: number | bigint }[]
+      total = Number(countRes[0].count)
+    }
+
+    if (total === 0) {
+      return { totalRows: 0, estimatedInputTokens: 0, estimatedOutputTokens: 0, estimatedCostUSD: 0 }
+    }
+
+    // 2. Token Estimation Logic
+    // Prompt context (system + user overhead)
+    const promptChars = prompt.length + 200 // Add some overhead for system prompt
+    const avgCharsPerToken = prompt.match(/[\u4e00-\u9fa5]/) ? CHARS_PER_TOKEN_ZH : CHARS_PER_TOKEN_EN
+    
+    // Sample a few rows to get average character length of the source column
+    const samples = await this.db.query(`SELECT "${columnName}" as val FROM "${tableName}" LIMIT 10`) as { val: any }[]
+    const avgValLen = samples.reduce((acc, s) => acc + String(s.val || '').length, 0) / (samples.length || 1)
+
+    const inputTokensPerRow = (promptChars + avgValLen) / avgCharsPerToken
+    const outputTokensPerRow = 50 / avgCharsPerToken // Assume 50 chars avg for extracted text
+
+    const estimatedInputTokens = Math.ceil(inputTokensPerRow * total)
+    const estimatedOutputTokens = Math.ceil(outputTokensPerRow * total)
+
+    const estimatedCostUSD = tokenManager.calculateCost(
+      this.ai.getConfig().model || 'gpt-4o',
+      estimatedInputTokens,
+      estimatedOutputTokens
+    )
+
+    return {
+      totalRows: total,
+      estimatedInputTokens,
+      estimatedOutputTokens,
+      estimatedCostUSD
+    }
+  }
 
   async runExtraction(params: BatchJobParams) {
     const { tableName, columnName, targetColumnName, prompt, projectPath, window } = params

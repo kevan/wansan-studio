@@ -1,7 +1,13 @@
 import { OpenAI } from 'openai'
 import { ColumnSchema, ColumnSemantic } from '@shared/types'
-import { isDev } from '../utils/env'
-import { safeStringify } from '@shared/serialization'
+import { callAIAndParse } from './ai-utils'
+import { z } from 'zod'
+
+const SemanticResultSchema = z.record(z.string(), z.object({
+  aliases: z.array(z.string()),
+  businessType: z.enum(['ID', 'Code', 'Money', 'Category', 'Text', 'Date', 'Time', 'Quantity', 'Location', 'Other'] as any),
+  description: z.string()
+}))
 
 /**
  * AI Powered Semantic Analysis Engine
@@ -61,15 +67,7 @@ Example:
 Columns and Samples:
 ${JSON.stringify(columnContext, null, 2)}`
 
-  if (isDev()) {
-    console.log('[SemanticEngine] Request context:', {
-      tableName,
-      language,
-      schema: safeStringify(columnContext, 2)
-    })
-  }
-
-  const response = await client.chat.completions.create({
+  const { data } = await callAIAndParse(client, {
     model: model,
     messages: [
       { role: 'system', content: systemPrompt },
@@ -77,19 +75,7 @@ ${JSON.stringify(columnContext, null, 2)}`
     ],
     response_format: { type: 'json_object' },
     temperature: 0
-  })
+  }, SemanticResultSchema)
 
-  const content = response.choices[0].message.content
-  if (!content) throw new Error('AI returned empty response')
-
-  if (isDev()) {
-    console.log(`[SemanticEngine] AI Raw Response for ${tableName}:`, content)
-  }
-
-  try {
-    return JSON.parse(content)
-  } catch (e) {
-    console.error('[SemanticEngine] Failed to parse analysis JSON', e)
-    throw new Error('Failed to parse AI response')
-  }
+  return data as Record<string, ColumnSemantic>
 }

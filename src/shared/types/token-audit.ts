@@ -42,7 +42,9 @@ export interface ModelPricingConfig {
 }
 
 export interface TokenBudgetConfig {
+  isEnabled: boolean // Master toggle for budget protection
   dailyHardLimitUSD: number // Global limit
   projectSoftLimitUSD: number // Project-level warning threshold
-  pricingOverrides: ModelPricingConfig[]
+  basePricePer1M: number // Base price per 1M tokens (Default: $1.0)
+  priceMultiplier: number // User-defined multiplier (Default: 1.0)
 }
