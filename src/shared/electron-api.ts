@@ -233,7 +233,8 @@ export interface ElectronAPI {
   getTokenUsage: () => Promise<IPCResponse<{ 
     dailyUsageUSD: number,
     inputTokens: number,
-    outputTokens: number
+    outputTokens: number,
+    totalUsage: { usd: number, input: number, output: number }
   }>>
 
   // AI Config

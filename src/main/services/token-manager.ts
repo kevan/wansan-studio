@@ -9,6 +9,9 @@ interface StoreType {
   dailyUsageUSD: number
   dailyInputTokens: number
   dailyOutputTokens: number
+  totalUsageUSD: number
+  totalInputTokens: number
+  totalOutputTokens: number
   lastResetDate: string
   budgetConfig: TokenBudgetConfig
 }
@@ -17,6 +20,9 @@ const storeSchema = {
   dailyUsageUSD: { type: 'number', default: 0 },
   dailyInputTokens: { type: 'number', default: 0 },
   dailyOutputTokens: { type: 'number', default: 0 },
+  totalUsageUSD: { type: 'number', default: 0 },
+  totalInputTokens: { type: 'number', default: 0 },
+  totalOutputTokens: { type: 'number', default: 0 },
   lastResetDate: { type: 'string', default: '' }, // YYYY-MM-DD
   budgetConfig: {
     type: 'object',
@@ -49,7 +55,8 @@ export class TokenManager {
   }
 
   private checkDailyReset() {
-    const today = new Date().toISOString().split('T')[0]
+    // Use local date instead of UTC to avoid timezone shifts
+    const today = new Date().toLocaleDateString('sv-SE') // Returns YYYY-MM-DD in local time
     const lastDate = this.store.get('lastResetDate') as string
     
     if (lastDate !== today) {
@@ -72,6 +79,14 @@ export class TokenManager {
   public getDailyUsage(): number {
     this.checkDailyReset()
     return this.store.get('dailyUsageUSD') as number
+  }
+
+  public getTotalUsage(): { usd: number, input: number, output: number } {
+    return {
+      usd: this.store.get('totalUsageUSD') as number,
+      input: this.store.get('totalInputTokens') as number,
+      output: this.store.get('totalOutputTokens') as number
+    }
   }
 
   public getDailyTokens(): { input: number, output: number } {
@@ -139,6 +154,15 @@ export class TokenManager {
     this.store.set('dailyUsageUSD', currentDaily + costUSD)
     this.store.set('dailyInputTokens', currentInput + transaction.inputTokens)
     this.store.set('dailyOutputTokens', currentOutput + transaction.outputTokens)
+
+    // Update Global Totals
+    const currentTotalUSD = this.store.get('totalUsageUSD') as number
+    const currentTotalInput = this.store.get('totalInputTokens') as number
+    const currentTotalOutput = this.store.get('totalOutputTokens') as number
+
+    this.store.set('totalUsageUSD', currentTotalUSD + costUSD)
+    this.store.set('totalInputTokens', currentTotalInput + transaction.inputTokens)
+    this.store.set('totalOutputTokens', currentTotalOutput + transaction.outputTokens)
 
     // 2. Construct Record
     const record: TokenTransaction = {

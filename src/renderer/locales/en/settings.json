@@ -74,7 +74,9 @@
   "audit": {
     "title": "Cost Control & Audit",
     "daily_usage": "Est. Today's Cost",
-    "tokens": "Tokens (In/Out)",
+    "tokens": "Daily Tokens (In/Out)",
+    "total_cost": "All-time Cost (Est.)",
+    "total_tokens": "Total Tokens (In/Out)",
     "budget_status": "Budget Status",
     "resets_daily": "Resets daily (Estimates only)",
     "active": "Active",
@@ -87,7 +89,8 @@
     "project_soft_limit": "Batch Warning Threshold ($)",
     "soft_limit_desc": "Confirmations required for batch jobs exceeding this estimated cost.",
     "price_multiplier": "Price Multiplier",
-    "multiplier_desc": "Adjusts cost based on your model. (e.g. 0.1 for cheap models like DeepSeek, 1.0+ for premium models)",
+    "multiplier_desc": "Scales the base price of $1.00 / 1M Tokens. (e.g. 0.14 for DeepSeek, 1.0+ for premium models)",
+    "effective_price_label": "Effective Unit Price",
     "save_btn": "Save Changes",
     "saved": "Settings saved"
   },

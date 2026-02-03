@@ -54,12 +54,14 @@ export function setupIPC(
   ipcMain.handle('audit:get-usage', async () => {
     try {
       const tokens = tokenManager.getDailyTokens()
+      const total = tokenManager.getTotalUsage()
       return { 
         success: true, 
         data: { 
           dailyUsageUSD: tokenManager.getDailyUsage(),
           inputTokens: tokens.input,
-          outputTokens: tokens.output
+          outputTokens: tokens.output,
+          totalUsage: total
         } 
       }
     } catch (e: any) {

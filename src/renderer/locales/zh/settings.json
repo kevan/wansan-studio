@@ -74,7 +74,9 @@
   "audit": {
     "title": "成本控制与审计",
     "daily_usage": "今日支出 (预估)",
-    "tokens": "Token 消耗 (入/出)",
+    "tokens": "当日 Token (入/出)",
+    "total_cost": "累计支出 (预估)",
+    "total_tokens": "累计 Token (入/出)",
     "budget_status": "预算状态",
     "resets_daily": "每日零点重置 (预估值)",
     "active": "生效中",
@@ -87,7 +89,8 @@
     "project_soft_limit": "批处理告警阈值 ($)",
     "soft_limit_desc": "当批量提取任务的预估成本超过此阈值时，需手动确认。",
     "price_multiplier": "价格倍率 (Multiplier)",
-    "multiplier_desc": "用于适配不同模型的单价。例如：DeepSeek 建议设为 0.1，GPT-4 建议保持 1.0 或更高。",
+    "multiplier_desc": "基于 $1.00 / 1M Tokens 的基础单价进行设置。例如：DeepSeek 建议设为 0.14，GPT-4 建议保持 1.0 或更高。",
+    "effective_price_label": "当前有效单价",
     "save_btn": "保存更改",
     "saved": "设置已保存"
   },

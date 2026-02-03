@@ -95,7 +95,8 @@ const mockIPC: ElectronAPI = {
     data: { 
       dailyUsageUSD: 0,
       inputTokens: 0,
-      outputTokens: 0
+      outputTokens: 0,
+      totalUsage: { usd: 0, input: 0, output: 0 }
     } 
   }),
   setAIConfig: async () => ({ success: true }),

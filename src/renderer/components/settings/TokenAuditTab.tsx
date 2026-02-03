@@ -15,10 +15,11 @@ export function TokenAuditTab() {
   const addToast = useToastStore(state => state.addToast)
   
   const [config, setConfig] = useState<TokenBudgetConfig | null>(null)
-  const [usage, setUsage] = useState<{
-    dailyUsageUSD: number,
-    inputTokens: number,
-    outputTokens: number
+  const [usage, setUsage] = useState<{ 
+    dailyUsageUSD: number, 
+    inputTokens: number, 
+    outputTokens: number,
+    totalUsage: { usd: number, input: number, output: number }
   } | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -92,54 +93,71 @@ export function TokenAuditTab() {
           </div>
         </div>
         
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+           {/* Daily Cost */}
            <Card className="rounded-2xl border-zinc-100 shadow-sm">
-             <CardHeader className="pb-2">
-               <CardTitle className="text-sm font-medium text-muted-foreground">
+             <CardHeader className="pb-1 px-4 pt-4">
+               <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                  {t('audit.daily_usage')}
                </CardTitle>
              </CardHeader>
-             <CardContent>
-               <div className="text-2xl font-bold tabular-nums">
+             <CardContent className="px-4 pb-4">
+               <div className="text-xl font-bold tabular-nums">
                  ${(usage?.dailyUsageUSD ?? 0).toFixed(4)}
                </div>
-               <p className="text-[10px] text-muted-foreground mt-1">
+               <p className="text-[9px] text-zinc-400 mt-1">
                  {t('audit.resets_daily')}
                </p>
              </CardContent>
            </Card>
 
+           {/* Daily Tokens */}
            <Card className="rounded-2xl border-zinc-100 shadow-sm">
-             <CardHeader className="pb-2">
-               <CardTitle className="text-sm font-medium text-muted-foreground">
+             <CardHeader className="pb-1 px-4 pt-4">
+               <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                  {t('audit.tokens')}
                </CardTitle>
              </CardHeader>
-             <CardContent>
+             <CardContent className="px-4 pb-4">
                <div className="text-xl font-bold tabular-nums">
                  {((usage?.inputTokens ?? 0) / 1000).toFixed(1)}k / {((usage?.outputTokens ?? 0) / 1000).toFixed(1)}k
                </div>
-               <p className="text-[10px] text-muted-foreground mt-1">
+               <p className="text-[9px] text-zinc-400 mt-1">
                  Total: {((usage?.inputTokens ?? 0) + (usage?.outputTokens ?? 0)).toLocaleString()}
                </p>
              </CardContent>
            </Card>
-           
-           <Card className="rounded-2xl border-zinc-100 shadow-sm">
-             <CardHeader className="pb-2">
-               <CardTitle className="text-sm font-medium text-muted-foreground">
-                 {t('audit.budget_status')}
+
+           {/* Cumulative Cost */}
+           <Card className="rounded-2xl border-zinc-100 shadow-sm bg-zinc-50/30">
+             <CardHeader className="pb-1 px-4 pt-4">
+               <CardTitle className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                 {t('audit.total_cost', 'All-time Cost')}
                </CardTitle>
              </CardHeader>
-             <CardContent>
-               <div className={cn(
-                 "text-xl font-bold",
-                 config?.isEnabled ? "text-emerald-600" : "text-zinc-400"
-               )}>
-                 {config?.isEnabled ? t('audit.active') : t('audit.disabled', 'Disabled')}
+             <CardContent className="px-4 pb-4">
+               <div className="text-xl font-bold tabular-nums text-zinc-600">
+                 ${(usage?.totalUsage?.usd ?? 0).toFixed(4)}
                </div>
-               <p className="text-[10px] text-muted-foreground mt-1">
-                 {config?.isEnabled ? t('audit.protection_enabled') : t('audit.protection_disabled', 'Protection is off')}
+               <p className="text-[9px] text-zinc-400 mt-1">
+                 Cumulative estimate
+               </p>
+             </CardContent>
+           </Card>
+
+           {/* Cumulative Tokens */}
+           <Card className="rounded-2xl border-zinc-100 shadow-sm bg-zinc-50/30">
+             <CardHeader className="pb-1 px-4 pt-4">
+               <CardTitle className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                 {t('audit.total_tokens', 'Total Tokens')}
+               </CardTitle>
+             </CardHeader>
+             <CardContent className="px-4 pb-4">
+               <div className="text-xl font-bold tabular-nums text-zinc-600">
+                 {((usage?.totalUsage?.input ?? 0) / 1000).toFixed(1)}k / {((usage?.totalUsage?.output ?? 0) / 1000).toFixed(1)}k
+               </div>
+               <p className="text-[9px] text-zinc-400 mt-1">
+                 Total: {((usage?.totalUsage?.input ?? 0) + (usage?.totalUsage?.output ?? 0)).toLocaleString()}
                </p>
              </CardContent>
            </Card>
@@ -182,7 +200,12 @@ export function TokenAuditTab() {
 
         {/* Multiplier - Always Enabled */}
         <div className="space-y-2 pt-2 border-t border-zinc-50">
-           <Label>{t('audit.price_multiplier')}</Label>
+           <div className="flex items-center justify-between">
+             <Label>{t('audit.price_multiplier')}</Label>
+             <span className="text-[10px] font-mono text-zinc-400 bg-zinc-50 px-2 py-0.5 rounded-md border border-zinc-100">
+               {t('audit.effective_price_label')}: ${(config?.priceMultiplier ?? 1.0).toFixed(2)} / 1M Tokens
+             </span>
+           </div>
            <Input 
              type="number" 
              step="0.01"
