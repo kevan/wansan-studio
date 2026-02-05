@@ -71,3 +71,12 @@
 - Implemented `smartDownsample` in `ai-bridge.ts` to preserve global min/max data points when truncating large datasets for AI insights, ensuring outliers (like spikes) are not missed.
 - Increased the `generateInsight` data sampling limit in `ai-bridge.ts` from 50 to 100 points to improve analysis detail.
 - Implemented fuzzy matching logic in `Chart.tsx` to handle partial matches between AI-generated `relatedItems` and actual chart data keys, fixing highlighting issues.
+- Wansan Studio 的推广视觉风格定义为“极简手绘水彩逻辑流 (Minimalist Hand-drawn Watercolor Logic-Flow)”。核心特征包括：纯白背景大面积留白、柔和马卡龙色调、干净的手绘线条、空气感氛围、以及通过超现实意向（如聚宝盆、毛线团、传送带）展示数据处理逻辑。所有图片均采用 3:4 竖版比例。
+- MANDATE for Wansan Studio: 1. NEVER use ellipses (...) or skip code in 'write_file' calls; provide 100% complete source code. 2. For files > 100 lines, prefer multiple atomic 'replace' calls instead of 'write_file' to prevent accidental code loss. 3. Destructive operations (fs.remove, DROP TABLE) MUST have path/name validation (e.g., os.tmpdir check). 4. Always run 'npm run type-check' immediately after modifying UI components.
+- The file src/renderer/hooks/use-data-rehydrate.ts is still required in the v1.6 architecture as a self-healing mechanism for verifying physical table existence and rebuilding logical views (DuckDB Views), serving as a safety net against data corruption or file loss.
+- Wansan Studio 开发规范与架构演进策略：
+1. 异步状态双轨制：Zustand 负责核心业务逻辑与 Manifest 状态变更；React Query 负责工具类/无状态 IPC 调用及 UI 状态展现。
+2. 缓存失效联动：在任何修改物理数据库的操作（Zustand Actions 或 IPC Mutations）后，必须通过 queryClient.invalidateQueries 同步刷新 React Query 缓存，确保 UI 状态一致性。
+3. 收敛 IPC 入口：逐步减少在 UI 组件或工具类中直接调用 window.electronAPI，倾向于通过自定义 Hook 或 Service 层进行封装，以提升可测试性与安全性。
+4. 强类型原则：杜绝在 IPC 调用中使用 'as any'，强制所有调用路径遵循 ElectronAPI 接口定义。
+5. 物理自愈机制：维持 useDataRehydrate 作为数据库与 Manifest 状态同步的核心枢纽，包含孤儿资源的自动清理（物理对账）。

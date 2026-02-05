@@ -118,10 +118,17 @@ export interface MetricSuggestion {
   reason?: string
 }
 
+export interface SemanticSuggestion {
+  tableName: string
+  columnName: string
+  semantic: ColumnSemantic
+}
+
 export interface ContextAnalysisResult {
   relationships: RelationSuggestion[]
   metrics?: MetricSuggestion[]
   suggestedPrompts: string[]
+  semantics?: SemanticSuggestion[]
 }
 
 export type LoadingType = 'cleaning' | 'thinking' | 'crunching' | 'fixing'

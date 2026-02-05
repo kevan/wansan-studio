@@ -2,14 +2,14 @@ import Store from 'electron-store'
 import { OpenAI } from 'openai'
 import { BrowserWindow } from 'electron'
 import { AsyncLocalStorage } from 'async_hooks'
-import { callAIAndParse } from '../engine/ai-utils'
 import {
   analyzeContext,
-  fixSQL,
   generateAnalysis,
-  generateInsight,
-} from '../engine/ai-bridge'
-import { analyzeSemantics as analyzeSemanticsEngine } from '../engine/semantic-engine'
+} from '../engine/context-analyzer'
+import { fixSQL } from '../engine/sql-repair'
+import { generateInsight } from '../engine/insight-generator'
+import { analyzeSemantics as analyzeSemanticsEngine } from '../engine/semantic-analyzer'
+import { previewExtraction } from '../engine/extractor'
 import {
   METRIC_GEN_SYSTEM_PROMPT,
   getMetricGenUserPrompt,
@@ -30,7 +30,6 @@ import type {
 } from '@shared/types.ts'
 import { InsightGenerationContext } from '@shared/types/dashboard'
 import { BatchProcessor } from './batch-processor'
-import { z } from 'zod'
 
 // --- Security Config (Must match obfuscate-tool.js) ---
 const MASTER_SALT = 'wansan-studio-2025-special-security-salt'
@@ -452,29 +451,7 @@ export class AIService {
     return this.withAudit(
       { projectPath, action: 'batch_extract', snapshot: { prompt_preview: prompt } },
       async client => {
-        const inputsStr = inputData.map((v, i) => `${i + 1}. ${String(v)}`).join('\n')
-        const systemPrompt = `You are a data extraction engine. Process inputs and return a JSON object with a "results" key containing an array of strings matching the input order. Format: { "results": ["Result1", "Result2"] }`
-        const userPrompt = `Instruction: ${prompt}\n\nInputs:\n${inputsStr}`
-
-        try {
-          const { data, usage } = await callAIAndParse(client, {
-            model: this.model,
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt },
-            ],
-            temperature: 0,
-            response_format: { type: 'json_object' }
-          }, z.object({ results: z.array(z.string()) }))
-
-          return { 
-            results: data.results, 
-            usage: usage ? { input: usage.prompt_tokens, output: usage.completion_tokens } : undefined 
-          }
-        } catch (e) {
-          console.error('[AI Service] Failed to parse extraction preview', e)
-          return { results: [] }
-        }
+        return previewExtraction(client, this.model, inputData, prompt)
       }
     )
   }

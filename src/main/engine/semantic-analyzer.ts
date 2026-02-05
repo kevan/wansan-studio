@@ -35,19 +35,21 @@ Your task is to analyze a database table schema and sample data to provide seman
 For each column, you must:
 1. Infer its business meaning (Description). **IMPORTANT**: The description MUST be in ${language}.
 2. Suggest 2-3 natural language synonyms/aliases in ${language}.
-3. Assign a high-level Business Category: 
+3. Assign a high-level Business Category. You MUST choose EXACTLY one from this list:
    - ID: Technical primary/foreign keys (e.g. 1, 2, UUID). Used for joins.
    - Code: Business-facing identifiers (e.g. SKU-001, EMP102, Contract_No). Used for searching and display labels.
    - Money: Financial values, currency.
    - Category: Dimensions, groups, types.
    - Text: Descriptive text.
-   - Date / Time: Temporal info.
+   - Date: Temporal info (Date, Timestamp).
+   - Time: Temporal info (Time only).
    - Quantity: Measurable counts or amounts (not money).
    - Location: Geography info.
    - Other: Anything else.
 
 OUTPUT RULE:
-Return ONLY a valid JSON object where keys are the column names. Do NOT include any technical flags like visibility.
+1. Return ONLY a valid JSON object where keys are the column names.
+2. **CRITICAL**: The "businessType" field MUST be one of the exact strings listed above (e.g., "Date", not "Date / Time").
 
 Example:
 {
