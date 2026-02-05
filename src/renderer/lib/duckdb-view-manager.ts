@@ -119,26 +119,6 @@ async function getSidecarParts(tableName: string) {
   return { result, colMapUpdates }
 }
 
-/**
- * Generates time-intelligence metrics (MoM, YoY) if applicable.
- */
-function getSmartTimeMetrics(columns: ColumnSchema[]): string[] {
-  const timeCol = columns.find(c => ['TIMESTAMP', 'DATE'].includes(c.type))
-  const numericCols = columns.filter(c =>
-    ['DOUBLE', 'DECIMAL', 'INTEGER', 'BIGINT'].includes(c.type) && c.name !== '_ws_row_id'
-  )
-
-  if (!timeCol || numericCols.length === 0) return []
-
-  return numericCols.slice(0, 2).map(numCol => {
-    const colRef = `"${numCol.name}"`
-    const timeRef = `"${timeCol.name}"`
-    // MoM (Growth Rate)
-    const momExpr = `(${colRef} - LAG(${colRef}) OVER (ORDER BY ${timeRef})) / NULLIF(LAG(${colRef}) OVER (ORDER BY ${timeRef}), 0)`
-    return `(${momExpr}) AS "${numCol.name}_MoM"`
-  })
-}
-
 export const DuckDBViewManager = {
   /**
    * Rebuilds the "Wide View" (v_{tableName}) for a given file.
@@ -175,10 +155,6 @@ export const DuckDBViewManager = {
         selectClauses.push(`(${resolvedExpr}) AS "${metric.name}" `)
       }
     }
-
-    // Smart Time Intelligence
-    const timeMetrics = getSmartTimeMetrics(file.columns)
-    selectClauses.push(...timeMetrics)
 
     const viewName = `v_${file.tableName}`
     const sql = `

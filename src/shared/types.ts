@@ -1,4 +1,9 @@
-import type { ChartType, InsightResult, ReportData, ReportWidget } from './types/dashboard'
+import type {
+  ChartType,
+  InsightResult,
+  ReportData,
+  ReportWidget,
+} from './types/dashboard'
 import type { FilterParam } from './schemas/analysis'
 
 export type { ChartType, InsightResult, ReportData, ReportWidget }
@@ -118,17 +123,10 @@ export interface MetricSuggestion {
   reason?: string
 }
 
-export interface SemanticSuggestion {
-  tableName: string
-  columnName: string
-  semantic: ColumnSemantic
-}
-
 export interface ContextAnalysisResult {
   relationships: RelationSuggestion[]
   metrics?: MetricSuggestion[]
   suggestedPrompts: string[]
-  semantics?: SemanticSuggestion[]
 }
 
 export type LoadingType = 'cleaning' | 'thinking' | 'crunching' | 'fixing'
@@ -183,7 +181,7 @@ export interface FileNode {
   name: string
   tableName: string // DuckDB table name (local)
   source: DataSourceConfig // [REFACTOR] Structured source config
-  
+
   status: SyncStatus
   progress?: number // 0-100
   size?: number
@@ -194,8 +192,8 @@ export interface FileNode {
   createdAt: number
   smartMetrics?: SmartMetric[] // Persisted metrics
   relations?: TableRelation[] // NEW: Stored per-file
-  
-  /** 
+
+  /**
    * [V1.7] Cache of the logical view columns (including Sidecar & Metrics).
    * This is the "True Schema" that AI should see.
    */

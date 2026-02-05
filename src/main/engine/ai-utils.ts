@@ -1,5 +1,8 @@
 import { OpenAI } from 'openai'
-import { ChatCompletionCreateParamsNonStreaming, CompletionUsage } from 'openai/resources'
+import {
+  ChatCompletionCreateParamsNonStreaming,
+  CompletionUsage,
+} from 'openai/resources'
 import { ZodSchema } from 'zod'
 import { isDev } from '../utils/env'
 import { extractJSON } from '@shared/utils/json-utils'
@@ -30,7 +33,7 @@ export function getModelToUse(preferredModel?: string): string {
       allEnvKeys: Object.keys(process.env).filter(k => k.startsWith('OPENAI')),
     })
   }
-  return preferredModel || envModel || 'gpt-4-turbo-preview'
+  return preferredModel || envModel
 }
 
 /**
@@ -64,7 +67,7 @@ export async function callAIAndParse<T>(
 
     return {
       data,
-      usage: response.usage
+      usage: response.usage,
     }
   } catch (error) {
     console.error('[AI Utils] Failed to parse or validate AI response:', error)

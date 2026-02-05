@@ -55,14 +55,14 @@ export function setupIPC(
     try {
       const tokens = tokenManager.getDailyTokens()
       const total = tokenManager.getTotalUsage()
-      return { 
-        success: true, 
-        data: { 
+      return {
+        success: true,
+        data: {
           dailyUsageUSD: tokenManager.getDailyUsage(),
           inputTokens: tokens.input,
           outputTokens: tokens.output,
           totalUsage: total
-        } 
+        }
       }
     } catch (e: any) {
       return { success: false, error: e.message }
@@ -468,22 +468,22 @@ export function setupIPC(
     async (_event, tableName: string, columnName: string, sampleData: any[], prompt: string) => {
       try {
         const result = await aiService.previewExtraction(
-          sampleData, 
-          prompt, 
+          sampleData,
+          prompt,
           projectManager.getCurrentProjectPath()
         )
 
         let estimatedCost = 0
         if (result.usage) {
           estimatedCost = tokenManager.calculateCost(
-            aiService.getConfig().model || 'gpt-4o',
+            aiService.getConfig().model,
             result.usage.input,
             result.usage.output
           )
         }
 
-        return { 
-          success: true, 
+        return {
+          success: true,
           data: {
             ...result,
             estimatedCost

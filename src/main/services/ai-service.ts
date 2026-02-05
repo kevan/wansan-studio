@@ -84,7 +84,7 @@ const store = new Store({
 
 export class AIService {
   private openai: OpenAI | null = null
-  private model = 'gpt-4-turbo-preview'
+  private model = ''
   // Internal cache for sensitive builtin config
   private builtinConfig: AIConfig | null = null
   private batchProcessor: BatchProcessor | null = null
@@ -99,7 +99,7 @@ export class AIService {
   }
 
   /**
-   * Initializes a persistent proxied OpenAI client that reads audit context 
+   * Initializes a persistent proxied OpenAI client that reads audit context
    * from AsyncLocalStorage automatically.
    */
   private initAuditedClient() {
@@ -193,9 +193,9 @@ export class AIService {
 
   private loadConfig() {
     const stored = (store.get('aiConfig') as AIConfig) || {}
-    
+
     // Priority: Builtin (Managed) > Stored > Runtime Env
-    const effective: AIConfig = this.builtinConfig 
+    const effective: AIConfig = this.builtinConfig
       ? { ...this.builtinConfig, model: stored.model || this.builtinConfig.model }
       : {
           apiKey: secureGet('apiKey') || process.env.OPENAI_API_KEY || '',
@@ -204,7 +204,7 @@ export class AIService {
         }
 
     this.model = effective.model
-    
+
     if (effective.apiKey) {
       this.openai = new OpenAI({
         apiKey: effective.apiKey,

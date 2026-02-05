@@ -69,7 +69,7 @@ export class BatchProcessor {
     // Prompt context (system + user overhead)
     const promptChars = prompt.length + 200 // Add some overhead for system prompt
     const avgCharsPerToken = prompt.match(/[\u4e00-\u9fa5]/) ? CHARS_PER_TOKEN_ZH : CHARS_PER_TOKEN_EN
-    
+
     // Sample a few rows to get average character length of the source column
     const samples = await this.db.query(`SELECT "${columnName}" as val FROM "${tableName}" LIMIT 10`) as { val: any }[]
     const avgValLen = samples.reduce((acc, s) => acc + String(s.val || '').length, 0) / (samples.length || 1)
@@ -81,7 +81,7 @@ export class BatchProcessor {
     const estimatedOutputTokens = Math.ceil(outputTokensPerRow * total)
 
     const estimatedCostUSD = tokenManager.calculateCost(
-      this.ai.getConfig().model || 'gpt-4o',
+      this.ai.getConfig().model,
       estimatedInputTokens,
       estimatedOutputTokens
     )

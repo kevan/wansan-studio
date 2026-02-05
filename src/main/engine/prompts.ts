@@ -31,6 +31,16 @@ const SQL_SYNTAX_RULES = `
     -   When joining "v_" tables, **STRICTLY** use table aliases to avoid ambiguous columns.
 `
 
+const TIME_SERIES_RULES = `
+### 📈 TIME SERIES ANALYSIS RULES (GROWTH / MOM / YOY)
+1.  **NO PRE-CALCULATION**: Do NOT assume columns like "_MoM" or "_YoY" exist.
+2.  **EXPLICIT CALCULATION**: You **MUST** use Window Functions (LAG) to calculate growth.
+    -   Formula: \`(SUM("val") - LAG(SUM("val")) OVER (ORDER BY "date_col")) / NULLIF(LAG(SUM("val")) OVER (ORDER BY "date_col"), 0)\`
+3.  **CTE STRATEGY**: 
+    -   **STEP 1**: Aggregate data by the requested time granularity (Day/Month/Year) in a CTE.
+    -   **STEP 2**: Calculate LAG/Growth in the main query using the CTE.
+`
+
 const CALCULATION_RULES = `
 ### 🧮 CALCULATION RULES
 1.  **DERIVE METRICS**: If a requested metric is not in the schema, **TRY TO CALCULATE** it (e.g., \`"Sales" - "Cost"\`).
@@ -167,6 +177,7 @@ export const getAnalysisSystemPrompt = (
     SMART_FILTER_CREATION_RULES,
     SQL_SYNTAX_RULES,
     PERFORMANCE_RULES, // [NEW] Inject Performance Rules
+    TIME_SERIES_RULES, // [NEW] Explicit Time Series Logic
     CALCULATION_RULES,
     VISUALIZATION_RULES,
     ANALYSIS_OUTPUT_FORMAT(suggestionCount),
