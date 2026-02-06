@@ -131,11 +131,11 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
 
       try {
         const csvContent = dataToCSV(previewData)
-        const res = await window.electronAPI.saveFile(
-          csvContent,
-          'csv',
-          'query_result.csv'
-        )
+        const res = await window.electronAPI.saveFile({
+          content: csvContent,
+          extension: 'csv',
+          name: 'query_result.csv'
+        })
 
         if (res.success && res.data) {
           const filePath = res.data as string

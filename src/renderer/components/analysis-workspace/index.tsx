@@ -14,6 +14,8 @@ import { useUIStore } from '@/stores/useUIStore'
 import { ChatStream } from '../ChatStream'
 import { DashboardCanvasV3 } from '../dashboard-v3'
 import { FloatingActionLayout } from '../FloatingActionLayout'
+import { ChartFullView } from '../viz/containers/ChartFullView'
+import { useWorkbenchStore } from '@/stores/useWorkbenchStore'
 
 export function AnalysisWorkspace() {
   const { t } = useTranslation('common')
@@ -24,6 +26,7 @@ export function AnalysisWorkspace() {
   const setAnalysisLayoutMode = useUIStore(s => s.setAnalysisLayoutMode)
   const isPresentationMode = useUIStore(s => s.isPresentationMode)
   const setPresentationMode = useUIStore(s => s.setPresentationMode)
+  const editingReportId = useWorkbenchStore(s => s.editingReportId)
 
   const groupRef = useRef<import('react-resizable-panels').ImperativePanelGroupHandle>(null)
   const chatPanelRef = useRef<ImperativePanelHandle>(null)
@@ -137,6 +140,11 @@ export function AnalysisWorkspace() {
             )}
         </Panel>
       </PanelGroup>
+
+      {/* Fullscreen Modal: Rendered at workspace level to be above all panels */}
+      {editingReportId && (
+        <ChartFullView key={editingReportId} />
+      )}
     </div>
   )
 }

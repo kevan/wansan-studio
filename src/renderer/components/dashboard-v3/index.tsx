@@ -9,7 +9,6 @@ import {
 } from './page-layer'
 import { GridLayer } from './grid-layer'
 import { ReportFlowLayer } from './report-flow-layer' // Added
-import { ChartFullView } from '@/components/viz/containers/ChartFullView'
 import { LayoutScenario, useWorkbenchStore } from '@/stores/useWorkbenchStore'
 import { useUIStore } from '@/stores/useUIStore'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
@@ -26,7 +25,6 @@ export function DashboardCanvasV3({
   const layoutScenario = useWorkbenchStore(state => state.layoutScenario)
   const setLayoutScenario = useWorkbenchStore(state => state.setLayoutScenario)
   const pageCount = useWorkbenchStore(state => state.pageCount)
-  const editingReportId = useWorkbenchStore(state => state.editingReportId)
   // const pinnedReports = useWorkbenchStore(state => state.pinnedReports)
   const analysisSplit = useUIStore(s => s.analysisSplit)
   const sidebarWidth = useUIStore(s => s.sidebarWidth)
@@ -241,10 +239,6 @@ export function DashboardCanvasV3({
             )}
           </div>
         </div>
-
-        {editingReportId && (
-          <ChartFullView key={editingReportId} />
-        )}
       </div>
     </div>
   )

@@ -312,10 +312,10 @@ export function DatabaseSelectorDialog() {
     setError(null)
     const configToTest = { ...newConn, id: editingConnId || 'temp' } as DBConnectionConfig
     try {
-      const res = await window.electronAPI.testDBConnection(
-        configToTest,
-        password || undefined
-      )
+      const res = await window.electronAPI.testDBConnection({
+        config: configToTest,
+        password: password || undefined
+      })
       if (res.success) setTestSuccess(true)
       else setError(res.error || 'Connection failed')
     } catch (e: any) {

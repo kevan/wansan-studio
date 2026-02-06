@@ -84,12 +84,12 @@ export function AIExtractorDialog({
     if (!prompt.trim() || !column) return
     setIsPreviewing(true)
     try {
-      const res = await window.electronAPI.aiPreviewExtract(
+      const res = await window.electronAPI.aiPreviewExtract({
         tableName, 
-        column.name, 
-        previewData, 
+        columnName: column.name, 
+        sampleData: previewData, 
         prompt
-      )
+      })
       
       if (res.success && res.data) {
         setPreviewResult(res.data.results)

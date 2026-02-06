@@ -85,11 +85,11 @@ export function DataWorkspace() {
     setShowAnalyzeConfirm(false)
     try {
       const language = i18n.language?.startsWith('zh') ? 'zh' : 'en'
-      const aiRes = await window.electronAPI.analyzeSemantics(
-        currentFile.tableName,
-        currentFile.columns,
+      const aiRes = await window.electronAPI.analyzeSemantics({
+        tableName: currentFile.tableName,
+        columns: currentFile.columns,
         language
-      )
+      })
       if (!aiRes.success || !aiRes.data)
         throw new Error(aiRes.error || 'AI analysis failed')
       Object.entries(aiRes.data).forEach(([colName, semantic]) => {

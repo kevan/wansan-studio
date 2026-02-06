@@ -195,11 +195,11 @@ export function MagicInput({
         const sessionTitle = sanitizeFilename(activeSession?.title, 'Chat')
         const fileName = `${sessionTitle}_Export_${new Date().toISOString().slice(0, 10)}.md`
 
-        const result = await window.electronAPI.saveFile(
+        const result = await window.electronAPI.saveFile({
           content,
-          'md',
-          fileName
-        )
+          extension: 'md',
+          name: fileName
+        })
 
         if (result.success && result.data) {
           const filePath = result.data as string

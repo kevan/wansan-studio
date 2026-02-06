@@ -807,36 +807,6 @@ export const useProjectStore = create<ProjectState>()(
       setSuggestedPrompts: prompts => set({ suggestedPrompts: prompts }),
 
       addFile: file => {
-        // [REFACTOR] Support structured source checking
-        const existing = get().files.find(f => {
-          if (file.source && f.source.type === file.source.type) {
-            if (
-              f.source.type === 'local_file' &&
-              file.source.type === 'local_file'
-            ) {
-              return (
-                f.source.path === file.source.path &&
-                f.source.subResource === file.source.subResource
-              )
-            }
-            if (
-              f.source.type === 'database' &&
-              file.source.type === 'database'
-            ) {
-              return (
-                f.source.connectionId === file.source.connectionId &&
-                f.source.table === file.source.table &&
-                f.source.schema === file.source.schema
-              )
-            }
-          }
-          return false
-        })
-
-        if (existing) {
-          throw new Error(`File "${file.name}" is already imported.`)
-        }
-
         const id = generateId()
         const now = Date.now()
         const newFile: FileNode = {
@@ -1350,14 +1320,14 @@ export const useProjectStore = create<ProjectState>()(
           }
 
           // 2. Trigger Backend Re-ingest
-          const result = await window.electronAPI.reIngestFile(
+          const result = await window.electronAPI.reIngestFile({
             fileId,
-            newPath,
-            file.tableName,
-            file.source.subResource,
-            file.columns,
-            file.source.readOptions // Pass saved read options (e.g. encoding)
-          )
+            filePath: newPath,
+            tableName: file.tableName,
+            sheetName: file.source.subResource,
+            columns: file.columns,
+            readOptions: file.source.readOptions, // Pass saved read options (e.g. encoding)
+          })
 
           if (!result.success || !result.data) {
             throw new Error(result.error || 'Re-ingest failed')
@@ -1515,7 +1485,7 @@ export const useProjectStore = create<ProjectState>()(
 
       closeProject: async () => {
         try {
-          await window.electronAPI.invoke('project:close')
+          await window.electronAPI.projectClose()
         } catch (e) {
           console.error('Failed to close project on backend', e)
         }

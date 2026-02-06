@@ -212,7 +212,7 @@ export const useSettingsStore = create<SettingsState>()(
         const id = crypto.randomUUID()
         const newConn = { ...conn, id }
         if (password) {
-          await window.electronAPI.secureSet(`db_pass_${id}`, password)
+          await window.electronAPI.secureSet({ key: `db_pass_${id}`, value: password })
         }
         set(state => ({
           dbConnections: [...state.dbConnections, newConn],
@@ -220,14 +220,14 @@ export const useSettingsStore = create<SettingsState>()(
         return id
       },
       removeDBConnection: async id => {
-        await window.electronAPI.secureSet(`db_pass_${id}`, '') // Clear password
+        await window.electronAPI.secureSet({ key: `db_pass_${id}`, value: '' }) // Clear password
         set(state => ({
           dbConnections: state.dbConnections.filter(c => c.id !== id),
         }))
       },
       updateDBConnection: async (id, updates, password) => {
         if (password) {
-          await window.electronAPI.secureSet(`db_pass_${id}`, password)
+          await window.electronAPI.secureSet({ key: `db_pass_${id}`, value: password })
         }
         set(state => ({
           dbConnections: state.dbConnections.map(c =>

@@ -14,6 +14,7 @@ import { DBConnectorService } from './services/connector-service'
 import { BatchProcessor } from './services/batch-processor'
 import { FileService } from './services/file'
 import { registerProjectHandlers } from './ipc/project-ipc'
+import { registerHandler } from './utils/ipc-helper'
 import { createApplicationMenu } from './config/menu'
 import { authService } from './services/auth-service'
 import { setupFetchLogger } from './utils/fetch-logger'
@@ -101,7 +102,7 @@ class WansanApp {
     this.fetchRemoteConfig()
 
     // Handle Language Change
-    ipcMain.handle('app:set-language', (_event, lang: 'en' | 'zh') => {
+    registerHandler('app.setLanguage', async (_event, lang) => {
       if (this.mainWindow) {
         createApplicationMenu(this.mainWindow, lang)
       }

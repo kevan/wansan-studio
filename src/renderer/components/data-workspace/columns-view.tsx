@@ -46,12 +46,12 @@ export function ColumnsView({ file }: ColumnsViewProps) {
     if (!aiExtractColumn || !file) return
     
     try {
-      const res = await window.electronAPI.aiBatchExtract(
-        file.tableName,
-        aiExtractColumn.name,
-        newColumnName,
+      const res = await window.electronAPI.aiBatchExtract({
+        tableName: file.tableName,
+        columnName: aiExtractColumn.name,
+        targetColumnName: newColumnName,
         prompt
-      )
+      })
       
       if (res.success) {
          toast.addToast({

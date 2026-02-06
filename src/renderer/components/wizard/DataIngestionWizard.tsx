@@ -53,7 +53,7 @@ export function DataIngestionWizard() {
 
     if (tempTableNames.length > 0 || tempFiles.length > 0) {
       try {
-        await window.electronAPI.cleanupIngestion(tempTableNames, tempFiles)
+        await window.electronAPI.cleanupIngestion({ tempTableNames, tempFilePaths: tempFiles })
       } catch (e) {
         console.error('Failed to cleanup staging tables/files', e)
       }
@@ -138,17 +138,19 @@ export function DataIngestionWizard() {
 
           finalizedTempTables.add(task.tableName)
 
-          const columns = result.data.columns.map(c => {
-            // Try to preserve key status if column name matches
-            const oldCol = targetFile.columns.find(old => old.name === c.name)
-            return {
-              name: c.name,
-              safeName: c.name,
-              type: c.type,
-              sampleValues: c.sampleValues || [],
-              isPrimaryKey: oldCol ? oldCol.isPrimaryKey : false,
-            }
-          })
+          const columns = result.data.columns
+            .filter(c => c.name !== '_ws_row_id')
+            .map(c => {
+              // Try to preserve key status if column name matches
+              const oldCol = targetFile.columns.find(old => old.name === c.name)
+              return {
+                name: c.name,
+                safeName: c.name,
+                type: c.type,
+                sampleValues: c.sampleValues || [],
+                isPrimaryKey: oldCol ? oldCol.isPrimaryKey : false,
+              }
+            })
 
           const displayName =
             task.finalDisplayName || cleanDisplayName(task.fileName, task.sourceName)
@@ -207,18 +209,20 @@ export function DataIngestionWizard() {
           finalizedTempTables.add(task.tableName)
 
           // Map backend schema (with fresh samples) to frontend file model
-          const columns = result.data.columns.map(c => {
-            const userConfig = task.columns.find(uc => uc.name === c.name)
-            return {
-              name: c.name,
-              safeName: c.name,
-              type: c.type,
-              sampleValues: c.sampleValues || [], // Use fresh samples from DB
-              isKey: userConfig?.isPrimaryKey || false,
-              isPrimaryKey: userConfig?.isPrimaryKey || false,
-              semantic: userConfig?.description ? { description: userConfig.description } : undefined // [NEW] Persist description
-            }
-          })
+          const columns = result.data.columns
+            .filter(c => c.name !== '_ws_row_id')
+            .map(c => {
+              const userConfig = task.columns.find(uc => uc.name === c.name)
+              return {
+                name: c.name,
+                safeName: c.name,
+                type: c.type,
+                sampleValues: c.sampleValues || [], // Use fresh samples from DB
+                isKey: userConfig?.isPrimaryKey || false,
+                isPrimaryKey: userConfig?.isPrimaryKey || false,
+                semantic: userConfig?.description ? { description: userConfig.description } : undefined // [NEW] Persist description
+              }
+            })
 
           // Construct a friendly display name
           const displayName =
@@ -261,7 +265,7 @@ export function DataIngestionWizard() {
         .filter(Boolean) as string[]
 
       if (tablesToClean.length > 0 || filesToClean.length > 0) {
-        await window.electronAPI.cleanupIngestion(tablesToClean, filesToClean)
+        await window.electronAPI.cleanupIngestion({ tempTableNames: tablesToClean, tempFilePaths: filesToClean })
       }
 
       if (addedFileIds.length > 0) {

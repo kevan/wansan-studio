@@ -1,12 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  AIConfigResponse,
-  AnalyzeContextResponse,
-  AskAIResponse,
-  IPCResponse,
-  RunSQLResponse,
-  ExportExcelPayload,
-} from '@shared/api-types'
 import { ElectronAPI } from '@shared/electron-api'
 import type {
   AIConfig,
@@ -16,225 +8,9 @@ import type {
 } from '@shared/types'
 import { InsightGenerationContext } from '@shared/types/dashboard.ts'
 
-/**
- * Mock IPC implementation for development/testing when electronAPI is not available.
- * This ensures the renderer can still run in a browser environment if needed.
- */
-const mockIPC: ElectronAPI = {
-  invoke: async () => ({ success: true }),
-  selectFile: () => Promise.resolve({ success: true, data: '' }),
-  selectFiles: () => Promise.resolve({ success: true, data: [] }),
-  inspectFile: () => Promise.resolve({ success: true, data: [] }),
-  prepareFile: () => Promise.resolve({ success: true, data: { tempFilePath: '', rowCount: 0, columns: [], preview: [] } }),
-  selectDirectory: () => Promise.resolve({ success: true, data: '' }),
-  parseFile: async () => ({ success: true, data: [] }),
-  runSQL: async (): Promise<RunSQLResponse> => {
-    await new Promise(r => setTimeout(r, 500))
-    return { success: true, data: { data: [], columnFields: [] } }
-  },
-  getSchema: async () => ({ success: true, data: { tables: [] } }),
-  deleteTable: async () => ({ success: true }),
-  generateSQL: async () => ({ success: true, data: '' }),
-  askAI: async (): Promise<AskAIResponse> => ({
-    success: true,
-    data: { status: 'success' },
-  }),
-  fixSQL: async () => ({
-    success: true,
-    data: { sql: '', reasoning: '' },
-  }),
-  analyzeContext: async (): Promise<AnalyzeContextResponse> => ({
-    success: true,
-    data: {
-      relationships: [],
-      suggestedPrompts: [],
-    },
-  }),
-  analyzeSemantics: async () => ({ success: true, data: {} }),
-  generateMetricExpression: async () => ({
-    success: true,
-    data: '1 + 1',
-  }),
-  generateInsight: async () => ({
-    success: true,
-    data: {
-      summary: 'Mock Insight Summary',
-      findings: [
-        {
-          id: '1',
-          markdown: 'Mock Finding: Sales are trending upwards.',
-          relatedItems: [],
-        },
-      ],
-    } as any,
-  }),
-  aiPreviewExtract: async () => ({
-    success: true,
-    data: { results: ['Mock Result 1', 'Mock Result 2'], estimatedCost: 0.05 },
-  }),
-  aiBatchExtract: async () => ({
-    success: true,
-    data: { jobId: 'mock-job-id' },
-  }),
-  getAIConfig: async (): Promise<AIConfigResponse> => {
-    return { success: true, data: {} }
-  },
-  getTokenConfig: async () => ({
-    success: true,
-    data: {
-      isEnabled: true,
-      dailyHardLimitUSD: 5.0,
-      projectSoftLimitUSD: 1.0,
-      basePricePer1M: 1.0,
-      priceMultiplier: 1.0
-    }
-  }),
-  setTokenConfig: async () => ({ success: true }),
-  getTokenUsage: async () => ({ 
-    success: true, 
-    data: { 
-      dailyUsageUSD: 0,
-      inputTokens: 0,
-      outputTokens: 0,
-      totalUsage: { usd: 0, input: 0, output: 0 }
-    } 
-  }),
-  setAIConfig: async () => ({ success: true }),
-  clearAIConfig: async (): Promise<IPCResponse> => {
-    return { success: true }
-  },
-  verifyAIConnection: async (config?: any) => {
-    console.log('Mock verifyAIConnection', config)
-    return { success: true, data: true }
-  },
-  validateColumnTypes: async (params: any) => {
-    console.log('Mock validateColumnTypes', params)
-    return { success: true, data: { valid: true } }
-  },
-  reIngestFile: async (
-    fileId: string,
-    filePath: string,
-    tableName: string,
-    sheetName?: string,
-    columns?: ColumnSchema[],
-    _readOptions?: Record<string, any>
-  ) => ({
-    success: true,
-    data: { lastModified: Date.now(), newColumns: columns || [] },
-  }),
-  ingestPreCheck: async () => ({
-    success: true,
-    data: {
-      totalRows: 0,
-      duplicateRows: 0,
-      columnMatch: { matched: [], missing: [], extra: [] },
-    },
-  }),
-  appendData: async () => ({ success: true, data: { rowCount: 0 } }),
-  createTableFromSource: async () => ({
-    success: true,
-    data: { rowCount: 0, columns: [] },
-  }),
-  cleanupIngestion: async () => ({ success: true }),
-  cleanupAllStaging: async () => ({ success: true }),
-  getUniqueTableName: async () => ({ success: true, data: 't_mock' }),
-  getDeviceId: async (): Promise<IPCResponse<string>> => {
-    return { success: true, data: 'mock-device-id' }
-  },
-  secureSet: async (
-    _key: string,
-    _value: string
-  ): Promise<IPCResponse<boolean>> => {
-    return { success: true, data: true }
-  },
-  secureGet: async (_key: string): Promise<IPCResponse<string | null>> => {
-    return { success: true, data: null }
-  },
-  validateLicense: async (_key: string): Promise<IPCResponse<boolean>> => {
-    return { success: true, data: true }
-  },
-  testDBConnection: async () => ({ success: true, data: true }),
-  listDBTables: async () => ({ success: true, data: [] }),
-  syncDBTable: async () => ({
-    success: true,
-    data: { rowCount: 0, columns: [] },
-  }),
-  exportPDF: async (_data: unknown): Promise<IPCResponse> => {
-    return { success: true }
-  },
-  exportReport: async (_payload: unknown): Promise<IPCResponse> => {
-    return { success: true }
-  },
-  exportWebReport: async (
-    _widgets: unknown[],
-    _config: unknown
-  ): Promise<IPCResponse> => {
-    return { success: true }
-  },
-  exportExcel: async (_payload: ExportExcelPayload): Promise<IPCResponse<string>> => {
-    return { success: true, data: '/mock/path/export.xlsx' }
-  },
-  resetDB: async (): Promise<IPCResponse> => {
-    return { success: true }
-  },
-  resetApp: async (): Promise<IPCResponse> => {
-    return { success: true }
-  },
-  saveImage: async (_dataUrl: string, _name?: string): Promise<IPCResponse> => {
-    return { success: true }
-  },
-  saveFile: async (
-    _content: string,
-    _extension: string,
-    _name: string
-  ): Promise<IPCResponse<string>> => {
-    return { success: true, data: '/mock/path/file.txt' }
-  },
-  openExternal: async (_url: string): Promise<IPCResponse> => {
-    return { success: true }
-  },
-  showItemInFolder: async (_path: string): Promise<IPCResponse> => {
-    console.log('Mock showItemInFolder', _path)
-    return { success: true }
-  },
-  setLanguage: async (_lang: 'en' | 'zh'): Promise<IPCResponse> => {
-    return { success: true }
-  },
-  getUserInfo: async (): Promise<IPCResponse<{ username: string }>> => {
-    return { success: true, data: { username: 'Guest' } }
-  },
-  getPath: async (_name: string): Promise<IPCResponse<string>> => {
-    return { success: true, data: '/mock/path' }
-  },
-  getAppVersion: async (): Promise<IPCResponse<string>> => {
-    return { success: true, data: '0.3.2' }
-  },
-  getMainLogs: async (): Promise<IPCResponse<any[]>> => {
-    return {
-      success: true,
-      data: [{ level: 'info', message: 'Mock Main Log' }],
-    }
-  },
-  getPathForFile: (file: File) => file.name, // Mock
-  windowControl: (
-    _action: 'enter-fullscreen' | 'exit-fullscreen' | 'toggle-maximize'
-  ) => {
-    console.log('Mock windowControl', _action)
-  },
-  platform: 'darwin',
-  version: { node: 'mock', chrome: 'mock', electron: 'mock' } as any,
-  onWindowStateChanged: () => () => {},
-  onFileProgress: () => () => {},
-  onCommandCloseProject: () => () => {},
-  onParseProgress: () => () => {},
-  onRemoteConfig: () => () => {},
-}
-
 function getIpc() {
   if (window.electronAPI) {
     return window.electronAPI
-  } else if (import.meta.env.DEV) {
-    return mockIPC
   }
   throw new Error('Electron API not available')
 }
@@ -308,14 +84,11 @@ export function useDeleteTable() {
 
 export function useGenerateSQL() {
   return useMutation({
-    mutationFn: async ({
-      prompt,
-      schema,
-    }: {
+    mutationFn: async (params: {
       prompt: string
       schema: TableSchema[]
     }) => {
-      const response = await getIpc().generateSQL(prompt, schema)
+      const response = await getIpc().generateSQL(params)
       if (!response.success) {
         throw new Error(response.error || 'Failed to generate SQL')
       }
@@ -392,20 +165,12 @@ export function usePlatform() {
 
 export function useExportWebReport() {
   return useMutation({
-    mutationFn: async ({
-      widgets,
-      config,
-      fullSnapshot,
-    }: {
+    mutationFn: async (params: {
       widgets: any[]
       config: { title: string; theme: string; language?: 'en' | 'zh' }
       fullSnapshot?: any
     }) => {
-      const response = await getIpc().exportWebReport(
-        widgets,
-        config,
-        fullSnapshot
-      )
+      const response = await getIpc().exportWebReport(params)
       if (!response.success) {
         throw new Error(response.error || 'Failed to export web report')
       }
@@ -416,14 +181,7 @@ export function useExportWebReport() {
 
 export function useReIngestFile() {
   return useMutation({
-    mutationFn: async ({
-      fileId,
-      filePath,
-      tableName,
-      sheetName,
-      columns,
-      readOptions,
-    }: {
+    mutationFn: async (params: {
       fileId: string
       filePath: string
       tableName: string
@@ -431,14 +189,7 @@ export function useReIngestFile() {
       columns?: ColumnSchema[]
       readOptions?: Record<string, any>
     }) => {
-      const response = await getIpc().reIngestFile(
-        fileId,
-        filePath,
-        tableName,
-        sheetName,
-        columns,
-        readOptions
-      )
+      const response = await getIpc().reIngestFile(params)
       if (!response.success) {
         throw new Error(response.error || 'Failed to re-ingest file')
       }
@@ -449,14 +200,11 @@ export function useReIngestFile() {
 
 export function useContextAnalysis() {
   return useMutation({
-    mutationFn: async ({
-      schemas,
-      language,
-    }: {
+    mutationFn: async (params: {
       schemas: TableSchema[]
       language?: 'en' | 'zh'
     }) => {
-      const response = await getIpc().analyzeContext(schemas, language)
+      const response = await getIpc().analyzeContext(params)
       if (!response.success) {
         throw new Error(response.error || 'Failed to analyze context')
       }
