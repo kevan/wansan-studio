@@ -48,4 +48,5 @@ export interface ProjectData {
   smartMetrics?: SmartMetric[]
   relations?: TableRelation[]
   domainRules?: DomainRule[]
+  suggestedPrompts?: string[]
 }

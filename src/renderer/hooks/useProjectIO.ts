@@ -88,6 +88,7 @@ export function useProjectIO() {
 
     const semantic: SemanticLayer = {
       tables,
+      suggestedPrompts: state.suggestedPrompts,
     }
 
     // 3. Build Session Layer
@@ -201,6 +202,7 @@ export function useProjectIO() {
         activeView,
         activeFileId,
         widgetRegistry,
+        suggestedPrompts: data.semantic.suggestedPrompts || [],
       }
 
       // 4. Load into Store

@@ -260,26 +260,26 @@ export function DataWorkspace() {
             </TabsList>
           </div>
 
-          <TabsContent value="columns" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden p-6">
-             <div className="h-full bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+          <TabsContent value="columns" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
+             <div className="h-full bg-white dark:bg-zinc-900 overflow-hidden">
                 <ColumnsView file={currentFile} />
              </div>
           </TabsContent>
 
-          <TabsContent value="preview" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden p-6">
-             <div className="h-full bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden p-1">
+          <TabsContent value="preview" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
+             <div className="h-full bg-white dark:bg-zinc-900 overflow-hidden">
                 <DataPreviewPanel />
              </div>
           </TabsContent>
 
-          <TabsContent value="metrics" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden p-6">
-             <div className="h-full bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+          <TabsContent value="metrics" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
+             <div className="h-full bg-white dark:bg-zinc-900 overflow-hidden">
                 <MetricsView file={currentFile} />
              </div>
           </TabsContent>
 
-          <TabsContent value="relations" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden p-6">
-             <div className="h-full bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+          <TabsContent value="relations" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
+             <div className="h-full bg-white dark:bg-zinc-900 overflow-hidden">
                 <RelationsView file={currentFile} />
              </div>
           </TabsContent>

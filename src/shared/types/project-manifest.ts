@@ -59,6 +59,8 @@ export interface SemanticLayer {
   tables: Record<string, TableSemantic>
   /** Global business rules/context (Domain Memory) */
   domainRules?: string[]
+  /** [V1.7] AI generated suggested prompts for empty state */
+  suggestedPrompts?: string[]
   /** Legacy fields for backward compatibility during migration */
   relations?: Record<string, TableRelation[]>
   smartMetrics?: Record<string, SmartMetric[]>

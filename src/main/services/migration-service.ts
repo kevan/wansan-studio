@@ -56,10 +56,12 @@ export class MigrationService {
         FROM "${tableName}"
       `)
 
-      // 3. Sync Sequence High-Water Mark
+      // 3. Sync Sequence High-Water Mark (DuckDB Workaround: Recreate Sequence)
       const maxIdRes = await this.db.query(`SELECT MAX(_ws_row_id) as max_id FROM "${tempName}"`)
       const maxId = Number(maxIdRes[0]?.max_id || 0)
-      await this.db.exec(`SELECT setval('${seqName}', ${maxId})`)
+      
+      await this.db.exec(`DROP SEQUENCE IF EXISTS "${seqName}"`)
+      await this.db.exec(`CREATE SEQUENCE "${seqName}" START ${maxId + 1}`)
 
       // 4. Atomic Swap
       await this.db.exec(`DROP TABLE "${tableName}"`)
