@@ -110,8 +110,14 @@ export function AnalysisWorkspace() {
             </FloatingActionLayout>
         </Panel>
 
-        <PanelResizeHandle className="w-1.5 flex justify-center bg-transparent hover:bg-zinc-100 transition-colors cursor-col-resize z-20 focus:outline-none group">
-            <div className="w-px h-full bg-zinc-200/50 group-hover:bg-indigo-400/50 transition-colors" />
+        <PanelResizeHandle className="relative w-2 group transition-all duration-300 ease-in-out focus:outline-none z-30">
+            {/* Visual Line - Very subtle */}
+            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-zinc-200/50 dark:bg-zinc-800/50 group-hover:bg-indigo-300/50 transition-colors" />
+            
+            {/* Interaction Area & Grabber */}
+            <div className="absolute inset-y-0 -inset-x-2 flex items-center justify-center pointer-events-none">
+              <div className="w-1 h-8 rounded-full bg-zinc-400/0 group-hover:bg-indigo-400/40 group-active:bg-indigo-500 group-active:h-12 transition-all duration-500 ease-out shadow-sm" />
+            </div>
         </PanelResizeHandle>
 
         {/* Right: Dashboard */}
