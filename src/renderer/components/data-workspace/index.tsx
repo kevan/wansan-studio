@@ -28,6 +28,7 @@ import { DataLineageDialog } from '../modals/DataLineageDialog'
 import { useWizardStore } from '@/stores/useWizardStore'
 import { useProGate } from '@/hooks/use-pro-gate'
 import { FloatingActionLayout } from '../FloatingActionLayout'
+import { SemanticReviewModal } from '../modals/SemanticReviewModal'
 
 export function DataWorkspace() {
   const { t, i18n } = useTranslation('common')
@@ -40,11 +41,14 @@ export function DataWorkspace() {
   const files = useProjectStore(s => s.files)
   const removeFile = useProjectStore(s => s.removeFile)
   const updateColumnSemantic = useProjectStore(s => s.updateColumnSemantic)
+  const addSmartMetric = useProjectStore(s => s.addSmartMetric)
   const activeView = useProjectStore(s => s.activeView)
 
   const [activeTab, setActiveTab] = useState('columns')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showAnalyzeConfirm, setShowAnalyzeConfirm] = useState(false)
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [analysisResult, setAnalysisResult] = useState<any>(null)
   const [showLineage, setShowLineage] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
@@ -83,6 +87,9 @@ export function DataWorkspace() {
   const handleAnalyzeSemantics = async () => {
     setIsAnalyzing(true)
     setShowAnalyzeConfirm(false)
+    setShowReviewModal(true) // Show modal immediately with loading state
+    setAnalysisResult(null)
+
     try {
       const language = i18n.language?.startsWith('zh') ? 'zh' : 'en'
       const aiRes = await window.electronAPI.analyzeSemantics({
@@ -92,14 +99,10 @@ export function DataWorkspace() {
       })
       if (!aiRes.success || !aiRes.data)
         throw new Error(aiRes.error || 'AI analysis failed')
-      Object.entries(aiRes.data).forEach(([colName, semantic]) => {
-        updateColumnSemantic(currentFile.id, colName, semantic as any)
-      })
-      toast.addToast({
-        title: t('semantics_analysis_complete', 'Semantics Analysis Complete'),
-        type: 'success',
-      })
+
+      setAnalysisResult(aiRes.data)
     } catch (e: any) {
+      setShowReviewModal(false)
       toast.addToast({
         title: t('analysis_failed', 'Analysis Failed'),
         description: e.message,
@@ -108,6 +111,31 @@ export function DataWorkspace() {
     } finally {
       setIsAnalyzing(false)
     }
+  }
+
+  const handleApplySemanticReview = async (data: { selectedColumns: Record<string, any>, selectedMetrics: any[] }) => {
+    const { selectedColumns, selectedMetrics } = data
+    
+    // 1. Apply Column Semantics
+    Object.entries(selectedColumns).forEach(([colName, semantic]) => {
+      updateColumnSemantic(currentFile.id, colName, semantic as any)
+    })
+
+    // 2. Apply Suggested Metrics
+    for (const m of selectedMetrics) {
+      await addSmartMetric(currentFile.id, {
+        id: crypto.randomUUID(),
+        name: m.name,
+        sqlExpression: m.sqlExpression,
+        description: m.description
+      })
+    }
+
+    setShowReviewModal(false)
+    toast.addToast({
+      title: t('semantics_analysis_complete', 'Semantics Analysis Complete'),
+      type: 'success',
+    })
   }
 
   return (
@@ -279,6 +307,13 @@ export function DataWorkspace() {
         open={showLineage}
         onOpenChange={setShowLineage}
         file={currentFile}
+      />
+      <SemanticReviewModal
+        isOpen={showReviewModal}
+        isAnalyzing={isAnalyzing}
+        result={analysisResult}
+        onCancel={() => setShowReviewModal(false)}
+        onConfirm={handleApplySemanticReview}
       />
       {gateNode}
     </div>

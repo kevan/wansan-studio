@@ -44,9 +44,24 @@ export interface ProjectManifest {
   }
 }
 
+export interface TableSemantic {
+  description?: string
+  /** Column-level business metadata, keyed by original column name */
+  columns: Record<string, any> // Using any here to avoid circular or complex import in manifest, will be cast to ColumnSemantic
+  /** Metrics defined or suggested for this table */
+  smartMetrics: SmartMetric[]
+  /** Relationships where this table is the source */
+  relations: TableRelation[]
+}
+
 export interface SemanticLayer {
-  relations: Record<string, TableRelation[]> // Keyed by Source File ID
-  smartMetrics: Record<string, SmartMetric[]>
+  /** Keyed by File ID */
+  tables: Record<string, TableSemantic>
+  /** Global business rules/context (Domain Memory) */
+  domainRules?: string[]
+  /** Legacy fields for backward compatibility during migration */
+  relations?: Record<string, TableRelation[]>
+  smartMetrics?: Record<string, SmartMetric[]>
 }
 
 export interface ProjectLoadResult {

@@ -29,6 +29,8 @@ interface AIExtractorDialogProps {
   onRun: (prompt: string, newColumnName: string) => void
   column: ColumnSchema | null
   tableName: string
+  initialPrompt?: string
+  initialColumnName?: string
 }
 
 export function AIExtractorDialog({
@@ -36,7 +38,9 @@ export function AIExtractorDialog({
   onClose,
   onRun,
   column,
-  tableName
+  tableName,
+  initialPrompt,
+  initialColumnName
 }: AIExtractorDialogProps) {
   const { t } = useTranslation('common')
   const { 
@@ -71,14 +75,14 @@ export function AIExtractorDialog({
   useEffect(() => {
     if (isOpen && column && column.sampleValues) {
       setPreviewData(column.sampleValues.slice(0, 5))
-      setNewColumnName(`${column.name}_ai`)
-      setPrompt('')
+      setNewColumnName(initialColumnName || `${column.name}_ai`)
+      setPrompt(initialPrompt || '')
       setPreviewResult([])
       setEstimatedCost(null)
       setIsSavingTemplate(false)
       setNewTemplateName('')
     }
-  }, [isOpen, column])
+  }, [isOpen, column, initialPrompt, initialColumnName])
 
   const handlePreview = async () => {
     if (!prompt.trim() || !column) return

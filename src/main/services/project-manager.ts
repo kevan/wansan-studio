@@ -73,8 +73,8 @@ export class ProjectManager {
     }
 
     const defaultSemantic: SemanticLayer = {
-      relations: {},
-      smartMetrics: {},
+      tables: {},
+      domainRules: []
     }
 
     const defaultSession = {}
@@ -186,10 +186,10 @@ export class ProjectManager {
     } catch (e: any) {
       if (e.code === 'ENOENT') {
         console.warn('semantic.json missing, using default')
-        semantic = { relations: {}, smartMetrics: {} }
+        semantic = { tables: {}, relations: {}, smartMetrics: {} }
       } else if (e instanceof SyntaxError) {
         console.error('semantic.json corrupted, using default (DATA LOSS RISK)', e)
-        semantic = { relations: {}, smartMetrics: {} }
+        semantic = { tables: {}, relations: {}, smartMetrics: {} }
       } else {
         // EBUSY or other system error - DO NOT OVERWRITE
         throw new Error(`Failed to read semantic.json: ${e.message}`)
@@ -212,11 +212,64 @@ export class ProjectManager {
       }
     }
 
+    // [V1.7] Hydration: Merge Physical (manifest) and Logical (semantic) data
+    const hydrated = this.hydrateProject(manifest, semantic)
+
     return {
       path: projectPath,
-      manifest,
-      semantic,
+      manifest: hydrated.manifest,
+      semantic: hydrated.semantic,
       session,
+    }
+  }
+
+  /**
+   * [V1.7] Hydration Layer
+   * Merges legacy semantics from wansan.json and various formats from semantic.json 
+   * into a unified manifest for the UI.
+   */
+  private hydrateProject(manifest: ProjectManifest, semantic: SemanticLayer): { manifest: ProjectManifest, semantic: SemanticLayer } {
+    const tables: Record<string, any> = semantic.tables || {}
+
+    // 1. Migrate legacy flat semantic structures
+    if (semantic.relations && Object.keys(semantic.relations).length > 0) {
+      Object.entries(semantic.relations).forEach(([fileId, rels]) => {
+        if (!tables[fileId]) tables[fileId] = { columns: {}, smartMetrics: [], relations: [] }
+        tables[fileId].relations = [...(tables[fileId].relations || []), ...rels]
+      })
+    }
+    if (semantic.smartMetrics && Object.keys(semantic.smartMetrics).length > 0) {
+      Object.entries(semantic.smartMetrics).forEach(([fileId, metrics]) => {
+        if (!tables[fileId]) tables[fileId] = { columns: {}, smartMetrics: [], relations: [] }
+        tables[fileId].smartMetrics = [...(tables[fileId].smartMetrics || []), ...metrics]
+      })
+    }
+
+    // 2. Attach semantic data to manifest assets for UI convenience
+    manifest.assets = manifest.assets.map(asset => {
+      const tableSemantic = tables[asset.id] || { columns: {}, smartMetrics: [], relations: [] }
+      
+      // Migrate legacy column.semantic from wansan.json if present
+      asset.columns = asset.columns.map(col => {
+        const existingSemantic = (col as any).semantic
+        const centralizedSemantic = tableSemantic.columns[col.name]
+        return {
+          ...col,
+          semantic: centralizedSemantic || existingSemantic
+        }
+      })
+
+      return {
+        ...asset,
+        smartMetrics: tableSemantic.smartMetrics,
+        relations: tableSemantic.relations,
+        description: tableSemantic.description || asset.name
+      }
+    })
+
+    return { 
+      manifest, 
+      semantic: { ...semantic, tables } 
     }
   }
 
@@ -243,8 +296,11 @@ export class ProjectManager {
       console.warn('[ProjectManager] Checkpoint failed during save:', err)
     })
 
+    // [V1.7] Dehydration: Separate UI-friendly manifest into Physical and Logical files
+    const { physicalManifest, logicalSemantic } = this.dehydrateProject(data)
+
     const tasks = []
-    if (data.manifest) {
+    if (physicalManifest) {
       const manifestPath = path.join(targetPath, 'wansan.json')
       let current = {}
       try {
@@ -255,25 +311,24 @@ export class ProjectManager {
            throw e
         }
       }
-      // Deep merge meta is tricky, but here we expect data.manifest to be partial updates.
-      // We explicitly merge meta.
+      
       const newMeta = {
         ...(current as any).meta,
-        ...(data.manifest.meta || {}),
+        ...(physicalManifest.meta || {}),
         updatedAt: Date.now(),
       }
 
       const updated = {
         ...current,
-        ...data.manifest,
+        ...physicalManifest,
         meta: newMeta,
       }
       tasks.push(this.atomicWriteJSON(manifestPath, updated))
     }
 
-    if (data.semantic) {
+    if (logicalSemantic) {
       const semanticPath = path.join(targetPath, 'semantic.json')
-      let current = { relations: [], smartMetrics: {} }
+      let current = { tables: {}, domainRules: [] }
       try {
         current = await this.retryWithBackoff(() => fs.readJSON(semanticPath))
       } catch (e: any) {
@@ -282,7 +337,19 @@ export class ProjectManager {
            throw e
         }
       }
-      const updated = { ...current, ...data.semantic }
+      // Merge updates into tables
+      const updatedTables = {
+        ...(current.tables || {}),
+        ...(logicalSemantic.tables || {})
+      }
+      const updated = { 
+        ...current, 
+        ...logicalSemantic, 
+        tables: updatedTables,
+        // Remove legacy fields if they exist
+        relations: undefined,
+        smartMetrics: undefined
+      }
       tasks.push(this.atomicWriteJSON(semanticPath, updated))
     }
 
@@ -299,6 +366,57 @@ export class ProjectManager {
 
     this.pendingSaves.push(savePromise)
     await savePromise
+  }
+
+  /**
+   * [V1.7] Dehydration Layer
+   * Strips semantic data from the UI-facing manifest before saving to physical storage.
+   */
+  private dehydrateProject(data: ProjectSavePayload): { physicalManifest?: Partial<ProjectManifest>, logicalSemantic?: Partial<SemanticLayer> } {
+    if (!data.manifest) return { physicalManifest: data.manifest, logicalSemantic: data.semantic }
+
+    const tables: Record<string, any> = {}
+    
+    // Process assets to extract semantics
+    const cleanAssets = data.manifest.assets?.map(asset => {
+      // Extract to semantic layer
+      tables[asset.id] = {
+        description: (asset as any).description,
+        smartMetrics: (asset as any).smartMetrics || [],
+        relations: (asset as any).relations || [],
+        columns: {}
+      }
+
+      // Extract column-level semantics
+      const cleanColumns = asset.columns.map(col => {
+        if (col.semantic) {
+          tables[asset.id].columns[col.name] = col.semantic
+        }
+        // Remove semantic from physical manifest
+        const { semantic: _semantic, ...physicalCol } = col as any
+        return physicalCol
+      })
+
+      return {
+        ...asset,
+        columns: cleanColumns,
+        // Remove logical fields from physical asset
+        smartMetrics: undefined,
+        relations: undefined,
+        description: undefined
+      }
+    })
+
+    return {
+      physicalManifest: {
+        ...data.manifest,
+        assets: cleanAssets
+      },
+      logicalSemantic: {
+        ...data.semantic,
+        tables
+      }
+    }
   }
 
   /**

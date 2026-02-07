@@ -23,15 +23,23 @@ export function ColumnsView({ file }: ColumnsViewProps) {
   
   const [editingColumn, setEditingColumn] = useState<ColumnSchema | null>(null)
   const [aiExtractColumn, setAiExtractColumn] = useState<ColumnSchema | null>(null)
+  const [activeHint, setActiveHint] = useState<{ prompt: string; targetColumnName: string } | null>(null)
 
   const handleOpenSemanticEdit = (col: ColumnSchema) => {
     setEditingColumn(col)
+  }
+
+  const handleOpenExtractor = (col: ColumnSchema, hint?: { prompt: string; targetColumnName: string }) => {
+    setAiExtractColumn(col)
+    setActiveHint(hint || null)
   }
 
   const handleSaveSemantic = (data: {
     aliases: string[]
     description: string
     businessType: string
+    usageType?: any
+    defaultAggregation?: any
   }) => {
     if (!editingColumn) return
     updateColumnSemantic(file.id, editingColumn.name, data)
@@ -185,15 +193,27 @@ export function ColumnsView({ file }: ColumnsViewProps) {
                   </div>
                   <div className="w-20 shrink-0 text-right opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end gap-1">
                     {/* [V1.7] AI Extract Button */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setAiExtractColumn(col)}
-                      title={t('ai_extract_tooltip', 'AI Extract')}
-                      className="h-8 w-8 text-purple-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                    </Button>
+                    {col.semantic?.extractionHints && col.semantic.extractionHints.length > 0 ? (
+                       <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleOpenExtractor(col, col.semantic?.extractionHints?.[0])}
+                        title={col.semantic.extractionHints[0].reason}
+                        className="h-8 w-8 text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-xl animate-pulse"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 fill-current" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleOpenExtractor(col)}
+                        title={t('ai_extract_tooltip', 'AI Extract')}
+                        className="h-8 w-8 text-purple-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
 
                     <Button
                       variant="ghost"
@@ -220,10 +240,15 @@ export function ColumnsView({ file }: ColumnsViewProps) {
 
       <AIExtractorDialog
         isOpen={!!aiExtractColumn}
-        onClose={() => setAiExtractColumn(null)}
+        onClose={() => {
+            setAiExtractColumn(null)
+            setActiveHint(null)
+        }}
         onRun={handleRunExtract}
         column={aiExtractColumn}
         tableName={file.tableName}
+        initialPrompt={activeHint?.prompt}
+        initialColumnName={activeHint?.targetColumnName}
       />
     </>
   )

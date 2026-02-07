@@ -18,6 +18,12 @@ export type ColumnType =
   | 'BIGINT'
   | 'TIMESTAMP'
 
+export interface ExtractionHint {
+  targetColumnName: string
+  prompt: string
+  reason: string
+}
+
 export interface ColumnSemantic {
   /**
    * User-friendly aliases or synonyms
@@ -42,6 +48,15 @@ export interface ColumnSemantic {
    * Default: true.
    */
   isVisibleToAI?: boolean
+
+  /** [V1.7] Dimension vs Measure vs Attribute */
+  usageType?: 'Dimension' | 'Measure' | 'Attribute'
+  
+  /** [V1.7] Default aggregation method */
+  defaultAggregation?: 'SUM' | 'AVG' | 'COUNT' | 'MAX' | 'NONE'
+
+  /** [V1.7] Proactive AI suggestions for extraction */
+  extractionHints?: ExtractionHint[]
 }
 
 export interface ColumnSchema {
@@ -127,6 +142,16 @@ export interface ContextAnalysisResult {
   relationships: RelationSuggestion[]
   metrics?: MetricSuggestion[]
   suggestedPrompts: string[]
+}
+
+export interface SemanticAnalysisResult {
+  columns: Record<string, ColumnSemantic>
+  metrics?: Array<{
+    name: string
+    sqlExpression: string
+    description: string
+    reason: string
+  }>
 }
 
 export type LoadingType = 'cleaning' | 'thinking' | 'crunching' | 'fixing'

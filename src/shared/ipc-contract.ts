@@ -4,6 +4,7 @@ import {
   DomainRule,
   ReloadResult,
   TableSchema,
+  SemanticAnalysisResult,
 } from './types'
 import { InsightGenerationContext } from './types/dashboard'
 import {
@@ -79,11 +80,12 @@ export interface IPCContract {
     return: IPCResponse<{ sql: string; reasoning: string; is_template?: boolean; missing_params?: FilterParam[] }> 
   }
   'ai.analyzeContext': { params: { schemas: TableSchema[]; language?: 'en' | 'zh' }; return: AnalyzeContextResponse }
-  'ai.analyzeSemantics': { params: { tableName: string; columns: ColumnSchema[]; language?: 'en' | 'zh' }; return: IPCResponse<Record<string, import('./types').ColumnSemantic>> }
+  'ai.analyzeSemantics': { params: { tableName: string; columns: ColumnSchema[]; language?: 'en' | 'zh' }; return: IPCResponse<SemanticAnalysisResult> }
   'ai.generateMetricExpression': { params: { input: string; columns: Array<{ name: string; type: string }>; mode: 'generate' | 'refine' }; return: IPCResponse<string> }
   'ai.generateInsight': { params: InsightGenerationContext; return: IPCResponse<string> }
   'ai.aiPreviewExtract': { params: { tableName: string; columnName: string; sampleData: any[]; prompt: string }; return: IPCResponse<{ results: string[]; estimatedCost: number }> }
   'ai.aiBatchExtract': { params: { tableName: string; columnName: string; targetColumnName: string; prompt: string }; return: IPCResponse<{ jobId: string }> }
+
 
   // --- Token Audit ---
   'audit.getTokenConfig': { params: void; return: IPCResponse<TokenBudgetConfig> }

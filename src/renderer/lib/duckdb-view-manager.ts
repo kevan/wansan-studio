@@ -166,11 +166,14 @@ export const DuckDBViewManager = {
     `
 
     try {
-      await window.electronAPI.runSQL(sql)
-      const descRes = await window.electronAPI.runSQL(`DESCRIBE "${viewName}" `)
+      const res = await window.electronAPI.runSQL(sql)
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to create logical view')
+      }
 
+      const descRes = await window.electronAPI.runSQL(`DESCRIBE "${viewName}" `)
       if (!descRes.success || !descRes.data) {
-        throw new Error('Failed to describe view')
+        throw new Error(descRes.error || 'Failed to describe view')
       }
 
       return descRes.data.data.map((row: any) => ({

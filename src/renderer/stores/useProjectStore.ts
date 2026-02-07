@@ -17,6 +17,7 @@ import { createBigIntStorage } from '@shared/serialization'
 import { Analytics } from '../services/analytics'
 import { FilterParam } from '@shared/schemas/analysis'
 import { DuckDBViewManager } from '../lib/duckdb-view-manager'
+import { useToastStore } from './useToastStore'
 
 // 生成唯一 ID
 const generateId = () =>
@@ -1055,13 +1056,31 @@ export const useProjectStore = create<ProjectState>()(
                   : f
               ),
             }))
-          } catch (e) {
+          } catch (e: any) {
             console.error('Failed to sync metric type', e)
+            
+            // Rollback on failure
+            set(prev => ({
+              files: prev.files.map(f =>
+                f.id === fileId
+                  ? { ...f, smartMetrics: (f.smartMetrics || []).filter(m => m.id !== metric.id) }
+                  : f
+              )
+            }))
+
+            useToastStore.getState().addToast({
+              title: 'Failed to add metric',
+              description: e.message || 'SQL Syntax Error',
+              type: 'error'
+            })
           }
         }
       },
 
       updateSmartMetric: async (fileId, metricId, updates) => {
+        const oldFile = get().files.find(f => f.id === fileId)
+        const oldMetric = oldFile?.smartMetrics?.find(m => m.id === metricId)
+
         set(state => ({
           files: state.files.map(f =>
             f.id === fileId
@@ -1079,17 +1098,37 @@ export const useProjectStore = create<ProjectState>()(
         const updatedFile = state.files.find(f => f.id === fileId)
 
         if (updatedFile) {
-          const allRelations = selectAllRelations(state)
-          const viewSchema = await DuckDBViewManager.rebuildView(
-            updatedFile,
-            state.files,
-            allRelations
-          )
-          set(prev => ({
-            files: prev.files.map(f =>
-              f.id === fileId ? { ...f, viewSchema } : f
-            ),
-          }))
+          try {
+            const allRelations = selectAllRelations(state)
+            const viewSchema = await DuckDBViewManager.rebuildView(
+              updatedFile,
+              state.files,
+              allRelations
+            )
+            set(prev => ({
+              files: prev.files.map(f =>
+                f.id === fileId ? { ...f, viewSchema } : f
+              ),
+            }))
+          } catch (e: any) {
+             console.error('Failed to update metric', e)
+             // Rollback
+             if (oldMetric) {
+                set(prev => ({
+                  files: prev.files.map(f =>
+                    f.id === fileId
+                      ? { ...f, smartMetrics: (f.smartMetrics || []).map(m => m.id === metricId ? oldMetric : m) }
+                      : f
+                  )
+                }))
+             }
+
+             useToastStore.getState().addToast({
+                title: 'Failed to update metric',
+                description: e.message,
+                type: 'error'
+             })
+          }
         }
       },
 

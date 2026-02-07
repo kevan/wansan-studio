@@ -12,9 +12,7 @@ import {
   DataSourceConfig,
   FileNode,
   LocalFileSource,
-  SmartMetric,
   SyncStatus,
-  TableRelation,
 } from '@shared/types'
 import { ProjectData, Session } from '@shared/types/project'
 import { ReportData } from '@shared/types/dashboard'
@@ -61,28 +59,35 @@ export function useProjectIO() {
     }))
 
     const manifest: Partial<ProjectManifest> = {
-      assets,
+      assets: assets.map((a, i) => {
+        const file = state.files[i]
+        return {
+          ...a,
+          smartMetrics: file.smartMetrics,
+          relations: file.relations,
+        }
+      }) as any,
       settings: {
         theme: 'light', // Default or from settings store if available
       },
     }
 
     // 2. Build Semantic Layer
-    const smartMetrics: Record<string, SmartMetric[]> = {}
-    const relations: Record<string, TableRelation[]> = {}
+    const tables: Record<string, any> = {}
 
     state.files.forEach(f => {
-      if (f.smartMetrics && f.smartMetrics.length > 0) {
-        smartMetrics[f.id] = f.smartMetrics
-      }
-      if (f.relations && f.relations.length > 0) {
-        relations[f.id] = f.relations
+      tables[f.id] = {
+        columns: f.columns.reduce((acc, col) => {
+          if (col.semantic) acc[col.name] = col.semantic
+          return acc
+        }, {} as Record<string, any>),
+        smartMetrics: f.smartMetrics || [],
+        relations: f.relations || [],
       }
     })
 
     const semantic: SemanticLayer = {
-      relations,
-      smartMetrics,
+      tables,
     }
 
     // 3. Build Session Layer
@@ -130,8 +135,8 @@ export function useProjectIO() {
       // 2. Reconstruct State
       // Map Assets -> FileNode[]
       const files: FileNode[] = data.manifest.assets.map(asset => {
-        const metrics = data.semantic.smartMetrics[asset.id] || []
-        const relations = data.semantic.relations[asset.id] || []
+        const metrics = (asset as any).smartMetrics || []
+        const relations = (asset as any).relations || []
         const now = Date.now()
 
         // [REFACTOR] Compatibility Layer: Construct source from legacy fields if needed

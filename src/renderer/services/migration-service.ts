@@ -165,6 +165,7 @@ export async function performMigration(name: string, location: string) {
     }
 
     const semantic: SemanticLayer = {
+      tables: {},
       relations: finalRelationsMap,
       smartMetrics,
     }

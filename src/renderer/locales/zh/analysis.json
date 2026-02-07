@@ -60,5 +60,11 @@
     "linked_to": "已关联:",
     "no_links": "无关联"
   },
-  "smart_metrics": "智能指标"
+  "smart_metrics": "智能指标",
+  "analyzing_semantics_title": "正在分析语义...",
+  "analyzing_semantics_desc": "AI 正在深度理解您的数据结构。",
+  "review_semantics_title": "确认语义建议",
+  "review_semantics_desc": "请检查并确认 AI 生成的业务元数据和指标建议。",
+  "has_extraction_hint": "包含提取建议",
+  "no_metric_suggestions": "未发现单表计算指标建议。"
 }

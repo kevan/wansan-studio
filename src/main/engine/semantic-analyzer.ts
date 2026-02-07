@@ -1,17 +1,35 @@
 import { OpenAI } from 'openai'
-import { ColumnSchema, ColumnSemantic } from '@shared/types'
+import { ColumnSchema, SemanticAnalysisResult } from '@shared/types'
 import { callAIAndParse } from './ai-utils'
 import { z } from 'zod'
 
-const SemanticResultSchema = z.record(z.string(), z.object({
-  aliases: z.array(z.string()),
-  businessType: z.enum(['ID', 'Code', 'Money', 'Category', 'Text', 'Date', 'Time', 'Quantity', 'Location', 'Other'] as any),
-  description: z.string()
-}))
+const SemanticResultSchema = z.object({
+  columns: z.record(z.string(), z.object({
+    aliases: z.array(z.string()),
+    businessType: z.enum(['ID', 'Code', 'Money', 'Category', 'Date', 'Time', 'Quantity', 'Location', 'Text', 'Other'] as any),
+    description: z.string(),
+    usageType: z.enum(['Dimension', 'Measure', 'Attribute']).optional(),
+    defaultAggregation: z.enum(['SUM', 'AVG', 'COUNT', 'MAX', 'NONE']).optional(),
+    confidence: z.number().min(0).max(1).optional(),
+    reason: z.string().optional(),
+    extractionHints: z.array(z.object({
+      targetColumnName: z.string(),
+      prompt: z.string(),
+      reason: z.string()
+    })).optional()
+  })),
+  metrics: z.array(z.object({
+    name: z.string(),
+    sqlExpression: z.string(),
+    description: z.string(),
+    reason: z.string(),
+    confidence: z.number().min(0).max(1).optional()
+  })).optional()
+})
 
 /**
  * AI Powered Semantic Analysis Engine
- * Uses LLM to infer column meanings and generate aliases.
+ * Uses LLM to infer column meanings, generate aliases, and suggest metrics.
  */
 export async function analyzeSemantics(
   client: OpenAI,
@@ -19,7 +37,7 @@ export async function analyzeSemantics(
   tableName: string,
   columns: ColumnSchema[],
   language: string = 'Chinese (Simplified)'
-): Promise<Record<string, ColumnSemantic>> {
+): Promise<SemanticAnalysisResult> {
   // Use existing sample values from ColumnSchema
   const columnContext = columns.map((col) => {
     return {
@@ -30,40 +48,68 @@ export async function analyzeSemantics(
   })
 
   const systemPrompt = `You are a Data Analyst and Business Intelligence expert. 
-Your task is to analyze a database table schema and sample data to provide semantic metadata.
+Your task is to analyze a database table schema and sample data to provide semantic metadata and PROACTIVE insights.
 
+### STEP 1: Column Analysis
 For each column, you must:
 1. Infer its business meaning (Description). **IMPORTANT**: The description MUST be in ${language}.
 2. Suggest 2-3 natural language synonyms/aliases in ${language}.
-3. Assign a high-level Business Category. You MUST choose EXACTLY one from this list:
-   - ID: Technical primary/foreign keys (e.g. 1, 2, UUID). Used for joins.
-   - Code: Business-facing identifiers (e.g. SKU-001, EMP102, Contract_No). Used for searching and display labels.
+3. Assign a high-level Business Category (businessType). Choose EXACTLY one from this list:
+   - ID: Technical primary/foreign keys (e.g. 1, 2, UUID). Used for JOINs.
+   - Code: Business-facing identifiers (e.g. SKU-001, Order_No). Used for searching and labels.
    - Money: Financial values, currency.
    - Category: Dimensions, groups, types.
-   - Text: Descriptive text.
-   - Date: Temporal info (Date, Timestamp).
-   - Time: Temporal info (Time only).
-   - Quantity: Measurable counts or amounts (not money).
+   - Date: Calendar dates or timestamps.
+   - Time: Time of day only.
+   - Quantity: Measurable counts (not money).
    - Location: Geography info.
+   - Text: Descriptive text, names, titles.
    - Other: Anything else.
 
-OUTPUT RULE:
-1. Return ONLY a valid JSON object where keys are the column names.
-2. **CRITICAL**: The "businessType" field MUST be one of the exact strings listed above (e.g., "Date", not "Date / Time").
+4. Assign a usageType (Dimension/Measure/Attribute).
+5. Suggest a defaultAggregation (SUM/AVG/COUNT/MAX/NONE).
+6. **Assign a confidence score (0.0 to 1.0)** based on how certain you are of the business meaning.
+7. **Provide a brief reason (in ${language})** for your categorization.
 
-Example:
+8. **AI Extraction Hints**: If a column contains semi-structured or complex text (like addresses, SKU names with attributes, log messages), suggest how to extract structured data.
+
+### STEP 2: Metric Suggestions
+Identify business metrics that can be calculated **FOR EACH ROW** using columns in THIS table.
+- **IMPORTANT**: ONLY suggest row-level expressions (Calculated Columns).
+- **FORBIDDEN**: DO NOT use aggregate functions like SUM, AVG, COUNT, MIN, MAX.
+- **Example**: If you see "revenue" and "cost", suggest "profit = revenue - cost".
+- **Example**: If you see "price" and "discount_rate", suggest "discounted_price = price * (1 - discount_rate)".
+
+OUTPUT RULE:
+1. Return ONLY a valid JSON object matching the requested schema.
+2. All explanations, names, and descriptions MUST be in ${language}.
+3. **CRITICAL**: The "businessType", "usageType", and "defaultAggregation" MUST be exact strings from the provided lists. DO NOT use slashes or combine categories.
+4. **CRITICAL**: The "sqlExpression" in "metrics" MUST be a valid row-level SQL fragment (no aggregations).
+
+Example Output Structure:
 {
-  "amt": {
-    "aliases": ["销售额", "收入", "业绩"],
-    "businessType": "Money",
-    "description": "该笔交易的总销售金额"
+  "columns": {
+    "amt": {
+      "aliases": ["销售额", "收入"],
+      "businessType": "Money",
+      "description": "该笔交易的总销售金额",
+      "usageType": "Measure",
+      "defaultAggregation": "SUM",
+      "confidence": 0.95,
+      "reason": "字段名含'amt'且数据为数值，符合销售金额特征"
+    }
   },
-  "user_id": {
-    "aliases": ["用户ID", "账号", "UID"],
-    "businessType": "ID",
-    "description": "用户的唯一身份标识符"
-  }
-}`
+  "metrics": [
+    {
+      "name": "利润",
+      "sqlExpression": "revenue - cost",
+      "description": "该笔交易的净利润",
+      "reason": "检测到表中同时包含收入和成本字段，可计算单行利润",
+      "confidence": 0.9
+    }
+  ]
+}
+`
 
   const userPrompt = `Table Name: ${tableName}
 Columns and Samples:
@@ -79,5 +125,5 @@ ${JSON.stringify(columnContext, null, 2)}`
     temperature: 0
   }, SemanticResultSchema)
 
-  return data as Record<string, ColumnSemantic>
+  return data
 }
