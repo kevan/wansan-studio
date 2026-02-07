@@ -8,7 +8,9 @@ export function getDisplayMode(
   vizConfig?: any
 ): DisplayMode {
   const hasData = data && data.length > 0
-  if (!hasData && chartType !== 'text') return 'empty'
+  
+  // If no data and not a table/text, show empty
+  if (!hasData && chartType !== 'text' && chartType !== 'table') return 'empty'
 
   if (chartType === 'kpi') return 'bignumber'
   if (chartType === 'text') return 'text'
