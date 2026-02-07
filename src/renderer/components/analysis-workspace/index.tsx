@@ -128,7 +128,7 @@ export function AnalysisWorkspace() {
             collapsible
             collapsedSize={0}
             className={cn(
-                "bg-zinc-100/60 dark:bg-zinc-900 transition-all duration-300 relative z-0",
+                "bg-zinc-50/50 dark:bg-zinc-900/60 transition-all duration-300 relative z-0",
                 isDashboardCollapsed && "min-w-0 border-none"
             )}
         >

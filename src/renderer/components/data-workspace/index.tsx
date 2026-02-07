@@ -111,11 +111,11 @@ export function DataWorkspace() {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-white overflow-hidden relative">
+    <div className="flex-1 flex flex-col h-full bg-[#fbfbfa] dark:bg-zinc-950 overflow-hidden relative">
       {/* 1. Global Workspace Header */}
-      <header className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between shrink-0 bg-white/80 backdrop-blur z-30">
+      <header className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between shrink-0 bg-white dark:bg-zinc-900 z-30">
         <div className="flex items-center gap-4 min-w-0 flex-1">
-          <div className="p-2 bg-indigo-50 rounded-xl border border-indigo-100 shrink-0 text-indigo-600">
+          <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 shrink-0 text-indigo-600 dark:text-indigo-400">
             <FileSpreadsheet className="w-5 h-5" />
           </div>
           <div className="flex flex-col min-w-0">
@@ -125,15 +125,15 @@ export function DataWorkspace() {
             <div className="flex items-center gap-2 mt-1">
                <button
                   onClick={() => setShowLineage(true)}
-                  className="flex items-center gap-1 px-1.5 py-0.5 bg-zinc-50 text-zinc-500 rounded border border-zinc-100 whitespace-nowrap hover:bg-zinc-100 hover:text-zinc-900 transition-all cursor-help group"
+                  className="flex items-center gap-1 px-1.5 py-0.5 bg-zinc-50 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded border border-zinc-100 dark:border-zinc-700 whitespace-nowrap hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all cursor-help group"
                 >
-                  <Database className="w-2 h-2 opacity-70 group-hover:text-indigo-600" />
+                  <Database className="w-2 h-2 opacity-70 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
                   <code className="text-[9px] font-mono">
                     {currentFile.tableName}
                   </code>
                   <Info className="w-2 h-2 opacity-0 group-hover:opacity-100 ml-0.5" />
                 </button>
-                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded border border-emerald-100 whitespace-nowrap">
+                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded border border-emerald-100 dark:border-emerald-800 whitespace-nowrap">
                   <Hash className="w-2 h-2" />
                   <span className="text-[9px] font-black uppercase tracking-tight">
                     {currentFile.rowCount?.toLocaleString() || 0} {t('rows')}
@@ -144,41 +144,41 @@ export function DataWorkspace() {
         </div>
 
         {/* Workspace Toolbar */}
-        <div className="flex items-center p-1 bg-zinc-50 border border-zinc-200/60 rounded-xl shadow-sm shrink-0">
+        <div className="flex items-center p-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700 rounded-xl shadow-sm shrink-0">
             <ExpandableAction
               icon={isAnalyzing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
               label={t('ai_tag', 'AI Semantics')}
               onClick={() => setShowAnalyzeConfirm(true)}
               disabled={isAnalyzing}
-              className="text-indigo-600 hover:bg-white border-transparent h-8"
+              className="text-indigo-600 dark:text-indigo-400 hover:bg-white dark:hover:bg-zinc-700 border-transparent h-8"
             />
-            <div className="w-px h-3 bg-zinc-200 mx-1" />
+            <div className="w-px h-3 bg-zinc-200 dark:bg-zinc-700 mx-1" />
             <div className="flex items-center gap-0.5">
               <ExpandableAction
                 icon={<Plus className="w-3.5 h-3.5" />}
                 label={t('append_data')}
                 onClick={handleAppend}
-                className="text-emerald-600 hover:bg-white border-transparent h-8"
+                className="text-emerald-600 dark:text-emerald-400 hover:bg-white dark:hover:bg-zinc-700 border-transparent h-8"
               />
               <ExpandableAction
                 icon={<GitMerge className="w-3.5 h-3.5" />}
                 label={t('merge_data')}
                 onClick={handleMerge}
-                className="text-indigo-600 hover:bg-white border-transparent h-8"
+                className="text-indigo-600 dark:text-indigo-400 hover:bg-white dark:hover:bg-zinc-700 border-transparent h-8"
               />
               <ExpandableAction
                 icon={<RefreshCw className="w-3.5 h-3.5" />}
                 label={t('replace_source')}
                 onClick={handleReplace}
-                className="text-amber-600 hover:bg-white border-transparent h-8"
+                className="text-amber-600 dark:text-amber-400 hover:bg-white dark:hover:bg-zinc-700 border-transparent h-8"
               />
             </div>
-            <div className="w-px h-3 bg-zinc-200 mx-1" />
+            <div className="w-px h-3 bg-zinc-200 dark:bg-zinc-700 mx-1" />
             <ExpandableAction
               icon={<Trash2 className="w-3.5 h-3.5" />}
               label={t('delete')}
               onClick={() => setShowDeleteConfirm(true)}
-              className="text-red-600 hover:bg-white border-transparent h-8"
+              className="text-red-600 dark:text-red-400 hover:bg-white dark:hover:bg-zinc-700 border-transparent h-8"
             />
         </div>
       </header>
@@ -190,7 +190,7 @@ export function DataWorkspace() {
           onValueChange={setActiveTab} 
           className="flex-1 flex flex-col min-h-0"
         >
-          <div className="px-6 border-b border-zinc-100 bg-zinc-50/30 shrink-0">
+          <div className="px-6 bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
             <TabsList className="h-12 bg-transparent gap-6 p-0">
               <TabsTrigger 
                 value="columns" 
@@ -198,7 +198,7 @@ export function DataWorkspace() {
               >
                 <FileCode className="w-3.5 h-3.5" />
                 {t('columns')}
-                <span className="bg-zinc-200/50 text-zinc-500 px-1.5 py-0.5 rounded-md text-[9px] font-black">
+                <span className="bg-zinc-200/50 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 px-1.5 py-0.5 rounded-md text-[9px] font-black">
                   {currentFile.columns.length}
                 </span>
               </TabsTrigger>
@@ -215,7 +215,7 @@ export function DataWorkspace() {
               >
                 <Tag className="w-3.5 h-3.5" />
                 {tAnalysis('smart_metrics')}
-                <span className="bg-zinc-200/50 text-zinc-500 px-1.5 py-0.5 rounded-md text-[9px] font-black">
+                <span className="bg-zinc-200/50 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 px-1.5 py-0.5 rounded-md text-[9px] font-black">
                   {(currentFile.smartMetrics || []).length}
                 </span>
               </TabsTrigger>
@@ -225,27 +225,35 @@ export function DataWorkspace() {
               >
                 <Link2 className="w-3.5 h-3.5" />
                 {t('relationships')}
-                <span className="bg-zinc-200/50 text-zinc-500 px-1.5 py-0.5 rounded-md text-[9px] font-black">
+                <span className="bg-zinc-200/50 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 px-1.5 py-0.5 rounded-md text-[9px] font-black">
                   {(currentFile.relations || []).length}
                 </span>
               </TabsTrigger>
             </TabsList>
           </div>
 
-          <TabsContent value="columns" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
-             <ColumnsView file={currentFile} />
+          <TabsContent value="columns" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden p-6">
+             <div className="h-full bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+                <ColumnsView file={currentFile} />
+             </div>
           </TabsContent>
 
-          <TabsContent value="preview" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
-             <DataPreviewPanel />
+          <TabsContent value="preview" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden p-6">
+             <div className="h-full bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden p-1">
+                <DataPreviewPanel />
+             </div>
           </TabsContent>
 
-          <TabsContent value="metrics" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
-             <MetricsView file={currentFile} />
+          <TabsContent value="metrics" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden p-6">
+             <div className="h-full bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+                <MetricsView file={currentFile} />
+             </div>
           </TabsContent>
 
-          <TabsContent value="relations" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
-             <RelationsView file={currentFile} />
+          <TabsContent value="relations" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden p-6">
+             <div className="h-full bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+                <RelationsView file={currentFile} />
+             </div>
           </TabsContent>
         </Tabs>
       </FloatingActionLayout>

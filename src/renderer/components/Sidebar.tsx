@@ -36,7 +36,7 @@ export function Sidebar(_props: SidebarProps) {
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false)
 
   return (
-    <aside className="wansan-sidebar flex flex-col h-full bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 shrink-0">
+    <aside className="wansan-sidebar flex flex-col h-full bg-transparent shrink-0">
       {/* --- MODE SWITCHER --- */}
       <div className="pt-2 px-3 pb-1 shrink-0">
         <div className="flex p-1 bg-zinc-100 dark:bg-zinc-900 rounded-lg">

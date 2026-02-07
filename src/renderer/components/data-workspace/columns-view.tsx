@@ -77,17 +77,9 @@ export function ColumnsView({ file }: ColumnsViewProps) {
 
   return (
     <>
-      <div className="flex flex-col h-full bg-white relative">
-        {/* Sticky Header */}
-        {/*<div className="sticky top-0 z-10 bg-zinc-50 border-b border-zinc-200 px-8 py-2.5 flex items-center gap-4 text-[10px] font-black uppercase text-zinc-400 tracking-widest shrink-0 shadow-sm">*/}
-        {/*  <div className="w-16 shrink-0">{t('list_status')}</div>*/}
-        {/*  <div className="w-48 shrink-0">{t('list_field_type')}</div>*/}
-        {/*  <div className="flex-1">{t('list_semantic_samples')}</div>*/}
-        {/*  <div className="w-12 text-right">{t('list_edit')}</div>*/}
-        {/*</div>*/}
-
-        <div className="px-4 py-6 overflow-y-auto flex-1">
-          <div className="flex flex-col border border-zinc-100 rounded-2xl overflow-hidden divide-y divide-zinc-50 z-0 relative">
+      <div className="flex flex-col h-full bg-transparent relative">
+        <div className="px-6 py-6 overflow-y-auto flex-1">
+          <div className="flex flex-col border border-zinc-100 dark:border-zinc-800 rounded-2xl overflow-hidden divide-y divide-zinc-50 dark:divide-zinc-800 z-0 relative shadow-sm">
             {file.columns
               .filter(col => col.name !== '_ws_row_id')
               .map(col => {

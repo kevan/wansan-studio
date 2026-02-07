@@ -80,3 +80,5 @@
 3. 收敛 IPC 入口：逐步减少在 UI 组件或工具类中直接调用 window.electronAPI，倾向于通过自定义 Hook 或 Service 层进行封装，以提升可测试性与安全性。
 4. 强类型原则：杜绝在 IPC 调用中使用 'as any'，强制所有调用路径遵循 ElectronAPI 接口定义。
 5. 物理自愈机制：维持 useDataRehydrate 作为数据库与 Manifest 状态同步的核心枢纽，包含孤儿资源的自动清理（物理对账）。
+- Wansan Studio TS 编码范式：当方法参数多于 2 个时，必须将其包装为对象类型（Named Arguments 模式），并确保从主进程（IPC Handler）、Preload 脚本到渲染进程（Hooks/Services）全链路强类型对齐。
+- Optimized PanelResizeHandle style across the project to use a "Wansan Airy" grabber pattern (subtle vertical line with a central grabber that appears/expands on hover/active states). Updated export-runtime/App.tsx to include a resizable layout.

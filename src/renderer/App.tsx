@@ -448,9 +448,9 @@ function App() {
               collapsedSize={0}
               onCollapse={() => setIsLeftCollapsed(true)}
               onExpand={() => setIsLeftCollapsed(false)}
-              className={`border-r border-zinc-200 bg-zinc-50 dark:bg-zinc-900/50 transition-all duration-300 ${isLeftCollapsed ? 'min-w-0 border-none' : ''}`}
+              className={`border-r border-zinc-100 dark:border-zinc-800 bg-[#fbfbfa] dark:bg-zinc-900/80 transition-all duration-300 ${isLeftCollapsed ? 'min-w-0 border-none' : ''}`}
             >
-              <div className="h-full flex flex-col bg-zinc-50 dark:bg-zinc-900/50">
+              <div className="h-full flex flex-col">
                 <div className="flex-1 overflow-y-auto">
                   <Sidebar onImportData={handleImportData} />
                 </div>
