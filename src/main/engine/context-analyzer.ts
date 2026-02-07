@@ -130,7 +130,7 @@ ${schemaContext}
 
 OUTPUT RULE:
 1. The "suggestedPrompts" MUST be written in ${languageNote}.
-2. The "reason" field in "relationships" and "metrics" MUST be written in ${languageNote}.`,
+2. The "reason" field in "relationships" MUST be written in ${languageNote}.`,
       },
       { role: 'user', content: userPrompt },
     ],

@@ -104,7 +104,6 @@ export interface ProjectState extends ProjectData {
   setAnalysisReviewResult: (result: ContextAnalysisResult | null) => void
   applyAnalysisResult: (data: {
     selectedRelations: any[]
-    selectedMetrics: any[]
     selectedPrompts: string[]
   }) => Promise<void>
   addFile: (
@@ -268,12 +267,10 @@ export const useProjectStore = create<ProjectState>()(
 
       applyAnalysisResult: async ({
         selectedRelations,
-        selectedMetrics,
         selectedPrompts,
       }) => {
         const {
           addRelation,
-          addSmartMetric,
           setSuggestedPrompts,
           files,
         } = get()
@@ -294,29 +291,7 @@ export const useProjectStore = create<ProjectState>()(
           }
         }
 
-        // 2. Add Metrics (With Duplicate Check)
-        await Promise.all(
-          selectedMetrics.map(async m => {
-            const file = files.find(f => f.tableName === m.tableName)
-            if (file) {
-              const exists = (file.smartMetrics || []).some(
-                existing =>
-                  existing.name === m.name ||
-                  existing.sqlExpression === m.sqlExpression
-              )
-              if (!exists) {
-                await addSmartMetric(file.id, {
-                  id: crypto.randomUUID(),
-                  name: m.name,
-                  sqlExpression: m.sqlExpression,
-                  description: m.description,
-                })
-              }
-            }
-          })
-        )
-
-        // 3. Update Prompts (Direct Replacement)
+        // 2. Update Prompts (Direct Replacement)
         if (selectedPrompts.length > 0) {
           setSuggestedPrompts(selectedPrompts)
         }

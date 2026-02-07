@@ -75,16 +75,23 @@ For each column, you must:
 
 ### STEP 2: Metric Suggestions
 Identify business metrics that can be calculated **FOR EACH ROW** using columns in THIS table.
-- **IMPORTANT**: ONLY suggest row-level expressions (Calculated Columns).
-- **FORBIDDEN**: DO NOT use aggregate functions like SUM, AVG, COUNT, MIN, MAX.
-- **Example**: If you see "revenue" and "cost", suggest "profit = revenue - cost".
-- **Example**: If you see "price" and "discount_rate", suggest "discounted_price = price * (1 - discount_rate)".
+- **CRITICAL CONSTRAINT**: ONLY suggest row-level expressions (Calculated Columns).
+- **STRICT FORBIDDEN**: NEVER use aggregate functions like SUM, AVG, COUNT, MIN, MAX.
+- **STRICT FORBIDDEN**: NEVER use \`SELECT\`, \`FROM\`, \`JOIN\`, or subqueries.
+- **ROBUSTNESS**: Use \`NULLIF(col, 0)\` to prevent division-by-zero errors in ratio calculations.
+- **NAMING**: Use professional business terms in ${language} (e.g., "毛利率", "单均价").
+- **CONFIDENCE**: Only suggest metrics where you have high confidence (> 0.7).
+
+- **Examples**:
+    - If table has \`quantity\` and \`unit_price\`, suggest: \`"quantity" * "unit_price"\`.
+    - If table has \`profit\` and \`revenue\`, suggest: \`"profit" / NULLIF("revenue", 0)\`.
+    - If table has \`birth_date\`, suggest: \`date_diff('year', "birth_date", current_date())\`.
 
 OUTPUT RULE:
 1. Return ONLY a valid JSON object matching the requested schema.
 2. All explanations, names, and descriptions MUST be in ${language}.
 3. **CRITICAL**: The "businessType", "usageType", and "defaultAggregation" MUST be exact strings from the provided lists. DO NOT use slashes or combine categories.
-4. **CRITICAL**: The "sqlExpression" in "metrics" MUST be a valid row-level SQL fragment (no aggregations).
+4. **CRITICAL**: The "sqlExpression" in "metrics" MUST be a valid row-level SQL fragment. ALWAYS wrap column names in double quotes (").
 
 Example Output Structure:
 {
@@ -102,7 +109,7 @@ Example Output Structure:
   "metrics": [
     {
       "name": "利润",
-      "sqlExpression": "revenue - cost",
+      "sqlExpression": "\\"revenue\\" - \\"cost\\"",
       "description": "该笔交易的净利润",
       "reason": "检测到表中同时包含收入和成本字段，可计算单行利润",
       "confidence": 0.9

@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/badge'
 import {
   Sparkles,
   Link as LinkIcon,
-  Calculator,
   MessageSquare,
   ArrowRight,
   Loader2,
@@ -21,15 +20,14 @@ import { useTranslation } from 'react-i18next'
 import {
   ContextAnalysisResult,
   RelationSuggestion,
-  MetricSuggestion,
 } from '@shared/types'
+import { Skeleton } from '../ui/skeleton'
 
 interface AnalysisReviewModalProps {
   isOpen: boolean
   onCancel: () => void
   onConfirm: (data: {
     selectedRelations: RelationSuggestion[]
-    selectedMetrics: MetricSuggestion[]
     selectedPrompts: string[]
   }) => void
   onStartAnalysis: () => void
@@ -46,7 +44,7 @@ export function AnalysisReviewModal({
   result,
 }: AnalysisReviewModalProps) {
   const { t } = useTranslation(['chat', 'common'])
-  const [activeTab, setActiveTab] = useState<'relations' | 'metrics' | 'prompts'>(
+  const [activeTab, setActiveTab] = useState<'relations' | 'prompts'>(
     'relations'
   )
 
@@ -54,7 +52,6 @@ export function AnalysisReviewModal({
   const [selectedRelations, setSelectedRelations] = useState<Set<number>>(
     new Set()
   )
-  const [selectedMetrics, setSelectedMetrics] = useState<Set<number>>(new Set())
   const [selectedPrompts, setSelectedPrompts] = useState<Set<string>>(new Set())
 
   // Initialize selections when result changes or modal opens
@@ -67,19 +64,11 @@ export function AnalysisReviewModal({
       })
       setSelectedRelations(relIndices)
 
-      // Default: Select ALL high confidence metrics (> 0.8)
-      const metricIndices = new Set<number>()
-      ;(result.metrics || []).forEach((m, i) => {
-        if (m.confidence !== undefined && m.confidence > 0.8) metricIndices.add(i)
-      })
-      setSelectedMetrics(metricIndices)
-
       // Default: Select ALL prompts
       setSelectedPrompts(new Set(result.suggestedPrompts))
 
       // Auto-switch tab to first non-empty category
       if (result.relationships.length > 0) setActiveTab('relations')
-      else if ((result.metrics || []).length > 0) setActiveTab('metrics')
       else setActiveTab('prompts')
     }
   }, [isOpen, result])
@@ -132,23 +121,60 @@ export function AnalysisReviewModal({
     return (
       <Dialog open={isOpen} onOpenChange={open => !open && onCancel()}>
         <DialogContent
-          className="sm:max-w-sm p-12 border-zinc-200 shadow-2xl bg-white flex flex-col items-center justify-center gap-6"
+          className="sm:max-w-4xl p-0 gap-0 overflow-hidden border-zinc-200 shadow-2xl bg-white"
           onPointerDownOutside={e => e.preventDefault()}
           onEscapeKeyDown={e => e.preventDefault()}
         >
-          <div className="relative">
-            <div className="absolute inset-0 bg-indigo-100 rounded-full animate-ping opacity-25 duration-1000"></div>
-            <div className="relative bg-white p-4 rounded-full border border-indigo-50 shadow-sm">
-              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+          {/* Header Skeleton */}
+          <div className="px-6 py-4 border-b border-zinc-100 bg-gradient-to-b from-white to-zinc-50/50">
+            <div className="flex items-start gap-4">
+              <div className="p-2.5 bg-indigo-50 rounded-xl border border-indigo-100 shrink-0">
+                <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
+              </div>
+              <div className="space-y-2 flex-1">
+                <DialogTitle className="text-lg font-semibold text-zinc-900">
+                  {t('chat:auto_link_analyzing_title')}
+                </DialogTitle>
+                <DialogDescription className="text-sm text-zinc-500">
+                  {t('chat:auto_link_analyzing_desc')}
+                </DialogDescription>
+              </div>
             </div>
           </div>
-          <div className="text-center space-y-1">
-            <h3 className="font-semibold text-zinc-900">
-              {t('chat:auto_link_analyzing_title')}
-            </h3>
-            <p className="text-xs text-zinc-500">
-              {t('chat:auto_link_analyzing_desc')}
-            </p>
+
+          {/* Body Skeleton */}
+          <div className="flex h-[60vh]">
+            {/* Sidebar Skeleton */}
+            <div className="w-[180px] flex-shrink-0 border-r border-zinc-100 bg-zinc-50/50 flex flex-col py-2 gap-1 px-2">
+              <Skeleton className="h-10 w-full rounded-lg" />
+              <Skeleton className="h-10 w-full rounded-lg" />
+            </div>
+
+            {/* Content Skeleton */}
+            <div className="flex-1 bg-white p-4 space-y-3">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="p-4 rounded-xl border border-zinc-100 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-4 w-4 rounded" />
+                    <Skeleton className="h-4 w-1/2 rounded" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-3 w-20 rounded" />
+                    <Skeleton className="h-3 w-20 rounded" />
+                  </div>
+                  <Skeleton className="h-3 w-full rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer Skeleton */}
+          <div className="p-4 border-t border-zinc-100 bg-white flex justify-between items-center">
+            <Skeleton className="h-4 w-24 rounded" />
+            <div className="flex gap-3">
+              <Skeleton className="h-10 w-20 rounded-lg" />
+              <Skeleton className="h-10 w-32 rounded-lg" />
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -163,9 +189,6 @@ export function AnalysisReviewModal({
       selectedRelations: result.relationships.filter((_, i) =>
         selectedRelations.has(i)
       ),
-      selectedMetrics: (result.metrics || []).filter((_, i) =>
-        selectedMetrics.has(i)
-      ),
       selectedPrompts: Array.from(selectedPrompts),
     })
   }
@@ -177,13 +200,6 @@ export function AnalysisReviewModal({
     setSelectedRelations(next)
   }
 
-  const toggleMetric = (idx: number) => {
-    const next = new Set(selectedMetrics)
-    if (next.has(idx)) next.delete(idx)
-    else next.add(idx)
-    setSelectedMetrics(next)
-  }
-
   const togglePrompt = (prompt: string) => {
     const next = new Set(selectedPrompts)
     if (next.has(prompt)) next.delete(prompt)
@@ -192,7 +208,7 @@ export function AnalysisReviewModal({
   }
 
   const renderSidebarItem = (
-    id: 'relations' | 'metrics' | 'prompts',
+    id: 'relations' | 'prompts',
     icon: any,
     label: string,
     count: number
@@ -303,73 +319,6 @@ export function AnalysisReviewModal({
           </div>
         )
 
-      case 'metrics': {
-        const metrics = result.metrics || []
-        if (metrics.length === 0)
-            return (
-              <div className="flex flex-col items-center justify-center h-full text-zinc-400">
-                <Calculator className="w-8 h-8 mb-2 opacity-50" />
-                <p>{t('chat:no_suggestions')}</p>
-              </div>
-            )
-        return (
-          <div className="p-4 space-y-3">
-            {metrics.map((m, i) => (
-              <div
-                key={i}
-                className="flex items-start gap-3 p-3 rounded-lg border border-zinc-100 hover:border-indigo-100 hover:bg-indigo-50/30 transition-colors cursor-pointer"
-                onClick={() => toggleMetric(i)}
-              >
-                <Checkbox
-                  checked={selectedMetrics.has(i)}
-                  onChange={() => toggleMetric(i)}
-                />
-                <div className="flex-1 min-w-0 space-y-1.5">
-                  <div className="flex items-center justify-between gap-4">
-                    <h4 className="text-sm font-semibold text-zinc-900 truncate">
-                      {m.name}
-                    </h4>
-                    <span
-                      className="text-[10px] text-zinc-400 font-mono bg-zinc-50 px-1 rounded truncate max-w-[120px]"
-                      title={m.tableName}
-                    >
-                      {m.tableName}
-                    </span>
-                  </div>
-                  <div className="flex items-start justify-between gap-4">
-                    <p className="text-xs text-zinc-500 leading-relaxed flex-1">{m.description}</p>
-                    {m.confidence !== undefined && (
-                      <span
-                        className={cn(
-                          'text-[10px] font-bold px-1.5 py-0.5 rounded uppercase whitespace-nowrap mt-0.5',
-                          m.confidence > 0.8
-                            ? 'bg-emerald-50 text-emerald-600'
-                            : 'bg-amber-50 text-amber-600'
-                        )}
-                      >
-                        {t('chat:confidence_score', {
-                          score: Math.round(m.confidence * 100),
-                        })}
-                      </span>
-                    )}
-                  </div>
-                  {m.reason && (
-                    <p className="text-[11px] text-zinc-400 mt-2 italic leading-relaxed border-l-2 border-zinc-100 pl-3 py-0.5">
-                      {m.reason}
-                    </p>
-                  )}
-                  <div className="bg-zinc-50 border border-zinc-200 rounded px-2.5 py-2 mt-2">
-                    <code className="text-[10px] text-zinc-600 font-mono break-all block">
-                      {m.sqlExpression}
-                    </code>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )
-      }
-
       case 'prompts':
         if (result.suggestedPrompts.length === 0)
             return (
@@ -399,7 +348,7 @@ export function AnalysisReviewModal({
   }
 
   const totalSelected =
-    selectedRelations.size + selectedMetrics.size + selectedPrompts.size
+    selectedRelations.size + selectedPrompts.size
 
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && onCancel()}>
@@ -434,12 +383,6 @@ export function AnalysisReviewModal({
               <LinkIcon className="w-4 h-4" />,
               t('chat:tab_relations'),
               result.relationships.length
-            )}
-            {renderSidebarItem(
-              'metrics',
-              <Calculator className="w-4 h-4" />,
-              t('chat:tab_metrics'),
-              (result.metrics || []).length
             )}
             {renderSidebarItem(
               'prompts',

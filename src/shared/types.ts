@@ -140,7 +140,6 @@ export interface MetricSuggestion {
 
 export interface ContextAnalysisResult {
   relationships: RelationSuggestion[]
-  metrics?: MetricSuggestion[]
   suggestedPrompts: string[]
 }
 

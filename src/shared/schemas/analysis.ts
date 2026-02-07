@@ -75,7 +75,6 @@ export const SmartMetricSchema = z.object({
 
 export const ContextAnalysisResultSchema = z.object({
   relationships: z.array(RelationSuggestionSchema),
-  metrics: z.array(SmartMetricSchema).optional(),
   suggestedPrompts: z.array(z.string().max(60)),
 })
 
