@@ -153,7 +153,6 @@ export interface ProjectState extends ProjectData {
   ) => Promise<'completed' | 'cancelled' | 'pending' | 'error'>
   loadProject: (data: ProjectData) => void
   cleanupZombieFiles: () => void
-  serialize: () => string
   reset: () => void
   closeProject: () => Promise<void>
 }
@@ -1430,70 +1429,6 @@ export const useProjectStore = create<ProjectState>()(
               : f
           ),
         })),
-
-      serialize: () => {
-        // Destructure actions to exclude them from serialization
-        const {
-          setActiveFile: _setActiveFile,
-          setActiveSession: _setActiveSession,
-          setRefreshing: _setRefreshing,
-          refreshSessionWidgets: _refreshSessionWidgets,
-          confirmReplace: _confirmReplace,
-          createSession: _createSession,
-          switchSession: _switchSession,
-          deleteSession: _deleteSession,
-          renameSession: _renameSession,
-          clearSessionMessages: _clearSessionMessages,
-          addMessage: _addMessage,
-          updateMessage: _updateMessage,
-          deleteMessage: _deleteMessage,
-          setReplyTo: _setReplyTo,
-          setAbortController: _setAbortController,
-          addWidget: _addWidget,
-          removeWidget: _removeWidget,
-          updateWidget: _updateWidget,
-          updateWidgetData: _updateWidgetData,
-          updateRegistryByWidgetId: _updateRegistryByWidgetId,
-          updateLayout: _updateLayout,
-          setCanvasConfig: _setCanvasConfig,
-          setLayoutScenario: _setLayoutScenario,
-          setEditingReportId: _setEditingReportId,
-          setProjectName: _setProjectName,
-          setSelectedNode: _setSelectedNode,
-          setRestoring: _setRestoring,
-          setSuggestedPrompts: _setSuggestedPrompts,
-          addFile: _addFile,
-          removeFile: _removeFile,
-          updateFile: _updateFile,
-          updateColumn: _updateColumn,
-          updateColumnSemantic: _updateColumnSemantic,
-          toggleKeyColumn: _toggleKeyColumn,
-          addRelation: _addRelation,
-          removeRelation: _removeRelation,
-          markAsStale: _markAsStale,
-          markFileMissing: _markFileMissing,
-          reloadFile: _reloadFile,
-          replaceFile: _replaceFile,
-          loadProject: _loadProject,
-          serialize: _serialize,
-          reset: _reset,
-          abortControllers: _abortControllers,
-          layoutScenario: _layoutScenario,
-          editingReportId: _editingReportId,
-          pendingReplace: _pendingReplace,
-          showRefreshConfirm: _showRefreshConfirm,
-          isRestoring: _isRestoring,
-          isRefreshing: _isRefreshing,
-          ...data
-        } = get()
-
-        return JSON.stringify(data, (key, value) => {
-          if (typeof value === 'bigint') {
-            return value.toString()
-          }
-          return value
-        })
-      },
 
       reset: () => set(initialProjectState),
 
