@@ -1,6 +1,7 @@
 # CRITICAL MANDATES
 - **LANGUAGE**: 始终使用中文（简体）回复所有问题、计划和总结。即使在思考过程中使用英文，最终输出必须是中文。(Always respond in Chinese-simplified).
 - **WANSAN WORKFLOW**: 严格遵守双模式协议（Dual-Mode Protocol）。Mode A 用于规划/讨论（仅文字），Mode B 用于执行（Blueprint 或 Direct）。除非在 Mode B 且有明确实现指令，否则严禁编写代码。
+- **STRICT TYPING**: 严禁在非必要情况下使用 `any`。优先使用 `unknown`、联合类型或完整的接口定义，确保代码的健壮性。
 
 ## Gemini Added Memories
 - Implemented 'Data Correction' feature (Merge mode) allowing users to update existing table records by uploading a file with matching keys. Implemented via 'update' strategy in appendData and accessible via 'Correct Data' context menu on file nodes.
@@ -60,7 +61,7 @@
 - Implemented Renderer layer for v1.3 Project Bundles: projectService (IPC), useProjectIO hook (serialization/hydration), and store updates for currentProjectPath. Added Sidebar Save button for testing.
 - Fixed race condition in NativeDBClient where SQL queries could be sent before the database connection was established. Implemented a promise-based initialization lock (initPromise).
 - 当使用 shadcn/ui 或 Radix UI 的 Select 组件时，如果 SelectValue 错误地显示原始 ID 而非名称，可靠的解决方案是在 SelectTrigger 中手动渲染选中项的名称（例如：{selectedItem ? selectedItem.name : 'Placeholder'}），以绕过组件内部因匹配失败导致的回退显示问题。
-- 用户偏好更加轻盈、现代且具有“空气感”的 UI 风格。具体表现为：避免使用厚重的黑色硬阴影（如 shadow-[8px_8px_0_0_#000]）和粗大的黑色边框（如 border-[3px] border-black），转而使用柔和的高层级阴影（如 shadow-2xl）、细腻的浅色边框（如 zinc-100/200）以及大圆角（如 2rem/2.5rem）设计。在文字排版上，倾向于降低字重，增加留白和呼吸感。
+- 用户偏好更加轻盈、现代且具有“空气感”的 UI 风格。具体表现为：避免使用厚重的黑色硬阴影（如 shadow-[8px_8px_0_0_#000]）和粗大的黑色边框（如 border-[3px] border-black），转而使用柔和的高层级阴影（如 shadow-2xl）、细腻的浅色边框（如 zinc-100/200）以及适度的圆角（如 rounded-3xl/2xl）设计。在文字排版上，倾向于降低字重，增加留白和呼吸感。
 - Implemented 'Data Correction' feature (Merge mode) allowing users to update existing table records by uploading a file with matching keys. Implemented via 'update' strategy in appendData and accessible via 'Correct Data' context menu on file nodes.
 - Implemented atomic file writing in ProjectManager using 'atomicWriteJSON' (write-to-temp-and-rename) to prevent data corruption for wansan.json, semantic.json, and session.json.
 - Fixed type error in DashboardCanvasV3 by replacing undefined 'mainPanelLayout' with 'contentLayout' and 'sidebarLayout' from useUIStore.
@@ -78,7 +79,7 @@
 1. 异步状态双轨制：Zustand 负责核心业务逻辑与 Manifest 状态变更；React Query 负责工具类/无状态 IPC 调用及 UI 状态展现。
 2. 缓存失效联动：在任何修改物理数据库的操作（Zustand Actions 或 IPC Mutations）后，必须通过 queryClient.invalidateQueries 同步刷新 React Query 缓存，确保 UI 状态一致性。
 3. 收敛 IPC 入口：逐步减少在 UI 组件或工具类中直接调用 window.electronAPI，倾向于通过自定义 Hook 或 Service 层进行封装，以提升可测试性与安全性。
-4. 强类型原则：杜绝在 IPC 调用中使用 'as any'，强制所有调用路径遵循 ElectronAPI 接口定义。
+4. 强类型原则：杜绝在 IPC 调用或业务逻辑中使用 'any'，强制所有调用路径遵循 ElectronAPI 接口定义，必要时使用 unknown 或接口。
 5. 物理自愈机制：维持 useDataRehydrate 作为数据库与 Manifest 状态同步的核心枢纽，包含孤儿资源的自动清理（物理对账）。
 - Wansan Studio TS 编码范式：当方法参数多于 2 个时，必须将其包装为对象类型（Named Arguments 模式），并确保从主进程（IPC Handler）、Preload 脚本到渲染进程（Hooks/Services）全链路强类型对齐。
 - Optimized PanelResizeHandle style across the project to use a "Wansan Airy" grabber pattern (subtle vertical line with a central grabber that appears/expands on hover/active states). Updated export-runtime/App.tsx to include a resizable layout.

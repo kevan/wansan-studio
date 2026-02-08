@@ -46,7 +46,6 @@ export function DataWorkspace() {
 
   const [activeTab, setActiveTab] = useState('columns')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [showAnalyzeConfirm, setShowAnalyzeConfirm] = useState(false)
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<any>(null)
   const [showLineage, setShowLineage] = useState(false)
@@ -84,10 +83,13 @@ export function DataWorkspace() {
     toast.addToast({ title: t('file_deleted'), type: 'success' })
   }
 
+  const handleOpenSemanticReview = () => {
+    setAnalysisResult(null) // Reset result to show pending state
+    setShowReviewModal(true)
+  }
+
   const handleAnalyzeSemantics = async () => {
     setIsAnalyzing(true)
-    setShowAnalyzeConfirm(false)
-    setShowReviewModal(true) // Show modal immediately with loading state
     setAnalysisResult(null)
 
     try {
@@ -176,7 +178,7 @@ export function DataWorkspace() {
             <ExpandableAction
               icon={isAnalyzing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
               label={t('ai_tag', 'AI Semantics')}
-              onClick={() => setShowAnalyzeConfirm(true)}
+              onClick={handleOpenSemanticReview}
               disabled={isAnalyzing}
               className="text-indigo-600 dark:text-indigo-400 hover:bg-white dark:hover:bg-zinc-700 border-transparent h-8"
             />
@@ -295,14 +297,6 @@ export function DataWorkspace() {
         description={t('delete_file_confirm_desc')}
         variant="destructive"
       />
-      <ConfirmDialog
-        open={showAnalyzeConfirm}
-        onOpenChange={setShowAnalyzeConfirm}
-        onConfirm={handleAnalyzeSemantics}
-        title={t('analyze_confirm_title')}
-        description={t('analyze_confirm_desc')}
-        variant="default"
-      />
       <DataLineageDialog
         open={showLineage}
         onOpenChange={setShowLineage}
@@ -310,8 +304,10 @@ export function DataWorkspace() {
       />
       <SemanticReviewModal
         isOpen={showReviewModal}
+        file={currentFile}
         isAnalyzing={isAnalyzing}
         result={analysisResult}
+        onStartAnalysis={handleAnalyzeSemantics}
         onCancel={() => setShowReviewModal(false)}
         onConfirm={handleApplySemanticReview}
       />
@@ -319,3 +315,4 @@ export function DataWorkspace() {
     </div>
   )
 }
+
