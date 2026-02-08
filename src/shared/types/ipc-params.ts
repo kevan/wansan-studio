@@ -11,7 +11,7 @@ export interface IngestPreCheckParams {
   uniqueKeys?: string[]
   columnMapping: Record<string, string | null>
   tempFilePath?: string // Cached CSV path
-  readOptions?: Record<string, any>
+  readOptions?: Record<string, unknown>
 }
 
 export interface IngestPreCheckResponse {
@@ -34,7 +34,7 @@ export interface AppendDataParams {
   columnMapping: Record<string, string | null>
   tempFilePath?: string // Cached CSV path
   limitRows?: number // Max rows allowed
-  readOptions?: Record<string, any>
+  readOptions?: Record<string, unknown>
 }
 
 export interface CreateTableParams {
@@ -45,7 +45,7 @@ export interface CreateTableParams {
   columns: Array<{ name: string; type: string; isIgnored?: boolean }> // User-confirmed types and filters
   tempFilePath?: string // Cached CSV path
   limitRows?: number // Max rows allowed
-  readOptions?: Record<string, any> // Options used to read the file
+  readOptions?: Record<string, unknown> // Options used to read the file
 }
 
 export interface ValidateColumnTypesParams {
@@ -53,5 +53,5 @@ export interface ValidateColumnTypesParams {
   tempFilePath?: string
   sourceTableName?: string // [NEW]
   columns: Array<{ name: string; type: string }>
-  readOptions?: Record<string, any>
+  readOptions?: Record<string, unknown>
 }

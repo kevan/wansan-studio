@@ -13,7 +13,7 @@ export class NativeDatabaseService {
     )
   }
 
-  async query(sql: string): Promise<any[]> {
+  async query(sql: string): Promise<Record<string, unknown>[]> {
     console.log('[NativeDB] Query:', sql)
     return dbClient.executeQuery(sql)
   }
@@ -21,14 +21,14 @@ export class NativeDatabaseService {
 
 
   async queryWithSchema(sql: string): Promise<{
-    data: any[]
+    data: Record<string, unknown>[]
     columnFields: Array<{ name: string; type: string }>
   }> {
     console.log('[NativeDB] QueryWithSchema:', sql)
     const res = await dbClient.executeQueryFull(sql)
     
     const data = res.data || []
-    const columnFields = res.meta?.columnFields || []
+    const columnFields = (res.meta as { columnFields?: Array<{ name: string; type: string }> })?.columnFields || []
 
     // Post-process: Format Date/Time columns to strings to prevent them being shown as raw timestamps
     // We do NOT format numeric columns here to preserve them for chart rendering

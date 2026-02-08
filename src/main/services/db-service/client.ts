@@ -8,7 +8,7 @@ export class NativeDBClient {
   private pendingRequests = new Map<
     string,
     {
-      resolve: (value: any) => void
+      resolve: (value: any) => void // Keep any for resolve/reject as they handle various response types
       reject: (reason?: any) => void
       returnFull?: boolean
     }
@@ -111,16 +111,16 @@ export class NativeDBClient {
     return res.data
   }
 
-  async executeQueryFull(sql: string): Promise<{ data: any[]; meta?: any }> {
+  async executeQueryFull(sql: string): Promise<{ data: Record<string, unknown>[]; meta?: unknown }> {
     await this.init() // Defaults to :memory: if not already running
     const res = await this.sendFull('QUERY', { sql })
     return {
-      data: res.data || [],
+      data: (res.data as Record<string, unknown>[]) || [],
       meta: res.meta,
     }
   }
 
-  private sendFull(type: DBRequest['type'], payload: any): Promise<DBResponse> {
+  private sendFull(type: DBRequest['type'], payload: unknown): Promise<DBResponse> {
     if (!this.child) {
       return Promise.reject(
         new Error('DB Service not initialized. Child process is null.')
@@ -138,7 +138,7 @@ export class NativeDBClient {
     })
   }
 
-  private async send(type: DBRequest['type'], payload: any): Promise<any> {
+  private async send(type: DBRequest['type'], payload: unknown): Promise<unknown> {
     const res = await this.sendFull(type, payload)
     return res.data
   }

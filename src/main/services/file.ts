@@ -16,6 +16,7 @@ import {
   CreateTableParams,
   IngestPreCheckParams,
   IngestPreCheckResponse,
+  ValidateColumnTypesParams,
 } from '@shared/electron-api.ts'
 
 export class FileService {
@@ -57,13 +58,13 @@ export class FileService {
   async prepareFile(
     filePath: string,
     sourceName: string,
-    _readOptions?: Record<string, any>
+    _readOptions?: Record<string, unknown>
   ): Promise<{
     tempFilePath: string
     rowCount: number
     columns: ColumnSchema[]
-    preview: any[]
-    readOptions?: Record<string, any>
+    preview: Record<string, unknown>[]
+    readOptions?: Record<string, unknown>
   }> {
     const ext = extname(filePath).toLowerCase()
     const fileName = basename(filePath)
@@ -99,7 +100,7 @@ export class FileService {
 
     // Branch B: Flat Files -> DuckDB Direct Read + Encoding Detection
     let reader = 'read_csv_auto'
-    let detectedOptions: Record<string, any> | undefined = undefined
+    let detectedOptions: Record<string, unknown> | undefined = undefined
     let activePath = safePath // Path to be used for reading (might be cleaned temp file)
 
     if (ext === '.json') {
@@ -163,10 +164,10 @@ export class FileService {
       `SELECT COUNT(*) as count FROM ${readSql}`
     )
 
-    const columns: ColumnSchema[] = columnsResult.map((col: any) => ({
-      name: col.column_name,
-      safeName: col.column_name,
-      type: normalizeDuckDBType(col.column_type) as ColumnType,
+    const columns: ColumnSchema[] = columnsResult.map((col: Record<string, unknown>) => ({
+      name: col.column_name as string,
+      safeName: col.column_name as string,
+      type: normalizeDuckDBType(col.column_type as string) as ColumnType,
       sampleValues: [],
     }))
 
@@ -235,8 +236,12 @@ export class FileService {
   }
 
   async validateColumnTypes(
-    params: any
-  ): Promise<{ valid: boolean; error?: string; errorDetail?: any }> {
+    params: ValidateColumnTypesParams
+  ): Promise<{
+    valid: boolean
+    error?: string
+    errorDetail?: { column: string; value: string; type: string }
+  }> {
     const { filePath, tempFilePath, sourceTableName, columns, readOptions } =
       params
     let readSql = ''
@@ -264,10 +269,10 @@ export class FileService {
         await this.databaseService.query(
           `SELECT CAST("${col.name}" AS ${col.type}) FROM ${readSql} LIMIT 50000`
         )
-      } catch (e: any) {
+      } catch (e: unknown) {
         return {
           valid: false,
-          error: e.message,
+          error: e instanceof Error ? e.message : String(e),
           errorDetail: { column: col.name, type: col.type, value: '?' },
         }
       }
@@ -416,7 +421,9 @@ export class FileService {
     }
   }
 
-  async createTableFromSource(params: CreateTableParams): Promise<any> {
+  async createTableFromSource(
+    params: CreateTableParams
+  ): Promise<{ rowCount: number; columns: ColumnSchema[] }> {
     const {
       filePath,
       tableName,
@@ -703,7 +710,9 @@ export class FileService {
     await this.databaseService.exec(`DROP TABLE IF EXISTS "${tableName}"`)
   }
 
-  private async detectCsvEncoding(safePath: string): Promise<Record<string, any>> {
+  private async detectCsvEncoding(
+    safePath: string
+  ): Promise<Record<string, unknown>> {
     const strategies = [
       { name: 'Default', options: { auto_detect: true } },
       { name: 'GBK', options: { encoding: 'GBK', auto_detect: true } },
@@ -719,7 +728,7 @@ export class FileService {
       // Currently we stick to the defines strategies.
     ]
 
-    let lastError: any
+    let lastError: unknown
 
     for (const strategy of strategies) {
       try {
@@ -731,12 +740,12 @@ export class FileService {
         await this.databaseService.query(
           `DESCRIBE SELECT * FROM read_csv_auto('${safePath}', ${optStr})`
         )
-        return strategy.options
+        return strategy.options as Record<string, unknown>
       } catch (e) {
         lastError = e
       }
     }
 
-    throw new Error(`Failed to parse CSV: ${lastError?.message || 'Unknown error'}`)
+    throw new Error(`Failed to parse CSV: ${lastError instanceof Error ? lastError.message : 'Unknown error'}`)
   }
 }

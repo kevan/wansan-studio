@@ -19,8 +19,8 @@ interface TableInfo {
   column_type: string
   null: string
   key: string
-  default: any
-  extra: any
+  default: unknown
+  extra: unknown
 }
 
 export class BatchProcessor {
@@ -104,7 +104,15 @@ export class BatchProcessor {
       await this.db.exec(`CREATE TABLE IF NOT EXISTS "${sidecarName}" (_ws_row_id BIGINT PRIMARY KEY)`)
 
       // 2. Add Target Column to Sidecar if not exists
-      const cols = await this.db.query(`PRAGMA table_info('${sidecarName}')`) as TableInfo[]
+      const colsResult = await this.db.query(`PRAGMA table_info('${sidecarName}')`)
+      const cols = colsResult.map(c => ({
+        column_name: c.name as string,
+        column_type: c.type as string,
+        null: c.notnull === 0 ? 'YES' : 'NO',
+        key: c.pk === 1 ? 'PRI' : '',
+        default: c.dflt_value,
+        extra: ''
+      })) as unknown as TableInfo[]
       if (!cols.some(c => c.column_name === targetColumnName)) {
         await this.db.exec(`ALTER TABLE "${sidecarName}" ADD COLUMN "${targetColumnName}" TEXT`)
       }

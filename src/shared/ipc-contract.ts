@@ -39,12 +39,12 @@ export interface IPCContract {
   'file.parseFile': { params: string; return: ParseFileResponse }
   'file.inspectFile': { params: string; return: IPCResponse<Array<{ sourceName: string; previewHeaders?: string[]; readOptions?: Record<string, any> }>> }
   'file.prepareFile': { 
-    params: { filePath: string; sourceName: string; readOptions?: Record<string, any> }
-    return: IPCResponse<{ tempFilePath: string; rowCount: number; columns: ColumnSchema[]; preview: any[] }> 
+    params: { filePath: string; sourceName: string; readOptions?: Record<string, unknown> }
+    return: IPCResponse<{ tempFilePath: string; rowCount: number; columns: ColumnSchema[]; preview: unknown[] }> 
   }
   'file.validateColumnTypes': { params: ValidateColumnTypesParams; return: IPCResponse<{ valid: boolean; error?: string; errorDetail?: { column: string; value: string; type: string } }> }
   'file.reIngestFile': { 
-    params: { fileId: string; filePath: string; tableName: string; sheetName?: string; columns?: ColumnSchema[]; readOptions?: Record<string, any> }
+    params: { fileId: string; filePath: string; tableName: string; sheetName?: string; columns?: ColumnSchema[]; readOptions?: Record<string, unknown> }
     return: IPCResponse<ReloadResult> 
   }
   'file.getUniqueTableName': { params: { name: string; sheetName?: string }; return: IPCResponse<string> }

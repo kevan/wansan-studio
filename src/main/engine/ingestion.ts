@@ -24,18 +24,18 @@ async function fetchTableSchema(
   )
 
   const columns: ColumnSchema[] = await Promise.all(
-    columnsResult.map(async (col: any) => {
-      const finalType = normalizeDuckDBType(col.type)
+    columnsResult.map(async (col: Record<string, unknown>) => {
+      const finalType = normalizeDuckDBType(col.type as string)
       const sampleValues = await getSampleValues(
         databaseService,
         tableName,
-        col.name,
+        col.name as string,
         finalType
       )
 
       return {
-        name: col.name,
-        safeName: col.name,
+        name: col.name as string,
+        safeName: col.name as string,
         type: finalType,
         sampleValues,
       }
@@ -98,7 +98,7 @@ export async function getSampleValues(
      WHERE "${columnName}" IS NOT NULL LIMIT 3`
   )
 
-  return rows.map((row: any) => {
+  return rows.map((row: Record<string, unknown>) => {
     const val = row[columnName]
     return processSampleValue(val, columnType)
   })
@@ -210,17 +210,17 @@ export async function ingestExcelFile(
               `PRAGMA table_info('${tableName}');`
             )
             const columns: ColumnSchema[] = []
-            for (const col of columnsResult) {
-              const finalType = normalizeDuckDBType(col.type)
+            for (const col of columnsResult as Record<string, unknown>[]) {
+              const finalType = normalizeDuckDBType(col.type as string)
               const sampleValues = await getSampleValues(
                 databaseService,
                 tableName,
-                col.name,
+                col.name as string,
                 finalType
               )
               columns.push({
-                name: col.name,
-                safeName: col.name,
+                name: col.name as string,
+                safeName: col.name as string,
                 type: finalType as ColumnType,
                 sampleValues,
               })
