@@ -155,6 +155,11 @@ export interface ProjectState extends ProjectData {
   cleanupZombieFiles: () => void
   reset: () => void
   closeProject: () => Promise<void>
+
+  // [NEW] v1.7.5 Table Views
+  saveTableView: (fileId: string, view: import('@shared/types/project').TableView) => void
+  deleteTableView: (fileId: string, viewId: string) => void
+  updateTableView: (fileId: string, viewId: string, updates: Partial<import('@shared/types/project').TableView>) => void
 }
 
 const createNewSession = (): Session => ({
@@ -194,6 +199,7 @@ const initialProjectState: ProjectData & {
   currentProjectPath: null,
   isProjectLoaded: false,
   editingReportId: null,
+  tableViews: {},
 }
 
 export const useProjectStore = create<ProjectState>()(
@@ -1445,6 +1451,40 @@ export const useProjectStore = create<ProjectState>()(
           isRestoring: false,
         })
       },
+
+      saveTableView: (fileId, view) =>
+        set(state => {
+          const currentViews = (state.tableViews || {})[fileId] || []
+          const exists = currentViews.find(v => v.id === view.id)
+          const nextViews = exists 
+            ? currentViews.map(v => v.id === view.id ? view : v)
+            : [...currentViews, view]
+          
+          return {
+            tableViews: {
+              ...(state.tableViews || {}),
+              [fileId]: nextViews
+            }
+          }
+        }),
+
+      deleteTableView: (fileId, viewId) =>
+        set(state => ({
+          tableViews: {
+            ...(state.tableViews || {}),
+            [fileId]: ((state.tableViews || {})[fileId] || []).filter(v => v.id !== viewId)
+          }
+        })),
+
+      updateTableView: (fileId, viewId, updates) =>
+        set(state => ({
+          tableViews: {
+            ...(state.tableViews || {}),
+            [fileId]: ((state.tableViews || {})[fileId] || []).map(v => 
+              v.id === viewId ? { ...v, ...updates } : v
+            )
+          }
+        })),
     }),
     {
       name: 'wansan-project-v2',

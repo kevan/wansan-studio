@@ -1,55 +1,45 @@
-import { useState, useEffect } from 'react'
-import { QueryPanel } from './query-panel'
+/**
+ * DataPreviewPanel - Data Preview Container
+ * Based on: docs/SPEC_DATA_EXPLORER_V2.md
+ * 
+ * Key Features:
+ * - High-performance virtual grid preview
+ * - Proper loading/error states
+ */
+import { useMemo, memo } from 'react'
+import { VirtualDataGrid } from '../data-workspace/virtual-data-grid'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { useTranslation } from 'react-i18next'
-import { format } from 'sql-formatter'
 import { Loader2, AlertCircle, CloudUpload } from 'lucide-react'
+
+// Memoized Grid wrapper to prevent unnecessary remounts
+const MemoizedGrid = memo(function MemoizedGrid({
+  fileId,
+  tableName,
+  columns,
+  totalRows,
+}: {
+  fileId: string
+  tableName: string
+  columns: Array<{ name: string; type: string }>
+  totalRows?: number
+}) {
+  return (
+    <VirtualDataGrid
+      fileId={fileId}
+      tableName={tableName}
+      columns={columns}
+      totalRows={totalRows}
+    />
+  )
+})
 
 export function DataPreviewPanel() {
   const { activeFileId, files, isRestoring } = useProjectStore()
-  const file = files.find(f => f.id === activeFileId)
+  const file = useMemo(() => files.find(f => f.id === activeFileId), [files, activeFileId])
   const { t } = useTranslation('common')
-  const [sql, setSql] = useState('')
 
-  useEffect(() => {
-    if (file) {
-      // const hasMetrics = file.smartMetrics && file.smartMetrics.length > 0
-      // const hasRelations = file.relations && file.relations.length > 0
-      // const hasViewSchema = file.viewSchema && file.viewSchema.length > 0
-      //
-      // const targetTable = (hasMetrics || hasRelations || hasViewSchema)
-      //   ? `v_${file.tableName}`
-      //   : file.tableName
-      //
-      // // [Optimization] Instead of SELECT *, pick columns to avoid joined-column clutter
-      // let selectClause = '*'
-      // if (hasViewSchema && file.viewSchema) {
-      //   // Only include columns that belong to the table, metrics, or AI sidecars
-      //   // Exclude columns from JOINs (which contain '__')
-      //   const ownColumns = file.viewSchema
-      //     .filter(c => !c.name.includes('__'))
-      //     .map(c => `"${c.name}"`)
-      //
-      //   if (ownColumns.length > 0) {
-      //     selectClause = ownColumns.join(', ')
-      //   }
-      // }
-      //
-      // const initialSql = `SELECT ${selectClause} FROM "${targetTable}" LIMIT 100`
-      const initialSql = `SELECT * FROM "${file.tableName}" LIMIT 100`
-      try {
-        const formatted = format(initialSql, {
-          language: 'postgresql',
-          tabWidth: 2,
-          keywordCase: 'upper',
-        })
-        setSql(formatted)
-      } catch {
-        setSql(initialSql)
-      }
-    }
-  }, [file])
-
+  // Show restoring state
   if (isRestoring) {
     return (
       <div className="h-full w-full flex flex-col items-center justify-center text-zinc-400 gap-2">
@@ -61,6 +51,7 @@ export function DataPreviewPanel() {
     )
   }
 
+  // No file selected
   if (!file) {
     return (
       <div className="h-full w-full flex items-center justify-center text-zinc-400 text-sm">
@@ -69,7 +60,7 @@ export function DataPreviewPanel() {
     )
   }
 
-  // Handle Uploading State
+  // Uploading state
   if (file.status === 'uploading') {
     return (
       <div className="h-full w-full bg-zinc-50/30 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-300">
@@ -86,7 +77,7 @@ export function DataPreviewPanel() {
     )
   }
 
-  // Handle Processing State (New file being ingested)
+  // Processing state
   if (file.status === 'processing') {
     return (
       <div className="h-full w-full bg-zinc-50/30 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-300">
@@ -103,7 +94,7 @@ export function DataPreviewPanel() {
     )
   }
 
-  // Handle Error State
+  // Error state
   if (file.status === 'error') {
     return (
       <div className="h-full w-full bg-red-50/10 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
@@ -125,6 +116,7 @@ export function DataPreviewPanel() {
     )
   }
 
+  // Invalid metadata
   if (!file.tableName) {
     return (
       <div className="h-full w-full flex items-center justify-center text-red-400 text-sm">
@@ -133,23 +125,16 @@ export function DataPreviewPanel() {
     )
   }
 
-  // const hasMetrics = file.smartMetrics && file.smartMetrics.length > 0
-  // const hasRelations = file.relations && file.relations.length > 0
-  // const hasViewSchema = file.viewSchema && file.viewSchema.length > 0
-  //
-  // const currentExposedTable = (hasMetrics || hasRelations || hasViewSchema)
-  //   ? `v_${file.tableName}`
-  //   : file.tableName
-
   return (
-    <div className="h-full w-full bg-white flex flex-col p-4 overflow-hidden">
-      <QueryPanel
-        key={file.id} // Reset state on file change
-        sql={sql}
-        onChange={setSql}
-        initialSql={`SELECT * FROM "${file.tableName}" LIMIT 100`}
-        runOnMount={true}
-      />
+    <div className="h-full w-full bg-white flex flex-col p-4 overflow-hidden relative">
+      <div className="flex-1 overflow-hidden relative">
+        <MemoizedGrid
+          fileId={file.id}
+          tableName={file.tableName}
+          columns={file.columns || []}
+          totalRows={file.rowCount}
+        />
+      </div>
     </div>
   )
 }

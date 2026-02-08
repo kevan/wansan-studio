@@ -1,6 +1,7 @@
 import { Message } from './chat'
 import { ReportWidget, ReportData } from './dashboard'
 import { FileNode, DomainRule, SmartMetric, TableRelation } from '../types'
+import { FilterRule } from './filter'
 
 export interface Relation {
   id: string
@@ -12,6 +13,18 @@ export interface Relation {
 }
 
 export type ViewMode = 'chat' | 'schema' | 'preview'
+
+export interface TableView {
+  id: string
+  name: string
+  filters: FilterRule[]
+  columnConfig?: {
+    hidden?: string[]
+    order?: string[]
+    widths?: Record<string, number>
+  }
+  sort?: { id: string; desc: boolean }[]
+}
 
 export interface Session {
   id: string
@@ -49,4 +62,5 @@ export interface ProjectData {
   relations?: TableRelation[]
   domainRules?: DomainRule[]
   suggestedPrompts?: string[]
+  tableViews?: Record<string, TableView[]> // [NEW] v1.7.5
 }
