@@ -1,6 +1,6 @@
 import { ColumnSchema, ColumnType, FileNode } from '@shared/types'
 import { Relation } from '@shared/types/project'
-import { getJoinedColumnName } from '@shared/naming-utils'
+import { getJoinedColumnName, parseJoinedColumnName } from '@shared/naming-utils'
 import { normalizeDuckDBType } from '@shared/type-utils'
 
 /**
@@ -180,7 +180,7 @@ export const DuckDBViewManager = {
         const colName = row.column_name
         let sourceType: import('@shared/types').ColumnSourceType = 'raw'
         
-        // Infer source type
+        // 1. Infer source type
         if (file.smartMetrics?.some(m => m.name === colName)) {
           sourceType = 'metric'
         } else if (colName.includes('__')) {
@@ -188,15 +188,38 @@ export const DuckDBViewManager = {
         } else if (colMapUpdates.has(colName)) {
           sourceType = 'ai'
         } else if (colName.endsWith('_MoM') || colName.endsWith('_YoY')) {
-          sourceType = 'metric' // Time intelligence is also a metric
+          sourceType = 'metric'
+        }
+
+        // 2. Recover Semantic Info
+        let semantic = undefined
+        let samples = []
+
+        if (sourceType === 'raw') {
+          const originalCol = file.columns.find(c => c.name === colName)
+          semantic = originalCol?.semantic
+          samples = originalCol?.sampleValues || []
+        } else if (sourceType === 'joined') {
+          const parsed = parseJoinedColumnName(colName)
+          if (parsed) {
+            // Find relation to identify target table
+            const rel = relations.find(r => r.fileAId === file.id && r.columnA === parsed.prefix)
+            if (rel) {
+              const targetFile = allFiles.find(f => f.id === rel.fileBId)
+              const targetCol = targetFile?.columns.find(c => c.name === parsed.column)
+              semantic = targetCol?.semantic
+              samples = targetCol?.sampleValues || []
+            }
+          }
         }
 
         return {
           name: colName,
           safeName: colName,
           type: normalizeDuckDBType(row.column_type),
-          sampleValues: [], // View schema doesn't need samples
-          sourceType
+          sampleValues: samples,
+          sourceType,
+          semantic
         }
       })
     } catch (e) {

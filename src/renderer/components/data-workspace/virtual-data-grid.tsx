@@ -322,8 +322,6 @@ export function VirtualDataGrid({
         columns={columns} 
         filters={filters} 
         onChange={setFilters} 
-        columnVisibility={columnVisibility}
-        onColumnVisibilityChange={setColumnVisibility}
         rightSide={
           <div className="flex items-center gap-2">
             <Button 
@@ -343,89 +341,106 @@ export function VirtualDataGrid({
 
       <div className="flex-1 flex overflow-hidden relative">
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Grid Header - Fixed */}
-          <div className="flex border-b border-zinc-200 bg-zinc-50/80 backdrop-blur z-10 shadow-sm flex-shrink-0">
-            {table.getHeaderGroups().map(headerGroup => (
-              <div key={headerGroup.id} className="flex">
-                {headerGroup.headers.map(header => {
-                  const isSorted = header.column.getIsSorted()
-                  const meta = header.column.columnDef.meta as any
-                  const typeIcon = getTypeIcon(meta?.type || 'VARCHAR')
-                  const indicator = getSourceIndicator(meta?.sourceType)
+          <div 
+            ref={parentRef} 
+            className="flex-1 overflow-auto w-full"
+          >
+            {/* 
+              Shared Scroll Content: Header and Body live in the same scrollable container
+              to achieve zero-lag horizontal scrolling via CSS sticky.
+            */}
+            <div className="min-w-max min-h-full flex flex-col">
+              {/* Grid Header - Sticky */}
+              <div className="sticky top-0 z-20 flex bg-zinc-50/95 backdrop-blur shadow-sm border-b border-zinc-200">
+                {table.getHeaderGroups().map(headerGroup => (
+                  <div key={headerGroup.id} className="flex">
+                    {headerGroup.headers.map(header => {
+                      const isSorted = header.column.getIsSorted()
+                      const meta = header.column.columnDef.meta as any
+                      const typeIcon = getTypeIcon(meta?.type || 'VARCHAR')
+                      const indicator = getSourceIndicator(meta?.sourceType)
+                      
+                      // [V4.0] Get Display Name (Alias or Name)
+                      const originalColumn = columns.find(c => c.name === header.id)
+                      const alias = originalColumn?.semantic?.aliases?.[0]
+                      const displayName = alias ? `${alias} (${header.id})` : header.id
 
+                      return (
+                        <ContextMenu key={header.id}>
+                          <ContextMenuTrigger asChild>
+                            <div
+                              className={cn(
+                                "h-10 px-4 py-2 flex items-center gap-2 text-xs font-medium text-zinc-500 border-r border-zinc-200/50 last:border-r-0 cursor-pointer hover:bg-zinc-100 transition-colors select-none whitespace-nowrap group/header",
+                                isSorted && "text-indigo-600 bg-indigo-50/50",
+                                indicator?.bg && "bg-opacity-30 border-b-2",
+                                indicator?.bg && (meta.sourceType === 'ai' ? 'border-b-purple-400' : meta.sourceType === 'metric' ? 'border-b-green-400' : 'border-b-orange-400')
+                              )}
+                              style={{ width: header.getSize(), flexShrink: 0 }}
+                              onClick={header.column.getToggleSortingHandler()}
+                            >
+                              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                <span className="text-zinc-300 group-hover/header:text-indigo-400 transition-colors">{typeIcon}</span>
+                                <span className="truncate" title={displayName}>{displayName}</span>
+                                {indicator && <span className={cn("ml-auto", indicator.color)}>{indicator.icon}</span>}
+                              </div>
+                              <div className="w-4 flex items-center justify-center">
+                                {isSorted ? (isSorted === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : (<ArrowUpDown className="w-3 h-3 opacity-0 group-hover/header:opacity-30" />)}
+                              </div>
+                            </div>
+                          </ContextMenuTrigger>
+                          <ContextMenuContent className="w-48">
+                            <ContextMenuItem 
+                              className="gap-2" 
+                              onClick={onModifyStructure}
+                            >
+                              <Edit3 className="w-3.5 h-3.5" /> Modify Structure...
+                            </ContextMenuItem>
+                            <ContextMenuItem 
+                              className="gap-2 text-red-600 focus:text-red-600" 
+                              onClick={() => handleHideColumn(header.id)}
+                            >
+                              <EyeOff className="w-3.5 h-3.5" /> Hide Column
+                            </ContextMenuItem>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem className="gap-2" disabled><Sparkles className="w-3.5 h-3.5" /> AI Analysis...</ContextMenuItem>
+                          </ContextMenuContent>
+                        </ContextMenu>
+                      )
+                    })}
+                  </div>
+                ))}
+              </div>
+
+              {/* Grid Body - Virtualized */}
+              <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
+                {virtualItems.map((virtualRow) => {
+                  const row = rows[virtualRow.index]
+                  if (!row) return null
                   return (
-                    <ContextMenu key={header.id}>
-                      <ContextMenuTrigger asChild>
-                        <div
-                          className={cn(
-                            "h-10 px-4 py-2 flex items-center gap-2 text-xs font-medium text-zinc-500 border-r border-zinc-200/50 last:border-r-0 cursor-pointer hover:bg-zinc-100 transition-colors select-none whitespace-nowrap group/header",
-                            isSorted && "text-indigo-600 bg-indigo-50/50",
-                            indicator?.bg && "bg-opacity-30 border-b-2",
-                            indicator?.bg && (meta.sourceType === 'ai' ? 'border-b-purple-400' : meta.sourceType === 'metric' ? 'border-b-green-400' : 'border-b-orange-400')
-                          )}
-                          style={{ width: header.getSize(), flexShrink: 0 }}
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                            <span className="text-zinc-300 group-hover/header:text-indigo-400 transition-colors">{typeIcon}</span>
-                            <span className="truncate">{flexRender(header.column.columnDef.header, header.getContext())}</span>
-                            {indicator && <span className={cn("ml-auto", indicator.color)}>{indicator.icon}</span>}
-                          </div>
-                          <div className="w-4 flex items-center justify-center">
-                            {isSorted ? (isSorted === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : (<ArrowUpDown className="w-3 h-3 opacity-0 group-hover/header:opacity-30" />)}
-                          </div>
-                        </div>
-                      </ContextMenuTrigger>
-                      <ContextMenuContent className="w-48">
-                        <ContextMenuItem 
-                          className="gap-2" 
-                          onClick={onModifyStructure}
-                        >
-                          <Edit3 className="w-3.5 h-3.5" /> Modify Structure...
-                        </ContextMenuItem>
-                        <ContextMenuItem 
-                          className="gap-2 text-red-600 focus:text-red-600" 
-                          onClick={() => handleHideColumn(header.id)}
-                        >
-                          <EyeOff className="w-3.5 h-3.5" /> Hide Column
-                        </ContextMenuItem>
-                        <ContextMenuSeparator />
-                        <ContextMenuItem className="gap-2" disabled><Sparkles className="w-3.5 h-3.5" /> AI Analysis...</ContextMenuItem>
-                      </ContextMenuContent>
-                    </ContextMenu>
+                    <div 
+                      key={row.id} 
+                      style={{ 
+                        position: 'absolute', 
+                        top: 0, 
+                        left: 0, 
+                        width: '100%', 
+                        transform: `translateY(${virtualRow.start}px)` 
+                      }}
+                    >
+                      <GridRow 
+                        row={row} 
+                        isSelected={row.id === selectedRowId} 
+                        onClick={() => handleRowClick(row.original)} 
+                      />
+                    </div>
                   )
                 })}
               </div>
-            ))}
-          </div>
-
-          <div ref={parentRef} className="flex-1 overflow-auto w-full">
-            <div style={{ height: rowVirtualizer.getTotalSize(), width: '100%', position: 'relative' }}>
-              {virtualItems.map((virtualRow) => {
-                const row = rows[virtualRow.index]
-                if (!row) return null
-                return (
-                  <div 
-                    key={row.id} 
-                    style={{ 
-                      position: 'absolute', 
-                      top: 0, 
-                      left: 0, 
-                      width: '100%', 
-                      transform: `translateY(${virtualRow.start}px)` 
-                    }}
-                  >
-                    <GridRow 
-                      row={row} 
-                      isSelected={row.id === selectedRowId} 
-                      onClick={() => handleRowClick(row.original)} 
-                    />
-                  </div>
-                )
-              })}
-            </div>
-            <div ref={loadMoreRef} className="h-12 flex items-center justify-center">
-              {isFetchingNextPage && <div className="flex items-center gap-2 text-zinc-400 text-xs"><Loader2 className="w-3 h-3 animate-spin" /> Loading more...</div>}
+              
+              {/* Load More Trigger */}
+              <div ref={loadMoreRef} className="h-12 flex items-center justify-center">
+                {isFetchingNextPage && <div className="flex items-center gap-2 text-zinc-400 text-xs"><Loader2 className="w-3 h-3 animate-spin" /> Loading more...</div>}
+              </div>
             </div>
           </div>
         </div>

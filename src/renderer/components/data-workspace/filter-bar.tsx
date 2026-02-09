@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Plus, X, Filter, Trash2, Check, LayoutPanelTop, Eye, EyeOff } from 'lucide-react'
+import { Plus, X, Filter, Trash2, Check } from 'lucide-react'
 import { FilterRule, FilterOperator, OPERATORS, getSimpleType } from '@shared/types/filter'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -9,22 +9,14 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import { v4 as uuidv4 } from 'uuid'
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+
+import { ColumnSchema } from '@shared/types'
 
 interface FilterBarProps {
-  columns: Array<{ name: string; type: string }>
+  columns: Array<ColumnSchema>
   filters: FilterRule[]
   onChange: (filters: FilterRule[]) => void
   rightSide?: React.ReactNode
-  columnVisibility?: Record<string, boolean>
-  onColumnVisibilityChange?: (visibility: Record<string, boolean>) => void
 }
 
 export function FilterBar({ 
@@ -32,8 +24,6 @@ export function FilterBar({
   filters, 
   onChange, 
   rightSide,
-  columnVisibility = {},
-  onColumnVisibilityChange 
 }: FilterBarProps) {
   const { t } = useTranslation('common')
   const [isOpen, setIsOpen] = useState(false)
@@ -80,33 +70,39 @@ export function FilterBar({
         <span className="text-[10px] font-bold uppercase tracking-wider">{t('filter')}</span>
       </div>
 
-      {filters.map(filter => (
-        <Badge
-          key={filter.id}
-          variant="secondary"
-          className={cn(
-            "h-7 pl-2 pr-1 flex items-center gap-1.5 group transition-all",
-            filter.enabled ? "bg-indigo-50 text-indigo-700 border-indigo-100" : "opacity-50 grayscale"
-          )}
-        >
-          <span 
-            className="cursor-pointer flex items-center gap-1"
-            onClick={() => handleToggle(filter.id)}
-          >
-            <span className="font-semibold text-xs">{filter.columnName}</span>
-            <span className="text-[10px] text-indigo-400">{OPERATORS[filter.operator].label}</span>
-            {filter.operator !== 'is_null' && filter.operator !== 'is_not_null' && (
-              <span className="max-w-[100px] truncate italic text-xs">&quot;{filter.value}&quot;</span>
+      {filters.map(filter => {
+        const originalColumn = columns.find(c => c.name === filter.columnName)
+        const alias = originalColumn?.semantic?.aliases?.[0]
+        const displayName = alias || filter.columnName
+
+        return (
+          <Badge
+            key={filter.id}
+            variant="secondary"
+            className={cn(
+              "h-7 pl-2 pr-1 flex items-center gap-1.5 group transition-all",
+              filter.enabled ? "bg-indigo-50 text-indigo-700 border-indigo-100" : "opacity-50 grayscale"
             )}
-          </span>
-          <button 
-            onClick={() => handleRemove(filter.id)}
-            className="p-0.5 hover:bg-indigo-200/50 rounded-full transition-colors"
           >
-            <X className="w-3 h-3" />
-          </button>
-        </Badge>
-      ))}
+            <span 
+              className="cursor-pointer flex items-center gap-1"
+              onClick={() => handleToggle(filter.id)}
+            >
+              <span className="font-semibold text-xs" title={filter.columnName}>{displayName}</span>
+              <span className="text-[10px] text-indigo-400">{OPERATORS[filter.operator].label}</span>
+              {filter.operator !== 'is_null' && filter.operator !== 'is_not_null' && (
+                <span className="max-w-[100px] truncate italic text-xs">&quot;{filter.value}&quot;</span>
+              )}
+            </span>
+            <button 
+              onClick={() => handleRemove(filter.id)}
+              className="p-0.5 hover:bg-indigo-200/50 rounded-full transition-colors"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </Badge>
+        )
+      })}
 
       <div className="flex items-center gap-1 ml-1">
         <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -131,11 +127,16 @@ export function FilterBar({
                       <SelectValue placeholder="选择字段" />
                     </SelectTrigger>
                     <SelectContent>
-                      {activeColumns.map(c => (
-                        <SelectItem key={c.name} value={c.name}>
-                          <span className="text-xs">{c.name}</span>
-                        </SelectItem>
-                      ))}
+                      {activeColumns.map(c => {
+                        const alias = c.semantic?.aliases?.[0]
+                        return (
+                          <SelectItem key={c.name} value={c.name}>
+                            <span className="text-xs">
+                              {alias ? `${alias} (${c.name})` : c.name}
+                            </span>
+                          </SelectItem>
+                        )
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
@@ -178,39 +179,6 @@ export function FilterBar({
             </div>
           </PopoverContent>
         </Popover>
-
-        {onColumnVisibilityChange && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 text-xs text-zinc-500 hover:text-indigo-600 gap-1.5 px-2">
-                <LayoutPanelTop className="w-3.5 h-3.5" />
-                显示列
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56 max-h-[400px] overflow-y-auto">
-              <DropdownMenuLabel className="text-[10px] font-bold text-zinc-400 uppercase">选择要显示的字段</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {activeColumns.map(col => (
-                <DropdownMenuCheckboxItem
-                  key={col.name}
-                  checked={columnVisibility[col.name] !== false}
-                  onCheckedChange={(checked) => {
-                    onColumnVisibilityChange({
-                      ...columnVisibility,
-                      [col.name]: !!checked
-                    })
-                  }}
-                  className="text-xs"
-                >
-                  <div className="flex items-center gap-2">
-                    {columnVisibility[col.name] !== false ? <Eye className="w-3 h-3 text-indigo-500" /> : <EyeOff className="w-3 h-3 text-zinc-300" />}
-                    {col.name}
-                  </div>
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
       </div>
 
       {filters.length > 0 && (
@@ -226,8 +194,8 @@ export function FilterBar({
       )}
 
       {rightSide && (
-        <div className={cn("flex items-center gap-2 pr-2", (filters.length === 0 && !onColumnVisibilityChange) && "ml-auto")}>
-          {(filters.length > 0 || onColumnVisibilityChange) && <div className="w-px h-4 bg-zinc-200 mx-2" />}
+        <div className={cn("flex items-center gap-2 pr-2", filters.length === 0 && "ml-auto")}>
+          {filters.length > 0 && <div className="w-px h-4 bg-zinc-200 mx-2" />}
           {rightSide}
         </div>
       )}

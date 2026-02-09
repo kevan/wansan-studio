@@ -12,6 +12,7 @@ import { formatForDisplay } from '@shared/serialization'
 import { Copy, ChevronUp, ChevronDown, Calendar, Hash, Type, Braces } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToastStore } from '@/stores/useToastStore'
+import { ColumnSchema } from '@shared/types'
 
 interface RowDetailSheetProps {
   open: boolean
@@ -78,30 +79,46 @@ export function RowDetailSheet({
     if (!cols || cols.length === 0) return null
     return (
       <div className="mb-6">
-        <div className="flex items-center gap-2 mb-3 text-zinc-500 font-medium text-xs uppercase tracking-wider">
+        <div className="flex items-center gap-2 mb-3 text-zinc-400 font-bold text-[10px] uppercase tracking-widest">
           {icon}
           {title}
         </div>
         <div className="grid gap-3">
-          {cols.map((col) => (
-            <div key={col.name} className="group relative bg-white border border-zinc-100 rounded-lg p-3 hover:border-indigo-100 hover:shadow-sm transition-all">
-              <div className="flex justify-between items-start gap-2 mb-1">
-                <span className="text-xs font-semibold text-zinc-500">{col.name}</span>
-                <span className="text-[10px] font-mono text-zinc-300">{col.type}</span>
+          {cols.map((col) => {
+            const castedCol = col as ColumnSchema
+            const alias = castedCol.semantic?.aliases?.[0]
+            
+            return (
+              <div key={col.name} className="group relative bg-zinc-50/50 border border-zinc-100 rounded-xl p-4 hover:border-indigo-200 hover:bg-white hover:shadow-md transition-all duration-200">
+                <div className="flex justify-between items-start gap-2 mb-2">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs font-bold text-zinc-900">
+                      {alias || col.name}
+                    </span>
+                    {alias && (
+                      <span className="text-[10px] font-mono text-zinc-400">
+                        {col.name}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-white border border-zinc-100 text-zinc-400 font-mono">
+                    {col.type}
+                  </span>
+                </div>
+                <div className="text-sm leading-relaxed">
+                  {renderValue(row[col.name], col.type)}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-3 right-3 h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-indigo-50 hover:text-indigo-600 transition-all"
+                  onClick={() => handleCopy(row[col.name])}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
               </div>
-              <div className="text-sm">
-                {renderValue(row[col.name], col.type)}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => handleCopy(row[col.name])}
-              >
-                <Copy className="h-3 w-3 text-zinc-400" />
-              </Button>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     )
@@ -109,18 +126,18 @@ export function RowDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md md:max-w-lg lg:max-w-xl p-0 flex flex-col bg-zinc-50/50">
+      <SheetContent className="w-full sm:max-w-md md:max-w-lg lg:max-w-xl p-0 flex flex-col bg-white shadow-2xl border-l border-zinc-100">
         {open && (
           <>
-            <div className="p-6 pb-2 border-b bg-white">
+            <div className="p-6 pb-4 border-b bg-zinc-50/30">
               <SheetHeader className="mb-4">
-                <SheetTitle className="flex items-center gap-2">
+                <SheetTitle className="flex items-center gap-2 text-xl font-bold text-zinc-900">
                   <span className="truncate">Row Detail</span>
-                  <Badge variant="outline" className="font-mono text-xs font-normal text-zinc-400">
-                    #{String(row._ws_row_id) || 'N/A'}
+                  <Badge variant="outline" className="font-mono text-[10px] font-bold text-zinc-400 bg-white">
+                    ID #{String(row._ws_row_id) || 'N/A'}
                   </Badge>
                 </SheetTitle>
-                <SheetDescription>
+                <SheetDescription className="text-xs text-zinc-500">
                   {t('preview_data')}
                 </SheetDescription>
               </SheetHeader>
@@ -129,10 +146,10 @@ export function RowDetailSheet({
                 <div className="flex gap-2">
                   {onNavigate && (
                     <>
-                      <Button variant="outline" size="sm" disabled={!hasPrev} onClick={() => onNavigate('prev')}>
+                      <Button variant="outline" size="sm" className="h-8 rounded-lg bg-white shadow-sm border-zinc-200" disabled={!hasPrev} onClick={() => onNavigate('prev')}>
                         <ChevronUp className="h-4 w-4 mr-1" /> Prev
                       </Button>
-                      <Button variant="outline" size="sm" disabled={!hasNext} onClick={() => onNavigate('next')}>
+                      <Button variant="outline" size="sm" className="h-8 rounded-lg bg-white shadow-sm border-zinc-200" disabled={!hasNext} onClick={() => onNavigate('next')}>
                         Next <ChevronDown className="h-4 w-4 ml-1" />
                       </Button>
                     </>
@@ -141,11 +158,13 @@ export function RowDetailSheet({
               </div>
             </div>
 
-            <ScrollArea className="flex-1 p-6">
-              {renderGroup('Identifiers & Text', <Type className="w-3.5 h-3.5" />, groups.text)}
-              {renderGroup('Metrics & Numbers', <Hash className="w-3.5 h-3.5" />, groups.number)}
-              {renderGroup('Timeline', <Calendar className="w-3.5 h-3.5" />, groups.date)}
-              {renderGroup('Structures', <Braces className="w-3.5 h-3.5" />, groups.json)}
+            <ScrollArea className="flex-1 p-6 bg-white">
+              <div className="max-w-2xl mx-auto space-y-8 pb-12">
+                {renderGroup('Identifiers & Text', <Type className="w-3.5 h-3.5" />, groups.text)}
+                {renderGroup('Metrics & Numbers', <Hash className="w-3.5 h-3.5" />, groups.number)}
+                {renderGroup('Timeline', <Calendar className="w-3.5 h-3.5" />, groups.date)}
+                {renderGroup('Structures', <Braces className="w-3.5 h-3.5" />, groups.json)}
+              </div>
             </ScrollArea>
           </>
         )}

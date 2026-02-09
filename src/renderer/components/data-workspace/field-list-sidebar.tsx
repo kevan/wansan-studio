@@ -48,10 +48,16 @@ export function FieldListSidebar({
     ? file.viewSchema 
     : file.columns
 
-  const filteredColumns = allColumns.filter(c => 
-    c.name !== '_ws_row_id' && 
-    c.name.toLowerCase().includes(search.toLowerCase())
-  )
+  const filteredColumns = allColumns.filter(c => {
+    const isSystem = c.name === '_ws_row_id'
+    if (isSystem) return false
+    
+    const searchLower = search.toLowerCase()
+    const nameMatch = c.name.toLowerCase().includes(searchLower)
+    const aliasMatch = c.semantic?.aliases?.some(a => a.toLowerCase().includes(searchLower))
+    
+    return nameMatch || aliasMatch
+  })
 
   const toggleVisibility = (colName: string) => {
     const isVisible = columnVisibility[colName] !== false
@@ -114,6 +120,8 @@ export function FieldListSidebar({
             const isMetric = col.sourceType === 'metric'
             const isAI = col.sourceType === 'ai'
             const isJoined = col.sourceType === 'joined'
+            const alias = col.semantic?.aliases?.[0]
+            const displayName = alias ? `${alias} (${col.name})` : col.name
 
             return (
               <div 
@@ -140,8 +148,8 @@ export function FieldListSidebar({
                 <span className={cn(
                   "text-xs flex-1 truncate",
                   isVisible ? "text-zinc-700 font-medium" : "text-zinc-400"
-                )}>
-                  {col.name}
+                )} title={displayName}>
+                  {displayName}
                 </span>
 
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
