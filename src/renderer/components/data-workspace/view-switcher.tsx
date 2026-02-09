@@ -20,6 +20,7 @@ interface ViewSwitcherProps {
   fileId: string
   currentFilters: FilterRule[]
   currentSort: { id: string; desc: boolean }[]
+  currentColumnConfig?: import('@shared/types/project').TableView['columnConfig']
   onViewSelect: (view: TableView | null) => void
   activeViewId: string | null
 }
@@ -28,6 +29,7 @@ export function ViewSwitcher({
   fileId, 
   currentFilters, 
   currentSort, 
+  currentColumnConfig,
   onViewSelect, 
   activeViewId 
 }: ViewSwitcherProps) {
@@ -45,9 +47,7 @@ export function ViewSwitcher({
       name: newViewName,
       filters: currentFilters,
       sort: currentSort,
-      columnConfig: {
-        // widths, order etc could be added here later
-      }
+      columnConfig: currentColumnConfig
     }
     saveTableView(fileId, newView)
     onViewSelect(newView)

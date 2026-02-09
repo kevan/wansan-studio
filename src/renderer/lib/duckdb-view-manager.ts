@@ -176,12 +176,29 @@ export const DuckDBViewManager = {
         throw new Error(descRes.error || 'Failed to describe view')
       }
 
-      return descRes.data.data.map((row: any) => ({
-        name: row.column_name,
-        safeName: row.column_name,
-        type: normalizeDuckDBType(row.column_type),
-        sampleValues: [] // View schema doesn't need samples
-      }))
+      return descRes.data.data.map((row: any) => {
+        const colName = row.column_name
+        let sourceType: import('@shared/types').ColumnSourceType = 'raw'
+        
+        // Infer source type
+        if (file.smartMetrics?.some(m => m.name === colName)) {
+          sourceType = 'metric'
+        } else if (colName.includes('__')) {
+          sourceType = 'joined'
+        } else if (colMapUpdates.has(colName)) {
+          sourceType = 'ai'
+        } else if (colName.endsWith('_MoM') || colName.endsWith('_YoY')) {
+          sourceType = 'metric' // Time intelligence is also a metric
+        }
+
+        return {
+          name: colName,
+          safeName: colName,
+          type: normalizeDuckDBType(row.column_type),
+          sampleValues: [], // View schema doesn't need samples
+          sourceType
+        }
+      })
     } catch (e) {
       console.error('[DuckDBViewManager] Rebuild failed:', e)
       throw e

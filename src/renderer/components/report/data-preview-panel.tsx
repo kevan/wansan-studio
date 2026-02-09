@@ -11,6 +11,7 @@ import { VirtualDataGrid } from '../data-workspace/virtual-data-grid'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { useTranslation } from 'react-i18next'
 import { Loader2, AlertCircle, CloudUpload } from 'lucide-react'
+import { ColumnSchema } from '@shared/types'
 
 // Memoized Grid wrapper to prevent unnecessary remounts
 const MemoizedGrid = memo(function MemoizedGrid({
@@ -18,26 +19,44 @@ const MemoizedGrid = memo(function MemoizedGrid({
   tableName,
   columns,
   totalRows,
+  onModifyStructure,
 }: {
   fileId: string
   tableName: string
-  columns: Array<{ name: string; type: string }>
+  columns: Array<ColumnSchema>
   totalRows?: number
+  onModifyStructure?: () => void
 }) {
+  // [V2.1] Always prefer the Enriched View (v_ prefix) to show AI fields, Metrics and Relations
+  const targetTable = `v_${tableName}`
+  
   return (
     <VirtualDataGrid
       fileId={fileId}
-      tableName={tableName}
+      tableName={targetTable}
       columns={columns}
       totalRows={totalRows}
+      onModifyStructure={onModifyStructure}
     />
   )
 })
 
-export function DataPreviewPanel() {
+export function DataPreviewPanel({
+  onModifyStructure,
+}: {
+  onModifyStructure?: () => void
+}) {
   const { activeFileId, files, isRestoring } = useProjectStore()
   const file = useMemo(() => files.find(f => f.id === activeFileId), [files, activeFileId])
   const { t } = useTranslation('common')
+
+  // [V2.1] Use viewSchema if available, otherwise fallback to physical columns
+  const displayColumns = useMemo(() => {
+    if (!file) return []
+    return (file.viewSchema && file.viewSchema.length > 0) 
+      ? file.viewSchema 
+      : file.columns
+  }, [file])
 
   // Show restoring state
   if (isRestoring) {
@@ -131,8 +150,9 @@ export function DataPreviewPanel() {
         <MemoizedGrid
           fileId={file.id}
           tableName={file.tableName}
-          columns={file.columns || []}
+          columns={displayColumns}
           totalRows={file.rowCount}
+          onModifyStructure={onModifyStructure}
         />
       </div>
     </div>

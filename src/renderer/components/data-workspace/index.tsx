@@ -1,14 +1,8 @@
 import React, { useState } from 'react'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { DataPreviewPanel } from '../report/data-preview-panel'
-import { ColumnsView } from './columns-view'
-import { MetricsView } from './metrics-view'
-import { RelationsView } from './relations-view'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import { useTranslation } from 'react-i18next'
 import { 
-  Table, 
-  FileCode, 
   Database, 
   Hash, 
   Info, 
@@ -18,8 +12,8 @@ import {
   RefreshCw, 
   Trash2,
   FileSpreadsheet,
-  Link2,
-  Tag
+  Table as TableIcon,
+  Settings2,
 } from 'lucide-react'
 import { ExpandableAction } from '../ui/expandable-action'
 import { ConfirmDialog } from '../modals/ConfirmDialog'
@@ -27,12 +21,14 @@ import { useToastStore } from '@/stores/useToastStore'
 import { DataLineageDialog } from '../modals/DataLineageDialog'
 import { useWizardStore } from '@/stores/useWizardStore'
 import { useProGate } from '@/hooks/use-pro-gate'
-import { FloatingActionLayout } from '../FloatingActionLayout'
 import { SemanticReviewModal } from '../modals/SemanticReviewModal'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs'
+import { ColumnsView } from './columns-view'
+import { MetricsView } from './metrics-view'
+import { RelationsView } from './relations-view'
 
 export function DataWorkspace() {
   const { t, i18n } = useTranslation('common')
-  const { t: tAnalysis } = useTranslation('analysis')
   const toast = useToastStore()
   const openWizard = useWizardStore(s => s.open)
   const { checkGate, gateNode } = useProGate()
@@ -42,26 +38,23 @@ export function DataWorkspace() {
   const removeFile = useProjectStore(s => s.removeFile)
   const updateColumnSemantic = useProjectStore(s => s.updateColumnSemantic)
   const addSmartMetric = useProjectStore(s => s.addSmartMetric)
-  const activeView = useProjectStore(s => s.activeView)
 
-  const [activeTab, setActiveTab] = useState('columns')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<any>(null)
   const [showLineage, setShowLineage] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-
-  // Sync activeTab with activeView from store
-  React.useEffect(() => {
-    if (activeView === 'preview' || activeView === 'schema') {
-        setActiveTab(activeView === 'schema' ? 'columns' : 'preview')
-    }
-  }, [activeView])
+  const [activeTab, setActiveTab] = useState<'data' | 'structure'>('data')
 
   const currentFile = files.find(f => f.id === activeFileId) || files[0]
   
   if (!currentFile) {
-    return null 
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-zinc-400 bg-white dark:bg-zinc-950">
+        <Database className="w-12 h-12 mb-4 text-zinc-200 dark:text-zinc-800" />
+        <p>{t('select_table')}</p>
+      </div>
+    )
   }
 
   const handleAppend = () => {
@@ -84,7 +77,7 @@ export function DataWorkspace() {
   }
 
   const handleOpenSemanticReview = () => {
-    setAnalysisResult(null) // Reset result to show pending state
+    setAnalysisResult(null)
     setShowReviewModal(true)
   }
 
@@ -118,12 +111,10 @@ export function DataWorkspace() {
   const handleApplySemanticReview = async (data: { selectedColumns: Record<string, any>, selectedMetrics: any[] }) => {
     const { selectedColumns, selectedMetrics } = data
     
-    // 1. Apply Column Semantics
     Object.entries(selectedColumns).forEach(([colName, semantic]) => {
       updateColumnSemantic(currentFile.id, colName, semantic as any)
     })
 
-    // 2. Apply Suggested Metrics
     for (const m of selectedMetrics) {
       await addSmartMetric(currentFile.id, {
         id: crypto.randomUUID(),
@@ -213,80 +204,63 @@ export function DataWorkspace() {
         </div>
       </header>
 
-      {/* 2. Main Content Area with Tabs */}
-      <FloatingActionLayout showAction={true}>
+      {/* 2. Main Viewport with Read/Write Tabs */}
+      <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-zinc-900">
         <Tabs 
           value={activeTab} 
-          onValueChange={setActiveTab} 
+          onValueChange={(v: any) => setActiveTab(v)} 
           className="flex-1 flex flex-col min-h-0"
         >
-          <div className="px-6 bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
-            <TabsList className="h-12 bg-transparent gap-6 p-0">
+          <div className="px-6 border-b border-zinc-100 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur shrink-0">
+            <TabsList className="h-10 bg-transparent gap-8 p-0">
               <TabsTrigger 
-                value="columns" 
-                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2"
+                value="data" 
+                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2 text-zinc-500 data-[state=active]:text-indigo-600 transition-all"
               >
-                <FileCode className="w-3.5 h-3.5" />
-                {t('columns')}
-                <span className="bg-zinc-200/50 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 px-1.5 py-0.5 rounded-md text-[9px] font-black">
-                  {currentFile.columns.length}
-                </span>
+                <TableIcon className="w-3.5 h-3.5" />
+                {t('data_viewer', 'Data')}
               </TabsTrigger>
               <TabsTrigger 
-                value="preview" 
-                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2"
+                value="structure" 
+                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2 text-zinc-500 data-[state=active]:text-indigo-600 transition-all"
               >
-                <Table className="w-3.5 h-3.5" />
-                {t('preview')}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="metrics" 
-                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2"
-              >
-                <Tag className="w-3.5 h-3.5" />
-                {tAnalysis('smart_metrics')}
-                <span className="bg-zinc-200/50 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 px-1.5 py-0.5 rounded-md text-[9px] font-black">
-                  {(currentFile.smartMetrics || []).length}
-                </span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="relations" 
-                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2"
-              >
-                <Link2 className="w-3.5 h-3.5" />
-                {t('relationships')}
-                <span className="bg-zinc-200/50 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 px-1.5 py-0.5 rounded-md text-[9px] font-black">
-                  {(currentFile.relations || []).length}
-                </span>
+                <Settings2 className="w-3.5 h-3.5" />
+                {t('structure_editor', 'Structure')}
               </TabsTrigger>
             </TabsList>
           </div>
 
-          <TabsContent value="columns" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
-             <div className="h-full bg-white dark:bg-zinc-900 overflow-hidden">
-                <ColumnsView file={currentFile} />
-             </div>
+          <TabsContent value="data" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
+             <DataPreviewPanel 
+               onModifyStructure={() => setActiveTab('structure')}
+             />
           </TabsContent>
 
-          <TabsContent value="preview" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
-             <div className="h-full bg-white dark:bg-zinc-900 overflow-hidden">
-                <DataPreviewPanel />
-             </div>
-          </TabsContent>
-
-          <TabsContent value="metrics" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
-             <div className="h-full bg-white dark:bg-zinc-900 overflow-hidden">
-                <MetricsView file={currentFile} />
-             </div>
-          </TabsContent>
-
-          <TabsContent value="relations" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
-             <div className="h-full bg-white dark:bg-zinc-900 overflow-hidden">
-                <RelationsView file={currentFile} />
-             </div>
+          <TabsContent value="structure" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden flex flex-col bg-zinc-50/30 dark:bg-zinc-950/30">
+             {/* Unified Structure Editor (Temporarily using legacy tabs inside for now) */}
+             <Tabs defaultValue="fields" className="flex-1 flex flex-col min-h-0">
+                <div className="flex items-center px-6 py-2 gap-4 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+                   <TabsList className="bg-zinc-100/50 dark:bg-zinc-800/50 p-1 rounded-lg h-8">
+                      <TabsTrigger value="fields" className="text-[10px] h-6 px-3">{t('columns')}</TabsTrigger>
+                      <TabsTrigger value="metrics" className="text-[10px] h-6 px-3">{t('metrics')}</TabsTrigger>
+                      <TabsTrigger value="relations" className="text-[10px] h-6 px-3">{t('relations')}</TabsTrigger>
+                   </TabsList>
+                </div>
+                <div className="flex-1 overflow-hidden relative">
+                   <TabsContent value="fields" className="absolute inset-0 m-0 p-4 overflow-auto custom-scrollbar">
+                      <ColumnsView file={currentFile} />
+                   </TabsContent>
+                   <TabsContent value="metrics" className="absolute inset-0 m-0 p-4 overflow-auto custom-scrollbar">
+                      <MetricsView file={currentFile} />
+                   </TabsContent>
+                   <TabsContent value="relations" className="absolute inset-0 m-0 p-4 overflow-auto custom-scrollbar">
+                      <RelationsView file={currentFile} />
+                   </TabsContent>
+                </div>
+             </Tabs>
           </TabsContent>
         </Tabs>
-      </FloatingActionLayout>
+      </div>
 
       {/* Modals */}
       <ConfirmDialog
@@ -315,4 +289,3 @@ export function DataWorkspace() {
     </div>
   )
 }
-

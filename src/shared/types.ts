@@ -59,6 +59,8 @@ export interface ColumnSemantic {
   extractionHints?: ExtractionHint[]
 }
 
+export type ColumnSourceType = 'raw' | 'ai' | 'metric' | 'joined'
+
 export interface ColumnSchema {
   name: string // Original column name (e.g., "销售额(万元)")
   safeName: string // Sanitized name for SQL (e.g., "销售额(万元)") - *DuckDB supports utf8, but quoting is mandatory*
@@ -70,6 +72,7 @@ export interface ColumnSchema {
 
   userType?: ColumnType // User defined type override
   semantic?: ColumnSemantic // [NEW] Semantic metadata
+  sourceType?: ColumnSourceType // [NEW] v1.7.5
 }
 
 export interface TableSchema {
