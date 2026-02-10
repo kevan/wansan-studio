@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Layout, Save, Trash2, Check, ChevronDown, Plus } from 'lucide-react'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { TableView } from '@shared/types/project'
-import { FilterRule } from '@shared/types/filter'
+import { FilterState } from '@shared/types/filter'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -18,7 +18,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 interface ViewSwitcherProps {
   fileId: string
-  currentFilters: FilterRule[]
+  currentFilters: FilterState
   currentSort: { id: string; desc: boolean }[]
   currentColumnConfig?: import('@shared/types/project').TableView['columnConfig']
   onViewSelect: (view: TableView | null) => void

@@ -1,7 +1,7 @@
 import { Message } from './chat'
 import { ReportWidget, ReportData } from './dashboard'
 import { FileNode, DomainRule, SmartMetric, TableRelation } from '../types'
-import { FilterRule } from './filter'
+import { FilterRule, FilterState } from './filter'
 
 export interface Relation {
   id: string
@@ -17,7 +17,7 @@ export type ViewMode = 'chat' | 'schema' | 'preview'
 export interface TableView {
   id: string
   name: string
-  filters: FilterRule[]
+  filters: FilterState | FilterRule[] // Support migration from old array to new state object
   columnConfig?: {
     hidden?: string[]
     order?: string[]

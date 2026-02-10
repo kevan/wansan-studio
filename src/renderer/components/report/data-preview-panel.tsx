@@ -144,17 +144,34 @@ export function DataPreviewPanel({
     )
   }
 
-  return (
-    <div className="h-full w-full bg-white flex flex-col p-4 overflow-hidden relative">
-      <div className="flex-1 overflow-hidden relative">
-        <MemoizedGrid
-          fileId={file.id}
-          tableName={file.tableName}
-          columns={displayColumns}
-          totalRows={file.rowCount}
-          onModifyStructure={onModifyStructure}
-        />
+    return (
+
+      <div className="h-full w-full bg-white flex flex-col p-4 overflow-hidden relative">
+
+        <div className="flex-1 overflow-hidden relative">
+
+          <MemoizedGrid
+
+            key={file.id}
+
+            fileId={file.id}
+
+            tableName={file.tableName}
+
+            columns={displayColumns}
+
+            totalRows={file.rowCount}
+
+            onModifyStructure={onModifyStructure}
+
+          />
+
+        </div>
+
       </div>
-    </div>
-  )
-}
+
+    )
+
+  }
+
+  

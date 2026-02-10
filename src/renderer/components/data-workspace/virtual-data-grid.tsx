@@ -47,10 +47,10 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import { RowDetailSheet } from './row-detail-sheet'
-import { FilterBar } from './filter-bar'
+import { FilterManager } from './filter-manager'
 import { ViewSwitcher } from './view-switcher'
 import { FieldListSidebar } from './field-list-sidebar'
-import { FilterRule, filterRuleToSQL } from '@shared/types/filter'
+import { FilterState, filterStateToSQL } from '@shared/types/filter'
 import { TableView } from '@shared/types/project'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { ColumnSchema } from '@shared/types'
@@ -142,12 +142,20 @@ export function VirtualDataGrid({
 }: VirtualDataGridProps) {
   const parentRef = useRef<HTMLDivElement>(null)
   const [sorting, setSorting] = useState<SortingState>([])
-  const [filters, setFilters] = useState<FilterRule[]>([])
+  const [filterState, setFilterState] = useState<FilterState>({ conjunction: 'AND', conditions: [] })
   const [activeViewId, setActiveViewId] = useState<string | null>(null)
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({})
+  const [columnOrder, setColumnOrder] = useState<string[]>([])
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const { files } = useProjectStore()
   const file = files.find(f => f.id === fileId)
+
+  // Initialize column order
+  React.useEffect(() => {
+    if (columns.length > 0 && columnOrder.length === 0) {
+      setColumnOrder(columns.map(c => c.name))
+    }
+  }, [columns, columnOrder.length])
   
   // Row Selection & Detail View
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
@@ -157,7 +165,7 @@ export function VirtualDataGrid({
   // Handle View Select
   const handleViewSelect = useCallback((view: TableView | null) => {
     if (view) {
-      setFilters(view.filters)
+      setFilterState((view.filters as FilterState) || { conjunction: 'AND', conditions: [] })
       setSorting(view.sort || [])
       setActiveViewId(view.id)
       
@@ -169,24 +177,22 @@ export function VirtualDataGrid({
       } else {
         setColumnVisibility({})
       }
+
+      if (view.columnConfig?.order) {
+        setColumnOrder(view.columnConfig.order)
+      }
     } else {
-      setFilters([])
+      setFilterState({ conjunction: 'AND', conditions: [] })
       setSorting([])
       setActiveViewId(null)
       setColumnVisibility({})
+      setColumnOrder(columns.map(c => c.name))
     }
-  }, [])
+  }, [columns])
 
   const queryFn = useCallback(async ({ pageParam = 0 }: { pageParam?: number }) => {
     // 1. Build WHERE clause
-    const enabledFilters = filters.filter(f => f.enabled)
-    let whereClause = ''
-    if (enabledFilters.length > 0) {
-      const parts = enabledFilters.map(filterRuleToSQL).filter(p => p !== '')
-      if (parts.length > 0) {
-        whereClause = `WHERE ${parts.join(' AND ')}`
-      }
-    }
+    const whereClause = filterStateToSQL(filterState)
 
     // 2. Build ORDER BY clause
     let orderBy = ''
@@ -201,7 +207,7 @@ export function VirtualDataGrid({
     const res = await window.electronAPI.runSQL(sql)
     if (!res.success) throw new Error(res.error)
     return (res.data?.data || []) as Record<string, unknown>[]
-  }, [tableName, sorting, filters])
+  }, [tableName, sorting, filterState])
 
   const {
     data,
@@ -213,7 +219,7 @@ export function VirtualDataGrid({
     error,
     refetch
   } = useInfiniteQuery({
-    queryKey: ['table-data', tableName, sorting, filters],
+    queryKey: ['table-data', tableName, sorting, filterState],
     queryFn,
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
@@ -245,9 +251,14 @@ export function VirtualDataGrid({
   const table = useReactTable({
     data: flatData,
     columns: tableColumns,
-    state: { sorting, columnVisibility },
+    state: { 
+      sorting, 
+      columnVisibility,
+      columnOrder,
+    },
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
+    onColumnOrderChange: setColumnOrder,
     getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
     getRowId: (row) => String(row._ws_row_id ?? ''),
@@ -311,33 +322,37 @@ export function VirtualDataGrid({
   if (isError) return <div className="h-full flex flex-col items-center justify-center text-red-500 gap-4"><p>Error: {(error as Error).message}</p><Button variant="outline" onClick={() => refetch()}><RefreshCcw className="w-4 h-4 mr-2"/> Retry</Button></div>
 
   const currentColumnConfig = {
-    hidden: Object.entries(columnVisibility).filter(([_, v]) => !v).map(([k]) => k)
+    hidden: Object.entries(columnVisibility).filter(([_, v]) => !v).map(([k]) => k),
+    order: columnOrder
   }
 
   return (
     <div className="h-full flex flex-col w-full bg-white relative">
       <RowDetailSheet open={isDetailOpen} onOpenChange={setIsDetailOpen} row={detailRow} columns={columns} onNavigate={handleNavigate} hasPrev={navState.hasPrev} hasNext={navState.hasNext} />
       
-      <FilterBar 
-        columns={columns} 
-        filters={filters} 
-        onChange={setFilters} 
-        rightSide={
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className={cn("h-7 text-xs gap-1.5 px-2", isSidebarOpen && "bg-indigo-50 text-indigo-600")}
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            >
-              <LayoutPanelTop className="w-3.5 h-3.5" />
-              Fields
-            </Button>
-            <div className="w-px h-4 bg-zinc-200 mx-1" />
-            <ViewSwitcher fileId={fileId} currentFilters={filters} currentSort={sorting as any} currentColumnConfig={currentColumnConfig} onViewSelect={handleViewSelect} activeViewId={activeViewId} />
-          </div>
-        } 
-      />
+      <div className="flex flex-wrap items-center gap-2 p-2 border-b border-zinc-100 bg-white/50 min-h-[44px]">
+        {/* Filter Manager (Left) */}
+        <FilterManager 
+          columns={columns} 
+          filterState={filterState} 
+          onChange={setFilterState} 
+        />
+
+        {/* Toolbar Actions (Right) */}
+        <div className="flex items-center gap-2 ml-auto">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={cn("h-7 text-xs gap-1.5 px-2", isSidebarOpen && "bg-indigo-50 text-indigo-600")}
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          >
+            <LayoutPanelTop className="w-3.5 h-3.5" />
+            Fields
+          </Button>
+          <div className="w-px h-4 bg-zinc-200 mx-1" />
+          <ViewSwitcher fileId={fileId} currentFilters={filterState} currentSort={sorting as any} currentColumnConfig={currentColumnConfig} onViewSelect={handleViewSelect} activeViewId={activeViewId} />
+        </div>
+      </div>
 
       <div className="flex-1 flex overflow-hidden relative">
         <div className="flex-1 flex flex-col min-w-0">
@@ -450,7 +465,9 @@ export function VirtualDataGrid({
           <FieldListSidebar 
             file={file} 
             columnVisibility={columnVisibility} 
-            onVisibilityChange={setColumnVisibility} 
+            onVisibilityChange={setColumnVisibility}
+            columnOrder={columnOrder}
+            onOrderChange={setColumnOrder}
             onClose={() => setIsSidebarOpen(false)} 
           />
         )}
