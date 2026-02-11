@@ -32,9 +32,10 @@ interface FilterManagerProps {
   filterState: FilterState
   onChange: (state: FilterState) => void
   errorMessage?: string | null
+  trigger?: React.ReactNode
 }
 
-export function FilterManager({ tableName, columns, filterState, onChange, errorMessage }: FilterManagerProps) {
+export function FilterManager({ tableName, columns, filterState, onChange, errorMessage, trigger }: FilterManagerProps) {
   const { t } = useTranslation('common')
   const [isOpen, setIsOpen] = useState(false)
   const [validationMap, setValidationMap] = useState<Record<string, FilterValidationCode[]>>({})
@@ -98,46 +99,46 @@ export function FilterManager({ tableName, columns, filterState, onChange, error
       conditions: prev.conditions.map(c => {
         if (c.id !== id) return c
         
-        const newCond = { ...c, ...updates }
+        const oldSimpleType = getSimpleType(c.columnType)
+        const oldInputType = getEffectiveInputType(c.operator, oldSimpleType)
         
-        // --- 1. Column Change Logic ---
-        if (updates.columnName && updates.columnName !== c.columnName) {
-          const newCol = columns.find(col => col.name === updates.columnName)
-          if (newCol) {
-            newCond.columnType = newCol.type
-            newCond.sourceType = newCol.sourceType
-            // Reset to safe defaults based on new type
-            const newSimpleType = getSimpleType(newCol.type)
-            if (newSimpleType === 'boolean') {
-              newCond.operator = 'equals'
+        const newCond = { ...c, ...updates }
+        const newSimpleType = getSimpleType(newCond.columnType)
+        const newInputType = getEffectiveInputType(newCond.operator, newSimpleType)
+
+        // --- 1. Reset logic on Type/Operator change ---
+        const isColumnChange = !!(updates.columnName && updates.columnName !== c.columnName)
+        const isOperatorChange = !!(updates.operator && updates.operator !== c.operator)
+
+        if (isColumnChange || isOperatorChange) {
+          // If input type category changed significantly, reset value
+          const isCompatible = !isColumnChange && (
+            (oldInputType === 'text' && newInputType === 'multi') ||
+            (oldInputType === 'multi' && newInputType === 'text') ||
+            (oldInputType === newInputType)
+          )
+
+          if (!isCompatible) {
+            if (newInputType === 'range' || newInputType === 'date_range') {
+              newCond.value = ['', '']
+            } else if (newInputType === 'multi') {
+              newCond.value = []
+            } else if (newSimpleType === 'boolean') {
               newCond.value = true
-            } else if (newSimpleType === 'date') {
-              newCond.operator = 'gte'
+            } else if (newInputType === 'none') {
               newCond.value = ''
-            } else if (newSimpleType === 'number') {
-              newCond.operator = 'gt'
-              newCond.value = 0
             } else {
-              newCond.operator = 'contains'
               newCond.value = ''
             }
           }
         }
 
-        // --- 2. Type Coercion Logic ---
-        const simpleType = getSimpleType(newCond.columnType)
-        const effectiveInputType = getEffectiveInputType(newCond.operator, simpleType)
-
-        // Coerce value based on operator and type
-        if (effectiveInputType === 'number') {
-          newCond.value = newCond.value === '' ? '' : Number(newCond.value)
-        } else if (effectiveInputType === 'multi') {
-          // If inputting string, convert to array
-          if (typeof newCond.value === 'string') {
-            newCond.value = newCond.value.split(',').map(s => s.trim())
-          }
-        } else if (simpleType === 'boolean' && typeof newCond.value !== 'boolean') {
-          newCond.value = newCond.value === 'true'
+        // --- 2. Type Coercion Logic (Refinement) ---
+        if (newInputType === 'number' && newCond.value !== '') {
+          const num = Number(newCond.value)
+          if (!isNaN(num)) newCond.value = num
+        } else if (newInputType === 'multi' && typeof newCond.value === 'string') {
+          newCond.value = newCond.value.split(',').map(s => s.trim()).filter(Boolean)
         }
         
         return newCond
@@ -178,24 +179,26 @@ export function FilterManager({ tableName, columns, filterState, onChange, error
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <Button 
-          variant={activeCount > 0 ? "secondary" : "ghost"} 
-          size="sm" 
-          className={cn(
-            "h-8 text-xs gap-2 px-3 transition-all rounded-full border-transparent",
-            activeCount > 0 
-              ? "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200 shadow-sm" 
-              : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
-          )}
-        >
-          <ListFilter className="w-3.5 h-3.5" />
-          <span>{t('filter')}</span>
-          {totalCount > 0 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/80 border border-zinc-200">
-              {activeCount}/{totalCount}
-            </span>
-          )}
-        </Button>
+        {trigger || (
+          <Button 
+            variant={activeCount > 0 ? "secondary" : "ghost"} 
+            size="sm" 
+            className={cn(
+              "h-8 text-xs gap-2 px-3 transition-all rounded-full border-transparent",
+              activeCount > 0 
+                ? "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200 shadow-sm" 
+                : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
+            )}
+          >
+            <ListFilter className="w-3.5 h-3.5" />
+            <span>{t('filter')}</span>
+            {totalCount > 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/80 border border-zinc-200">
+                {activeCount}/{totalCount}
+              </span>
+            )}
+          </Button>
+        )}
       </PopoverTrigger>
       
       <PopoverContent 

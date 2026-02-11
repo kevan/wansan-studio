@@ -46,21 +46,37 @@ export function GridHeader({
       <ContextMenuTrigger asChild>
         <div
           className={cn(
-            'h-10 px-4 py-2 flex items-center gap-2 text-xs font-medium text-zinc-500 border-r border-zinc-200/50 last:border-r-0 cursor-pointer hover:bg-zinc-100 transition-colors select-none whitespace-nowrap group/header',
-            isSorted && 'text-indigo-600 bg-indigo-50/50',
-            indicator?.bg && 'bg-opacity-30 border-b-2',
-            indicator?.bg && (meta?.sourceType === 'ai' ? 'border-b-purple-400' : meta?.sourceType === 'metric' ? 'border-b-green-400' : 'border-b-orange-400')
+            'h-10 px-2 py-2 flex items-center gap-2 text-[11px] font-medium text-zinc-500 relative cursor-pointer hover:bg-zinc-50/80 transition-all select-none whitespace-nowrap group/header',
+            isSorted && 'text-indigo-600 bg-indigo-50/30'
           )}
           style={{ width: header.getSize(), flexShrink: 0 }}
           onClick={header.column.getToggleSortingHandler()}
         >
-          <div className="flex items-center gap-1.5 flex-1 min-w-0">
-            <span className="text-zinc-300 group-hover/header:text-indigo-400 transition-colors">{typeIcon}</span>
-            <span className="truncate" title={displayName}>{displayName}</span>
-            {indicator && <span className={cn('ml-auto', indicator.color)}>{indicator.icon}</span>}
+          {/* Subtle Vertical Divider */}
+          <div className="absolute right-0 top-1/4 bottom-1/4 w-[1px] bg-zinc-200/50 group-last/header:hidden" />
+          
+          {/* Indicator Marker (Top) */}
+          {indicator && (
+            <div className={cn('absolute top-0 left-0 right-0 h-[2px] opacity-60', indicator.bg)} />
+          )}
+
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="text-zinc-300 group-hover/header:text-indigo-400/70 transition-colors">{typeIcon}</span>
+            <span className="truncate tracking-wide" title={displayName}>{displayName}</span>
+            {indicator && (
+              <span className={cn('flex items-center justify-center p-0.5 rounded-sm bg-white shadow-sm ring-1 ring-zinc-200/50', indicator.color)}>
+                {indicator.icon}
+              </span>
+            )}
           </div>
           <div className="w-4 flex items-center justify-center">
-            {isSorted ? (isSorted === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : (<ArrowUpDown className="w-3 h-3 opacity-0 group-hover/header:opacity-30" />)}
+            {isSorted ? (
+              isSorted === 'asc' ? 
+                <ArrowUp className="w-3 h-3 animate-in fade-in slide-in-from-bottom-1 duration-200" /> : 
+                <ArrowDown className="w-3 h-3 animate-in fade-in slide-in-from-top-1 duration-200" />
+            ) : (
+              <ArrowUpDown className="w-3 h-3 opacity-0 group-hover/header:opacity-30 transition-opacity" />
+            )}
           </div>
         </div>
       </ContextMenuTrigger>

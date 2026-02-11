@@ -14,7 +14,7 @@ import { SortingState } from '@tanstack/react-table'
 import { TableView } from '@shared/types/project'
 
 export const PAGE_SIZE = 100
-export const ROW_HEIGHT = 35
+export const ROW_HEIGHT = 40
 export const OVERSCAN = 5
 export const REMOVE_MAPPING_VALUE = '__REMOVE__'
 

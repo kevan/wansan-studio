@@ -18,8 +18,7 @@ import { FilterState } from '@shared/types/filter'
 import { ROW_HEIGHT, OVERSCAN } from './utils'
 import { useGridData } from './useGridData'
 import { useViewManager } from './useViewManager'
-import { GridToolbar } from './GridToolbar'
-import { ActiveFiltersList } from './ActiveFiltersList'
+import { GridControlBar } from './GridControlBar'
 import { UnsavedChangesDialog } from './UnsavedChangesDialog'
 import { ViewRepairDialog } from './ViewRepairDialog'
 import { GridRow } from './GridRow'
@@ -299,7 +298,18 @@ export function VirtualDataGrid({
     setColumnVisibility(prev => ({ ...prev, [colName]: false }))
   }
 
-  if (isLoading) return <div className="h-full flex items-center justify-center text-zinc-400"><Loader2 className="w-5 h-5 animate-spin mr-2" />Loading data...</div>
+  if (isLoading) return (
+    <div className="h-full flex flex-col items-center justify-center bg-white/50 backdrop-blur-xl gap-4">
+      <div className="relative">
+        <div className="w-12 h-12 rounded-full border-2 border-zinc-100 animate-ping absolute inset-0" />
+        <div className="w-12 h-12 rounded-full border-t-2 border-indigo-500 animate-spin relative" />
+      </div>
+      <div className="flex flex-col items-center gap-1">
+        <span className="text-zinc-600 font-medium text-sm">Preparing Data Workspace</span>
+        <span className="text-zinc-400 text-xs animate-pulse">Initializing virtual grid...</span>
+      </div>
+    </div>
+  )
 
   return (
     <div className="h-full flex flex-col w-full bg-white relative">
@@ -324,29 +334,25 @@ export function VirtualDataGrid({
         onRepairManual={handleRepairManual}
       />
 
-      <GridToolbar
-        fileId={fileId}
+      <GridControlBar
+        // Data & Filter Props
         tableName={tableName}
         columns={columns}
-        availableColumns={availableColumns}
         filterState={filterState}
         setFilterState={setFilterState}
+        availableColumns={availableColumns}
+        viewMode={viewMode}
         filterError={filterError}
         setFilterError={setFilterError}
+        
+        // Toolbar & View Props
+        fileId={fileId}
         sorting={sorting}
         currentColumnConfig={currentColumnConfig}
         activeViewId={activeViewId}
-        viewMode={viewMode}
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
         onViewSelect={handleViewSelectRequest}
-      />
-
-      <ActiveFiltersList
-        filterState={filterState}
-        setFilterState={setFilterState}
-        availableColumns={availableColumns}
-        viewMode={viewMode}
       />
 
       {isError && (
@@ -365,7 +371,7 @@ export function VirtualDataGrid({
             className="flex-1 overflow-auto w-full"
           >
             <div className="min-w-max min-h-full flex flex-col">
-              <div className="sticky top-0 z-20 flex bg-zinc-50/95 backdrop-blur shadow-sm border-b border-zinc-200">
+              <div className="sticky top-0 z-20 flex bg-white/80 backdrop-blur-md shadow-sm border-b border-zinc-100">
                 {table.getHeaderGroups().map(headerGroup => (
                   <div key={headerGroup.id} className="flex">
                     {headerGroup.headers.map(header => (
@@ -427,9 +433,17 @@ export function VirtualDataGrid({
         )}
       </div>
 
-      <div className="h-8 border-t border-zinc-100 bg-white flex items-center px-4 justify-between text-[10px] text-zinc-400 flex-shrink-0">
-        <span>{flatData.length} loaded{totalRows ? ` / ~${totalRows.toLocaleString()} total` : ''}{!hasNextPage && flatData.length > 0 && ' (all loaded)'}</span>
-        {isFetchingNextPage && <Loader2 className="w-3 h-3 animate-spin text-indigo-500" />}
+      <div className="h-9 border-t border-zinc-100 bg-white/50 backdrop-blur-sm flex items-center px-2 justify-between text-[10px] text-zinc-400 font-medium tracking-tight flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <span className="bg-zinc-100 px-2 py-0.5 rounded-full text-zinc-500 font-bold">{flatData.length}</span>
+          <span>Rows loaded{totalRows ? ` / ~${totalRows.toLocaleString()} total` : ''}{!hasNextPage && flatData.length > 0 && ' (all loaded)'}</span>
+        </div>
+        {isFetchingNextPage && (
+          <div className="flex items-center gap-2 text-indigo-500 animate-pulse">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            <span>Streaming data...</span>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -30,13 +30,18 @@ export const GridRow = memo(function GridRow({
   return (
     <div
       className={cn(
-        'flex items-center border-b border-zinc-100 hover:bg-zinc-50 cursor-pointer transition-colors',
-        isSelected && 'bg-indigo-50 hover:bg-indigo-50/80'
+        'flex items-center border-b border-zinc-100/60 hover:bg-zinc-50/50 cursor-pointer transition-all duration-200 group/row relative',
+        isSelected && 'bg-indigo-50/30 hover:bg-indigo-50/40'
       )}
       style={{ height: ROW_HEIGHT }}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
     >
+      {/* Selection Accent */}
+      {isSelected && (
+        <div className="absolute left-0 top-[10%] bottom-[10%] w-[3px] bg-indigo-500 rounded-r-full z-10 animate-in fade-in zoom-in-y duration-300" />
+      )}
+
       {row.getVisibleCells().map((cell) => {
         const sourceType = (cell.column.columnDef.meta as { sourceType?: string })?.sourceType
         const indicator = getSourceIndicator(sourceType)
@@ -45,9 +50,10 @@ export const GridRow = memo(function GridRow({
           <div
             key={cell.id}
             className={cn(
-              'px-4 py-1.5 text-sm text-zinc-700 truncate border-r border-zinc-50/50 last:border-r-0 font-light h-full flex items-center',
-              indicator?.bg && 'bg-opacity-20',
-              indicator?.bg
+              'px-2 py-2 text-[13px] text-zinc-600 truncate border-r border-zinc-50 last:border-r-0 font-normal tracking-tight h-full flex items-center transition-colors',
+              indicator?.bg && 'bg-opacity-[0.03] text-zinc-700',
+              indicator?.bg,
+              isSelected && 'text-indigo-900 font-medium'
             )}
             style={{ width: cell.column.getSize(), flexShrink: 0 }}
           >

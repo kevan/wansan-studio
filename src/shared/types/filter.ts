@@ -60,8 +60,8 @@ export const OPERATOR_CONFIG: Record<FilterOperator, { label: string; symbol?: s
   between: { label: '介于', validTypes: ['number', 'date'], inputType: 'range' },
   is_null: { label: '为空', validTypes: ['text', 'number', 'date', 'boolean'], inputType: 'none' },
   is_not_null: { label: '不为空', validTypes: ['text', 'number', 'date', 'boolean'], inputType: 'none' },
-  in: { label: '在列表中', validTypes: ['text', 'number'], inputType: 'multi' },
-  not_in: { label: '不在列表中', validTypes: ['text', 'number'], inputType: 'multi' },
+  in: { label: '在列表中', validTypes: ['text', 'number', 'date'], inputType: 'multi' },
+  not_in: { label: '不在列表中', validTypes: ['text', 'number', 'date'], inputType: 'multi' },
 }
 
 // Legacy export for compatibility, map to OPERATOR_CONFIG
@@ -120,10 +120,17 @@ export function validateFilterCondition(rule: FilterCondition): FilterValidation
       if (!hasScalarValue(min) || !hasScalarValue(max)) {
         return [{ conditionId: rule.id, code: 'range_required' }]
       }
-      if (getSimpleType(rule.columnType) === 'number') {
+      const st = getSimpleType(rule.columnType)
+      if (st === 'number') {
         const minNum = Number(min)
         const maxNum = Number(max)
         if (!Number.isFinite(minNum) || !Number.isFinite(maxNum) || minNum > maxNum) {
+          return [{ conditionId: rule.id, code: 'range_invalid' }]
+        }
+      } else if (st === 'date') {
+        const minDate = Date.parse(String(min))
+        const maxDate = Date.parse(String(max))
+        if (isNaN(minDate) || isNaN(maxDate) || minDate > maxDate) {
           return [{ conditionId: rule.id, code: 'range_invalid' }]
         }
       } else if (String(min) > String(max)) {

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { X } from 'lucide-react'
+import { CheckCircle2, Circle, Trash2, AlertCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { 
   FilterCondition, 
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button'
 import { ValueInput } from './ValueInput'
 import { getEffectiveInputType } from './utils'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface FilterRowProps { 
   tableName: string
@@ -75,31 +76,44 @@ export function FilterRow({
     }
   }, [activeColumns, availableOps, condition.id, condition.columnName, condition.operator, onUpdate])
 
+  const hasError = validationCodes.length > 0
+
   return (
-    <div className="flex items-center gap-2 group animate-in fade-in slide-in-from-left-2 duration-200">
+    <div className="flex items-center gap-2 group animate-in fade-in slide-in-from-left-2 duration-200 relative">
       {/* Logical Connector Visual */}
-      <div className="w-12 shrink-0 flex justify-end pr-2 text-[10px] font-bold text-zinc-300 select-none">
+      <div className="w-12 shrink-0 flex justify-end pr-2 text-[10px] font-black text-zinc-300 select-none tracking-tighter">
         {index === 0 ? 'WHERE' : conjunction}
       </div>
 
       <div className={cn(
-        "flex-1 flex items-center gap-2 bg-white border border-zinc-200 rounded-lg p-1.5 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all",
-        !condition.enabled && "opacity-60 border-dashed bg-zinc-50"
+        "flex-1 flex items-center gap-2 bg-white border rounded-xl p-1.5 transition-all duration-300",
+        !condition.enabled ? "opacity-40 border-dashed border-zinc-200 bg-zinc-50/50" : "border-zinc-200 shadow-sm hover:border-indigo-300 hover:shadow-md",
+        hasError && "border-red-200 bg-red-50/30 ring-1 ring-red-100"
       )}>
         {/* Column Select */}
         <Select 
           value={safeColumnValue} 
-          onValueChange={(val) => onUpdate(condition.id, { columnName: val })}
+          onValueChange={(val) => {
+            const col = activeColumns.find(c => c.name === val)
+            if (col) {
+              onUpdate(condition.id, { columnName: val, columnType: col.type, sourceType: col.sourceType })
+            }
+          }}
         >
-          <SelectTrigger className="h-7 w-[140px] text-xs border-transparent bg-zinc-50 focus:ring-0 focus:bg-white transition-colors">
-            <SelectValue placeholder={t('select_field', 'Select field')} />
+          <SelectTrigger className="h-7 w-[160px] text-xs border-transparent bg-zinc-50/50 focus:ring-0 focus:bg-white transition-all rounded-lg overflow-hidden">
+            <div className="truncate text-left font-medium">
+              {selectedColumn ? (selectedColumn.semantic?.aliases?.[0] || selectedColumn.name) : <SelectValue />}
+            </div>
           </SelectTrigger>
-          <SelectContent className="max-h-[200px]">
+          <SelectContent className="max-h-[300px] rounded-xl shadow-2xl border-zinc-200/50">
             {activeColumns.map(col => {
                const alias = col.semantic?.aliases?.[0]
                return (
                  <SelectItem key={col.name} value={col.name}>
-                   {alias ? `${alias} (${col.name})` : col.name}
+                   <div className="flex flex-col gap-0.5 text-xs py-1">
+                     <span className="font-bold">{alias || col.name}</span>
+                     {alias && <span className="text-[10px] text-zinc-400">{col.name}</span>}
+                   </div>
                  </SelectItem>
                )
             })}
@@ -111,20 +125,22 @@ export function FilterRow({
           value={safeOperatorValue} 
           onValueChange={(val: FilterOperator) => onUpdate(condition.id, { operator: val })}
         >
-          <SelectTrigger className="h-7 w-[100px] text-xs border-transparent bg-zinc-50 focus:ring-0 focus:bg-white text-zinc-600 transition-colors">
-            <SelectValue placeholder={t('select_operator', 'Select operator')} />
+          <SelectTrigger className="h-7 w-[110px] text-xs border-transparent bg-zinc-50/50 focus:ring-0 focus:bg-white text-zinc-500 font-bold transition-all rounded-lg uppercase tracking-tight">
+            <div className="truncate">
+              {availableOps.find(([op]) => op === safeOperatorValue)?.[1].label || <SelectValue />}
+            </div>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="rounded-xl shadow-2xl border-zinc-200/50">
             {availableOps.map(([op, conf]) => (
               <SelectItem key={op} value={op}>
-                {conf.label}
+                <span className="text-[10px] font-bold uppercase tracking-tight py-1">{conf.label}</span>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
         {/* Value Input */}
-        <div className="flex-1 min-w-[100px]">
+        <div className="flex-1 min-w-[120px]">
           <ValueInput
             tableName={tableName}
             columnName={condition.columnName}
@@ -136,37 +152,67 @@ export function FilterRow({
           />
         </div>
 
-        <Button
-          variant={condition.enabled ? "secondary" : "outline"}
-          size="sm"
-          className="h-6 px-2 text-[10px]"
-          onClick={() => onUpdate(condition.id, { enabled: !condition.enabled })}
-        >
-          {condition.enabled ? t('enabled', 'Enabled') : t('disabled', 'Disabled')}
-        </Button>
+        {/* Actions Section */}
+        <div className="flex items-center gap-1 pl-2 border-l border-zinc-100 ml-1">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "h-7 w-7 rounded-full transition-all",
+                    condition.enabled ? "text-indigo-500 bg-indigo-50/50 hover:bg-indigo-100" : "text-zinc-300 hover:text-zinc-600 hover:bg-zinc-100"
+                  )}
+                  onClick={() => onUpdate(condition.id, { enabled: !condition.enabled })}
+                >
+                  {condition.enabled ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="text-[10px] font-bold px-2 py-1 bg-zinc-900 text-white rounded-md border-0">
+                {condition.enabled ? 'Disable' : 'Enable'}
+              </TooltipContent>
+            </Tooltip>
 
-        {/* Remove Button */}
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-6 w-6 text-zinc-300 hover:text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={() => onRemove(condition.id)}
-        >
-          <X className="w-3.5 h-3.5" />
-        </Button>
-      </div>
-      {validationCodes.length > 0 && (
-        <div className="text-[10px] text-red-600 pl-14">
-          {validationCodes.map(code => (
-            <div key={code}>
-              {code === 'value_required' && t('filter_value_required', 'Value is required')}
-              {code === 'range_required' && t('filter_range_required', 'Both min and max are required')}
-              {code === 'range_invalid' && t('filter_range_invalid', 'Range is invalid (min should be <= max)')}
-              {code === 'list_required' && t('filter_list_required', 'At least one list item is required')}
-            </div>
-          ))}
+            {hasError && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-center h-7 w-7 text-red-500 animate-pulse cursor-help">
+                    <AlertCircle className="w-4 h-4" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="text-[10px] font-bold bg-red-600 text-white p-2 rounded-lg border-0 shadow-xl max-w-[200px]">
+                  {validationCodes.map(code => (
+                    <div key={code} className="flex items-center gap-1.5">
+                      <div className="w-1 h-1 rounded-full bg-white shrink-0" />
+                      {code === 'value_required' && t('filter_value_required', 'Value is required')}
+                      {code === 'range_required' && t('filter_range_required', 'Both min and max are required')}
+                      {code === 'range_invalid' && t('filter_range_invalid', 'Range is invalid (min <= max)')}
+                      {code === 'list_required' && t('filter_list_required', 'At least one list item is required')}
+                    </div>
+                  ))}
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                  onClick={() => onRemove(condition.id)}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="text-[10px] font-bold px-2 py-1 bg-zinc-900 text-white rounded-md border-0">
+                Remove
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
-      )}
+      </div>
     </div>
   )
 }

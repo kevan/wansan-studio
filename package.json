@@ -35,6 +35,7 @@
     "@duckdb/node-api": "^1.4.3-r.3",
     "@radix-ui/react-switch": "^1.2.6",
     "@tanstack/react-virtual": "^3.13.18",
+    "date-fns": "^4.1.0",
     "electron-store": "^11.0.2",
     "electron-updater": "^6.1.7",
     "exceljs": "^4.4.0",
@@ -46,6 +47,7 @@
     "openai": "^6.10.0",
     "pg": "^8.17.2",
     "pg-query-stream": "^4.11.2",
+    "react-day-picker": "^9.13.2",
     "uuid": "^9.0.1",
     "zod": "^4.3.4"
   },
