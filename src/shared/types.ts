@@ -5,6 +5,7 @@ import type {
   ReportWidget,
 } from './types/dashboard'
 import type { FilterParam } from './schemas/analysis'
+import type { FilterState } from './types/filter'
 
 export type { ChartType, InsightResult, ReportData, ReportWidget }
 
@@ -203,6 +204,13 @@ export interface DatabaseSource {
 
 export type DataSourceConfig = LocalFileSource | DatabaseSource
 
+export interface GridDisplayState {
+  filterState?: FilterState
+  sorting?: Array<{ id: string; desc: boolean }>
+  columnVisibility?: Record<string, boolean>
+  columnOrder?: string[]
+}
+
 export interface FileNode {
   id: string
   name: string
@@ -225,6 +233,9 @@ export interface FileNode {
    * This is the "True Schema" that AI should see.
    */
   viewSchema?: ColumnSchema[]
+
+  /** [V1.7.5] Persisted UI State for the grid */
+  displayState?: GridDisplayState
 }
 
 export interface ReloadResult {

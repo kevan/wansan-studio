@@ -3,11 +3,8 @@ import { X, Plus, LayoutPanelTop } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FilterState, OPERATOR_CONFIG } from '@shared/types/filter'
 import { ColumnSchema } from '@shared/types'
-import { ExplorerViewMode, TableView } from '@shared/types/project'
 import { cn } from '@/utils/cn'
 import { FilterManager } from '../filter-manager'
-import { ViewSwitcher } from '../view-switcher'
-import { SortingState } from '@tanstack/react-table'
 
 interface GridControlBarProps {
   // Data & Filter Props
@@ -16,18 +13,12 @@ interface GridControlBarProps {
   filterState: FilterState
   setFilterState: (f: FilterState | ((prev: FilterState) => FilterState)) => void
   availableColumns: ColumnSchema[]
-  viewMode: ExplorerViewMode
   filterError: string | null
   setFilterError: (e: string | null) => void
   
-  // Toolbar & View Props
-  fileId: string
-  sorting: SortingState
-  currentColumnConfig: { hidden: string[]; order: string[] }
-  activeViewId: string | null
+  // Toolbar Props
   isSidebarOpen: boolean
   setIsSidebarOpen: (o: boolean) => void
-  onViewSelect: (view: TableView | null) => void
 }
 
 export function GridControlBar({
@@ -36,17 +27,11 @@ export function GridControlBar({
   filterState,
   setFilterState,
   availableColumns,
-  viewMode,
   filterError,
   setFilterError,
-  fileId,
-  sorting,
-  currentColumnConfig,
-  activeViewId,
   isSidebarOpen,
   setIsSidebarOpen,
-  onViewSelect,
-}: GridControlBarProps) {
+}: GridControlBarProps): JSX.Element {
   const handleRemoveChip = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation()
     setFilterState(prev => ({
@@ -85,17 +70,7 @@ export function GridControlBar({
       {/* Left Section: Context & Filters */}
       <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
         <div className="flex items-center gap-2 mr-1 flex-shrink-0">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 select-none">View</span>
-          <span className={cn(
-            'text-[10px] px-2 py-0.5 rounded-full border font-medium whitespace-nowrap',
-            viewMode === 'saved_dirty' && 'border-amber-200 text-amber-700 bg-amber-50',
-            viewMode === 'saved_clean' && 'border-emerald-200 text-emerald-700 bg-emerald-50',
-            viewMode === 'unsaved_custom' && 'border-indigo-200 text-indigo-700 bg-indigo-50',
-            viewMode === 'default_clean' && 'border-zinc-200 text-zinc-500 bg-white',
-            viewMode === 'partially_invalid' && 'border-red-200 text-red-700 bg-red-50',
-          )}>
-            {viewMode.replace('_', ' ')}
-          </span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 select-none">Filters</span>
         </div>
 
         <div className="w-px h-4 bg-zinc-200 mx-0.5 flex-shrink-0" />
@@ -108,6 +83,7 @@ export function GridControlBar({
             
             const chipTrigger = (
               <div
+                key={c.id}
                 className={cn(
                   'text-[11px] h-7 px-2.5 rounded-full border flex items-center gap-2 cursor-pointer transition-all hover:shadow-sm group/chip',
                   c.enabled 
@@ -185,7 +161,7 @@ export function GridControlBar({
         </div>
       </div>
 
-      {/* Right Section: Fields & Views */}
+      {/* Right Section: Fields */}
       <div className="flex items-center gap-2 flex-shrink-0">
         <Button
           variant="ghost"
@@ -199,22 +175,10 @@ export function GridControlBar({
           <LayoutPanelTop className="w-3.5 h-3.5" />
           Fields
         </Button>
-        
-        <div className="w-px h-4 bg-zinc-200 mx-1" />
-        
-        <ViewSwitcher
-          fileId={fileId}
-          currentFilters={filterState}
-          currentSort={sorting}
-          currentColumnConfig={currentColumnConfig}
-          currentSchemaColumns={availableColumns.map(c => c.name)}
-          onViewSelect={onViewSelect}
-          activeViewId={activeViewId}
-          mode={viewMode}
-        />
       </div>
     </div>
   )
 }
+
 
 

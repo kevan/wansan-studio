@@ -47,6 +47,7 @@ export function useProjectIO() {
       rowCount: f.rowCount, // Add rowCount
       lastModified: f.lastModified, // Add lastModified
       createdAt: f.createdAt, // Add createdAt
+      displayState: f.displayState, // [V1.7.5] Persist UI state
       columns: f.columns.map(c => ({
         name: c.name,
         type: c.type,
@@ -175,6 +176,7 @@ export function useProjectIO() {
           error: undefined, // Error status not persisted
           lastModified: asset.lastModified || now, // Use saved lastModified
           createdAt: asset.createdAt || now, // Use saved createdAt
+          displayState: (asset as any).displayState, // [V1.7.5] Restore UI state
           smartMetrics: metrics,
           relations: relations,
         }

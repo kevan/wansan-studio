@@ -17,10 +17,7 @@ import { FilterState } from '@shared/types/filter'
 
 import { ROW_HEIGHT, OVERSCAN } from './utils'
 import { useGridData } from './useGridData'
-import { useViewManager } from './useViewManager'
 import { GridControlBar } from './GridControlBar'
-import { UnsavedChangesDialog } from './UnsavedChangesDialog'
-import { ViewRepairDialog } from './ViewRepairDialog'
 import { GridRow } from './GridRow'
 import { GridHeader } from './GridHeader'
 
@@ -38,7 +35,7 @@ export function VirtualDataGrid({
   columns,
   totalRows,
   onModifyStructure,
-}: VirtualDataGridProps) {
+}: VirtualDataGridProps): JSX.Element {
   const isGridDebug = import.meta.env.DEV
   const logGrid = useCallback((event: string, payload?: Record<string, unknown>) => {
     if (!isGridDebug) return
@@ -51,13 +48,13 @@ export function VirtualDataGrid({
   }, [isGridDebug])
 
   const parentRef = useRef<HTMLDivElement>(null)
-  const { files } = useProjectStore()
+  const { files, updateFile } = useProjectStore()
   const file = files.find(f => f.id === fileId)
 
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [filterState, setFilterState] = useState<FilterState>({ conjunction: 'AND', conditions: [] })
-  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({})
-  const [columnOrder, setColumnOrder] = useState<string[]>([])
+  const [sorting, setSorting] = useState<SortingState>(file?.displayState?.sorting || [])
+  const [filterState, setFilterState] = useState<FilterState>(file?.displayState?.filterState || { conjunction: 'AND', conditions: [] })
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(file?.displayState?.columnVisibility || {})
+  const [columnOrder, setColumnOrder] = useState<string[]>(file?.displayState?.columnOrder || [])
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [filterError, setFilterError] = useState<string | null>(null)
 
@@ -70,48 +67,11 @@ export function VirtualDataGrid({
     [columns]
   )
 
-  const defaultColumnOrder = useMemo(
-    () => availableColumns.map(c => c.name),
-    [availableColumns]
-  )
-
-  React.useEffect(() => {
+  useEffect(() => {
     if (availableColumns.length > 0 && columnOrder.length === 0) {
       setColumnOrder(availableColumns.map(c => c.name))
     }
   }, [availableColumns, columnOrder.length])
-
-  const {
-    activeViewId,
-    viewMode,
-    showSwitchGuard,
-    setShowSwitchGuard,
-    invalidView,
-    setInvalidView,
-    repairMap,
-    setRepairMap,
-    currentColumnConfig,
-    handleViewSelectRequest,
-    handleSaveAndSwitch,
-    handleDiscardAndSwitch,
-    handleCancelSwitch,
-    handleRepairAuto,
-    handleRepairManual,
-    handleFallbackDefault,
-  } = useViewManager({
-    fileId,
-    availableColumns,
-    defaultColumnOrder,
-    sorting,
-    setSorting,
-    filterState,
-    setFilterState,
-    columnVisibility,
-    setColumnVisibility,
-    columnOrder,
-    setColumnOrder,
-    setFilterError,
-  })
 
   const {
     flatData,
@@ -174,13 +134,13 @@ export function VirtualDataGrid({
   const isFetchingNextPageRef = useRef(isFetchingNextPage)
   const fetchNextPageRef = useRef(fetchNextPage)
 
-  React.useEffect(() => {
+  useEffect(() => {
     hasNextPageRef.current = hasNextPage
     isFetchingNextPageRef.current = isFetchingNextPage
     fetchNextPageRef.current = fetchNextPage
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-  React.useEffect(() => {
+  useEffect(() => {
     logGrid('mounted', { fileId, tableName })
     return () => {
       logGrid('unmounted', { fileId, tableName })
@@ -189,7 +149,7 @@ export function VirtualDataGrid({
 
   // Throttled state change logging — only react to meaningful user-driven changes
   // (sorting / filter changes), not every data fetch cycle
-  React.useEffect(() => {
+  useEffect(() => {
     logGrid('state.changed', {
       sortingCount: sorting.length,
       filterCount: filterState.conditions.length,
@@ -200,7 +160,20 @@ export function VirtualDataGrid({
     logGrid,
   ])
 
-  React.useEffect(() => {
+  // [v1.7.5] Auto-persist UI state to ProjectStore (which eventually saves to wansan.json)
+  useEffect(() => {
+    if (!fileId) return
+    updateFile(fileId, {
+      displayState: {
+        filterState,
+        sorting,
+        columnVisibility,
+        columnOrder,
+      }
+    })
+  }, [fileId, filterState, sorting, columnVisibility, columnOrder, updateFile])
+
+  useEffect(() => {
     const container = parentRef.current
     if (!container) return
 
@@ -237,7 +210,7 @@ export function VirtualDataGrid({
   }, [])
 
   // Re-check load-more after data changes (e.g. viewport still not filled after a page loads)
-  React.useEffect(() => {
+  useEffect(() => {
     const container = parentRef.current
     if (!container) return
     if (!hasNextPageRef.current || isFetchingNextPageRef.current) return
@@ -315,25 +288,6 @@ export function VirtualDataGrid({
     <div className="h-full flex flex-col w-full bg-white relative">
       <RowDetailSheet open={isDetailOpen} onOpenChange={setIsDetailOpen} row={detailRow} columns={columns} onNavigate={handleNavigate} hasPrev={navState.hasPrev} hasNext={navState.hasNext} />
 
-      <UnsavedChangesDialog 
-        open={showSwitchGuard} 
-        onOpenChange={setShowSwitchGuard}
-        onCancel={handleCancelSwitch}
-        onDiscard={handleDiscardAndSwitch}
-        onSave={handleSaveAndSwitch}
-      />
-
-      <ViewRepairDialog
-        invalidView={invalidView}
-        setInvalidView={setInvalidView}
-        repairMap={repairMap}
-        setRepairMap={setRepairMap}
-        availableColumns={availableColumns}
-        onFallback={handleFallbackDefault}
-        onRepairAuto={handleRepairAuto}
-        onRepairManual={handleRepairManual}
-      />
-
       <GridControlBar
         // Data & Filter Props
         tableName={tableName}
@@ -341,18 +295,12 @@ export function VirtualDataGrid({
         filterState={filterState}
         setFilterState={setFilterState}
         availableColumns={availableColumns}
-        viewMode={viewMode}
         filterError={filterError}
         setFilterError={setFilterError}
         
-        // Toolbar & View Props
-        fileId={fileId}
-        sorting={sorting}
-        currentColumnConfig={currentColumnConfig}
-        activeViewId={activeViewId}
+        // Toolbar Props
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
-        onViewSelect={handleViewSelectRequest}
       />
 
       {isError && (
