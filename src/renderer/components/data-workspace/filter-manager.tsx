@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Popover,
   PopoverContent,
@@ -17,9 +17,11 @@ import { useTranslation } from 'react-i18next'
 import { 
   FilterCondition, 
   FilterState, 
+  FilterValidationCode,
   OPERATOR_CONFIG, 
   FilterOperator, 
-  getSimpleType 
+  getSimpleType,
+  validateFilterState,
 } from '@shared/types/filter'
 import { ColumnSchema } from '@shared/types'
 import { cn } from '@/utils/cn'
@@ -30,9 +32,11 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 
 interface FilterManagerProps {
+  tableName: string
   columns: ColumnSchema[]
   filterState: FilterState
   onChange: (state: FilterState) => void
+  errorMessage?: string | null
 }
 
 type EffectiveInputType = 'text' | 'number' | 'date' | 'none' | 'multi' | 'range' | 'date_range'
@@ -47,9 +51,10 @@ function getEffectiveInputType(operator: FilterOperator, simpleType: ReturnType<
   return OPERATOR_CONFIG[operator].inputType
 }
 
-export function FilterManager({ columns, filterState, onChange }: FilterManagerProps) {
+export function FilterManager({ tableName, columns, filterState, onChange, errorMessage }: FilterManagerProps) {
   const { t } = useTranslation('common')
   const [isOpen, setIsOpen] = useState(false)
+  const [validationMap, setValidationMap] = useState<Record<string, FilterValidationCode[]>>({})
 
   // Draft state: edits happen here without triggering parent re-renders
   const [draftState, setDraftState] = useState<FilterState>(filterState)
@@ -63,11 +68,24 @@ export function FilterManager({ columns, filterState, onChange }: FilterManagerP
   }
 
   const handleApply = () => {
+    const issues = validateFilterState(draftState)
+    if (issues.length > 0) {
+      const nextMap: Record<string, FilterValidationCode[]> = {}
+      issues.forEach(issue => {
+        if (!nextMap[issue.conditionId]) nextMap[issue.conditionId] = []
+        nextMap[issue.conditionId].push(issue.code)
+      })
+      setValidationMap(nextMap)
+      return
+    }
+
+    setValidationMap({})
     onChange(draftState)
     setIsOpen(false)
   }
 
   const handleCancel = () => {
+    setValidationMap({})
     setIsOpen(false)
   }
 
@@ -142,6 +160,12 @@ export function FilterManager({ columns, filterState, onChange }: FilterManagerP
         return newCond
       })
     }))
+    setValidationMap(prev => {
+      if (!prev[id]) return prev
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
   }
 
   const handleRemoveCondition = (id: string) => {
@@ -149,6 +173,12 @@ export function FilterManager({ columns, filterState, onChange }: FilterManagerP
       ...prev,
       conditions: prev.conditions.filter(c => c.id !== id)
     }))
+    setValidationMap(prev => {
+      if (!prev[id]) return prev
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
   }
 
   const toggleConjunction = (e: React.MouseEvent) => {
@@ -159,29 +189,8 @@ export function FilterManager({ columns, filterState, onChange }: FilterManagerP
     }))
   }
 
-  const activeConditions = filterState.conditions.filter(c => c.enabled)
-  const activeCount = activeConditions.length
-
-  const getSummary = () => {
-    if (activeCount === 0) return t('filter')
-    
-    // Create a readable summary of the first 2 conditions
-    const summary = activeConditions.slice(0, 2).map(c => {
-      const col = columns.find(col => col.name === c.columnName)
-      const label = col?.semantic?.aliases?.[0] || c.columnName
-      const op = OPERATOR_CONFIG[c.operator].symbol || OPERATOR_CONFIG[c.operator].label
-      return `${label} ${op} ${c.operator.includes('null') ? '' : `"${c.value}"`}`
-    }).join(`, `)
-
-    return (
-      <span className="flex items-center gap-1.5 truncate max-w-[300px]">
-        <span className="font-bold">{filterState.conjunction}</span>
-        <span className="opacity-60">:</span>
-        <span className="truncate">{summary}</span>
-        {activeCount > 2 && <span className="text-[10px] bg-indigo-200/50 px-1 rounded">+{activeCount - 2}</span>}
-      </span>
-    )
-  }
+  const activeCount = filterState.conditions.filter(c => c.enabled).length
+  const totalCount = filterState.conditions.length
 
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
@@ -197,12 +206,17 @@ export function FilterManager({ columns, filterState, onChange }: FilterManagerP
           )}
         >
           <ListFilter className="w-3.5 h-3.5" />
-          {getSummary()}
+          <span>{t('filter')}</span>
+          {totalCount > 0 && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/80 border border-zinc-200">
+              {activeCount}/{totalCount}
+            </span>
+          )}
         </Button>
       </PopoverTrigger>
       
       <PopoverContent 
-        className="w-[480px] p-0 shadow-2xl border-zinc-200/50 pointer-events-auto" 
+        className="w-[860px] max-w-[95vw] p-0 shadow-2xl border-zinc-200/50 pointer-events-auto" 
         align="start"
         onInteractOutside={(e) => {
           // Prevent Popover from closing when interacting with portal-rendered children
@@ -214,6 +228,11 @@ export function FilterManager({ columns, filterState, onChange }: FilterManagerP
           e.preventDefault()
         }}
       >
+        {errorMessage && (
+          <div className="px-4 py-2 text-xs text-red-700 bg-red-50 border-b border-red-100">
+            {errorMessage}
+          </div>
+        )}
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 bg-zinc-50/80 backdrop-blur-sm rounded-t-lg">
           <div className="flex items-center gap-2">
@@ -256,12 +275,14 @@ export function FilterManager({ columns, filterState, onChange }: FilterManagerP
             draftState.conditions.map((condition, index) => (
               <FilterRow 
                 key={condition.id}
+                tableName={tableName}
                 condition={condition}
                 columns={columns}
                 index={index}
                 conjunction={draftState.conjunction}
                 onUpdate={handleUpdateCondition}
                 onRemove={handleRemoveCondition}
+                validationCodes={validationMap[condition.id] || []}
               />
             ))
           )}
@@ -306,7 +327,7 @@ export function FilterManager({ columns, filterState, onChange }: FilterManagerP
                 onClick={handleApply}
               >
                 <Check className="w-4 h-4 mr-2" />
-                应用过滤器
+                {t('apply_filters', 'Apply Filters')}
               </Button>
             </div>
           </div>
@@ -317,26 +338,50 @@ export function FilterManager({ columns, filterState, onChange }: FilterManagerP
 }
 
 function FilterRow({ 
+  tableName,
   condition, 
   columns, 
   index, 
   conjunction,
   onUpdate, 
-  onRemove 
+  onRemove,
+  validationCodes
 }: { 
+  tableName: string
   condition: FilterCondition
   columns: ColumnSchema[]
   index: number
   conjunction: 'AND' | 'OR'
   onUpdate: (id: string, updates: Partial<FilterCondition>) => void
   onRemove: (id: string) => void
+  validationCodes: FilterValidationCode[]
 }) {
+  const { t } = useTranslation('common')
   const simpleType = getSimpleType(condition.columnType)
   const availableOps = Object.entries(OPERATOR_CONFIG).filter(([_, conf]) => 
     conf.validTypes.includes(simpleType)
   ) as [FilterOperator, typeof OPERATOR_CONFIG['equals']][]
 
   const activeColumns = columns.filter(c => c.name !== '_ws_row_id')
+  const selectedColumn = activeColumns.find(c => c.name === condition.columnName)
+  const safeColumnValue = selectedColumn ? condition.columnName : (activeColumns[0]?.name || '')
+  const safeOperatorValue = availableOps.some(([op]) => op === condition.operator)
+    ? condition.operator
+    : (availableOps[0]?.[0] || 'equals')
+
+  useEffect(() => {
+    const hasColumn = activeColumns.some(c => c.name === condition.columnName)
+    if (!hasColumn && activeColumns.length > 0) {
+      const fallback = activeColumns[0]
+      onUpdate(condition.id, { columnName: fallback.name, columnType: fallback.type, sourceType: fallback.sourceType })
+      return
+    }
+
+    const isValidOperator = availableOps.some(([op]) => op === condition.operator)
+    if (!isValidOperator && availableOps.length > 0) {
+      onUpdate(condition.id, { operator: availableOps[0][0] })
+    }
+  }, [activeColumns, availableOps, condition.id, condition.columnName, condition.operator, onUpdate])
 
   return (
     <div className="flex items-center gap-2 group animate-in fade-in slide-in-from-left-2 duration-200">
@@ -345,21 +390,24 @@ function FilterRow({
         {index === 0 ? 'WHERE' : conjunction}
       </div>
 
-      <div className="flex-1 flex items-center gap-2 bg-white border border-zinc-200 rounded-lg p-1.5 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all">
+      <div className={cn(
+        "flex-1 flex items-center gap-2 bg-white border border-zinc-200 rounded-lg p-1.5 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all",
+        !condition.enabled && "opacity-60 border-dashed bg-zinc-50"
+      )}>
         {/* Column Select */}
         <Select 
-          value={condition.columnName} 
+          value={safeColumnValue} 
           onValueChange={(val) => onUpdate(condition.id, { columnName: val })}
         >
           <SelectTrigger className="h-7 w-[140px] text-xs border-transparent bg-zinc-50 focus:ring-0 focus:bg-white transition-colors">
-            <SelectValue />
+            <SelectValue placeholder={t('select_field', 'Select field')} />
           </SelectTrigger>
           <SelectContent className="max-h-[200px]">
             {activeColumns.map(col => {
                const alias = col.semantic?.aliases?.[0]
                return (
                  <SelectItem key={col.name} value={col.name}>
-                   <span className="text-xs">{alias ? `${alias} (${col.name})` : col.name}</span>
+                   {alias ? `${alias} (${col.name})` : col.name}
                  </SelectItem>
                )
             })}
@@ -368,16 +416,16 @@ function FilterRow({
 
         {/* Operator Select */}
         <Select 
-          value={condition.operator} 
+          value={safeOperatorValue} 
           onValueChange={(val: FilterOperator) => onUpdate(condition.id, { operator: val })}
         >
           <SelectTrigger className="h-7 w-[100px] text-xs border-transparent bg-zinc-50 focus:ring-0 focus:bg-white text-zinc-600 transition-colors">
-            <SelectValue />
+            <SelectValue placeholder={t('select_operator', 'Select operator')} />
           </SelectTrigger>
           <SelectContent>
             {availableOps.map(([op, conf]) => (
               <SelectItem key={op} value={op}>
-                <span className="text-xs">{conf.label}</span>
+                {conf.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -386,11 +434,24 @@ function FilterRow({
         {/* Value Input */}
         <div className="flex-1 min-w-[100px]">
           <ValueInput
+            tableName={tableName}
+            columnName={condition.columnName}
+            columnType={condition.columnType}
+            operator={condition.operator}
             type={getEffectiveInputType(condition.operator, simpleType)}
             value={condition.value} 
             onChange={(val) => onUpdate(condition.id, { value: val })} 
           />
         </div>
+
+        <Button
+          variant={condition.enabled ? "secondary" : "outline"}
+          size="sm"
+          className="h-6 px-2 text-[10px]"
+          onClick={() => onUpdate(condition.id, { enabled: !condition.enabled })}
+        >
+          {condition.enabled ? t('enabled', 'Enabled') : t('disabled', 'Disabled')}
+        </Button>
 
         {/* Remove Button */}
         <Button 
@@ -402,19 +463,93 @@ function FilterRow({
           <X className="w-3.5 h-3.5" />
         </Button>
       </div>
+      {validationCodes.length > 0 && (
+        <div className="text-[10px] text-red-600 pl-14">
+          {validationCodes.map(code => (
+            <div key={code}>
+              {code === 'value_required' && t('filter_value_required', 'Value is required')}
+              {code === 'range_required' && t('filter_range_required', 'Both min and max are required')}
+              {code === 'range_invalid' && t('filter_range_invalid', 'Range is invalid (min should be <= max)')}
+              {code === 'list_required' && t('filter_list_required', 'At least one list item is required')}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 
 function ValueInput({
+  tableName,
+  columnName,
+  columnType,
+  operator,
   type,
   value,
   onChange
 }: {
+  tableName: string
+  columnName: string
+  columnType: string
+  operator: FilterOperator
   type: EffectiveInputType
   value: unknown
   onChange: (val: unknown) => void
 }) {
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false)
+
+  const shouldFetchSuggestions = (
+    operator === 'equals' ||
+    operator === 'not_equals' ||
+    operator === 'in' ||
+    operator === 'not_in'
+  )
+
+  useEffect(() => {
+    let active = true
+    if (!shouldFetchSuggestions || !tableName || !columnName) {
+      setSuggestions([])
+      return
+    }
+
+    const escapedTable = tableName.replace(/"/g, '""')
+    const escapedColumn = columnName.replace(/"/g, '""')
+    setLoadingSuggestions(true)
+    window.electronAPI.runSQL(
+      `SELECT DISTINCT "${escapedColumn}" AS v FROM "${escapedTable}" WHERE "${escapedColumn}" IS NOT NULL ORDER BY 1 LIMIT 50`
+    ).then(res => {
+      if (!active) return
+      if (!res.success || !res.data) {
+        setSuggestions([])
+        return
+      }
+      const next = (res.data.data || [])
+        .map((row: Record<string, unknown>) => row.v)
+        .filter((v: unknown) => v !== null && v !== undefined)
+        .map((v: unknown) => String(v))
+      setSuggestions(next)
+    }).catch(() => {
+      if (!active) return
+      setSuggestions([])
+    }).finally(() => {
+      if (active) setLoadingSuggestions(false)
+    })
+
+    return () => {
+      active = false
+    }
+  }, [shouldFetchSuggestions, tableName, columnName, operator, columnType])
+
+  const appendListValue = (selected: string) => {
+    const current = Array.isArray(value)
+      ? value.map(v => String(v))
+      : String(value || '').split(',').map(v => v.trim()).filter(Boolean)
+    if (!current.includes(selected)) {
+      onChange([...current, selected].join(', '))
+    }
+  }
+
   if (type === 'none') return null
 
   if (type === 'range' || type === 'date_range') {
@@ -477,12 +612,26 @@ function ValueInput({
 
   if (type === 'multi') {
     return (
-      <Input 
-        className="h-7 text-xs border-zinc-100 bg-zinc-50 focus:bg-white transition-colors"
-        placeholder="A, B, C..."
-        value={Array.isArray(value) ? value.join(', ') : (typeof value === 'string' || typeof value === 'number' ? value : '')}
-        onChange={(e) => onChange(e.target.value)}
-      />
+      <div className="flex items-center gap-1">
+        <Input 
+          className="h-7 text-xs border-zinc-100 bg-zinc-50 focus:bg-white transition-colors"
+          placeholder="A, B, C..."
+          value={Array.isArray(value) ? value.join(', ') : (typeof value === 'string' || typeof value === 'number' ? value : '')}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        {suggestions.length > 0 && (
+          <Select onValueChange={appendListValue}>
+            <SelectTrigger className="h-7 w-[120px] text-xs border-zinc-100 bg-zinc-50">
+              <SelectValue placeholder={loadingSuggestions ? '...' : 'Pick'} />
+            </SelectTrigger>
+            <SelectContent>
+              {suggestions.map(s => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
     )
   }
 
@@ -500,6 +649,24 @@ function ValueInput({
           {isTrue ? 'True' : 'False'}
         </span>
       </div>
+    )
+  }
+
+  if ((operator === 'equals' || operator === 'not_equals') && suggestions.length > 0) {
+    return (
+      <Select
+        value={typeof value === 'string' || typeof value === 'number' ? String(value) : ''}
+        onValueChange={onChange}
+      >
+        <SelectTrigger className="h-7 text-xs border-zinc-100 bg-zinc-50 focus:bg-white transition-colors">
+          <SelectValue placeholder={loadingSuggestions ? 'Loading...' : 'Select value'} />
+        </SelectTrigger>
+        <SelectContent className="max-h-[240px]">
+          {suggestions.map(s => (
+            <SelectItem key={s} value={s}>{s}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     )
   }
 

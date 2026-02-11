@@ -1545,3 +1545,65 @@ export const selectAllRelations = (state: ProjectState) => {
     }))
   )
 }
+
+export const selectTableViewsForFile = (state: ProjectState, fileId: string) =>
+  (state.tableViews || {})[fileId] || []
+
+export const selectViewById = (
+  state: ProjectState,
+  fileId: string,
+  viewId: string | null
+) => {
+  if (!viewId) return null
+  return selectTableViewsForFile(state, fileId).find(v => v.id === viewId) || null
+}
+
+export const calculateExplorerDirty = (
+  activeView: import('@shared/types/project').TableView | null,
+  filterApplied: import('@shared/types/filter').FilterState,
+  sorting: Array<{ id: string; desc: boolean }>,
+  columnVisibility: Record<string, boolean>,
+  columnOrder: string[],
+  defaultColumnOrder: string[]
+) => {
+  if (!activeView) {
+    const defaultFilters: import('@shared/types/filter').FilterState = {
+      conjunction: 'AND',
+      conditions: [],
+    }
+    return (
+      JSON.stringify(filterApplied) !== JSON.stringify(defaultFilters) ||
+      JSON.stringify(sorting) !== JSON.stringify([]) ||
+      JSON.stringify(columnVisibility) !== JSON.stringify({}) ||
+      JSON.stringify(columnOrder) !== JSON.stringify(defaultColumnOrder)
+    )
+  }
+
+  const normalizedFilters = Array.isArray(activeView.filters)
+    ? { conjunction: 'AND' as const, conditions: activeView.filters }
+    : activeView.filters
+  const normalizedVisibility: Record<string, boolean> = {}
+  activeView.columnConfig?.hidden?.forEach(col => {
+    normalizedVisibility[col] = false
+  })
+
+  return (
+    JSON.stringify(filterApplied) !== JSON.stringify(normalizedFilters) ||
+    JSON.stringify(sorting) !== JSON.stringify(activeView.sort || []) ||
+    JSON.stringify(columnVisibility) !== JSON.stringify(normalizedVisibility) ||
+    JSON.stringify(columnOrder) !==
+      JSON.stringify(activeView.columnConfig?.order || defaultColumnOrder)
+  )
+}
+
+export const resolveExplorerViewMode = (
+  hasActiveView: boolean,
+  dirty: boolean,
+  partiallyInvalid: boolean
+): import('@shared/types/project').ExplorerViewMode => {
+  if (partiallyInvalid) return 'partially_invalid'
+  if (!hasActiveView && !dirty) return 'default_clean'
+  if (hasActiveView && !dirty) return 'saved_clean'
+  if (hasActiveView && dirty) return 'saved_dirty'
+  return 'unsaved_custom'
+}

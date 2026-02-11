@@ -13,6 +13,33 @@ export interface Relation {
 }
 
 export type ViewMode = 'chat' | 'schema' | 'preview'
+export type ExplorerViewMode =
+  | 'default_clean'
+  | 'saved_clean'
+  | 'saved_dirty'
+  | 'unsaved_custom'
+  | 'partially_invalid'
+
+export interface QueryState {
+  filterDraft: FilterState
+  filterApplied: FilterState
+  sorting: Array<{ id: string; desc: boolean }>
+  searchText?: string
+}
+
+export interface PresentationState {
+  columnVisibility: Record<string, boolean>
+  columnOrder: string[]
+  columnWidths?: Record<string, number>
+}
+
+export interface ExplorerState {
+  fileId: string
+  viewId: string | null
+  queryState: QueryState
+  presentationState: PresentationState
+  dirty: boolean
+}
 
 export interface TableView {
   id: string
@@ -24,6 +51,13 @@ export interface TableView {
     widths?: Record<string, number>
   }
   sort?: { id: string; desc: boolean }[]
+  meta?: {
+    updatedAt: number
+    filterCount: number
+    hiddenCount: number
+    sortCount: number
+    schemaHash?: string
+  }
 }
 
 export interface Session {

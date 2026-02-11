@@ -1,7 +1,7 @@
 # 🧭 SPEC: Data Explorer & Unified Data IDE
 
-> **Version**: 4.1 (Implemented)
-> **Status**: **Complete** (v1.7.5+)
+> **Version**: 4.2 (Implemented)
+> **Status**: **Complete** (v1.8.0+)
 > **Theme**: "The Grid is the Canvas, The Sidebar is the Pallette"
 > **Reference**: DataGrip-Inspired Read/Write Separation
 
@@ -29,10 +29,16 @@ Wansan 坚持“不改动用户原始数据”的原则。所有的修改（别�
 
 *   **🚀 高性能虚拟滚动**: 基于 `@tanstack/react-virtual` 实现百万级行数据的零延迟浏览。
 *   **⛓️ 零延迟表头滑动**: 采用浏览器原生 CSS `sticky` 表头方案，彻底消除 JS 同步导致的橡皮筋延迟。
-*   **🌪️ 高级过滤器 (FilterManager)**:
-    *   支持 **AND / OR** 顶级逻辑切换。
-    *   **类型感知控件**: 自动适配日期选择器、布尔开关、数值区间输入等。
-    *   **草稿模式**: 更改实时反馈至草稿，点击“应用”时统一刷新数据。
+*   **🧩 Active Context Bar (状态与条件条)**:
+    *   统一展示当前视图状态（`default/saved/dirty/custom/invalid`）与所有过滤条件 Chips。
+    *   点击 Chip 本体可单条启用/禁用；右侧关闭按钮删除条件。
+    *   提供 `Clear All` 快速清空已配置条件。
+*   **🌪️ 高级过滤器 (FilterManager, 唯一过滤编辑入口)**:
+    *   支持 **AND / OR** 顶级逻辑切换（不支持分组嵌套）。
+    *   **类型感知控件**: 自动适配日期选择器、布尔开关、数值区间、列表候选选择等。
+    *   **草稿模式**: 更改仅写入 `draftState`，点击“应用”提交到 `appliedState`。
+    *   **行级校验与错误映射**: 必填值、区间合法性、列表合法性在提交前校验；SQL 错误回显到过滤面板。
+    *   **候选值建议**: 对 `equals/not_equals/in/not_in` 从当前表查询 `DISTINCT` 候选值辅助输入。
 *   **🔍 主从详情视图 (Master-Detail)**: 双击行弹出右侧抽屉 (`RowDetailSheet`)，垂直展示单条记录的所有字段及语义描述。
 
 ### 2.2 Structure Editor (模型编辑器)
@@ -67,6 +73,14 @@ Wansan 坚持“不改动用户原始数据”的原则。所有的修改（别�
 用户可以将当前的“浏览偏好”保存为 **Saved Views (列表视图)**。
 *   **存储内容**: 包含过滤条件（FilterState）、排序规则（Sorting）、列显隐状态（Visibility）以及列顺序（Order）。
 *   **存储位置**: `wansan.json` 项目配置文件。
+*   **状态机**:
+    *   `DefaultClean`: 默认视图且无改动
+    *   `SavedClean`: 已保存视图且无改动
+    *   `SavedDirty`: 已保存视图但存在未保存改动
+    *   `UnsavedCustom`: 无活动视图 ID，但存在自定义条件
+    *   `PartiallyInvalid`: 视图引用了缺失字段，需要修复
+*   **切换保护**: 当 `dirty=true` 切换视图时，弹出确认（保存并切换 / 不保存切换 / 取消）。
+*   **视图修复**: schema 变更导致字段缺失时，支持自动移除、手动映射、回退默认视图。
 
 ---
 
@@ -115,8 +129,37 @@ export interface TableView {
   columnConfig: {
     hidden?: string[];
     order?: string[];
+    widths?: Record<string, number>;
   };
   sort?: { id: string; desc: boolean }[];
+  meta?: {
+    updatedAt: number;
+    filterCount: number;
+    hiddenCount: number;
+    sortCount: number;
+    schemaHash?: string;
+  };
+}
+```
+
+#### ExplorerState (浏览状态聚合)
+```typescript
+// src/shared/types/project.ts
+export interface ExplorerState {
+  fileId: string;
+  viewId: string | null;
+  queryState: {
+    filterDraft: FilterState;
+    filterApplied: FilterState;
+    sorting: { id: string; desc: boolean }[];
+    searchText?: string;
+  };
+  presentationState: {
+    columnVisibility: Record<string, boolean>;
+    columnOrder: string[];
+    columnWidths?: Record<string, number>;
+  };
+  dirty: boolean;
 }
 ```
 
@@ -146,3 +189,39 @@ export interface TableView {
 
 #### 草稿提交机制 (Draft & Commit)
 `FilterManager` 内部维护 `draftState`，仅在点击“应用”或特定的提交动作时调用父组件的 `onChange`，以平衡实时性与渲染性能。
+
+#### 过滤安全与校验 (Validation & Safe SQL)
+过滤 SQL 生成统一通过 `escapeSqlString` / `toTypedLiteral`，并在提交前执行 `validateFilterState`，避免未转义字符串与无效区间条件进入查询层。
+
+#### 脏状态判定 (Dirty Resolution)
+`filterApplied`、`sorting`、`columnVisibility`、`columnOrder` 与当前视图快照进行对比；任一差异即 `dirty=true`。`filterDraft` 变化不触发 dirty。
+
+---
+
+## 7. v4.2 迭代总结 (This Iteration)
+
+### 7.1 交互层改动
+*   移除外层 Quick Filter，统一以 `FilterManager` 作为过滤编辑入口，避免行为分叉。
+*   新增 `Active Context Bar`，作为过滤条件唯一可视化区域。
+*   Filter Chips 支持单条启用/禁用与删除，且保留禁用项可恢复。
+*   详情抽屉保持“双击打开”，单击仅选中行。
+
+### 7.2 视图管理改动
+*   新增视图模式标识（`default/saved/dirty/custom/invalid`）。
+*   支持 `Update Current`、`Reset To View`、`Rename`、`Delete` 与 `Save As`。
+*   视图切换加入未保存改动保护弹窗。
+*   schema 不兼容时进入 `PartiallyInvalid` 并触发修复流程。
+
+### 7.3 数据与类型改动
+*   `TableView.meta` 新增统计与 `schemaHash`。
+*   `ProjectManifest.tableViews` 作为项目持久化入口，项目重开后恢复视图。
+*   `filter.ts` 增加安全字面量与校验工具；`not_equals` 补充 boolean 支持。
+
+### 7.4 关键实现文件
+*   `src/renderer/components/data-workspace/virtual-data-grid.tsx`
+*   `src/renderer/components/data-workspace/filter-manager.tsx`
+*   `src/renderer/components/data-workspace/view-switcher.tsx`
+*   `src/renderer/stores/useProjectStore.ts`
+*   `src/shared/types/filter.ts`
+*   `src/shared/types/project.ts`
+*   `src/shared/types/project-manifest.ts`
