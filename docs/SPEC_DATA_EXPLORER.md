@@ -102,8 +102,8 @@ Wansan 坚持“不改动用户原始数据”的原则。所有的修改（别�
 
 ### 6.1 核心文件路径 (Core File Map)
 *   **入口容器**: `src/renderer/components/data-workspace/index.tsx` (管理 Data/Structure 状态)
-*   **虚拟网格**: `src/renderer/components/data-workspace/virtual-data-grid.tsx` (核心渲染引擎)
-*   **过滤器**: `src/renderer/components/data-workspace/filter-manager.tsx` (逻辑浮层)
+*   **虚拟网格**: `src/renderer/components/data-workspace/virtual-data-grid/index.tsx` (核心渲染引擎)
+*   **过滤器**: `src/renderer/components/data-workspace/filter-manager/index.tsx` (逻辑浮层)
 *   **字段列表**: `src/renderer/components/data-workspace/field-list-sidebar.tsx` (拖拽排序与显隐)
 *   **详情视图**: `src/renderer/components/data-workspace/row-detail-sheet.tsx` (侧边抽屉)
 *   **逻辑引擎**: `src/renderer/lib/duckdb-view-manager.ts` (负责 `v_` 视图构建与语义找回)
@@ -218,8 +218,8 @@ export interface ExplorerState {
 *   `filter.ts` 增加安全字面量与校验工具；`not_equals` 补充 boolean 支持。
 
 ### 7.4 关键实现文件
-*   `src/renderer/components/data-workspace/virtual-data-grid.tsx`
-*   `src/renderer/components/data-workspace/filter-manager.tsx`
+*   `src/renderer/components/data-workspace/virtual-data-grid/index.tsx`
+*   `src/renderer/components/data-workspace/filter-manager/index.tsx`
 *   `src/renderer/components/data-workspace/view-switcher.tsx`
 *   `src/renderer/stores/useProjectStore.ts`
 *   `src/shared/types/filter.ts`
