@@ -78,32 +78,54 @@ export function filterRuleToSQL(rule: FilterCondition): string {
   if (!rule.enabled) return ''
   const col = `"${rule.columnName}"`
   const val = rule.value
+  const simpleType = getSimpleType(rule.columnType)
+
+  const escapeSqlString = (input: string) => input.replace(/'/g, "''")
+
+  const toSqlLiteral = (input: unknown): string => {
+    if (input === null || input === undefined) return 'NULL'
+    if (typeof input === 'number') return Number.isFinite(input) ? String(input) : 'NULL'
+    if (typeof input === 'boolean') return input ? 'TRUE' : 'FALSE'
+    return `'${escapeSqlString(String(input))}'`
+  }
+
+  const toTypedLiteral = (input: unknown): string => {
+    if (simpleType === 'number') {
+      const numeric = typeof input === 'number' ? input : Number(input)
+      return Number.isFinite(numeric) ? String(numeric) : 'NULL'
+    }
+    if (simpleType === 'boolean') {
+      if (typeof input === 'boolean') return input ? 'TRUE' : 'FALSE'
+      return String(input).toLowerCase() === 'true' ? 'TRUE' : 'FALSE'
+    }
+    return toSqlLiteral(input)
+  }
 
   switch (rule.operator) {
     case 'equals':
-      return typeof val === 'number' ? `${col} = ${val}` : `${col} = '${val}'`
+      return `${col} = ${toTypedLiteral(val)}`
     case 'not_equals':
-      return typeof val === 'number' ? `${col} != ${val}` : `${col} != '${val}'`
+      return `${col} != ${toTypedLiteral(val)}`
     case 'contains':
-      return `${col} ILIKE '%${val}%'`
+      return `${col} ILIKE '%${escapeSqlString(String(val))}%'`
     case 'not_contains':
-      return `${col} NOT ILIKE '%${val}%'`
+      return `${col} NOT ILIKE '%${escapeSqlString(String(val))}%'`
     case 'starts_with':
-      return `${col} ILIKE '${val}%'`
+      return `${col} ILIKE '${escapeSqlString(String(val))}%'`
     case 'ends_with':
-      return `${col} ILIKE '%${val}'`
+      return `${col} ILIKE '%${escapeSqlString(String(val))}'`
     case 'gt':
-      return `${col} > ${val}`
+      return `${col} > ${toTypedLiteral(val)}`
     case 'gte':
-      return `${col} >= ${val}`
+      return `${col} >= ${toTypedLiteral(val)}`
     case 'lt':
-      return `${col} < ${val}`
+      return `${col} < ${toTypedLiteral(val)}`
     case 'lte':
-      return `${col} <= ${val}`
+      return `${col} <= ${toTypedLiteral(val)}`
     case 'between':
       // Value should be [min, max]
       if (Array.isArray(val) && val.length === 2) {
-        return `${col} BETWEEN '${val[0]}' AND '${val[1]}'`
+        return `${col} BETWEEN ${toTypedLiteral(val[0])} AND ${toTypedLiteral(val[1])}`
       }
       return ''
     case 'is_null':
@@ -112,13 +134,13 @@ export function filterRuleToSQL(rule: FilterCondition): string {
       return `${col} IS NOT NULL`
     case 'in':
       if (Array.isArray(val) && val.length > 0) {
-        const list = val.map(v => typeof v === 'number' ? v : `'${v}'`).join(', ')
+        const list = val.map(v => toTypedLiteral(v)).join(', ')
         return `${col} IN (${list})`
       }
       return ''
     case 'not_in':
       if (Array.isArray(val) && val.length > 0) {
-        const list = val.map(v => typeof v === 'number' ? v : `'${v}'`).join(', ')
+        const list = val.map(v => toTypedLiteral(v)).join(', ')
         return `${col} NOT IN (${list})`
       }
       return ''

@@ -5,6 +5,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet'
+import type { ReactNode } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { useTranslation } from 'react-i18next'
@@ -17,8 +18,8 @@ import { ColumnSchema } from '@shared/types'
 interface RowDetailSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  row: Record<string, any> | null
-  columns: Array<{ name: string; type: string }>
+  row: Record<string, unknown> | null
+  columns: ColumnSchema[]
   onNavigate?: (direction: 'prev' | 'next') => void
   hasPrev?: boolean
   hasNext?: boolean
@@ -51,7 +52,7 @@ export function RowDetailSheet({
     return acc
   }, {} as Record<string, typeof columns>)
 
-  const handleCopy = (val: any) => {
+  const handleCopy = (val: unknown) => {
     navigator.clipboard.writeText(String(val))
     addToast({
       title: t('copied'),
@@ -59,7 +60,7 @@ export function RowDetailSheet({
     })
   }
 
-  const renderValue = (val: any, type: string) => {
+  const renderValue = (val: unknown, type: string) => {
     if (val === null || val === undefined) return <span className="text-zinc-300 italic">null</span>
     
     if (type === 'json') {
@@ -75,7 +76,7 @@ export function RowDetailSheet({
     return <span className="text-zinc-900 break-words whitespace-pre-wrap">{formatForDisplay(val, type)}</span>
   }
 
-  const renderGroup = (title: string, icon: any, cols: typeof columns) => {
+  const renderGroup = (title: string, icon: ReactNode, cols: ColumnSchema[]) => {
     if (!cols || cols.length === 0) return null
     return (
       <div className="mb-6">
@@ -85,8 +86,8 @@ export function RowDetailSheet({
         </div>
         <div className="grid gap-3">
           {cols.map((col) => {
-            const castedCol = col as ColumnSchema
-            const alias = castedCol.semantic?.aliases?.[0]
+            const alias = col.semantic?.aliases?.[0]
+            const description = col.semantic?.description
             
             return (
               <div key={col.name} className="group relative bg-zinc-50/50 border border-zinc-100 rounded-xl p-4 hover:border-indigo-200 hover:bg-white hover:shadow-md transition-all duration-200">
@@ -108,6 +109,11 @@ export function RowDetailSheet({
                 <div className="text-sm leading-relaxed">
                   {renderValue(row[col.name], col.type)}
                 </div>
+                {description && (
+                  <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+                    {description}
+                  </p>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"

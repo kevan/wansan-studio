@@ -35,6 +35,18 @@ interface FilterManagerProps {
   onChange: (state: FilterState) => void
 }
 
+type EffectiveInputType = 'text' | 'number' | 'date' | 'none' | 'multi' | 'range' | 'date_range'
+
+function getEffectiveInputType(operator: FilterOperator, simpleType: ReturnType<typeof getSimpleType>): EffectiveInputType {
+  if (simpleType === 'date') {
+    if (operator === 'between') return 'date_range'
+    if (operator === 'equals' || operator === 'not_equals' || operator === 'gt' || operator === 'gte' || operator === 'lt' || operator === 'lte') {
+      return 'date'
+    }
+  }
+  return OPERATOR_CONFIG[operator].inputType
+}
+
 export function FilterManager({ columns, filterState, onChange }: FilterManagerProps) {
   const { t } = useTranslation('common')
   const [isOpen, setIsOpen] = useState(false)
@@ -98,6 +110,9 @@ export function FilterManager({ columns, filterState, onChange }: FilterManagerP
             if (newSimpleType === 'boolean') {
               newCond.operator = 'equals'
               newCond.value = true
+            } else if (newSimpleType === 'date') {
+              newCond.operator = 'gte'
+              newCond.value = ''
             } else if (newSimpleType === 'number') {
               newCond.operator = 'gt'
               newCond.value = 0
@@ -110,12 +125,12 @@ export function FilterManager({ columns, filterState, onChange }: FilterManagerP
 
         // --- 2. Type Coercion Logic ---
         const simpleType = getSimpleType(newCond.columnType)
-        const opConfig = OPERATOR_CONFIG[newCond.operator]
+        const effectiveInputType = getEffectiveInputType(newCond.operator, simpleType)
 
         // Coerce value based on operator and type
-        if (opConfig.inputType === 'number') {
+        if (effectiveInputType === 'number') {
           newCond.value = newCond.value === '' ? '' : Number(newCond.value)
-        } else if (opConfig.inputType === 'multi') {
+        } else if (effectiveInputType === 'multi') {
           // If inputting string, convert to array
           if (typeof newCond.value === 'string') {
             newCond.value = newCond.value.split(',').map(s => s.trim())
@@ -321,8 +336,6 @@ function FilterRow({
     conf.validTypes.includes(simpleType)
   ) as [FilterOperator, typeof OPERATOR_CONFIG['equals']][]
 
-  const currentOpConfig = OPERATOR_CONFIG[condition.operator]
-
   const activeColumns = columns.filter(c => c.name !== '_ws_row_id')
 
   return (
@@ -356,7 +369,7 @@ function FilterRow({
         {/* Operator Select */}
         <Select 
           value={condition.operator} 
-          onValueChange={(val: any) => onUpdate(condition.id, { operator: val })}
+          onValueChange={(val: FilterOperator) => onUpdate(condition.id, { operator: val })}
         >
           <SelectTrigger className="h-7 w-[100px] text-xs border-transparent bg-zinc-50 focus:ring-0 focus:bg-white text-zinc-600 transition-colors">
             <SelectValue />
@@ -372,8 +385,8 @@ function FilterRow({
 
         {/* Value Input */}
         <div className="flex-1 min-w-[100px]">
-          <ValueInput 
-            type={currentOpConfig.inputType} 
+          <ValueInput
+            type={getEffectiveInputType(condition.operator, simpleType)}
             value={condition.value} 
             onChange={(val) => onUpdate(condition.id, { value: val })} 
           />
@@ -393,28 +406,42 @@ function FilterRow({
   )
 }
 
-function ValueInput({ type, value, onChange }: { type: string, value: any, onChange: (val: any) => void }) {
+function ValueInput({
+  type,
+  value,
+  onChange
+}: {
+  type: EffectiveInputType
+  value: unknown
+  onChange: (val: unknown) => void
+}) {
   if (type === 'none') return null
 
-  if (type === 'range') {
+  if (type === 'range' || type === 'date_range') {
+    const inputType = type === 'date_range' ? 'date' : 'text'
+    const minValue = Array.isArray(value) ? (value[0] as string | number | undefined) || '' : ''
+    const maxValue = Array.isArray(value) ? (value[1] as string | number | undefined) || '' : ''
+
     return (
       <div className="flex items-center gap-1">
         <Input 
+          type={inputType}
           className="h-7 text-xs border-zinc-100 bg-zinc-50 focus:bg-white transition-colors"
           placeholder="Min"
-          value={Array.isArray(value) ? value[0] || '' : ''}
+          value={minValue}
           onChange={(e) => {
-             const max = Array.isArray(value) ? value[1] || '' : ''
+             const max = Array.isArray(value) ? (value[1] as string | number | undefined) || '' : ''
              onChange([e.target.value, max])
           }}
         />
         <span className="text-[10px] text-zinc-400">-</span>
         <Input 
+          type={inputType}
           className="h-7 text-xs border-zinc-100 bg-zinc-50 focus:bg-white transition-colors"
           placeholder="Max"
-          value={Array.isArray(value) ? value[1] || '' : ''}
+          value={maxValue}
           onChange={(e) => {
-             const min = Array.isArray(value) ? value[0] || '' : ''
+             const min = Array.isArray(value) ? (value[0] as string | number | undefined) || '' : ''
              onChange([min, e.target.value])
           }}
         />
@@ -424,14 +451,14 @@ function ValueInput({ type, value, onChange }: { type: string, value: any, onCha
 
   if (type === 'number') {
     return (
-      <Input 
-        type="number"
-        className="h-7 text-xs border-zinc-100 bg-zinc-50 focus:bg-white transition-colors"
-        placeholder="0"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    )
+        <Input 
+          type="number"
+          className="h-7 text-xs border-zinc-100 bg-zinc-50 focus:bg-white transition-colors"
+          placeholder="0"
+          value={typeof value === 'number' || typeof value === 'string' ? value : ''}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )
   }
 
   if (type === 'date') {
@@ -440,7 +467,7 @@ function ValueInput({ type, value, onChange }: { type: string, value: any, onCha
         <Input 
           type="date"
           className="h-7 text-xs border-zinc-100 bg-zinc-50 focus:bg-white transition-colors appearance-none pr-8"
-          value={value || ''}
+          value={typeof value === 'string' ? value : ''}
           onChange={(e) => onChange(e.target.value)}
         />
         <Calendar className="absolute right-2 top-1.5 w-3.5 h-3.5 text-zinc-400 pointer-events-none" />
@@ -453,7 +480,7 @@ function ValueInput({ type, value, onChange }: { type: string, value: any, onCha
       <Input 
         className="h-7 text-xs border-zinc-100 bg-zinc-50 focus:bg-white transition-colors"
         placeholder="A, B, C..."
-        value={Array.isArray(value) ? value.join(', ') : value}
+        value={Array.isArray(value) ? value.join(', ') : (typeof value === 'string' || typeof value === 'number' ? value : '')}
         onChange={(e) => onChange(e.target.value)}
       />
     )
@@ -480,7 +507,7 @@ function ValueInput({ type, value, onChange }: { type: string, value: any, onCha
     <Input 
       className="h-7 text-xs border-zinc-100 bg-zinc-50 focus:bg-white transition-colors"
       placeholder="Value..."
-      value={value}
+      value={typeof value === 'string' || typeof value === 'number' ? value : ''}
       onChange={(e) => onChange(e.target.value)}
     />
   )

@@ -67,6 +67,7 @@ export function useProjectIO() {
           relations: file.relations,
         }
       }) as any,
+      tableViews: state.tableViews || {},
       settings: {
         theme: 'light', // Default or from settings store if available
       },
@@ -203,6 +204,7 @@ export function useProjectIO() {
         activeFileId,
         widgetRegistry,
         suggestedPrompts: data.semantic.suggestedPrompts || [],
+        tableViews: data.manifest.tableViews || {},
       }
 
       // 4. Load into Store

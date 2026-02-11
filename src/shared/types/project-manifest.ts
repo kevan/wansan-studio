@@ -1,4 +1,5 @@
 import { DataSourceConfig, SmartMetric, TableRelation } from '../types'
+import type { TableView } from './project'
 
 export interface AssetManifest {
   id: string
@@ -39,6 +40,7 @@ export interface ProjectManifest {
     engine: 'native'
   }
   assets: AssetManifest[]
+  tableViews?: Record<string, TableView[]>
   settings: {
     theme?: 'light' | 'dark'
   }

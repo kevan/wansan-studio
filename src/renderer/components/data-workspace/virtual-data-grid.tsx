@@ -95,10 +95,12 @@ const GridRow = memo(function GridRow({
   row,
   isSelected,
   onClick,
+  onDoubleClick,
 }: {
   row: Row<Record<string, unknown>>
   isSelected: boolean
   onClick: () => void
+  onDoubleClick: () => void
 }) {
   return (
     <div
@@ -108,6 +110,7 @@ const GridRow = memo(function GridRow({
       )}
       style={{ height: ROW_HEIGHT }}
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
     >
       {row.getVisibleCells().map((cell) => {
         const sourceType = (cell.column.columnDef.meta as any)?.sourceType
@@ -286,7 +289,11 @@ export function VirtualDataGrid({
     return () => observer.disconnect()
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-  const handleRowClick = useCallback((rowData: Record<string, unknown>) => {
+  const handleRowSelect = useCallback((rowData: Record<string, unknown>) => {
+    setSelectedRowId(String(rowData._ws_row_id))
+  }, [])
+
+  const handleRowOpen = useCallback((rowData: Record<string, unknown>) => {
     setSelectedRowId(String(rowData._ws_row_id))
     setDetailRow(rowData)
     setIsDetailOpen(true)
@@ -350,7 +357,14 @@ export function VirtualDataGrid({
             Fields
           </Button>
           <div className="w-px h-4 bg-zinc-200 mx-1" />
-          <ViewSwitcher fileId={fileId} currentFilters={filterState} currentSort={sorting as any} currentColumnConfig={currentColumnConfig} onViewSelect={handleViewSelect} activeViewId={activeViewId} />
+          <ViewSwitcher
+            fileId={fileId}
+            currentFilters={filterState}
+            currentSort={sorting}
+            currentColumnConfig={currentColumnConfig}
+            onViewSelect={handleViewSelect}
+            activeViewId={activeViewId}
+          />
         </div>
       </div>
 
@@ -445,7 +459,8 @@ export function VirtualDataGrid({
                       <GridRow 
                         row={row} 
                         isSelected={row.id === selectedRowId} 
-                        onClick={() => handleRowClick(row.original)} 
+                        onClick={() => handleRowSelect(row.original)}
+                        onDoubleClick={() => handleRowOpen(row.original)}
                       />
                     </div>
                   )
