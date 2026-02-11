@@ -1,97 +1,148 @@
-# 🧭 SPEC: Data Explorer & Dual-Mode Workbench
+# 🧭 SPEC: Data Explorer & Unified Data IDE
 
-> **Version**: 1.1 (Implemented)
-> **Status**: **Phase 1 Complete** (v1.7)
-> **Theme**: "Immersive Data Wrangling"
-
----
-
-## 1. 核心理念 (Philosophy)
-
-### 1.1 Context Separation (上下文分离)
-为了解决 Analysis (分析) 与 Wrangling (治理) 在单一界面下的空间冲突与心智负担，我们将应用划分为两个顶级模式：
-*   **💬 Analysis Mode**: 侧重对话、报表生成与消费。数据仅作为引用。
-*   **🗄️ Data Mode**: 侧重数据资产的管理、清洗、结构定义与预览。提供沉浸式 IDE 体验。
-
-### 1.2 Data Explorer (数据探索器)
-Data Mode 的核心载体。它不是简单的表格预览，而是一个**轻量级的 Data IDE**，采用全屏 Tab 结构。
+> **Version**: 4.1 (Implemented)
+> **Status**: **Complete** (v1.7.5+)
+> **Theme**: "The Grid is the Canvas, The Sidebar is the Pallette"
+> **Reference**: DataGrip-Inspired Read/Write Separation
 
 ---
 
-## 2. 交互架构 (Interaction Architecture)
+## 1. 核心交互架构 (Core Architecture)
 
-### 2.1 Mode Switcher (模式切换)
-*   **位置**: Sidebar 顶部 (Header Area)。
-*   **样式**: Segmented Control (分段控制器)。
-*   **状态**:
-    1.  `Analysis`: Sidebar 显示 `SessionList`。Main 显示 `AnalysisWorkspace` (Chat + Dashboard)。
-    2.  `Data`: Sidebar 显示 `DataTree`。Main 显示 `DataWorkspace` (Tabs)。
+### 1.1 读写分离模式 (Read/Write Separation)
+为了降低交互复杂度并提供专业级的数据治理体验，我们将 Data Explorer 划分为两个顶级视图：
 
-### 2.2 Data Workspace (数据工作台)
-Data Mode 下的主界面布局，采用 **Global Toolbar + Flat Tabs** 结构，最大化垂直空间。
+*   **📊 Data Viewer (浏览模式)**: 专注于数据的 **SELECT**、搜索与探索。
+*   **🏗️ Structure Editor (建模模式)**: 专注于数据的 **DDL**、增强与语义定义。
 
-```text
-[ Sidebar (260px) ]  |  [ Main Stage (Flex) ]           
----------------------|----------------------------------
-Data Tree            |  Header: [Icon] Table Name | Row Count
-- Project            |  Toolbar: [AI Semantics] [Append] [Merge] [Replace] [Delete]
-  - Tables           |----------------------------------
-  - Views            |  [ Tabs Navigation ]
-  - Files            |  - Columns (Default)
-                     |  - Preview
-                     |  - Metrics
-                     |  - Relations
-                     |----------------------------------
-                     |  [ Tab Content Area (Full Height) ]
+### 1.2 数据增强理念 (Augmentation First)
+Wansan 坚持“不改动用户原始数据”的原则。所有的修改（别名、指标、关联）均作为**增强层 (Augmentation Layer)** 存在：
+*   **物理层**: 原始文件 + 伴生表 (`_ext_ai`)。
+*   **逻辑层**: 通过 DuckDB `v_{tableName}` 视图实时合成。
+
+---
+
+## 2. 功能模块详情
+
+### 2.1 Data Viewer (数据浏览器)
+该视图是用户日常探索数据的主战场。
+
+*   **🚀 高性能虚拟滚动**: 基于 `@tanstack/react-virtual` 实现百万级行数据的零延迟浏览。
+*   **⛓️ 零延迟表头滑动**: 采用浏览器原生 CSS `sticky` 表头方案，彻底消除 JS 同步导致的橡皮筋延迟。
+*   **🌪️ 高级过滤器 (FilterManager)**:
+    *   支持 **AND / OR** 顶级逻辑切换。
+    *   **类型感知控件**: 自动适配日期选择器、布尔开关、数值区间输入等。
+    *   **草稿模式**: 更改实时反馈至草稿，点击“应用”时统一刷新数据。
+*   **🔍 主从详情视图 (Master-Detail)**: 双击行弹出右侧抽屉 (`RowDetailSheet`)，垂直展示单条记录的所有字段及语义描述。
+
+### 2.2 Structure Editor (模型编辑器)
+该视图用于定义数据的业务含义和逻辑增强。
+
+*   **Fields (字段定义)**: 管理物理列的别名、业务类型（货币、城市、ID）和可见性。
+*   **Metrics (计算指标)**: 定义基于 SQL 的派生指标（如 `profit = revenue - cost`）。
+*   **Relations (关联关系)**: 配置表与表之间的 Join 逻辑。
+
+### 2.3 侧边字段列表 (FieldListSidebar)
+网格右侧的常驻/可折叠面板，负责网格的个性化呈现：
+*   **列显隐**: 批量控制字段的可见性。
+*   **列排序**: 通过 `@dnd-kit` 实现拖拽排序，排序状态可持久化保存。
+
+---
+
+## 3. 语义层系统 (Semantic Layer)
+
+### 3.1 深度语义感知 (End-to-End Aliases)
+系统在所有 UI 环节优先展示 **语义别名 (Alias)**，回退至原始列名。
+*   **展示格式**: 统一采用 `别名 (原始列名)`，如 `销售金额 (sales_amt)`。
+*   **覆盖范围**: 网格头、过滤器、详情页、侧边资源树、字段列表。
+
+### 3.2 语义恢复与继承
+*   **Raw Columns**: 逻辑视图重建后，系统自动从元数据中找回并挂载别名。
+*   **Joined Columns**: 关联字段自动继承目标表的别名定义（如关联客户表后，`customer_id__name` 自动显示为 `客户姓名`）。
+
+---
+
+## 4. 视图管理与持久化 (Saved Views)
+
+用户可以将当前的“浏览偏好”保存为 **Saved Views (列表视图)**。
+*   **存储内容**: 包含过滤条件（FilterState）、排序规则（Sorting）、列显隐状态（Visibility）以及列顺序（Order）。
+*   **存储位置**: `wansan.json` 项目配置文件。
+
+---
+
+## 5. UI 设计规范 (Wansan Airy)
+
+*   **视觉层级**: 使用 Solid White 背景和 2.5rem 大圆角，去除冗余边框。
+*   **色彩感知**:
+    *   🔵 **原始字段**: 蓝色/中性色图标。
+    *   🟣 **AI 增强**: 紫色图标 + 紫色底纹。
+    *   🟢 **计算指标**: 绿色图标 + 绿色底纹。
+    *   🟠 **关联维度**: 橙色图标 + 橙色底纹。
+*   **交互动效**: 所有的面板展开、过滤项添加均带有流畅的平滑过渡动画。
+
+---
+
+## 6. 技术实现索引 (Technical Reference)
+
+作为后续开发与维护的核心参考，以下是 Data Explorer 的关键实现细节。
+
+### 6.1 核心文件路径 (Core File Map)
+*   **入口容器**: `src/renderer/components/data-workspace/index.tsx` (管理 Data/Structure 状态)
+*   **虚拟网格**: `src/renderer/components/data-workspace/virtual-data-grid.tsx` (核心渲染引擎)
+*   **过滤器**: `src/renderer/components/data-workspace/filter-manager.tsx` (逻辑浮层)
+*   **字段列表**: `src/renderer/components/data-workspace/field-list-sidebar.tsx` (拖拽排序与显隐)
+*   **详情视图**: `src/renderer/components/data-workspace/row-detail-sheet.tsx` (侧边抽屉)
+*   **逻辑引擎**: `src/renderer/lib/duckdb-view-manager.ts` (负责 `v_` 视图构建与语义找回)
+
+### 6.2 关键数据结构 (Data Structures)
+
+#### FilterState (过滤器状态)
+```typescript
+// src/shared/types/filter.ts
+export interface FilterState {
+  conjunction: 'AND' | 'OR';
+  conditions: FilterCondition[];
+}
 ```
 
----
+#### TableView (视图持久化)
+```typescript
+// src/shared/types/project.ts
+export interface TableView {
+  id: string;
+  name: string;
+  filters: FilterState;
+  columnConfig: {
+    hidden?: string[];
+    order?: string[];
+  };
+  sort?: { id: string; desc: boolean }[];
+}
+```
 
-## 3. 功能模块 (Tab Modules)
+### 6.3 核心命名约定 (Naming Conventions)
+*   **逻辑视图**: 统一带 `v_` 前缀（如 `v_t_orders`）。UI 展现应始终优先请求此视图。
+*   **伴生表**: 统一带 `_ext_ai` 后缀（如 `t_orders_ext_ai`），通过 `_ws_row_id` 与主表关联。
+*   **关联列**: 采用 `外键__目标列` 格式（如 `product_id__price`），用于语义溯源。
+*   **行标识**: 强制依赖 `_ws_row_id` (BIGINT) 进行精准定位。
 
-### 3.1 Columns (字段管理) [P0 Implemented]
-*   **View**: 字段列表视图 (`columns-view.tsx`)。
-*   **Features**:
-    *   查看字段类型、主键状态。
-    *   修改字段语义（别名、描述）。
-    *   **AI Column Extractor**: 通过 AI 从非结构化文本提取新字段。
-    *   设置可见性（Hide from AI）。
+### 6.4 核心逻辑模式 (Core Logic Patterns)
 
-### 3.2 Preview (数据预览) [P0 Implemented]
-*   **View**: 全屏数据网格 (`DataPreviewPanel`).
-*   **Features**:
-    *   只读展示前 100 行数据。
-    *   支持 SQL 查询预览。
+#### 语义溯源 (Semantic Recovery)
+在 `rebuildView` 过程中，系统通过以下路径找回别名：
+1.  **Raw**: 通过 `colName` 直接匹配 `file.columns`。
+2.  **Joined**: 解析 `A__B` -> 在 `Relations` 中找到目标表 -> 在目标表 `columns` 中找到字段 `B` 的语义。
 
-### 3.3 Metrics (智能指标) [P0 Implemented]
-*   **View**: 指标列表 (`metrics-view.tsx`)。
-*   **Features**: 定义基于 SQL 的派生指标（如 `profit = sales - cost`），供 AI 分析使用。
+#### 零延迟滚动 (Zero-Lag Sync)
+放弃 JS `onScroll` 同步，采用 **Sticky Header Pattern**:
+```html
+<ScrollContainer>
+  <div class="min-w-max">
+    <StickyHeader class="sticky top-0 z-20" />
+    <VirtualList />
+  </div>
+</ScrollContainer>
+```
 
-### 3.4 Relations (关联关系) [P0 Implemented]
-*   **View**: 关系拓扑列表 (`relations-view.tsx`)。
-*   **Features**: 定义表与表之间的 Join 逻辑。
-
----
-
-## 4. 迁移策略 (Migration Strategy)
-
-### Phase 1: Structural Refactor (v1.7) ✅ Done
-1.  **Sidebar**: 实现 `ModeSwitcher`，拆分 `SessionList` 和 `DataTree`。
-2.  **Navigation**: 实现全局状态 `appMode` ('analysis' | 'data')。
-3.  **Components**:
-    *   创建 `AnalysisWorkspace` 接管 Chat/Dashboard 布局。
-    *   创建 `DataWorkspace` 接管数据治理。
-    *   **Deprecation**: 彻底移除旧版 `SchemaEditor` (上下分屏布局)，迁移至扁平 Tab 结构。
-
-### Phase 2: Advanced Interaction (v1.7.5) ⏳ Planned
-1.  **Inline Editing**: 实现单元格双击编辑与回写 (DuckDB Update)。
-2.  **Inspector Panel**: 选中列时，右侧滑出属性面板（统计直方图、空值率）。
-3.  **Master-Detail**: 实现行详情展开。
-
----
-
-## 5. UI Design (Wansan Airy)
-
-*   **Header**: 极简设计，去除了冗余的边框，使用 `backdrop-blur` 增加层次感。
-*   **Spacing**: 紧凑的 Sidebar Header (`pt-2`)，最大化内容区域。
-*   **Typography**: Tab 标签采用图标+文字组合，清晰直观。
+#### 草稿提交机制 (Draft & Commit)
+`FilterManager` 内部维护 `draftState`，仅在点击“应用”或特定的提交动作时调用父组件的 `onChange`，以平衡实时性与渲染性能。

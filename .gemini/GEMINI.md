@@ -1,6 +1,5 @@
 # CRITICAL MANDATES
 - **LANGUAGE**: 始终使用中文（简体）回复所有问题、计划和总结。即使在思考过程中使用英文，最终输出必须是中文。(Always respond in Chinese-simplified).
-- **WANSAN WORKFLOW**: 严格遵守双模式协议（Dual-Mode Protocol）。Mode A 用于规划/讨论（仅文字），Mode B 用于执行（Blueprint 或 Direct）。除非在 Mode B 且有明确实现指令，否则严禁编写代码。
 - **STRICT TYPING**: 严禁在非必要情况下使用 `any`。优先使用 `unknown`、联合类型或完整的接口定义，确保代码的健壮性。
 
 ## Gemini Added Memories
@@ -8,9 +7,6 @@
 - User prefers using Cloudflare Analytics Engine for telemetry/analytics data instead of KV.
 - Added multilingual support (i18n) to Sidebar and SettingsDialog components, creating new keys in common.json and settings.json.
 - The project uses react-i18next with namespaces 'common' and 'settings' for localization.
-- Implemented gesture support (Zoom: Ctrl+Wheel, Pan: Space+Drag) in DashboardCanvasV3.
-- Fixed A4 dashboard scrolling issue by changing transform origin to 'top left' and using an explicitly sized wrapper with margin: auto.
-- Fixed A4 dashboard zoom overflow issue in DashboardCanvasV3 by using origin-top-left and a proxy wrapper div with scaled dimensions.
 - 每次任务完成后执行一次 type-check
 - 每次任务完成后，处理多语言适配
 - ElectronAPI 类型定义在 useIPC.ts
