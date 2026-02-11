@@ -85,20 +85,20 @@ export function ValueInput({
             variant="outline"
             size="sm"
             className={cn(
-              "h-7 w-full justify-start text-left font-normal text-xs px-2 border-zinc-100 bg-zinc-50/50 hover:bg-white transition-all",
+              "h-8 flex-1 justify-start text-left font-medium text-[11px] px-3 border-0 bg-zinc-100/50 hover:bg-zinc-100 transition-all min-w-[110px] rounded-xl",
               !val && "text-zinc-400"
             )}
           >
-            <CalendarIcon className="mr-2 h-3 w-3" />
-            {date ? format(date, "PPP") : <span>{placeholder}</span>}
+            <CalendarIcon className="mr-2 h-3.5 w-3.5 shrink-0 opacity-60" />
+            <span className="truncate">{date ? format(date, "yyyy-MM-dd") : placeholder}</span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 rounded-xl shadow-2xl border-zinc-200/50" align="start">
+        <PopoverContent className="w-auto p-0 rounded-2xl shadow-2xl border-zinc-200/50 z-[100]" align="start" sideOffset={8}>
           <Calendar
             mode="single"
             selected={date}
             onSelect={(d) => onSet(d ? d.toISOString().split('T')[0] : '')}
-            initialFocus
+            autoFocus
           />
         </PopoverContent>
       </Popover>
@@ -117,44 +117,44 @@ export function ValueInput({
     return (
       <Popover onOpenChange={(open) => !open && setSearchQuery('')}>
         <PopoverTrigger asChild>
-          <div className="relative group/suggest flex-1">
+          <div className="relative group/suggest flex-1 min-w-[120px]">
             <Input 
-              className="h-7 text-xs border-zinc-100 bg-zinc-50 focus:bg-white transition-all pr-8 rounded-lg"
-              placeholder={isMulti ? "Type or select multiple..." : "Type or select value..."}
+              className="h-8 text-xs border-0 bg-zinc-100/50 focus:bg-zinc-100 focus:ring-0 transition-all pr-10 rounded-xl w-full font-medium"
+              placeholder={isMulti ? "Search or select..." : "Type or select..."}
               value={isMulti ? currentValues.join(', ') : (value as string || '')}
               onChange={(e) => onChange(e.target.value)}
             />
-            <div className="absolute right-2 top-1.5 flex items-center gap-1.5 text-[10px] font-bold text-zinc-300 pointer-events-none group-hover/suggest:text-indigo-400 transition-colors">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none group-hover/suggest:text-indigo-500 transition-colors">
               {loadingSuggestions ? (
                 <div className="w-3 h-3 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
               ) : isMulti ? (
-                <span>{currentValues.length}</span>
+                <span className="text-[10px] font-black bg-white px-1.5 py-0.5 rounded-md shadow-sm border border-zinc-100 text-zinc-500">{currentValues.length}</span>
               ) : (
-                <ChevronDown className="w-3 h-3" />
+                <ChevronDown className="w-3.5 h-3.5 opacity-40" />
               )}
             </div>
           </div>
         </PopoverTrigger>
         {suggestions.length > 0 && (
-          <PopoverContent className="w-[240px] p-0 rounded-xl shadow-2xl border-zinc-200/50 overflow-hidden" align="start">
-            <div className="p-2 bg-zinc-50/50 border-b border-zinc-100">
+          <PopoverContent className="w-[260px] p-0 rounded-2xl shadow-2xl border-zinc-200/50 overflow-hidden z-[100]" align="start" sideOffset={8}>
+            <div className="p-3 bg-zinc-50/50 border-b border-zinc-100">
               <Input
                 autoFocus
-                placeholder="Search suggestions..."
-                className="h-7 text-[11px] bg-white border-zinc-200 rounded-lg"
+                placeholder="Filter results..."
+                className="h-8 text-xs bg-white border-zinc-200 rounded-xl px-3 shadow-inner"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="px-2 py-1.5 border-b border-zinc-50 flex items-center justify-between">
+            <div className="px-3 py-2 border-b border-zinc-50 flex items-center justify-between bg-white/80">
               <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                 {isMulti ? 'Select Multiple' : 'Select Value'}
               </span>
-              <span className="text-[9px] text-zinc-300">{isMulti ? 'Click to toggle' : 'Click to pick'}</span>
+              <span className="text-[9px] text-zinc-300 font-bold">{isMulti ? 'Toggle items' : 'Single pick'}</span>
             </div>
-            <div className="max-h-[240px] overflow-y-auto custom-scrollbar p-1">
+            <div className="max-h-[280px] overflow-y-auto custom-scrollbar p-1.5 bg-white">
               {filteredSuggestions.length === 0 ? (
-                <div className="py-4 text-center text-[10px] text-zinc-400 font-medium">No matches found</div>
+                <div className="py-6 text-center text-[10px] text-zinc-400 font-bold tracking-tight uppercase">No results found</div>
               ) : (
                 filteredSuggestions.map(s => {
                   const isSelected = isMulti ? currentValues.includes(s) : String(value) === s
@@ -162,7 +162,7 @@ export function ValueInput({
                     <div
                       key={s}
                       className={cn(
-                        "flex items-center justify-between px-3 py-2 text-xs rounded-lg cursor-pointer transition-all mb-0.5 last:mb-0",
+                        "flex items-center justify-between px-3 py-2.5 text-xs rounded-xl cursor-pointer transition-all mb-0.5 last:mb-0",
                         isSelected 
                           ? "bg-indigo-50 text-indigo-700 font-bold" 
                           : "hover:bg-zinc-50 text-zinc-600 hover:text-zinc-900"
@@ -179,7 +179,7 @@ export function ValueInput({
                       }}
                     >
                       <span className="truncate">{s}</span>
-                      {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />}
+                      {isSelected && <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.6)] animate-in zoom-in duration-300" />}
                     </div>
                   )
                 })
@@ -198,31 +198,31 @@ export function ValueInput({
     const maxValue = Array.isArray(value) ? (value[1] as string | number | undefined) || '' : ''
 
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2 w-full">
         {type === 'date_range' ? (
-          <>
-            {renderDatePicker(String(minValue), (v) => onChange([v, maxValue]), 'Min')}
-            <span className="text-[10px] text-zinc-400">-</span>
-            {renderDatePicker(String(maxValue), (v) => onChange([minValue, v]), 'Max')}
-          </>
+          <div className="flex items-center gap-2 flex-1">
+            {renderDatePicker(String(minValue), (v) => onChange([v, maxValue]), 'Start')}
+            <span className="text-[10px] font-black text-zinc-300 uppercase tracking-tighter shrink-0 italic">to</span>
+            {renderDatePicker(String(maxValue), (v) => onChange([minValue, v]), 'End')}
+          </div>
         ) : (
-          <>
+          <div className="flex items-center gap-2 flex-1">
             <Input 
               type="text"
-              className="h-7 text-xs border-zinc-100 bg-zinc-50 focus:bg-white transition-colors"
+              className="h-8 text-xs border-0 bg-zinc-100/50 focus:bg-zinc-100 focus:ring-0 transition-all flex-1 min-w-[60px] rounded-xl px-3 font-medium"
               placeholder="Min"
               value={minValue}
               onChange={(e) => onChange([e.target.value, maxValue])}
             />
-            <span className="text-[10px] text-zinc-400">-</span>
+            <span className="text-[10px] font-black text-zinc-300 uppercase tracking-tighter shrink-0 italic">-</span>
             <Input 
               type="text"
-              className="h-7 text-xs border-zinc-100 bg-zinc-50 focus:bg-white transition-colors"
+              className="h-8 text-xs border-0 bg-zinc-100/50 focus:bg-zinc-100 focus:ring-0 transition-all flex-1 min-w-[60px] rounded-xl px-3 font-medium"
               placeholder="Max"
               value={maxValue}
               onChange={(e) => onChange([minValue, e.target.value])}
             />
-          </>
+          </div>
         )}
       </div>
     )
@@ -232,7 +232,7 @@ export function ValueInput({
     return (
         <Input 
           type="number"
-          className="h-7 text-xs border-zinc-100 bg-zinc-50 focus:bg-white transition-colors"
+          className="h-8 text-xs border-0 bg-zinc-100/50 focus:bg-zinc-100 focus:ring-0 transition-all rounded-xl px-3 font-medium"
           placeholder="0"
           value={typeof value === 'number' || typeof value === 'string' ? value : ''}
           onChange={(e) => onChange(e.target.value)}
@@ -252,13 +252,13 @@ export function ValueInput({
   if (typeof value === 'boolean' || value === 'true' || value === 'false') {
     const isTrue = value === true || value === 'true'
     return (
-      <div className="flex items-center gap-2 px-1">
+      <div className="flex items-center gap-3 px-2 bg-zinc-100/50 h-8 rounded-xl">
         <Switch 
           checked={isTrue} 
           onCheckedChange={onChange}
-          className="scale-75 data-[state=checked]:bg-indigo-600"
+          className="scale-90 data-[state=checked]:bg-indigo-600"
         />
-        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter w-8">
+        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest w-10">
           {isTrue ? 'True' : 'False'}
         </span>
       </div>
@@ -271,7 +271,7 @@ export function ValueInput({
 
   return (
     <Input 
-      className="h-7 text-xs border-zinc-100 bg-zinc-50 focus:bg-white transition-colors"
+      className="h-8 text-xs border-0 bg-zinc-100/50 focus:bg-zinc-100 focus:ring-0 transition-all rounded-xl px-3 font-medium"
       placeholder="Value..."
       value={typeof value === 'string' || typeof value === 'number' ? value : ''}
       onChange={(e) => onChange(e.target.value)}

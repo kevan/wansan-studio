@@ -79,15 +79,15 @@ export function FilterRow({
   const hasError = validationCodes.length > 0
 
   return (
-    <div className="flex items-center gap-2 group animate-in fade-in slide-in-from-left-2 duration-200 relative">
+    <div className="flex items-center gap-3 group animate-in fade-in slide-in-from-left-2 duration-200 relative">
       {/* Logical Connector Visual */}
-      <div className="w-12 shrink-0 flex justify-end pr-2 text-[10px] font-black text-zinc-300 select-none tracking-tighter">
+      <div className="w-12 shrink-0 flex justify-end pr-2 text-[10px] font-black text-zinc-300 select-none tracking-tighter italic">
         {index === 0 ? 'WHERE' : conjunction}
       </div>
 
       <div className={cn(
-        "flex-1 flex items-center gap-2 bg-white border rounded-xl p-1.5 transition-all duration-300",
-        !condition.enabled ? "opacity-40 border-dashed border-zinc-200 bg-zinc-50/50" : "border-zinc-200 shadow-sm hover:border-indigo-300 hover:shadow-md",
+        "flex-1 flex items-center gap-3 bg-white border border-zinc-100 rounded-2xl p-2 transition-all duration-300",
+        !condition.enabled ? "opacity-40 bg-zinc-50/50" : "shadow-sm hover:border-indigo-200 hover:shadow-md",
         hasError && "border-red-200 bg-red-50/30 ring-1 ring-red-100"
       )}>
         {/* Column Select */}
@@ -100,19 +100,19 @@ export function FilterRow({
             }
           }}
         >
-          <SelectTrigger className="h-7 w-[160px] text-xs border-transparent bg-zinc-50/50 focus:ring-0 focus:bg-white transition-all rounded-lg overflow-hidden">
-            <div className="truncate text-left font-medium">
+          <SelectTrigger className="h-8 w-[160px] text-xs border-0 bg-zinc-100/50 focus:ring-0 focus:bg-zinc-100/80 transition-all rounded-xl overflow-hidden px-3">
+            <div className="truncate text-left font-semibold text-zinc-700">
               {selectedColumn ? (selectedColumn.semantic?.aliases?.[0] || selectedColumn.name) : <SelectValue />}
             </div>
           </SelectTrigger>
-          <SelectContent className="max-h-[300px] rounded-xl shadow-2xl border-zinc-200/50">
+          <SelectContent className="max-h-[300px] rounded-2xl shadow-2xl border-zinc-200/50 p-1">
             {activeColumns.map(col => {
                const alias = col.semantic?.aliases?.[0]
                return (
-                 <SelectItem key={col.name} value={col.name}>
+                 <SelectItem key={col.name} value={col.name} className="rounded-xl transition-colors">
                    <div className="flex flex-col gap-0.5 text-xs py-1">
                      <span className="font-bold">{alias || col.name}</span>
-                     {alias && <span className="text-[10px] text-zinc-400">{col.name}</span>}
+                     {alias && <span className="text-[10px] text-zinc-400 font-medium">{col.name}</span>}
                    </div>
                  </SelectItem>
                )
@@ -125,15 +125,15 @@ export function FilterRow({
           value={safeOperatorValue} 
           onValueChange={(val: FilterOperator) => onUpdate(condition.id, { operator: val })}
         >
-          <SelectTrigger className="h-7 w-[110px] text-xs border-transparent bg-zinc-50/50 focus:ring-0 focus:bg-white text-zinc-500 font-bold transition-all rounded-lg uppercase tracking-tight">
+          <SelectTrigger className="h-8 w-[110px] text-[10px] border-0 bg-zinc-100/50 focus:ring-0 focus:bg-zinc-100/80 text-zinc-500 font-black transition-all rounded-xl uppercase tracking-widest px-3">
             <div className="truncate">
               {availableOps.find(([op]) => op === safeOperatorValue)?.[1].label || <SelectValue />}
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl shadow-2xl border-zinc-200/50">
+          <SelectContent className="rounded-2xl shadow-2xl border-zinc-200/50 p-1">
             {availableOps.map(([op, conf]) => (
-              <SelectItem key={op} value={op}>
-                <span className="text-[10px] font-bold uppercase tracking-tight py-1">{conf.label}</span>
+              <SelectItem key={op} value={op} className="rounded-xl">
+                <span className="text-[10px] font-black uppercase tracking-widest py-1">{conf.label}</span>
               </SelectItem>
             ))}
           </SelectContent>
@@ -161,7 +161,7 @@ export function FilterRow({
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "h-7 w-7 rounded-full transition-all",
+                    "h-8 w-8 rounded-full transition-all",
                     condition.enabled ? "text-indigo-500 bg-indigo-50/50 hover:bg-indigo-100" : "text-zinc-300 hover:text-zinc-600 hover:bg-zinc-100"
                   )}
                   onClick={() => onUpdate(condition.id, { enabled: !condition.enabled })}
@@ -177,7 +177,7 @@ export function FilterRow({
             {hasError && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center justify-center h-7 w-7 text-red-500 animate-pulse cursor-help">
+                  <div className="flex items-center justify-center h-8 w-8 text-red-500 animate-pulse cursor-help">
                     <AlertCircle className="w-4 h-4" />
                   </div>
                 </TooltipTrigger>
@@ -200,7 +200,7 @@ export function FilterRow({
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-7 w-7 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                  className="h-8 w-8 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
                   onClick={() => onRemove(condition.id)}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
