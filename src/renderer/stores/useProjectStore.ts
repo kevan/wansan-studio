@@ -284,6 +284,7 @@ export const useProjectStore = create<ProjectState>()(
         for (const rel of selectedRelations) {
           const fileA = files.find(f => f.tableName === rel.sourceTable)
           const fileB = files.find(f => f.tableName === rel.targetTable)
+          
           if (fileA && fileB) {
             // Check for duplicates handled inside addRelation, but we call it sequentially
             addRelation({

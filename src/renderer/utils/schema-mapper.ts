@@ -9,14 +9,14 @@ import { processSampleValue } from '@shared/serialization'
 export function mapFileToSchema(
   file: FileNode,
   allFiles: FileNode[] = [],
-  options?: { skipMetrics?: boolean; skipRelations?: boolean }
+  options?: { skipMetrics?: boolean; skipRelations?: boolean; disableMasking?: boolean }
 ): TableSchema {
   const hasViewSchema = !!file.viewSchema && file.viewSchema.length > 0
   const hasMetrics =
     !options?.skipMetrics && file.smartMetrics && file.smartMetrics.length > 0
 
-  // Schema Masking: Use 'v_' prefix if we have a view schema OR metrics
-  const useView = hasViewSchema || hasMetrics
+  // Schema Masking: Use 'v_' prefix if we have a view schema OR metrics (unless disabled)
+  const useView = !options?.disableMasking && (hasViewSchema || hasMetrics)
   const exposedTableName = useView
     ? `v_${file.tableName || `table_${file.id}`}`
     : file.tableName || `table_${file.id}`
@@ -31,10 +31,11 @@ export function mapFileToSchema(
 
           // Resolve target table name (respect masking)
           const targetHasView =
-            (targetFile.viewSchema && targetFile.viewSchema.length > 0) ||
-            (!options?.skipMetrics &&
-              targetFile.smartMetrics &&
-              targetFile.smartMetrics.length > 0)
+            !options?.disableMasking &&
+            ((targetFile.viewSchema && targetFile.viewSchema.length > 0) ||
+              (!options?.skipMetrics &&
+                targetFile.smartMetrics &&
+                targetFile.smartMetrics.length > 0))
 
           const targetName = targetHasView
             ? `v_${targetFile.tableName}`

@@ -105,7 +105,7 @@ async function getSidecarParts(tableName: string) {
     result.join = `LEFT JOIN "${sidecarName}" AS T_AI ON T1._ws_row_id = T_AI._ws_row_id`
 
     for (const row of (colsRes.data.data as any[])) {
-      const colName = row.column_name
+      const colName = row.name
       if (colName === '_ws_row_id') continue
 
       const path = `T_AI."${colName}" `
