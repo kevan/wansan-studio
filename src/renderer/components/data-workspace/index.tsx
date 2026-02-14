@@ -2,14 +2,14 @@ import React, { useState } from 'react'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { DataPreviewPanel } from '../report/data-preview-panel'
 import { useTranslation } from 'react-i18next'
-import { 
-  Database, 
-  Hash, 
-  Info, 
-  Sparkles, 
-  Plus, 
-  GitMerge, 
-  RefreshCw, 
+import {
+  Database,
+  Hash,
+  Info,
+  Sparkles,
+  Plus,
+  GitMerge,
+  RefreshCw,
   Trash2,
   FileSpreadsheet,
   Table as TableIcon,
@@ -21,14 +21,13 @@ import { useToastStore } from '@/stores/useToastStore'
 import { DataLineageDialog } from '../modals/DataLineageDialog'
 import { useWizardStore } from '@/stores/useWizardStore'
 import { useProGate } from '@/hooks/use-pro-gate'
-import { SemanticReviewModal } from '../modals/SemanticReviewModal'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs'
 import { ColumnsView } from './columns-view'
 import { MetricsView } from './metrics-view'
 import { RelationsView } from './relations-view'
 
 export function DataWorkspace() {
-  const { t, i18n } = useTranslation('common')
+  const { t } = useTranslation('common')
   const toast = useToastStore()
   const openWizard = useWizardStore(s => s.open)
   const { checkGate, gateNode } = useProGate()
@@ -36,19 +35,16 @@ export function DataWorkspace() {
   const activeFileId = useProjectStore(s => s.activeFileId)
   const files = useProjectStore(s => s.files)
   const removeFile = useProjectStore(s => s.removeFile)
-  const updateColumnSemantic = useProjectStore(s => s.updateColumnSemantic)
-  const addSmartMetric = useProjectStore(s => s.addSmartMetric)
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [showReviewModal, setShowReviewModal] = useState(false)
-  const [analysisResult, setAnalysisResult] = useState<any>(null)
   const [showLineage, setShowLineage] = useState(false)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [activeTab, setActiveTab] = useState<'data' | 'fields' | 'metrics' | 'relations'>('data')
+  const [activeTab, setActiveTab] = useState<
+    'data' | 'fields' | 'metrics' | 'relations'
+  >('data')
   const [pendingExtractCol, setPendingExtractCol] = useState<any>(null)
 
   const currentFile = files.find(f => f.id === activeFileId) || files[0]
-  
+
   if (!currentFile) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-zinc-400 bg-white dark:bg-zinc-950">
@@ -77,61 +73,6 @@ export function DataWorkspace() {
     toast.addToast({ title: t('file_deleted'), type: 'success' })
   }
 
-  const handleOpenSemanticReview = () => {
-    setAnalysisResult(null)
-    setShowReviewModal(true)
-  }
-
-  const handleAnalyzeSemantics = async () => {
-    setIsAnalyzing(true)
-    setAnalysisResult(null)
-
-    try {
-      const language = i18n.language?.startsWith('zh') ? 'zh' : 'en'
-      const aiRes = await window.electronAPI.analyzeSemantics({
-        tableName: currentFile.tableName,
-        columns: currentFile.columns,
-        language
-      })
-      if (!aiRes.success || !aiRes.data)
-        throw new Error(aiRes.error || 'AI analysis failed')
-
-      setAnalysisResult(aiRes.data)
-    } catch (e: any) {
-      setShowReviewModal(false)
-      toast.addToast({
-        title: t('analysis_failed', 'Analysis Failed'),
-        description: e.message,
-        type: 'error',
-      })
-    } finally {
-      setIsAnalyzing(false)
-    }
-  }
-
-  const handleApplySemanticReview = async (data: { selectedColumns: Record<string, any>, selectedMetrics: any[] }) => {
-    const { selectedColumns, selectedMetrics } = data
-    
-    Object.entries(selectedColumns).forEach(([colName, semantic]) => {
-      updateColumnSemantic(currentFile.id, colName, semantic as any)
-    })
-
-    for (const m of selectedMetrics) {
-      await addSmartMetric(currentFile.id, {
-        id: crypto.randomUUID(),
-        name: m.name,
-        sqlExpression: m.sqlExpression,
-        description: m.description
-      })
-    }
-
-    setShowReviewModal(false)
-    toast.addToast({
-      title: t('semantics_analysis_complete', 'Semantics Analysis Complete'),
-      type: 'success',
-    })
-  }
-
   const handleRunAIExtractFromGrid = (columnName: string) => {
     const col = currentFile.columns.find(c => c.name === columnName)
     if (col) {
@@ -155,98 +96,90 @@ export function DataWorkspace() {
               {currentFile.name}
             </h2>
             <div className="flex items-center gap-2 mt-1">
-               <button
-                  onClick={() => setShowLineage(true)}
-                  className="flex items-center gap-1 px-1.5 py-0.5 bg-zinc-100/80 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded border border-zinc-200/50 dark:border-zinc-700 whitespace-nowrap hover:bg-zinc-200/80 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all cursor-help group"
-                >
-                  <Database className="w-2 h-2 opacity-70 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
-                  <code className="text-[9px] font-mono">
-                    {currentFile.tableName}
-                  </code>
-                  <Info className="w-2 h-2 opacity-0 group-hover:opacity-100 ml-0.5" />
-                </button>
-                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-100/50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded border border-emerald-200/50 dark:border-emerald-800 whitespace-nowrap">
-                  <Hash className="w-2 h-2" />
-                  <span className="text-[9px] font-black uppercase tracking-tight">
-                    {currentFile.rowCount?.toLocaleString() || 0} {t('rows')}
-                  </span>
-                </div>
+              <button
+                onClick={() => setShowLineage(true)}
+                className="flex items-center gap-1 px-1.5 py-0.5 bg-zinc-100/80 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded border border-zinc-200/50 dark:border-zinc-700 whitespace-nowrap hover:bg-zinc-200/80 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all cursor-help group"
+              >
+                <Database className="w-2 h-2 opacity-70 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
+                <code className="text-[9px] font-mono">
+                  {currentFile.tableName}
+                </code>
+                <Info className="w-2 h-2 opacity-0 group-hover:opacity-100 ml-0.5" />
+              </button>
+              <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-100/50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded border border-emerald-200/50 dark:border-emerald-800 whitespace-nowrap">
+                <Hash className="w-2 h-2" />
+                <span className="text-[9px] font-black uppercase tracking-tight">
+                  {currentFile.rowCount?.toLocaleString() || 0} {t('rows')}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Workspace Toolbar */}
         <div className="flex items-center p-1 bg-zinc-200/40 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700 rounded-xl shadow-sm shrink-0">
+          <div className="flex items-center gap-0.5">
             <ExpandableAction
-              icon={isAnalyzing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-              label={t('ai_tag', 'AI Semantics')}
-              onClick={handleOpenSemanticReview}
-              disabled={isAnalyzing}
+              icon={<Plus className="w-3.5 h-3.5" />}
+              label={t('append_data')}
+              onClick={handleAppend}
+              className="text-emerald-600 dark:text-emerald-400 hover:bg-white dark:hover:bg-zinc-700 border-transparent h-8"
+            />
+            <ExpandableAction
+              icon={<GitMerge className="w-3.5 h-3.5" />}
+              label={t('merge_data')}
+              onClick={handleMerge}
               className="text-indigo-600 dark:text-indigo-400 hover:bg-white dark:hover:bg-zinc-700 border-transparent h-8"
             />
-            <div className="w-px h-3 bg-zinc-300 dark:bg-zinc-700 mx-1" />
-            <div className="flex items-center gap-0.5">
-              <ExpandableAction
-                icon={<Plus className="w-3.5 h-3.5" />}
-                label={t('append_data')}
-                onClick={handleAppend}
-                className="text-emerald-600 dark:text-emerald-400 hover:bg-white dark:hover:bg-zinc-700 border-transparent h-8"
-              />
-              <ExpandableAction
-                icon={<GitMerge className="w-3.5 h-3.5" />}
-                label={t('merge_data')}
-                onClick={handleMerge}
-                className="text-indigo-600 dark:text-indigo-400 hover:bg-white dark:hover:bg-zinc-700 border-transparent h-8"
-              />
-              <ExpandableAction
-                icon={<RefreshCw className="w-3.5 h-3.5" />}
-                label={t('replace_source')}
-                onClick={handleReplace}
-                className="text-amber-600 dark:text-amber-400 hover:bg-white dark:hover:bg-zinc-700 border-transparent h-8"
-              />
-            </div>
-            <div className="w-px h-3 bg-zinc-300 dark:bg-zinc-700 mx-1" />
             <ExpandableAction
-              icon={<Trash2 className="w-3.5 h-3.5" />}
-              label={t('delete')}
-              onClick={() => setShowDeleteConfirm(true)}
-              className="text-red-600 dark:text-red-400 hover:bg-white dark:hover:bg-zinc-700 border-transparent h-8"
+              icon={<RefreshCw className="w-3.5 h-3.5" />}
+              label={t('replace_source')}
+              onClick={handleReplace}
+              className="text-amber-600 dark:text-amber-400 hover:bg-white dark:hover:bg-zinc-700 border-transparent h-8"
             />
+          </div>
+          <div className="w-px h-3 bg-zinc-300 dark:bg-zinc-700 mx-1" />
+          <ExpandableAction
+            icon={<Trash2 className="w-3.5 h-3.5" />}
+            label={t('delete')}
+            onClick={() => setShowDeleteConfirm(true)}
+            className="text-red-600 dark:text-red-400 hover:bg-white dark:hover:bg-zinc-700 border-transparent h-8"
+          />
         </div>
       </header>
 
       {/* 2. Main Viewport with Read/Write Tabs */}
       <div className="flex-1 flex flex-col min-h-0 bg-[#fbfbfa] dark:bg-zinc-900">
-        <Tabs 
-          value={activeTab} 
-          onValueChange={(v: any) => setActiveTab(v)} 
+        <Tabs
+          value={activeTab}
+          onValueChange={(v: any) => setActiveTab(v)}
           className="flex-1 flex flex-col min-h-0"
         >
           <div className="px-6 border-b border-zinc-100 dark:border-zinc-800 bg-[#fbfbfa] dark:bg-zinc-900/50 backdrop-blur shrink-0">
             <TabsList className="h-10 bg-transparent gap-8 p-0">
-              <TabsTrigger 
-                value="data" 
+              <TabsTrigger
+                value="data"
                 className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2 text-zinc-400 data-[state=active]:text-indigo-600 transition-all"
               >
                 <TableIcon className="w-3.5 h-3.5" />
                 {t('data_viewer', 'Data')}
               </TabsTrigger>
-              <TabsTrigger 
-                value="fields" 
+              <TabsTrigger
+                value="fields"
                 className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2 text-zinc-400 data-[state=active]:text-indigo-600 transition-all"
               >
                 <Settings2 className="w-3.5 h-3.5" />
                 {t('columns')}
               </TabsTrigger>
-              <TabsTrigger 
-                value="metrics" 
+              <TabsTrigger
+                value="metrics"
                 className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2 text-zinc-400 data-[state=active]:text-indigo-600 transition-all"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 {t('metrics')}
               </TabsTrigger>
-              <TabsTrigger 
-                value="relations" 
+              <TabsTrigger
+                value="relations"
                 className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2 text-zinc-400 data-[state=active]:text-indigo-600 transition-all"
               >
                 <GitMerge className="w-3.5 h-3.5" />
@@ -255,27 +188,42 @@ export function DataWorkspace() {
             </TabsList>
           </div>
 
-          <TabsContent value="data" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden bg-transparent dark:bg-zinc-900">
-             <DataPreviewPanel 
-               onModifyStructure={() => setActiveTab('fields')}
-               onRunAIExtract={handleRunAIExtractFromGrid}
-             />
+          <TabsContent
+            value="data"
+            className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden bg-transparent dark:bg-zinc-900"
+          >
+            <DataPreviewPanel
+              onModifyStructure={() => setActiveTab('fields')}
+              onRunAIExtract={handleRunAIExtractFromGrid}
+            />
           </TabsContent>
 
-          <TabsContent value="fields" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-950/30 relative">
-             <div className="absolute inset-0 m-0 p-4 overflow-auto custom-scrollbar">
-                <ColumnsView file={currentFile} initialExtractColumn={pendingExtractCol} />
-             </div>
+          <TabsContent
+            value="fields"
+            className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-950/30 relative"
+          >
+            <div className="absolute inset-0 m-0 p-4 overflow-auto custom-scrollbar">
+              <ColumnsView
+                file={currentFile}
+                initialExtractColumn={pendingExtractCol}
+              />
+            </div>
           </TabsContent>
-          <TabsContent value="metrics" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-950/30 relative">
-             <div className="absolute inset-0 m-0 p-4 overflow-auto custom-scrollbar">
-                <MetricsView file={currentFile} />
-             </div>
+          <TabsContent
+            value="metrics"
+            className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-950/30 relative"
+          >
+            <div className="absolute inset-0 m-0 p-4 overflow-auto custom-scrollbar">
+              <MetricsView file={currentFile} />
+            </div>
           </TabsContent>
-          <TabsContent value="relations" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-950/30 relative">
-             <div className="absolute inset-0 m-0 p-4 overflow-auto custom-scrollbar">
-                <RelationsView file={currentFile} />
-             </div>
+          <TabsContent
+            value="relations"
+            className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-950/30 relative"
+          >
+            <div className="absolute inset-0 m-0 p-4 overflow-auto custom-scrollbar">
+              <RelationsView file={currentFile} />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
@@ -293,15 +241,6 @@ export function DataWorkspace() {
         open={showLineage}
         onOpenChange={setShowLineage}
         file={currentFile}
-      />
-      <SemanticReviewModal
-        isOpen={showReviewModal}
-        file={currentFile}
-        isAnalyzing={isAnalyzing}
-        result={analysisResult}
-        onStartAnalysis={handleAnalyzeSemantics}
-        onCancel={() => setShowReviewModal(false)}
-        onConfirm={handleApplySemanticReview}
       />
       {gateNode}
     </div>

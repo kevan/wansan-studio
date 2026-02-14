@@ -10,6 +10,7 @@ import { useProjectStore } from '@/stores/useProjectStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { SemanticEditorModal } from '../modals/SemanticEditorModal'
 import { AIExtractorDialog } from '../modals/AIExtractorDialog'
+import { SemanticReviewModal } from '../modals/SemanticReviewModal'
 
 interface ColumnsViewProps {
   file: FileNode
@@ -17,15 +18,20 @@ interface ColumnsViewProps {
 }
 
 export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
   const toast = useToastStore()
   
   const updateColumnSemantic = useProjectStore(s => s.updateColumnSemantic)
   const refreshMetadata = useProjectStore(s => s.refreshFileMetadata)
+  const addSmartMetric = useProjectStore(s => s.addSmartMetric)
   
   const [editingColumn, setEditingColumn] = useState<ColumnSchema | null>(null)
   const [aiExtractColumn, setAiExtractColumn] = useState<ColumnSchema | null>(initialExtractColumn || null)
   const [activeHint, setActiveHint] = useState<{ prompt: string; targetColumnName: string } | null>(null)
+
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [analysisResult, setAnalysisResult] = useState<any>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   // Sync with prop change (for cross-tab trigger)
   React.useEffect(() => {
@@ -105,6 +111,64 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
     }
   }
 
+  const handleOpenSemanticReview = () => {
+    setAnalysisResult(null)
+    setShowReviewModal(true)
+  }
+
+  const handleAnalyzeSemantics = async () => {
+    setIsAnalyzing(true)
+    setAnalysisResult(null)
+
+    try {
+      const language = i18n.language?.startsWith('zh') ? 'zh' : 'en'
+      const aiRes = await window.electronAPI.analyzeSemantics({
+        tableName: file.tableName,
+        columns: file.columns,
+        language,
+      })
+      if (!aiRes.success || !aiRes.data)
+        throw new Error(aiRes.error || 'AI analysis failed')
+
+      setAnalysisResult(aiRes.data)
+    } catch (e: any) {
+      setShowReviewModal(false)
+      toast.addToast({
+        title: t('analysis_failed', 'Analysis Failed'),
+        description: e.message,
+        type: 'error',
+      })
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
+  const handleApplySemanticReview = async (data: {
+    selectedColumns: Record<string, any>
+    selectedMetrics: any[]
+  }) => {
+    const { selectedColumns, selectedMetrics } = data
+
+    Object.entries(selectedColumns).forEach(([colName, semantic]) => {
+      updateColumnSemantic(file.id, colName, semantic as any)
+    })
+
+    for (const m of selectedMetrics) {
+      await addSmartMetric(file.id, {
+        id: crypto.randomUUID(),
+        name: m.name,
+        sqlExpression: m.sqlExpression,
+        description: m.description,
+      })
+    }
+
+    setShowReviewModal(false)
+    toast.addToast({
+      title: t('semantics_analysis_complete', 'Semantics Analysis Complete'),
+      type: 'success',
+    })
+  }
+
   return (
     <>
       <div className="flex flex-col h-full bg-transparent relative">
@@ -116,26 +180,39 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 leading-none mb-1">
-                  {t('ai_extract_title', 'Smart Extraction')}
+                  {t('ai_toolkit', 'AI Data Toolkit')}
                 </h3>
                 <p className="text-[10px] text-zinc-400 font-medium">
-                  {t('ai_extract_desc', 'Transform text into structured data using AI')}
+                  {t('ai_toolkit_desc', 'Enhance metadata and extract intelligence using AI')}
                 </p>
               </div>
            </div>
-           <Button 
-             variant="outline" 
-             size="sm"
-             onClick={() => {
-                // If no column selected, pick the first one or just open
-                const col = aiExtractColumn || file.columns.find(c => c.name !== '_ws_row_id') || file.columns[0]
-                setAiExtractColumn(col)
-             }}
-             className="rounded-xl border-purple-100 dark:border-purple-900/50 bg-purple-50/50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-600 hover:text-white transition-all gap-2 h-9"
-           >
-             <Sparkles className="w-3.5 h-3.5" />
-             <span className="text-xs font-bold">{t('apply_extraction', 'Run AI Extract')}</span>
-           </Button>
+           <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleOpenSemanticReview}
+                disabled={isAnalyzing}
+                className="rounded-xl border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all gap-2 h-9"
+              >
+                {isAnalyzing ? <RefreshCcw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                <span className="text-xs font-bold">{t('analyze_semantics', 'Analyze Semantics')}</span>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                    // If no column selected, pick the first one or just open
+                    const col = aiExtractColumn || file.columns.find(c => c.name !== '_ws_row_id') || file.columns[0]
+                    setAiExtractColumn(col)
+                }}
+                className="rounded-xl border-purple-100 dark:border-purple-900/50 bg-purple-50/50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-600 hover:text-white transition-all gap-2 h-9"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="text-xs font-bold">{t('apply_extraction', 'Run AI Extract')}</span>
+              </Button>
+           </div>
         </div>
 
         <div className="px-6 py-6 overflow-y-auto flex-1">
@@ -330,6 +407,16 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
         tableName={file.tableName}
         initialPrompt={activeHint?.prompt}
         initialColumnName={activeHint?.targetColumnName}
+      />
+
+      <SemanticReviewModal
+        isOpen={showReviewModal}
+        file={file}
+        isAnalyzing={isAnalyzing}
+        result={analysisResult}
+        onStartAnalysis={handleAnalyzeSemantics}
+        onCancel={() => setShowReviewModal(false)}
+        onConfirm={handleApplySemanticReview}
       />
     </>
   )
