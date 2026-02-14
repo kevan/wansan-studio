@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useProjectStore, selectAllRelations } from '@/stores/useProjectStore'
-import { DuckDBViewManager } from '@/lib/duckdb-view-manager'
+import { useProjectStore } from '@/stores/useProjectStore'
 
 export function useDataRehydrate() {
   const isProjectLoaded = useProjectStore(s => s.isProjectLoaded)
@@ -17,7 +16,6 @@ export function useDataRehydrate() {
 
       const latestState = useProjectStore.getState()
       const currentFiles = latestState.files
-      const currentRelations = selectAllRelations(latestState)
 
       // [V1.7] Physical Reconciliation: Cleanup orphaned resources
       try {
@@ -51,32 +49,22 @@ export function useDataRehydrate() {
 
       const readyFiles = currentFiles.filter(f => f.status === 'ready')
       let syncedCount = 0
-      const updates: Record<string, any> = {}
 
       for (const file of readyFiles) {
-        // [V1.7] Always rebuild views for ready files to ensure "v_" tables exist for metrics/logic
-        // This ensures viewSchema is populated, which is required for AI context and Time Intelligence.
+        // [V1.7.5] Use authoritative metadata refresh instead of just simple rebuildView
+        // This ensures AI fields are detected from sidecars and sourceType is restored.
         try {
-          const viewSchema = await DuckDBViewManager.rebuildView(
-            file,
-            currentFiles,
-            currentRelations
-          )
-          updates[file.id] = { viewSchema }
+          await useProjectStore.getState().refreshFileMetadata(file.id)
           syncedCount++
         } catch (error) {
           console.error(
-            `[Rehydrate] View sync failed for ${file.tableName}`,
+            `[Rehydrate] Metadata refresh failed for ${file.tableName}`,
             error
           )
         }
       }
 
-      if (Object.keys(updates).length > 0) {
-        useProjectStore.getState().bulkUpdateFiles(updates)
-      }
-
-      console.log(`[Rehydrate] View Sync finished. Synced ${syncedCount} views.`)
+      console.log(`[Rehydrate] Rehydration finished. Synced ${syncedCount} tables.`)
     }
 
     syncViews().catch(e => {

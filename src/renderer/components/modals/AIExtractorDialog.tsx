@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
 import { Sparkles, ArrowRight, Loader2, Play, MoreHorizontal, Save, Trash2 } from 'lucide-react'
+import { cn } from '@/utils/cn'
 import { ColumnSchema } from '@shared/types'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { SYSTEM_PRESETS_EN, SYSTEM_PRESETS_ZH } from '@/lib/ai-presets'
@@ -26,8 +27,9 @@ import { SYSTEM_PRESETS_EN, SYSTEM_PRESETS_ZH } from '@/lib/ai-presets'
 interface AIExtractorDialogProps {
   isOpen: boolean
   onClose: () => void
-  onRun: (prompt: string, newColumnName: string) => void
+  onRun: (prompt: string, newColumnName: string, sourceColumn: string) => void
   column: ColumnSchema | null
+  columns: ColumnSchema[] // [NEW] Added for selection
   tableName: string
   initialPrompt?: string
   initialColumnName?: string
@@ -37,7 +39,8 @@ export function AIExtractorDialog({
   isOpen,
   onClose,
   onRun,
-  column,
+  column: initialCol,
+  columns,
   tableName,
   initialPrompt,
   initialColumnName
@@ -51,13 +54,28 @@ export function AIExtractorDialog({
     useExtractTemplate: markTemplateUsed 
   } = useSettingsStore()
   
+  const [selectedColName, setSelectedColName] = useState('')
   const [prompt, setPrompt] = useState('')
   const [newColumnName, setNewColumnName] = useState('')
   const [isPreviewing, setIsPreviewing] = useState(false)
+  
+  // Name conflict validation
+  const conflictCol = useMemo(() => {
+    return columns.find(c => c.name.toLowerCase() === newColumnName.toLowerCase())
+  }, [columns, newColumnName])
+
+  const isRawConflict = conflictCol && conflictCol.sourceType !== 'ai'
+  const isAIOverwrite = conflictCol && conflictCol.sourceType === 'ai'
+
   const [previewData, setPreviewData] = useState<unknown[]>([])
   const [previewResult, setPreviewResult] = useState<string[]>([])
   const [estimatedCost, setEstimatedCost] = useState<number | null>(null)
   
+  // Current active column (either passed in or selected via UI)
+  const activeCol = useMemo(() => {
+    return columns.find(c => c.name === selectedColName) || initialCol
+  }, [columns, selectedColName, initialCol])
+
   // Save template state
   const [isSavingTemplate, setIsSavingTemplate] = useState(false)
   const [newTemplateName, setNewTemplateName] = useState('')
@@ -71,26 +89,39 @@ export function AIExtractorDialog({
     })
   }, [extractTemplates])
 
-  // Load sample data when dialog opens
+  // Sync state when props or selection changes
   useEffect(() => {
-    if (isOpen && column && column.sampleValues) {
-      setPreviewData(column.sampleValues.slice(0, 5))
-      setNewColumnName(initialColumnName || `${column.name}_ai`)
+    if (isOpen) {
+      if (initialCol) {
+        setSelectedColName(initialCol.name)
+      } else if (columns.length > 0 && !selectedColName) {
+        // Find first text column as default
+        const textCol = columns.find(c => c.type === 'VARCHAR') || columns[0]
+        setSelectedColName(textCol.name)
+      }
+    }
+  }, [isOpen, initialCol, columns])
+
+  // Load sample data when active column changes
+  useEffect(() => {
+    if (isOpen && activeCol) {
+      setPreviewData(activeCol.sampleValues?.slice(0, 5) || [])
+      setNewColumnName(initialColumnName || `${activeCol.name}_ai`)
       setPrompt(initialPrompt || '')
       setPreviewResult([])
       setEstimatedCost(null)
       setIsSavingTemplate(false)
       setNewTemplateName('')
     }
-  }, [isOpen, column, initialPrompt, initialColumnName])
+  }, [isOpen, activeCol, initialPrompt, initialColumnName])
 
   const handlePreview = async () => {
-    if (!prompt.trim() || !column) return
+    if (!prompt.trim() || !activeCol) return
     setIsPreviewing(true)
     try {
       const res = await window.electronAPI.aiPreviewExtract({
         tableName, 
-        columnName: column.name, 
+        columnName: activeCol.name, 
         sampleData: previewData, 
         prompt
       })
@@ -109,8 +140,8 @@ export function AIExtractorDialog({
   }
 
   const handleRun = () => {
-    if (!prompt.trim() || !newColumnName.trim()) return
-    onRun(prompt, newColumnName)
+    if (!prompt.trim() || !newColumnName.trim() || !activeCol) return
+    onRun(prompt, newColumnName, activeCol.name)
     onClose()
   }
 
@@ -128,9 +159,9 @@ export function AIExtractorDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
-      <DialogContent className="max-w-5xl rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-white text-zinc-900 flex flex-col h-[700px]">
+      <DialogContent className="max-w-5xl rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-[#fbfbfa] text-zinc-900 flex flex-col h-[700px]">
         {/* Header */}
-        <div className="px-8 py-6 border-b border-zinc-100 bg-white flex justify-between items-start shrink-0">
+        <div className="px-8 py-6 border-b border-zinc-100 bg-[#fbfbfa] flex justify-between items-start shrink-0">
           <div>
             <DialogTitle className="text-2xl font-bold flex items-center gap-3 text-zinc-900 tracking-tight">
               <div className="p-2.5 bg-zinc-900 text-white rounded-xl shadow-lg shadow-zinc-200">
@@ -142,63 +173,92 @@ export function AIExtractorDialog({
               {t('ai_extract_desc', 'Transform your data using AI. Extract information, analyze sentiment, or clean formats.')}
             </p>
           </div>
-          {column && (
-             <Badge variant="outline" className="px-3 py-1.5 rounded-lg text-sm border-zinc-200 bg-zinc-50 text-zinc-600 font-mono tracking-tight">
-               Column: <span className="font-bold text-zinc-900 ml-1">{column.name}</span>
-             </Badge>
-          )}
         </div>
 
-        <div className="flex flex-1 min-h-0 bg-zinc-50/50">
+        <div className="flex flex-1 min-h-0 bg-zinc-100/30">
           {/* Left: Configuration - Input Zone */}
           <div className="w-7/12 flex flex-col bg-white border-r border-zinc-100 shadow-[20px_0_40px_-10px_rgba(0,0,0,0.02)] z-10">
             
-            {/* Top Bar: Column Name & Actions */}
-            <div className="px-6 py-4 border-b border-zinc-50 flex items-center justify-between gap-4 bg-white shrink-0">
-              <div className="flex-1 flex items-center gap-3">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 whitespace-nowrap shrink-0">
-                  {t('target_column_name')}
-                </Label>
-                <Input 
-                  value={newColumnName}
-                  onChange={e => setNewColumnName(e.target.value)}
-                  className="h-8 rounded-lg border-zinc-200 bg-zinc-50/50 focus:bg-white focus:ring-2 focus:ring-purple-500/20 font-medium text-sm shadow-none transition-all hover:border-purple-200 w-full max-w-[200px]"
-                  placeholder="e.g. sentiment_score"
-                />
-              </div>
-
-              {/* Save Template Action */}
-              <div className="shrink-0">
-                {isSavingTemplate ? (
-                  <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-2 duration-200">
-                    <Input 
-                      className="h-7 w-32 text-xs rounded-lg border-zinc-200 focus:ring-purple-500/20" 
-                      placeholder={t('template_name_placeholder')}
-                      value={newTemplateName}
-                      onChange={e => setNewTemplateName(e.target.value)}
-                      autoFocus
-                      onKeyDown={e => e.key === 'Enter' && handleSaveTemplate()}
-                    />
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-lg hover:bg-green-50 hover:text-green-600" onClick={handleSaveTemplate}>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-lg hover:bg-red-50 hover:text-red-600" onClick={() => setIsSavingTemplate(false)}>
-                      <span className="text-xs font-bold">✕</span>
-                    </Button>
+            {/* Top Bar: Extraction Flow (Source -> Target) */}
+            <div className="px-6 py-6 border-b border-zinc-50 bg-white shrink-0">
+               <div className="flex flex-col gap-2">
+                  {/* Labels Row */}
+                  <div className="flex items-center gap-3 px-1">
+                    <Label className="flex-1 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                      {t('source_column', 'Source Column')}
+                    </Label>
+                    <div className="w-8 shrink-0" /> {/* Spacer for arrow */}
+                    <Label className="flex-1 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                      {t('target_column_name')}
+                    </Label>
                   </div>
-                ) : (
-                  <button 
-                    className="text-[10px] font-semibold text-purple-600 hover:text-purple-700 hover:bg-purple-50 px-2 py-1 rounded-md transition-colors flex items-center gap-1.5"
-                    onClick={() => {
-                      if (prompt.trim()) setIsSavingTemplate(true)
-                    }}
-                    disabled={!prompt.trim()}
-                  >
-                    <Save className="w-3 h-3" />
-                    {t('save_template')}
-                  </button>
-                )}
-              </div>
+
+                  {/* Inputs Row */}
+                  <div className="flex items-center gap-3">
+                    {/* Source Column Selector */}
+                    <div className="flex-1 min-w-0">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" className="h-10 w-full rounded-xl border-zinc-100 bg-zinc-50/50 hover:bg-white text-zinc-900 font-bold justify-between px-4 transition-all shadow-none group">
+                            <span className="truncate">{selectedColName || 'Select'}</span>
+                            <MoreHorizontal className="w-3.5 h-3.5 opacity-30 group-hover:opacity-60" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-56 rounded-2xl p-2 shadow-2xl border-none">
+                          <div className="px-2 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t('available_columns', 'Columns')}</div>
+                          <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                              {columns.filter(c => c.name !== '_ws_row_id').map(c => (
+                                <DropdownMenuItem 
+                                  key={c.name} 
+                                  onClick={() => setSelectedColName(c.name)}
+                                  className={cn("rounded-xl py-2 px-3 gap-2", selectedColName === c.name && "bg-purple-50 text-purple-600 font-bold")}
+                                >
+                                  <div className={cn("w-2 h-2 rounded-full", selectedColName === c.name ? "bg-purple-500" : "bg-zinc-200")} />
+                                  {c.name}
+                                </DropdownMenuItem>
+                              ))}
+                          </div>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    {/* Visual Arrow */}
+                    <div className="shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-300">
+                        <ArrowRight className="w-4 h-4" />
+                      </div>
+                    </div>
+
+                    {/* Target Column Input */}
+                    <div className="flex-1 min-w-0">
+                                          <div className="relative">
+                                            <Input 
+                                              value={newColumnName}
+                                              onChange={e => setNewColumnName(e.target.value)}
+                                              className={cn(
+                                                "h-10 rounded-xl border-zinc-100 bg-zinc-50/50 focus:bg-white focus:ring-2 focus:ring-purple-500/20 font-bold text-sm shadow-none transition-all hover:border-purple-200 w-full",
+                                                isRawConflict && "border-red-500 focus:ring-red-500/20 hover:border-red-500",
+                                                isAIOverwrite && "border-amber-500 focus:ring-amber-500/20 hover:border-amber-500"
+                                              )}
+                                              placeholder="e.g. sentiment"
+                                            />
+                                            {isRawConflict && (
+                                              <div className="absolute -bottom-5 left-1">
+                                                <span className="text-[9px] text-red-500 font-bold animate-in fade-in slide-in-from-top-1">
+                                                  {t('name_taken', 'Name already taken')}
+                                                </span>
+                                              </div>
+                                            )}
+                                            {isAIOverwrite && (
+                                              <div className="absolute -bottom-5 left-1">
+                                                <span className="text-[9px] text-amber-600 font-bold animate-in fade-in slide-in-from-top-1">
+                                                  {t('overwrite_warning', 'Will overwrite existing AI field')}
+                                                </span>
+                                              </div>
+                                            )}
+                                          </div>                    </div>
+                  </div>
+               </div>
             </div>
 
             {/* Middle: Textarea (Flex-1) */}
@@ -207,12 +267,45 @@ export function AIExtractorDialog({
                  <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
                   {t('prompt')}
                 </Label>
+
+                {/* Save Template Action - Integrated here */}
+                <div className="shrink-0">
+                  {isSavingTemplate ? (
+                    <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-2 duration-200 bg-purple-50 p-1 rounded-lg border border-purple-100">
+                      <Input 
+                        className="h-6 w-32 text-[10px] rounded-md border-none bg-transparent focus:ring-0" 
+                        placeholder={t('template_name_placeholder')}
+                        value={newTemplateName}
+                        onChange={e => setNewTemplateName(e.target.value)}
+                        autoFocus
+                        onKeyDown={e => e.key === 'Enter' && handleSaveTemplate()}
+                      />
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-md hover:bg-white hover:text-green-600" onClick={handleSaveTemplate}>
+                        <ArrowRight className="w-3 h-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-md hover:bg-white hover:text-red-600" onClick={() => setIsSavingTemplate(false)}>
+                        <span className="text-[10px] font-bold">✕</span>
+                      </Button>
+                    </div>
+                  ) : (
+                    <button 
+                      className="text-[10px] font-bold text-purple-600 hover:text-purple-700 hover:bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-100/50 transition-all flex items-center gap-1.5 shadow-sm"
+                      onClick={() => {
+                        if (prompt.trim()) setIsSavingTemplate(true)
+                      }}
+                      disabled={!prompt.trim()}
+                    >
+                      <Save className="w-3 h-3" />
+                      {t('save_template')}
+                    </button>
+                  )}
+                </div>
               </div>
               <Textarea 
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
                 placeholder={t('prompt_placeholder', 'e.g. Extract the email address from this text...')}
-                className="w-full flex-1 rounded-2xl border-zinc-200 resize-none p-5 font-medium text-base focus:ring-2 focus:ring-purple-500/20 leading-relaxed shadow-sm transition-all hover:border-zinc-300"
+                className="w-full flex-1 rounded-2xl border-zinc-200 bg-zinc-50/30 resize-none p-5 font-medium text-base focus:bg-white focus:ring-2 focus:ring-purple-500/20 leading-relaxed shadow-sm transition-all hover:border-zinc-300"
               />
             </div>
 
@@ -300,13 +393,13 @@ export function AIExtractorDialog({
           </div>
 
           {/* Right: Preview - Output Zone */}
-          <div className="w-5/12 bg-zinc-50/50 flex flex-col relative">
+          <div className="w-5/12 bg-zinc-100/30 flex flex-col relative">
             {/* Dot Pattern Background */}
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+            <div className="absolute inset-0 opacity-[0.015] pointer-events-none" 
                  style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
             </div>
 
-            <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-white/80 backdrop-blur-sm z-10 sticky top-0">
+            <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-[#fbfbfa]/80 backdrop-blur-sm z-10 sticky top-0">
                <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
                  <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
                  {t('preview_results')}
@@ -365,7 +458,7 @@ export function AIExtractorDialog({
           </div>
         </div>
 
-        <DialogFooter className="px-8 py-5 border-t border-zinc-100 bg-white shrink-0">
+        <DialogFooter className="px-8 py-5 border-t border-zinc-100 bg-[#fbfbfa] shrink-0">
           <div className="flex-1 text-xs text-zinc-400 flex items-center gap-2 font-medium">
             <Sparkles className="w-3.5 h-3.5 text-purple-400" />
             <span>{t('ai_extract_warning')}</span>
@@ -379,10 +472,13 @@ export function AIExtractorDialog({
           </Button>
           <Button
             onClick={handleRun}
-            disabled={!newColumnName || !prompt}
-            className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl px-8 font-bold shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all hover:-translate-y-0.5"
+            disabled={!newColumnName || !prompt || isRawConflict}
+            className={cn(
+              "bg-purple-600 hover:bg-purple-700 text-white rounded-xl px-8 font-bold shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all hover:-translate-y-0.5",
+              isAIOverwrite && "bg-amber-600 hover:bg-amber-700 shadow-amber-500/20 hover:shadow-amber-500/40"
+            )}
           >
-            {t('apply_extraction')}
+            {isAIOverwrite ? t('overwrite_extraction', 'Overwrite & Run') : t('apply_extraction')}
           </Button>
         </DialogFooter>
       </DialogContent>

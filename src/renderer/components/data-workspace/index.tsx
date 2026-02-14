@@ -44,7 +44,8 @@ export function DataWorkspace() {
   const [analysisResult, setAnalysisResult] = useState<any>(null)
   const [showLineage, setShowLineage] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [activeTab, setActiveTab] = useState<'data' | 'structure'>('data')
+  const [activeTab, setActiveTab] = useState<'data' | 'fields' | 'metrics' | 'relations'>('data')
+  const [pendingExtractCol, setPendingExtractCol] = useState<any>(null)
 
   const currentFile = files.find(f => f.id === activeFileId) || files[0]
   
@@ -131,12 +132,22 @@ export function DataWorkspace() {
     })
   }
 
+  const handleRunAIExtractFromGrid = (columnName: string) => {
+    const col = currentFile.columns.find(c => c.name === columnName)
+    if (col) {
+      setActiveTab('fields')
+      setPendingExtractCol(col)
+      // Reset after a short delay so the prop change is detected
+      setTimeout(() => setPendingExtractCol(null), 100)
+    }
+  }
+
   return (
     <div className="flex-1 flex flex-col h-full bg-[#fbfbfa] dark:bg-zinc-950 overflow-hidden relative">
       {/* 1. Global Workspace Header */}
-      <header className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between shrink-0 bg-white dark:bg-zinc-900 z-30">
+      <header className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between shrink-0 bg-[#fbfbfa] dark:bg-zinc-900 z-30">
         <div className="flex items-center gap-4 min-w-0 flex-1">
-          <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 shrink-0 text-indigo-600 dark:text-indigo-400">
+          <div className="p-2 bg-indigo-100/50 dark:bg-indigo-900/30 rounded-xl border border-indigo-200/50 dark:border-indigo-800 shrink-0 text-indigo-600 dark:text-indigo-400">
             <FileSpreadsheet className="w-5 h-5" />
           </div>
           <div className="flex flex-col min-w-0">
@@ -146,7 +157,7 @@ export function DataWorkspace() {
             <div className="flex items-center gap-2 mt-1">
                <button
                   onClick={() => setShowLineage(true)}
-                  className="flex items-center gap-1 px-1.5 py-0.5 bg-zinc-50 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded border border-zinc-100 dark:border-zinc-700 whitespace-nowrap hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all cursor-help group"
+                  className="flex items-center gap-1 px-1.5 py-0.5 bg-zinc-100/80 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded border border-zinc-200/50 dark:border-zinc-700 whitespace-nowrap hover:bg-zinc-200/80 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all cursor-help group"
                 >
                   <Database className="w-2 h-2 opacity-70 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
                   <code className="text-[9px] font-mono">
@@ -154,7 +165,7 @@ export function DataWorkspace() {
                   </code>
                   <Info className="w-2 h-2 opacity-0 group-hover:opacity-100 ml-0.5" />
                 </button>
-                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded border border-emerald-100 dark:border-emerald-800 whitespace-nowrap">
+                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-100/50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded border border-emerald-200/50 dark:border-emerald-800 whitespace-nowrap">
                   <Hash className="w-2 h-2" />
                   <span className="text-[9px] font-black uppercase tracking-tight">
                     {currentFile.rowCount?.toLocaleString() || 0} {t('rows')}
@@ -165,7 +176,7 @@ export function DataWorkspace() {
         </div>
 
         {/* Workspace Toolbar */}
-        <div className="flex items-center p-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700 rounded-xl shadow-sm shrink-0">
+        <div className="flex items-center p-1 bg-zinc-200/40 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700 rounded-xl shadow-sm shrink-0">
             <ExpandableAction
               icon={isAnalyzing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
               label={t('ai_tag', 'AI Semantics')}
@@ -173,7 +184,7 @@ export function DataWorkspace() {
               disabled={isAnalyzing}
               className="text-indigo-600 dark:text-indigo-400 hover:bg-white dark:hover:bg-zinc-700 border-transparent h-8"
             />
-            <div className="w-px h-3 bg-zinc-200 dark:bg-zinc-700 mx-1" />
+            <div className="w-px h-3 bg-zinc-300 dark:bg-zinc-700 mx-1" />
             <div className="flex items-center gap-0.5">
               <ExpandableAction
                 icon={<Plus className="w-3.5 h-3.5" />}
@@ -194,7 +205,7 @@ export function DataWorkspace() {
                 className="text-amber-600 dark:text-amber-400 hover:bg-white dark:hover:bg-zinc-700 border-transparent h-8"
               />
             </div>
-            <div className="w-px h-3 bg-zinc-200 dark:bg-zinc-700 mx-1" />
+            <div className="w-px h-3 bg-zinc-300 dark:bg-zinc-700 mx-1" />
             <ExpandableAction
               icon={<Trash2 className="w-3.5 h-3.5" />}
               label={t('delete')}
@@ -205,59 +216,66 @@ export function DataWorkspace() {
       </header>
 
       {/* 2. Main Viewport with Read/Write Tabs */}
-      <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-zinc-900">
+      <div className="flex-1 flex flex-col min-h-0 bg-[#fbfbfa] dark:bg-zinc-900">
         <Tabs 
           value={activeTab} 
           onValueChange={(v: any) => setActiveTab(v)} 
           className="flex-1 flex flex-col min-h-0"
         >
-          <div className="px-6 border-b border-zinc-100 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur shrink-0">
+          <div className="px-6 border-b border-zinc-100 dark:border-zinc-800 bg-[#fbfbfa] dark:bg-zinc-900/50 backdrop-blur shrink-0">
             <TabsList className="h-10 bg-transparent gap-8 p-0">
               <TabsTrigger 
                 value="data" 
-                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2 text-zinc-500 data-[state=active]:text-indigo-600 transition-all"
+                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2 text-zinc-400 data-[state=active]:text-indigo-600 transition-all"
               >
                 <TableIcon className="w-3.5 h-3.5" />
                 {t('data_viewer', 'Data')}
               </TabsTrigger>
               <TabsTrigger 
-                value="structure" 
-                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2 text-zinc-500 data-[state=active]:text-indigo-600 transition-all"
+                value="fields" 
+                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2 text-zinc-400 data-[state=active]:text-indigo-600 transition-all"
               >
                 <Settings2 className="w-3.5 h-3.5" />
-                {t('structure_editor', 'Structure')}
+                {t('columns')}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="metrics" 
+                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2 text-zinc-400 data-[state=active]:text-indigo-600 transition-all"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {t('metrics')}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="relations" 
+                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2 text-zinc-400 data-[state=active]:text-indigo-600 transition-all"
+              >
+                <GitMerge className="w-3.5 h-3.5" />
+                {t('relations')}
               </TabsTrigger>
             </TabsList>
           </div>
 
-          <TabsContent value="data" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden">
+          <TabsContent value="data" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden bg-transparent dark:bg-zinc-900">
              <DataPreviewPanel 
-               onModifyStructure={() => setActiveTab('structure')}
+               onModifyStructure={() => setActiveTab('fields')}
+               onRunAIExtract={handleRunAIExtractFromGrid}
              />
           </TabsContent>
 
-          <TabsContent value="structure" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden flex flex-col bg-zinc-50/30 dark:bg-zinc-950/30">
-             {/* Unified Structure Editor (Temporarily using legacy tabs inside for now) */}
-             <Tabs defaultValue="fields" className="flex-1 flex flex-col min-h-0">
-                <div className="flex items-center px-6 py-2 gap-4 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
-                   <TabsList className="bg-zinc-100/50 dark:bg-zinc-800/50 p-1 rounded-lg h-8">
-                      <TabsTrigger value="fields" className="text-[10px] h-6 px-3">{t('columns')}</TabsTrigger>
-                      <TabsTrigger value="metrics" className="text-[10px] h-6 px-3">{t('metrics')}</TabsTrigger>
-                      <TabsTrigger value="relations" className="text-[10px] h-6 px-3">{t('relations')}</TabsTrigger>
-                   </TabsList>
-                </div>
-                <div className="flex-1 overflow-hidden relative">
-                   <TabsContent value="fields" className="absolute inset-0 m-0 p-4 overflow-auto custom-scrollbar">
-                      <ColumnsView file={currentFile} />
-                   </TabsContent>
-                   <TabsContent value="metrics" className="absolute inset-0 m-0 p-4 overflow-auto custom-scrollbar">
-                      <MetricsView file={currentFile} />
-                   </TabsContent>
-                   <TabsContent value="relations" className="absolute inset-0 m-0 p-4 overflow-auto custom-scrollbar">
-                      <RelationsView file={currentFile} />
-                   </TabsContent>
-                </div>
-             </Tabs>
+          <TabsContent value="fields" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-950/30 relative">
+             <div className="absolute inset-0 m-0 p-4 overflow-auto custom-scrollbar">
+                <ColumnsView file={currentFile} initialExtractColumn={pendingExtractCol} />
+             </div>
+          </TabsContent>
+          <TabsContent value="metrics" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-950/30 relative">
+             <div className="absolute inset-0 m-0 p-4 overflow-auto custom-scrollbar">
+                <MetricsView file={currentFile} />
+             </div>
+          </TabsContent>
+          <TabsContent value="relations" className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-950/30 relative">
+             <div className="absolute inset-0 m-0 p-4 overflow-auto custom-scrollbar">
+                <RelationsView file={currentFile} />
+             </div>
           </TabsContent>
         </Tabs>
       </div>

@@ -153,6 +153,7 @@ export interface ProjectState extends ProjectData {
   ) => Promise<'completed' | 'cancelled' | 'pending' | 'error'>
   loadProject: (data: ProjectData) => void
   cleanupZombieFiles: () => void
+  refreshFileMetadata: (fileId: string) => Promise<void> // [NEW] v1.7.5
   reset: () => void
   closeProject: () => Promise<void>
 
@@ -1436,6 +1437,90 @@ export const useProjectStore = create<ProjectState>()(
               : f
           ),
         })),
+
+      refreshFileMetadata: async fileId => {
+        const state = get()
+        const file = state.files.find(f => f.id === fileId)
+        if (!file) return
+
+        try {
+          // 1. Fetch sidecar info first to identify AI columns authoritatively
+          const sidecarName = `${file.tableName}_ext_ai`
+          const sidecarRes = await window.electronAPI.runSQL(`PRAGMA table_info("${sidecarName}")`)
+          const aiColumnNames = new Set<string>()
+          if (sidecarRes.success && sidecarRes.data) {
+             sidecarRes.data.data.forEach((c: any) => {
+                if (c.name !== '_ws_row_id') aiColumnNames.add(c.name)
+             })
+          }
+
+          // 2. Rebuild View First to ensure sidecar columns are linked
+          const allRelations = selectAllRelations(state)
+          await DuckDBViewManager.rebuildView(file, state.files, allRelations)
+
+          const viewName = `v_${file.tableName}`
+
+          // 3. Fetch columns from the LOGICAL VIEW (True Schema)
+          const sqlRes = await window.electronAPI.runSQL(`PRAGMA table_info("${viewName}")`)
+          if (!sqlRes.success || !sqlRes.data) throw new Error(sqlRes.error || 'Failed to fetch view info')
+          
+          const rawColumns = sqlRes.data.data.map((c: any) => ({
+            name: c.name,
+            type: c.type.toUpperCase(),
+            safeName: c.name,
+            sampleValues: [],
+            isPrimaryKey: c.pk === 1,
+            sourceType: 'raw' // Default
+          }))
+
+          // 4. Fetch Samples
+          const sampleRes = await window.electronAPI.runSQL(`SELECT * FROM "${viewName}" LIMIT 5`)
+          const sampleRows = sampleRes.success && sampleRes.data ? sampleRes.data.data : []
+
+          // 5. Merge and Update
+          const mergedColumns = rawColumns.map((newCol: any) => {
+             const oldCol = file.columns.find(c => c.name === newCol.name)
+             const samples = sampleRows.map(r => r[newCol.name]).filter(v => v !== null && v !== undefined)
+
+             // AUTHORITATIVE IDENTIFICATION: 
+             // If column is in sidecar, it IS an AI column
+             let sourceType = oldCol?.sourceType || 'raw'
+             if (aiColumnNames.has(newCol.name)) {
+                sourceType = 'ai'
+             } else if (newCol.name.startsWith('m_')) { // Convention for metrics
+                sourceType = 'metric'
+             }
+
+             if (oldCol) {
+                return {
+                   ...newCol,
+                   sampleValues: samples.length > 0 ? samples : oldCol.sampleValues,
+                   userType: oldCol.userType,
+                   semantic: oldCol.semantic,
+                   sourceType
+                }
+             }
+             return { ...newCol, sampleValues: samples, sourceType }
+          })
+
+          // 6. Update FileNode
+          set(prev => ({
+            files: prev.files.map(f => f.id === fileId ? { 
+              ...f, 
+              columns: mergedColumns, 
+              lastModified: Date.now(),
+              viewSchema: mergedColumns 
+            } : f)
+          }))
+
+          useToastStore.getState().addToast({
+            title: 'Metadata Synced',
+            type: 'success'
+          })
+        } catch (e: any) {
+          console.error('refreshFileMetadata failed', e)
+        }
+      },
 
       reset: () => set(initialProjectState),
 

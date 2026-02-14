@@ -47,29 +47,29 @@ export function RelationsView({ file }: RelationsViewProps) {
 
   return (
     <>
-      <div className="flex flex-col h-full bg-white relative p-6 overflow-y-auto">
+      <div className="flex flex-col h-full bg-transparent relative p-6 overflow-y-auto">
         <div className="grid grid-cols-1 gap-4 max-w-4xl mx-auto w-full">
           {(file.relations || []).map(rel => (
             <div
               key={rel.id}
-              className="p-5 bg-white border border-zinc-100 rounded-2xl flex items-center justify-between group hover:border-zinc-300 transition-all shadow-sm"
+              className="p-5 bg-white/80 dark:bg-zinc-900/80 border border-zinc-100 dark:border-zinc-800 rounded-3xl flex items-center justify-between group hover:border-zinc-200 dark:hover:border-zinc-700 transition-all shadow-sm"
             >
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-pink-50 rounded-xl text-pink-600">
+                <div className="p-3 bg-pink-50 dark:bg-pink-900/20 rounded-2xl text-pink-600 dark:text-pink-400">
                   <Link2 className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-zinc-900">
+                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                       {rel.sourceColumn}
                     </span>
-                    <ArrowRightLeft className="w-3 h-3 text-zinc-300" />
-                    <span className="text-sm font-bold text-zinc-900">
+                    <ArrowRightLeft className="w-3 h-3 text-zinc-300 dark:text-zinc-600" />
+                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                       {files.find(f => f.id === rel.targetFileId)?.name}.
                       {rel.targetColumn}
                     </span>
                   </div>
-                  <p className="text-[10px] text-zinc-400 mt-1 uppercase tracking-widest font-black">
+                  <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1 uppercase tracking-widest font-black">
                     {rel.joinType || 'LEFT'}
                   </p>
                 </div>
@@ -79,7 +79,7 @@ export function RelationsView({ file }: RelationsViewProps) {
                   variant="ghost"
                   size="icon"
                   onClick={() => handleEditRelation(rel)}
-                  className="h-9 w-9 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl"
+                  className="h-9 w-9 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl"
                 >
                   <Edit2 className="w-4 h-4" />
                 </Button>
@@ -87,7 +87,7 @@ export function RelationsView({ file }: RelationsViewProps) {
                   variant="ghost"
                   size="icon"
                   onClick={() => handleDeleteRelation(rel.id)}
-                  className="h-9 w-9 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
+                  className="h-9 w-9 text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -100,7 +100,7 @@ export function RelationsView({ file }: RelationsViewProps) {
               setEditingRelation(undefined)
               setIsRelationModalOpen(true)
             }}
-            className="h-20 border-dashed border-zinc-200 rounded-2xl hover:border-pink-300 hover:bg-pink-50/20 text-zinc-400 hover:text-pink-600 transition-all flex flex-col gap-1"
+            className="h-20 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl hover:border-pink-300 dark:hover:border-pink-700 hover:bg-pink-50/20 dark:hover:bg-pink-900/10 text-zinc-400 hover:text-pink-600 dark:hover:text-pink-400 transition-all flex flex-col gap-1"
           >
             <Plus className="w-5 h-5" />
             <span className="text-xs font-bold uppercase tracking-widest">

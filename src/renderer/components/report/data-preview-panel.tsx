@@ -20,12 +20,14 @@ const MemoizedGrid = memo(function MemoizedGrid({
   columns,
   totalRows,
   onModifyStructure,
+  onRunAIExtract,
 }: {
   fileId: string
   tableName: string
   columns: Array<ColumnSchema>
   totalRows?: number
   onModifyStructure?: () => void
+  onRunAIExtract?: (columnName: string) => void
 }) {
   // [V2.1] Always prefer the Enriched View (v_ prefix) to show AI fields, Metrics and Relations
   const targetTable = `v_${tableName}`
@@ -37,14 +39,17 @@ const MemoizedGrid = memo(function MemoizedGrid({
       columns={columns}
       totalRows={totalRows}
       onModifyStructure={onModifyStructure}
+      onRunAIExtract={onRunAIExtract}
     />
   )
 })
 
 export function DataPreviewPanel({
   onModifyStructure,
+  onRunAIExtract,
 }: {
   onModifyStructure?: () => void
+  onRunAIExtract?: (columnName: string) => void
 }) {
   const { activeFileId, files, isRestoring } = useProjectStore()
   const file = useMemo(() => files.find(f => f.id === activeFileId), [files, activeFileId])
@@ -144,34 +149,21 @@ export function DataPreviewPanel({
     )
   }
 
-    return (
-
-      <div className="h-full w-full bg-white flex flex-col p-4 overflow-hidden relative">
-
-        <div className="flex-1 overflow-hidden relative">
-
-          <MemoizedGrid
-
-            key={file.id}
-
-            fileId={file.id}
-
-            tableName={file.tableName}
-
-            columns={displayColumns}
-
-            totalRows={file.rowCount}
-
-            onModifyStructure={onModifyStructure}
-
-          />
-
-        </div>
-
-      </div>
-
-    )
-
+        return (
+          <div className="h-full w-full bg-transparent flex flex-col overflow-hidden relative">
+            <div className="flex-1 overflow-hidden relative">
+              <MemoizedGrid
+                key={file.id}
+                fileId={file.id}
+                tableName={file.tableName}
+                columns={displayColumns}
+                totalRows={file.rowCount}
+                onModifyStructure={onModifyStructure}
+                onRunAIExtract={onRunAIExtract}
+              />
+            </div>
+          </div>
+        )
   }
 
   

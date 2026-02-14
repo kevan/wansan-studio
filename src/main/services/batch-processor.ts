@@ -162,7 +162,7 @@ export class BatchProcessor {
           `)
         }
 
-        processed += rows.length
+      processed += rows.length
 
         // Send Progress to UI
         if (window) {
@@ -175,6 +175,15 @@ export class BatchProcessor {
             percentage: Math.round((processed / total) * 100)
           })
         }
+      }
+
+      // [V1.7.5] Send Completion Signal
+      if (window) {
+        window.webContents.send('ai:batch-complete', {
+          tableName,
+          columnName,
+          targetColumnName,
+        })
       }
 
       console.log(`[BatchProcessor] Job completed for ${tableName}`)

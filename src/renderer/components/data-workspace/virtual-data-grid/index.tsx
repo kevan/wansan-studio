@@ -27,6 +27,7 @@ interface VirtualDataGridProps {
   columns: Array<ColumnSchema>
   totalRows?: number
   onModifyStructure?: () => void
+  onRunAIExtract?: (columnName: string) => void
 }
 
 export function VirtualDataGrid({
@@ -35,6 +36,7 @@ export function VirtualDataGrid({
   columns,
   totalRows,
   onModifyStructure,
+  onRunAIExtract,
 }: VirtualDataGridProps): JSX.Element {
   const isGridDebug = import.meta.env.DEV
   const logGrid = useCallback((event: string, payload?: Record<string, unknown>) => {
@@ -87,6 +89,7 @@ export function VirtualDataGrid({
     sorting,
     filterState,
     setFilterError,
+    lastModified: file?.lastModified,
   })
 
   const tableColumns = useMemo<ColumnDef<Record<string, unknown>>[]>(() => {
@@ -272,20 +275,20 @@ export function VirtualDataGrid({
   }
 
   if (isLoading) return (
-    <div className="h-full flex flex-col items-center justify-center bg-white/50 backdrop-blur-xl gap-4">
+    <div className="h-full flex flex-col items-center justify-center bg-[#fbfbfa] dark:bg-zinc-950 backdrop-blur-xl gap-4">
       <div className="relative">
-        <div className="w-12 h-12 rounded-full border-2 border-zinc-100 animate-ping absolute inset-0" />
+        <div className="w-12 h-12 rounded-full border-2 border-zinc-100 dark:border-zinc-800 animate-ping absolute inset-0" />
         <div className="w-12 h-12 rounded-full border-t-2 border-indigo-500 animate-spin relative" />
       </div>
       <div className="flex flex-col items-center gap-1">
-        <span className="text-zinc-600 font-medium text-sm">Preparing Data Workspace</span>
-        <span className="text-zinc-400 text-xs animate-pulse">Initializing virtual grid...</span>
+        <span className="text-zinc-600 dark:text-zinc-400 font-medium text-sm">Preparing Data Workspace</span>
+        <span className="text-zinc-400 dark:text-zinc-500 text-xs animate-pulse">Initializing virtual grid...</span>
       </div>
     </div>
   )
 
   return (
-    <div className="h-full flex flex-col w-full bg-white relative">
+    <div className="h-full flex flex-col w-full bg-[#fbfbfa] dark:bg-zinc-950 relative">
       <RowDetailSheet open={isDetailOpen} onOpenChange={setIsDetailOpen} row={detailRow} columns={columns} onNavigate={handleNavigate} hasPrev={navState.hasPrev} hasNext={navState.hasNext} />
 
       <GridControlBar
@@ -304,7 +307,7 @@ export function VirtualDataGrid({
       />
 
       {isError && (
-        <div className="px-3 py-2 border-b border-red-100 bg-red-50 text-red-700 text-xs flex items-center gap-2">
+        <div className="px-3 py-2 border-b border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-xs flex items-center gap-2">
           <span>{(error as Error).message}</span>
           <Button variant="outline" size="sm" className="h-6 text-xs" onClick={() => refetch()}>
             <RefreshCcw className="w-3 h-3 mr-1" /> Retry
@@ -316,10 +319,10 @@ export function VirtualDataGrid({
         <div className="flex-1 flex flex-col min-w-0">
           <div
             ref={parentRef}
-            className="flex-1 overflow-auto w-full"
+            className="flex-1 overflow-auto w-full custom-scrollbar"
           >
             <div className="min-w-max min-h-full flex flex-col">
-              <div className="sticky top-0 z-20 flex bg-white/80 backdrop-blur-md shadow-sm border-b border-zinc-100">
+              <div className="sticky top-0 z-20 flex bg-[#fbfbfa]/90 dark:bg-zinc-900/90 backdrop-blur-md shadow-sm border-b border-zinc-100 dark:border-zinc-800">
                 {table.getHeaderGroups().map(headerGroup => (
                   <div key={headerGroup.id} className="flex">
                     {headerGroup.headers.map(header => (
@@ -329,13 +332,14 @@ export function VirtualDataGrid({
                         columns={columns}
                         onModifyStructure={onModifyStructure}
                         onHideColumn={handleHideColumn}
+                        onRunAIExtract={onRunAIExtract}
                       />
                     ))}
                   </div>
                 ))}
               </div>
 
-              <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
+              <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }} className="bg-white dark:bg-zinc-950">
                 {virtualItems.map((virtualRow) => {
                   const row = rows[virtualRow.index]
                   if (!row) return null

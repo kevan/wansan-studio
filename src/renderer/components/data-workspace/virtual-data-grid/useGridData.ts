@@ -10,9 +10,10 @@ interface UseGridDataProps {
   sorting: SortingState
   filterState: FilterState
   setFilterError: (error: string | null) => void
+  lastModified?: number
 }
 
-export function useGridData({ tableName, sorting, filterState, setFilterError }: UseGridDataProps) {
+export function useGridData({ tableName, sorting, filterState, setFilterError, lastModified }: UseGridDataProps) {
   const toast = useToastStore()
 
   const queryFn = useCallback(async ({ pageParam = 0 }: { pageParam?: number }) => {
@@ -45,7 +46,7 @@ export function useGridData({ tableName, sorting, filterState, setFilterError }:
   }, [tableName, sorting, filterState, setFilterError])
 
   const query = useInfiniteQuery({
-    queryKey: ['table-data', tableName, sorting, filterState],
+    queryKey: ['table-data', tableName, sorting, filterState, lastModified],
     queryFn,
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {

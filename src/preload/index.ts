@@ -163,6 +163,16 @@ const electronAPI: ElectronAPI = {
     ipcRenderer.on('app:remote-config', listener)
     return () => ipcRenderer.removeListener('app:remote-config', listener)
   },
+  onBatchProgress: (callback: (data: any) => void) => {
+    const listener = (_event: any, data: any) => callback(data)
+    ipcRenderer.on('ai:batch-progress', listener)
+    return () => ipcRenderer.removeListener('ai:batch-progress', listener)
+  },
+  onBatchComplete: (callback: (data: any) => void) => {
+    const listener = (_event: any, data: any) => callback(data)
+    ipcRenderer.on('ai:batch-complete', listener)
+    return () => ipcRenderer.removeListener('ai:batch-complete', listener)
+  },
 }
 
 // 将 API 暴露给渲染进程

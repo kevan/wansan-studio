@@ -61,4 +61,21 @@ export interface ElectronAPI extends DerivedInvokeMethods {
   ) => () => void
   onCommandCloseProject: (callback: () => void) => () => void
   onRemoteConfig: (callback: (config: AppConfig) => void) => () => void
+  onBatchProgress: (
+    callback: (data: {
+      tableName: string
+      columnName: string
+      targetColumnName: string
+      total: number
+      processed: number
+      percentage: number
+    }) => void
+  ) => () => void
+  onBatchComplete: (
+    callback: (data: {
+      tableName: string
+      columnName: string
+      targetColumnName: string
+    }) => void
+  ) => () => void
 }
