@@ -13,6 +13,7 @@ import { RowDetailSheet } from '../row-detail-sheet'
 import { FieldListSidebar } from '../field-list-sidebar'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { ColumnSchema } from '@shared/types'
+import { getVisibleColumns } from '@shared/utils/schema-utils'
 import { FilterState } from '@shared/types/filter'
 
 import { ROW_HEIGHT, OVERSCAN } from './utils'
@@ -58,14 +59,13 @@ export function VirtualDataGrid({
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(file?.displayState?.columnVisibility || {})
   const [columnOrder, setColumnOrder] = useState<string[]>(file?.displayState?.columnOrder || [])
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [filterError, setFilterError] = useState<string | null>(null)
 
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [detailRow, setDetailRow] = useState<Record<string, unknown> | null>(null)
 
   const availableColumns = useMemo(
-    () => columns.filter(c => c.name !== '_ws_row_id'),
+    () => getVisibleColumns(columns),
     [columns]
   )
 
@@ -88,7 +88,6 @@ export function VirtualDataGrid({
     tableName,
     sorting,
     filterState,
-    setFilterError,
     lastModified: file?.lastModified,
   })
 
@@ -274,7 +273,7 @@ export function VirtualDataGrid({
     setColumnVisibility(prev => ({ ...prev, [colName]: false }))
   }
 
-  if (isLoading) return (
+  if (isLoading && !isError) return (
     <div className="h-full flex flex-col items-center justify-center bg-[#fbfbfa] dark:bg-zinc-950 backdrop-blur-xl gap-4">
       <div className="relative">
         <div className="w-12 h-12 rounded-full border-2 border-zinc-100 dark:border-zinc-800 animate-ping absolute inset-0" />
@@ -298,8 +297,6 @@ export function VirtualDataGrid({
         filterState={filterState}
         setFilterState={setFilterState}
         availableColumns={availableColumns}
-        filterError={filterError}
-        setFilterError={setFilterError}
         
         // Toolbar Props
         isSidebarOpen={isSidebarOpen}

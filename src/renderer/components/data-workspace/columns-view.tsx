@@ -1,16 +1,19 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FileNode, ColumnSchema } from '@shared/types'
+import { FileNode, ColumnSchema, SmartMetric } from '@shared/types'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
-import { Edit2, Eye, EyeOff, Key, Sparkles, RefreshCcw } from 'lucide-react'
+import { Edit2, Eye, EyeOff, Key, Sparkles, RefreshCcw, Calculator, Trash2 } from 'lucide-react'
 import { cn } from '@/utils/cn'
+import { getVisibleColumns } from '@shared/utils/schema-utils'
 import { COLUMN_TYPE_CONFIG } from '@/src/lib/constants'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { SemanticEditorModal } from '../modals/SemanticEditorModal'
 import { AIExtractorDialog } from '../modals/AIExtractorDialog'
 import { SemanticReviewModal } from '../modals/SemanticReviewModal'
+import { MetricEditorModal } from '../modals/metric-editor-modal'
+import { ConfirmDialog } from '../modals/ConfirmDialog'
 
 interface ColumnsViewProps {
   file: FileNode
@@ -18,12 +21,14 @@ interface ColumnsViewProps {
 }
 
 export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
-  const { t, i18n } = useTranslation('common')
+  const { t, i18n } = useTranslation(['common', 'analysis'])
   const toast = useToastStore()
   
   const updateColumnSemantic = useProjectStore(s => s.updateColumnSemantic)
   const refreshMetadata = useProjectStore(s => s.refreshFileMetadata)
   const addSmartMetric = useProjectStore(s => s.addSmartMetric)
+  const removeSmartMetric = useProjectStore(s => s.removeSmartMetric)
+  const removeColumn = useProjectStore(s => s.removeColumn)
   
   const [editingColumn, setEditingColumn] = useState<ColumnSchema | null>(null)
   const [aiExtractColumn, setAiExtractColumn] = useState<ColumnSchema | null>(initialExtractColumn || null)
@@ -32,6 +37,13 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<any>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+
+  // Delete Confirmation State
+  const [pendingDeleteCol, setPendingDeleteCol] = useState<string | null>(null)
+
+  // Metric Editor State
+  const [isMetricModalOpen, setIsMetricModalOpen] = useState(false)
+  const [editingMetric, setEditingMetric] = useState<SmartMetric | undefined>(undefined)
 
   // Sync with prop change (for cross-tab trigger)
   React.useEffect(() => {
@@ -53,8 +65,50 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
     }
   }, [file.tableName, file.id, refreshMetadata])
 
-  const handleOpenSemanticEdit = (col: ColumnSchema) => {
-    setEditingColumn(col)
+  const handleEdit = (col: ColumnSchema) => {
+    if (col.sourceType === 'metric') {
+      const metric = (file.smartMetrics || []).find(m => m.name === col.name)
+      if (metric) {
+        setEditingMetric(metric)
+        setIsMetricModalOpen(true)
+      }
+    } else {
+      setEditingColumn(col)
+    }
+  }
+
+  const handleAddMetric = () => {
+    setEditingMetric(undefined)
+    setIsMetricModalOpen(true)
+  }
+
+  const handleSaveMetric = async (metric: Omit<SmartMetric, 'id'>) => {
+    const isNew = !editingMetric
+    if (editingMetric) await removeSmartMetric(file.id, editingMetric.id)
+    const newMetric: SmartMetric = {
+      ...metric,
+      id: editingMetric ? editingMetric.id : crypto.randomUUID(),
+    }
+    await addSmartMetric(file.id, newMetric)
+    setIsMetricModalOpen(false)
+    
+    // Explicitly sync metadata to show the new metric in the list
+    await refreshMetadata(file.id)
+
+    toast.addToast({
+      title: isNew ? t('metric_added') : t('metric_updated'),
+      type: 'success',
+    })
+  }
+
+  const handleDeleteConfirmed = async () => {
+    if (!pendingDeleteCol) return
+    await removeColumn(file.id, pendingDeleteCol)
+    setPendingDeleteCol(null)
+    toast.addToast({
+      title: t('common:delete_success', 'Column deleted'),
+      type: 'success',
+    })
   }
 
   const handleOpenExtractor = (col: ColumnSchema, hint?: { prompt: string; targetColumnName: string }) => {
@@ -122,9 +176,11 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
 
     try {
       const language = i18n.language?.startsWith('zh') ? 'zh' : 'en'
+      const visibleColumns = getVisibleColumns(file.columns)
+      
       const aiRes = await window.electronAPI.analyzeSemantics({
         tableName: file.tableName,
-        columns: file.columns,
+        columns: visibleColumns,
         language,
       })
       if (!aiRes.success || !aiRes.data)
@@ -160,7 +216,13 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
         sqlExpression: m.sqlExpression,
         description: m.description,
       })
+      
+      if (m.semantic) {
+        updateColumnSemantic(file.id, m.name, m.semantic)
+      }
     }
+
+    await refreshMetadata(file.id)
 
     setShowReviewModal(false)
     toast.addToast({
@@ -202,9 +264,19 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
               <Button 
                 variant="outline" 
                 size="sm"
+                onClick={handleAddMetric}
+                className="rounded-xl border-emerald-100 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all gap-2 h-9"
+              >
+                <Calculator className="w-3.5 h-3.5" />
+                <span className="text-xs font-bold">{t('add_metric', 'Add Metric')}</span>
+              </Button>
+
+              <Button 
+                variant="outline" 
+                size="sm"
                 onClick={() => {
-                    // If no column selected, pick the first one or just open
-                    const col = aiExtractColumn || file.columns.find(c => c.name !== '_ws_row_id') || file.columns[0]
+                    const visibleCols = getVisibleColumns(file.columns)
+                    const col = aiExtractColumn || visibleCols[0]
                     setAiExtractColumn(col)
                 }}
                 className="rounded-xl border-purple-100 dark:border-purple-900/50 bg-purple-50/50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-600 hover:text-white transition-all gap-2 h-9"
@@ -217,18 +289,19 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
 
         <div className="px-6 py-6 overflow-y-auto flex-1">
           <div className="flex flex-col border border-zinc-100 dark:border-zinc-800 rounded-2xl overflow-hidden divide-y divide-zinc-50 dark:divide-zinc-800 z-0 relative shadow-sm">
-            {file.columns
-              .filter(col => col.name !== '_ws_row_id')
+            {getVisibleColumns(file.columns)
               .map(col => {
                 const isVisible = col.semantic?.isVisibleToAI !== false
                 const isAI = col.sourceType === 'ai'
+                const isMetric = col.sourceType === 'metric'
               return (
                 <div
                   key={col.name}
                   className={cn(
                     'group flex items-center gap-4 px-4 py-3 bg-white hover:bg-zinc-50/50 transition-colors',
                     !isVisible && 'opacity-60 bg-zinc-50/20',
-                    isAI && 'bg-purple-50/20 hover:bg-purple-50/40 border-l-2 border-l-purple-400'
+                    isAI && 'bg-purple-50/20 hover:bg-purple-50/40 border-l-[3px] border-l-purple-400',
+                    isMetric && 'bg-emerald-50/20 hover:bg-emerald-50/40 border-l-[3px] border-l-emerald-400'
                   )}
                 >
                   <div className="w-16 shrink-0 flex items-center gap-1.5">
@@ -239,15 +312,19 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
                           ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
                           : isAI 
                             ? 'bg-purple-100 border-purple-200 text-purple-600'
-                            : 'bg-white border-zinc-100 text-zinc-200'
+                            : isMetric
+                              ? 'bg-emerald-100 border-emerald-200 text-emerald-600'
+                              : 'bg-white border-zinc-100 text-zinc-200'
                       )}
                     >
                       {isAI ? (
-                        <Sparkles className="w-3 h-3 fill-current" />
+                        <Sparkles className="w-3.5 h-3.5 fill-current" />
+                      ) : isMetric ? (
+                        <Calculator className="w-3.5 h-3.5 fill-current" />
                       ) : (
                         <Key
                           className={cn(
-                            'w-3 h-3',
+                            'w-3.5 h-3.5',
                             col.isPrimaryKey && 'fill-current'
                           )}
                         />
@@ -283,7 +360,12 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
                       </span>
                       {isAI && (
                          <Badge variant="outline" className="text-[8px] h-3.5 px-1 bg-purple-50 text-purple-600 border-purple-100 font-black uppercase tracking-tighter">
-                            AI Extracted
+                            AI
+                         </Badge>
+                      )}
+                      {isMetric && (
+                         <Badge variant="outline" className="text-[8px] h-3.5 px-1 bg-emerald-50 text-emerald-600 border-emerald-100 font-black uppercase tracking-tighter">
+                            Metric
                          </Badge>
                       )}
                     </div>
@@ -294,23 +376,39 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
                     </span>
                   </div>
                   <div className="flex-1 flex items-center gap-6 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap max-w-[200px] shrink-0">
-                      {col.semantic?.businessType && (
-                        <span className="text-[9px] font-black text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded uppercase tracking-tighter border border-indigo-100/50">
-                          {col.semantic.businessType}
-                        </span>
+                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+                        {isMetric ? (
+                          <code className="text-[10px] font-mono text-emerald-600 bg-emerald-50/50 px-1.5 py-0.5 rounded truncate max-w-xs">
+                              {(file.smartMetrics || []).find(m => m.name === col.name)?.sqlExpression}
+                          </code>
+                        ) : col.semantic?.businessType && (
+                          <span className="text-[9px] font-black text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded uppercase tracking-tighter border border-indigo-100/50">
+                            {col.semantic.businessType}
+                          </span>
+                        )}
+                        {(col.semantic?.aliases || [])
+                          .slice(0, 1)
+                          .map((alias, idx) => (
+                            <Badge
+                              key={idx}
+                              variant="secondary"
+                              className="bg-indigo-50/50 text-indigo-600 font-black border-indigo-100/50 text-[10px] px-2 py-0.5 rounded-lg"
+                            >
+                              {alias}
+                            </Badge>
+                          ))}
+                        {(col.semantic?.aliases || []).length > 1 && (
+                          <span className="text-[9px] text-zinc-400 font-bold ml-0.5">
+                            +{(col.semantic?.aliases || []).length - 1} synonyms
+                          </span>
+                        )}
+                      </div>
+                      {col.semantic?.description && (
+                        <p className="text-[10px] text-zinc-400 font-medium truncate italic opacity-80" title={col.semantic.description}>
+                          {col.semantic.description}
+                        </p>
                       )}
-                      {(col.semantic?.aliases || [])
-                        .slice(0, 2)
-                        .map((alias, idx) => (
-                          <Badge
-                            key={idx}
-                            variant="secondary"
-                            className="bg-zinc-100 text-zinc-600 font-bold border-none text-[9px] px-1.5 py-0 rounded-md"
-                          >
-                            {alias}
-                          </Badge>
-                        ))}
                     </div>
                     <div className="flex-1 min-w-0 flex items-center gap-4 overflow-hidden opacity-50 group-hover:opacity-100 transition-all duration-300">
                       <div className="w-px h-3 bg-zinc-100 shrink-0" />
@@ -335,7 +433,7 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
                       </div>
                     </div>
                   </div>
-                  <div className="w-20 shrink-0 text-right opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end gap-1">
+                  <div className="w-24 shrink-0 text-right opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end gap-1">
                     {/* [V1.7.5] AI Re-extract Button */}
                     {isAI && (
                       <Button
@@ -361,25 +459,39 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
                         <Sparkles className="w-3.5 h-3.5 fill-current" />
                       </Button>
                     ) : (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleOpenExtractor(col)}
-                        title={t('ai_extract_tooltip', 'AI Extract')}
-                        className="h-8 w-8 text-purple-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                      </Button>
+                      !isMetric && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenExtractor(col)}
+                            title={t('ai_extract_tooltip', 'AI Extract')}
+                            className="h-8 w-8 text-purple-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl"
+                        >
+                            <Sparkles className="w-3.5 h-3.5" />
+                        </Button>
+                      )
                     )}
 
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleOpenSemanticEdit(col)}
+                      onClick={() => handleEdit(col)}
                       className="h-8 w-8 text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </Button>
+
+                    {/* [V1.7.5] Delete Button for non-raw fields */}
+                    {(isAI || isMetric) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setPendingDeleteCol(col.name)}
+                        className="h-8 w-8 text-zinc-300 hover:text-red-600 hover:bg-red-50 rounded-xl"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               )
@@ -388,11 +500,28 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
         </div>
       </div>
 
+      <ConfirmDialog
+        open={!!pendingDeleteCol}
+        onOpenChange={(open) => !open && setPendingDeleteCol(null)}
+        onConfirm={handleDeleteConfirmed}
+        title={t('common:delete_field', 'Delete Column')}
+        description={t('common:delete_field_desc', 'Are you sure you want to permanently delete this field? Data cannot be recovered.')}
+        variant="destructive"
+      />
+
       <SemanticEditorModal
         isOpen={!!editingColumn}
         onClose={() => setEditingColumn(null)}
         onSave={handleSaveSemantic}
         column={editingColumn}
+      />
+
+      <MetricEditorModal
+        isOpen={isMetricModalOpen}
+        onClose={() => setIsMetricModalOpen(false)}
+        onSave={handleSaveMetric}
+        initialMetric={editingMetric}
+        file={file}
       />
 
       <AIExtractorDialog

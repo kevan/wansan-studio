@@ -19,6 +19,7 @@ import {
   RelationSuggestion,
   FileNode,
 } from '@shared/types'
+import { getVisibleColumns } from '@shared/utils/schema-utils'
 import { useProjectStore } from '@/stores/useProjectStore'
 import { ReviewLayout } from './review/ReviewLayout'
 import { SemanticReviewPanel } from './review/SemanticReviewPanel'
@@ -120,8 +121,9 @@ export function AnalysisReviewModal({
     setOnboardingStep('analyzing-semantic')
     const language = i18n.language?.startsWith('zh') ? 'zh' : 'en'
     try {
+      const visibleCols = getVisibleColumns(file.columns)
       const aiRes = await window.electronAPI.analyzeSemantics({
-        tableName: file.tableName, columns: file.columns, language
+        tableName: file.tableName, columns: visibleCols, language
       })
       if (aiRes.success && aiRes.data) {
         setCurrentSemanticResult(aiRes.data)
@@ -338,6 +340,7 @@ export function AnalysisReviewModal({
         }
       >
         <SemanticReviewPanel
+          file={file}
           result={currentSemanticResult}
           selectedColumns={selectedSemColumns}
           onToggleColumn={(name) => {

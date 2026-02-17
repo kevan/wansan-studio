@@ -4,6 +4,7 @@ import { FileService } from './file'
 import { BrowserWindow } from 'electron'
 import { CHARS_PER_TOKEN_EN, CHARS_PER_TOKEN_ZH } from '../engine/ai-utils'
 import { tokenManager } from './token-manager'
+import { getSidecarTableName } from '@shared/naming-utils'
 
 export interface BatchJobParams {
   tableName: string
@@ -40,7 +41,7 @@ export class BatchProcessor {
     estimatedCostUSD: number
   }> {
     const { tableName, columnName, targetColumnName, prompt } = params
-    const sidecarName = `${tableName}_ext_ai`
+    const sidecarName = getSidecarTableName(tableName)
 
     // 1. Get total count of rows needing processing
     let total = 0
@@ -96,7 +97,7 @@ export class BatchProcessor {
 
   async runExtraction(params: BatchJobParams) {
     const { tableName, columnName, targetColumnName, prompt, projectPath, window } = params
-    const sidecarName = `${tableName}_ext_ai`
+    const sidecarName = getSidecarTableName(tableName)
     const batchSize = 20 // Smaller batches for better interactivity
 
     try {

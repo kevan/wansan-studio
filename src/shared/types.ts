@@ -154,6 +154,7 @@ export interface SemanticAnalysisResult {
     sqlExpression: string
     description: string
     reason: string
+    semantic?: ColumnSemantic // [V1.7.5] Allow full semantics for suggested metrics
   }>
 }
 

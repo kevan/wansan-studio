@@ -330,7 +330,7 @@ export class AIService {
         },
       },
       client =>
-        analyzeSemanticsEngine(client, this.model || 'gpt-4o', tableName, columns, langName)
+        analyzeSemanticsEngine(client, this.model, tableName, columns, langName)
     )
   }
 

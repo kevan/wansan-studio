@@ -1,27 +1,21 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { SortingState } from '@tanstack/react-table'
 import { FilterState, filterStateToSQL, validateFilterState } from '@shared/types/filter'
-import { useToastStore } from '@/stores/useToastStore'
 import { PAGE_SIZE } from './utils'
 
 interface UseGridDataProps {
   tableName: string
   sorting: SortingState
   filterState: FilterState
-  setFilterError: (error: string | null) => void
   lastModified?: number
 }
 
-export function useGridData({ tableName, sorting, filterState, setFilterError, lastModified }: UseGridDataProps) {
-  const toast = useToastStore()
-
+export function useGridData({ tableName, sorting, filterState, lastModified }: UseGridDataProps) {
   const queryFn = useCallback(async ({ pageParam = 0 }: { pageParam?: number }) => {
     const issues = validateFilterState(filterState)
     if (issues.length > 0) {
-      const msg = `Filter validation failed: ${issues.map(i => i.code).join(', ')}`
-      setFilterError(msg)
-      throw new Error(msg)
+      throw new Error(`Filter validation failed: ${issues.map(i => i.code).join(', ')}`)
     }
 
     const whereClause = filterStateToSQL(filterState)
@@ -37,13 +31,11 @@ export function useGridData({ tableName, sorting, filterState, setFilterError, l
     const sql = `SELECT * FROM "${tableName}" ${whereClause} ${orderBy} LIMIT ${PAGE_SIZE} OFFSET ${pageParam}`
     const res = await window.electronAPI.runSQL(sql)
     if (!res.success) {
-      setFilterError(res.error || 'SQL execution failed')
       throw new Error(res.error || 'SQL execution failed')
     }
 
-    setFilterError(null)
     return (res.data?.data || []) as Record<string, unknown>[]
-  }, [tableName, sorting, filterState, setFilterError])
+  }, [tableName, sorting, filterState])
 
   const query = useInfiniteQuery({
     queryKey: ['table-data', tableName, sorting, filterState, lastModified],
@@ -55,17 +47,8 @@ export function useGridData({ tableName, sorting, filterState, setFilterError, l
     },
     refetchOnWindowFocus: false,
     staleTime: 30000,
+    retry: false, // Don't retry on SQL errors to prevent loop noise
   })
-
-  useEffect(() => {
-    if (query.isError && query.error) {
-      toast.addToast({
-        title: 'Filter error',
-        description: (query.error as Error).message,
-        type: 'error',
-      })
-    }
-  }, [query.isError, query.error, toast])
 
   const flatData = query.data?.pages.flat() ?? []
 

@@ -85,6 +85,7 @@ export interface IPCContract {
   'ai.generateInsight': { params: InsightGenerationContext; return: IPCResponse<string> }
   'ai.aiPreviewExtract': { params: { tableName: string; columnName: string; sampleData: any[]; prompt: string }; return: IPCResponse<{ results: string[]; estimatedCost: number }> }
   'ai.aiBatchExtract': { params: { tableName: string; columnName: string; targetColumnName: string; prompt: string }; return: IPCResponse<{ jobId: string }> }
+  'ai.dropAIColumn': { params: { tableName: string; columnName: string }; return: IPCResponse }
 
 
   // --- Token Audit ---

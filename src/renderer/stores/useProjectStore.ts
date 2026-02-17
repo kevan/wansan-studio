@@ -18,6 +18,8 @@ import { Analytics } from '../services/analytics'
 import { FilterParam } from '@shared/schemas/analysis'
 import { DuckDBViewManager } from '../lib/duckdb-view-manager'
 import { useToastStore } from './useToastStore'
+import { normalizeDuckDBType } from '@shared/type-utils'
+import { getSidecarTableName, getLogicalViewName } from '@shared/naming-utils'
 
 // 生成唯一 ID
 const generateId = () =>
@@ -123,6 +125,7 @@ export interface ProjectState extends ProjectData {
     columnName: string,
     semantic: Partial<import('@shared/types').ColumnSemantic>
   ) => void
+  removeColumn: (fileId: string, columnName: string) => Promise<void> // [NEW] v1.7.5
   toggleKeyColumn: (fileId: string, columnName: string) => void
   addRelation: (
     relation: Omit<TableRelation, 'id'> & { sourceFileId: string }
@@ -837,7 +840,7 @@ export const useProjectStore = create<ProjectState>()(
             await window.electronAPI.deleteTable(file.tableName)
             
             // 2. Logic Delete: View
-            await window.electronAPI.runSQL(`DROP VIEW IF EXISTS "v_${file.tableName}"`)
+            await window.electronAPI.runSQL(`DROP VIEW IF EXISTS "${getLogicalViewName(file.tableName)}"`)
           } catch (e) {
             console.error('Failed to drop resources', e)
           }
@@ -906,6 +909,106 @@ export const useProjectStore = create<ProjectState>()(
               : f
           ),
         }))
+      },
+
+      removeColumn: async (fileId, columnName) => {
+        const state = get()
+        const file = state.files.find(f => f.id === fileId)
+        if (!file) return
+
+        const col = file.columns.find(c => c.name === columnName)
+        if (!col) return
+
+        // --- OPTIMISTIC UPDATE ---
+        // Immediately remove from UI to ensure instant feedback in Columns list
+        set(prev => {
+          const currentViews = (prev.tableViews || {})[fileId] || []
+          const updatedViews = currentViews.map(view => {
+            // Cleanup Filters
+            const updatedFilters = typeof view.filters === 'object' && view.filters !== null && 'conditions' in view.filters
+              ? { ...view.filters, conditions: view.filters.conditions.filter((c: any) => c.columnName !== columnName) }
+              : Array.isArray(view.filters) 
+                ? view.filters.filter((c: any) => c.columnName !== columnName)
+                : view.filters
+
+            return {
+              ...view,
+              filters: updatedFilters,
+              // Cleanup Sort
+              sort: (view.sort || []).filter(s => s.id !== columnName),
+              // Cleanup Column Config
+              columnConfig: {
+                ...view.columnConfig,
+                order: (view.columnConfig?.order || []).filter(c => c !== columnName),
+                hidden: (view.columnConfig?.hidden || []).filter(c => c !== columnName),
+              }
+            }
+          })
+
+          return {
+            files: prev.files.map(f => {
+              if (f.id !== fileId) return f
+              
+              // Cleanup active displayState
+              const ds = f.displayState
+              const updatedDisplayState = ds ? {
+                ...ds,
+                sorting: (ds.sorting || []).filter(s => s.id !== columnName),
+                filterState: ds.filterState ? {
+                  ...ds.filterState,
+                  conditions: (ds.filterState.conditions || []).filter(c => c.columnName !== columnName)
+                } : ds.filterState,
+                columnOrder: (ds.columnOrder || []).filter(c => c !== columnName),
+                columnVisibility: ds.columnVisibility ? (() => {
+                  const { [columnName]: _, ...rest } = ds.columnVisibility
+                  return rest
+                })() : ds.columnVisibility
+              } : ds
+
+              return {
+                ...f,
+                columns: f.columns.filter(c => c.name !== columnName),
+                viewSchema: f.viewSchema?.filter(c => c.name !== columnName),
+                displayState: updatedDisplayState
+              }
+            }),
+            tableViews: {
+              ...prev.tableViews,
+              [fileId]: updatedViews
+            }
+          }
+        })
+
+        try {
+          if (col.sourceType === 'metric') {
+            // 1. Handle Metric Deletion
+            const metric = (file.smartMetrics || []).find(m => m.name === columnName)
+            if (metric) {
+              await get().removeSmartMetric(fileId, metric.id)
+            }
+          } else if (col.sourceType === 'ai') {
+            // 2. Handle AI Column Deletion (Physical)
+            const res = await window.electronAPI.dropAIColumn({
+              tableName: file.tableName,
+              columnName: col.name
+            })
+            if (!res.success) throw new Error(res.error)
+          }
+
+          // FINAL SYNC: refreshFileMetadata internally calls rebuildView and updates lastModified
+          await get().refreshFileMetadata(fileId)
+          
+        } catch (e: any) {
+          console.error('[ProjectStore] removeColumn failed', e)
+          // Rollback on error (re-sync)
+          await get().refreshFileMetadata(fileId)
+          
+          useToastStore.getState().addToast({
+            title: 'Delete failed',
+            description: e.message,
+            type: 'error'
+          })
+        }
       },
 
       toggleKeyColumn: (fileId, columnName) => {
@@ -1445,7 +1548,7 @@ export const useProjectStore = create<ProjectState>()(
 
         try {
           // 1. Fetch sidecar info first to identify AI columns authoritatively
-          const sidecarName = `${file.tableName}_ext_ai`
+          const sidecarName = getSidecarTableName(file.tableName)
           const sidecarRes = await window.electronAPI.runSQL(`PRAGMA table_info("${sidecarName}")`)
           const aiColumnNames = new Set<string>()
           if (sidecarRes.success && sidecarRes.data) {
@@ -1458,7 +1561,7 @@ export const useProjectStore = create<ProjectState>()(
           const allRelations = selectAllRelations(state)
           await DuckDBViewManager.rebuildView(file, state.files, allRelations)
 
-          const viewName = `v_${file.tableName}`
+          const viewName = getLogicalViewName(file.tableName)
 
           // 3. Fetch columns from the LOGICAL VIEW (True Schema)
           const sqlRes = await window.electronAPI.runSQL(`PRAGMA table_info("${viewName}")`)
@@ -1466,7 +1569,7 @@ export const useProjectStore = create<ProjectState>()(
           
           const rawColumns = sqlRes.data.data.map((c: any) => ({
             name: c.name,
-            type: c.type.toUpperCase(),
+            type: normalizeDuckDBType(c.type),
             safeName: c.name,
             sampleValues: [],
             isPrimaryKey: c.pk === 1,
@@ -1483,12 +1586,25 @@ export const useProjectStore = create<ProjectState>()(
              const samples = sampleRows.map(r => r[newCol.name]).filter(v => v !== null && v !== undefined)
 
              // AUTHORITATIVE IDENTIFICATION: 
-             // If column is in sidecar, it IS an AI column
-             let sourceType = oldCol?.sourceType || 'raw'
+             let sourceType: import('@shared/types').ColumnSourceType = oldCol?.sourceType || 'raw'
+             const metricDef = file.smartMetrics?.find(m => m.name === newCol.name)
+             
              if (aiColumnNames.has(newCol.name)) {
                 sourceType = 'ai'
-             } else if (newCol.name.startsWith('m_')) { // Convention for metrics
+             } else if (metricDef) {
                 sourceType = 'metric'
+             } else if (newCol.name.includes('__')) {
+                sourceType = 'joined'
+             }
+
+             // Merge Semantic
+             let semantic = oldCol?.semantic
+             if (sourceType === 'metric' && metricDef?.description) {
+                // Keep existing semantic fields (aliases, etc.) but update description from definition
+                semantic = { 
+                  ...(semantic || { isVisibleToAI: true }), 
+                  description: metricDef.description 
+                }
              }
 
              if (oldCol) {
@@ -1496,11 +1612,11 @@ export const useProjectStore = create<ProjectState>()(
                    ...newCol,
                    sampleValues: samples.length > 0 ? samples : oldCol.sampleValues,
                    userType: oldCol.userType,
-                   semantic: oldCol.semantic,
+                   semantic,
                    sourceType
                 }
              }
-             return { ...newCol, sampleValues: samples, sourceType }
+             return { ...newCol, sampleValues: samples, sourceType, semantic }
           })
 
           // 6. Update FileNode

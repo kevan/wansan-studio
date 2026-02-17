@@ -14,6 +14,7 @@ import os from 'os'
 import Store from 'electron-store'
 import { authService } from './auth-service'
 import { getMainLogs } from '../utils/logger'
+import { getSidecarTableName } from '@shared/naming-utils'
 
 import { ProjectManager } from './project-manager'
 import { tokenManager } from './token-manager'
@@ -297,6 +298,17 @@ export function setupIPC(
   registerHandler('ai.aiBatchExtract', async (event, { tableName, columnName, targetColumnName, prompt }) => {
     const result = await aiService.startBatchExtraction(tableName, columnName, targetColumnName, prompt, projectManager.getCurrentProjectPath(), BrowserWindow.fromWebContents(event.sender) || undefined)
     return { success: true, data: result }
+  })
+
+  registerHandler('ai.dropAIColumn', async (_event, { tableName, columnName }) => {
+    try {
+      const sidecarName = getSidecarTableName(tableName)
+      await databaseService.exec(`ALTER TABLE "${sidecarName}" DROP COLUMN "${columnName}"`)
+      return { success: true }
+    } catch (e: any) {
+      console.error(`[IPC] Failed to drop AI column: ${columnName}`, e)
+      return { success: false, error: e.message }
+    }
   })
 
   registerHandler('ai.getAIConfig', async () => {

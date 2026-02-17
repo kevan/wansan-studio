@@ -13,8 +13,6 @@ interface GridControlBarProps {
   filterState: FilterState
   setFilterState: (f: FilterState | ((prev: FilterState) => FilterState)) => void
   availableColumns: ColumnSchema[]
-  filterError: string | null
-  setFilterError: (e: string | null) => void
   
   // Toolbar Props
   isSidebarOpen: boolean
@@ -27,8 +25,6 @@ export function GridControlBar({
   filterState,
   setFilterState,
   availableColumns,
-  filterError,
-  setFilterError,
   isSidebarOpen,
   setIsSidebarOpen,
 }: GridControlBarProps): JSX.Element {
@@ -60,7 +56,7 @@ export function GridControlBar({
       size="sm" 
       className="h-7 text-[10px] gap-1.5 px-2 rounded-full border border-dashed border-zinc-200 hover:border-indigo-300 hover:text-indigo-600 transition-all"
     >
-      <Plus className="w-3 h-3" />
+      <Plus className="w-3.5 h-3.5" />
       Add Filter
     </Button>
   )
@@ -117,12 +113,8 @@ export function GridControlBar({
                 tableName={tableName}
                 columns={columns}
                 filterState={filterState}
-                onChange={(next) => {
-                  setFilterError(null)
-                  setFilterState(next)
-                }}
+                onChange={setFilterState}
                 trigger={chipTrigger}
-                errorMessage={filterError}
               />
             )
           })}
@@ -131,24 +123,11 @@ export function GridControlBar({
             tableName={tableName}
             columns={columns}
             filterState={filterState}
-            onChange={(next) => {
-              setFilterError(null)
-              setFilterState(next)
-            }}
+            onChange={setFilterState}
             trigger={filterTrigger}
-            errorMessage={filterError}
           />
 
-          {filterError && (
-            <div className="flex items-center gap-2 px-2 py-0.5 rounded bg-red-50 text-red-600 text-[10px] font-medium animate-in fade-in slide-in-from-left-2">
-              <span className="truncate max-w-[200px]">{filterError}</span>
-              <button onClick={() => setFilterError(null)} className="hover:text-red-800">
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          )}
-
-          {allConditions.length > 0 && !filterError && (
+          {allConditions.length > 0 && (
             <Button 
               variant="ghost" 
               size="sm" 

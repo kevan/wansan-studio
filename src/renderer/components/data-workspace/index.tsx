@@ -6,7 +6,6 @@ import {
   Database,
   Hash,
   Info,
-  Sparkles,
   Plus,
   GitMerge,
   RefreshCw,
@@ -23,7 +22,6 @@ import { useWizardStore } from '@/stores/useWizardStore'
 import { useProGate } from '@/hooks/use-pro-gate'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs'
 import { ColumnsView } from './columns-view'
-import { MetricsView } from './metrics-view'
 import { RelationsView } from './relations-view'
 
 export function DataWorkspace() {
@@ -39,7 +37,7 @@ export function DataWorkspace() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showLineage, setShowLineage] = useState(false)
   const [activeTab, setActiveTab] = useState<
-    'data' | 'fields' | 'metrics' | 'relations'
+    'data' | 'fields' | 'relations'
   >('data')
   const [pendingExtractCol, setPendingExtractCol] = useState<any>(null)
 
@@ -172,13 +170,6 @@ export function DataWorkspace() {
                 {t('columns')}
               </TabsTrigger>
               <TabsTrigger
-                value="metrics"
-                className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2 text-zinc-400 data-[state=active]:text-indigo-600 transition-all"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                {t('metrics')}
-              </TabsTrigger>
-              <TabsTrigger
                 value="relations"
                 className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 text-xs font-bold gap-2 text-zinc-400 data-[state=active]:text-indigo-600 transition-all"
               >
@@ -207,14 +198,6 @@ export function DataWorkspace() {
                 file={currentFile}
                 initialExtractColumn={pendingExtractCol}
               />
-            </div>
-          </TabsContent>
-          <TabsContent
-            value="metrics"
-            className="flex-1 min-h-0 m-0 focus-visible:outline-none overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-950/30 relative"
-          >
-            <div className="absolute inset-0 m-0 p-4 overflow-auto custom-scrollbar">
-              <MetricsView file={currentFile} />
             </div>
           </TabsContent>
           <TabsContent

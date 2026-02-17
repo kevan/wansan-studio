@@ -12,6 +12,7 @@ import { ReviewLayout } from './review/ReviewLayout'
 import { SemanticReviewPanel } from './review/SemanticReviewPanel'
 import { FileNode } from '@shared/types'
 import { Badge } from '@/components/ui/badge'
+import { getVisibleColumns, isSystemColumn } from '@shared/utils/schema-utils'
 
 interface SemanticReviewModalProps {
   isOpen: boolean
@@ -44,23 +45,43 @@ export function SemanticReviewModal({
   const [selectedMetrics, setSelectedMetrics] = useState<Set<number>>(new Set())
 
   useEffect(() => {
-    if (isOpen && result) {
+    if (isOpen && result && file) {
       const colKeys = new Set<string>()
       Object.entries(result.columns).forEach(([key, data]: [string, any]) => {
-        if (!data.confidence || data.confidence > 0.8) colKeys.add(key)
+        // [V1.7.5] Safety: Ignore system columns in AI response
+        if (isSystemColumn(key)) return
+
+        const existing = file.columns.find(c => c.name === key)?.semantic
+        
+        // Logic for auto-selecting AI suggestions:
+        // 1. If confidence is very high (> 0.9)
+        // 2. AND (it's a brand new suggestion OR user hasn't manually edited much)
+        // For simplicity: auto-select if confidence > 0.8 AND it's not a conflicting manual edit
+        const hasConflict = existing && (
+          (existing.aliases && existing.aliases.length > 0 && JSON.stringify(existing.aliases) !== JSON.stringify(data.aliases)) ||
+          (existing.description && existing.description !== data.description)
+        )
+
+        if (data.confidence > 0.8 && !hasConflict) {
+          colKeys.add(key)
+        }
       })
       setSelectedColumns(colKeys)
 
       const metricIndices = new Set<number>()
       ;(result.metrics || []).forEach((m, i) => {
-        if (m.confidence === undefined || m.confidence > 0.8) metricIndices.add(i)
+        // Check if a metric with same name already exists
+        const exists = (file.smartMetrics || []).some(em => em.name === m.name)
+        if (!exists && (m.confidence === undefined || m.confidence > 0.8)) {
+          metricIndices.add(i)
+        }
       })
       setSelectedMetrics(metricIndices)
       
       if (Object.keys(result.columns).length > 0) setActiveTab('columns')
       else if ((result.metrics || []).length > 0) setActiveTab('metrics')
     }
-  }, [isOpen, result])
+  }, [isOpen, result, file])
 
   const handleConfirm = () => {
     if (!result) return
@@ -119,6 +140,8 @@ export function SemanticReviewModal({
 
   // 2. Pending State (Pre-analysis confirmation)
   if (isOpen && !isAnalyzing && !result && file) {
+    const visibleCols = getVisibleColumns(file.columns)
+
     return (
       <ReviewLayout
         isOpen={isOpen}
@@ -146,20 +169,20 @@ export function SemanticReviewModal({
                 <span className="text-[11px] font-black uppercase tracking-widest text-zinc-400">数据表结构快照</span>
               </div>
               <Badge variant="secondary" className="bg-zinc-100 text-zinc-500 border-none font-bold text-[10px]">
-                {file.columns.length} 个字段 • {file.rowCount?.toLocaleString()} 行
+                {visibleCols.length} 个字段 • {file.rowCount?.toLocaleString()} 行
               </Badge>
             </div>
             
             <div className="grid grid-cols-2 gap-2 text-left">
-              {file.columns.slice(0, 6).map((col, i) => (
+              {visibleCols.slice(0, 6).map((col, i) => (
                 <div key={i} className="flex items-center gap-2 px-3 py-2 bg-white border border-zinc-100 rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
                   <div className="w-1.5 h-1.5 rounded-full bg-indigo-200 shrink-0" />
                   <span className="text-[11px] font-bold text-zinc-600 truncate" title={col.name}>{col.name}</span>
                 </div>
               ))}
-              {file.columns.length > 6 && (
+              {visibleCols.length > 6 && (
                 <div className="col-span-2 text-center pt-1">
-                  <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-tighter">以及另外 {file.columns.length - 6} 个字段...</span>
+                  <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-tighter">以及另外 {visibleCols.length - 6} 个字段...</span>
                 </div>
               )}
             </div>
@@ -201,6 +224,7 @@ export function SemanticReviewModal({
       }
     >
       <SemanticReviewPanel
+        file={file}
         result={result}
         activeTab={activeTab}
         onTabChange={setActiveTab}

@@ -20,6 +20,7 @@ import {
 } from '../ui/dropdown-menu'
 import { Sparkles, ArrowRight, Loader2, Play, MoreHorizontal, Save, Trash2 } from 'lucide-react'
 import { cn } from '@/utils/cn'
+import { getVisibleColumns } from '@shared/utils/schema-utils'
 import { ColumnSchema } from '@shared/types'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { SYSTEM_PRESETS_EN, SYSTEM_PRESETS_ZH } from '@/lib/ai-presets'
@@ -204,16 +205,15 @@ export function AIExtractorDialog({
                             <MoreHorizontal className="w-3.5 h-3.5 opacity-30 group-hover:opacity-60" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-56 rounded-2xl p-2 shadow-2xl border-none">
-                          <div className="px-2 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t('available_columns', 'Columns')}</div>
-                          <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-                              {columns.filter(c => c.name !== '_ws_row_id').map(c => (
-                                <DropdownMenuItem 
-                                  key={c.name} 
-                                  onClick={() => setSelectedColName(c.name)}
-                                  className={cn("rounded-xl py-2 px-3 gap-2", selectedColName === c.name && "bg-purple-50 text-purple-600 font-bold")}
-                                >
-                                  <div className={cn("w-2 h-2 rounded-full", selectedColName === c.name ? "bg-purple-500" : "bg-zinc-200")} />
+                                              <DropdownMenuContent align="start" className="w-56 rounded-2xl p-2 shadow-2xl border-none">
+                                                <div className="px-2 py-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{t('available_columns', 'Columns')}</div>
+                                                <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                                                    {getVisibleColumns(columns).map(c => (
+                                                      <DropdownMenuItem 
+                                                        key={c.name} 
+                                                        onClick={() => setSelectedColName(c.name)}
+                                                        className={cn("rounded-xl py-2 px-3 gap-2", selectedColName === c.name && "bg-purple-50 text-purple-600 font-bold")}
+                                                      >                                  <div className={cn("w-2 h-2 rounded-full", selectedColName === c.name ? "bg-purple-500" : "bg-zinc-200")} />
                                   {c.name}
                                 </DropdownMenuItem>
                               ))}

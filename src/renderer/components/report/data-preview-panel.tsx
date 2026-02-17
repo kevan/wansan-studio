@@ -12,6 +12,7 @@ import { useProjectStore } from '@/stores/useProjectStore'
 import { useTranslation } from 'react-i18next'
 import { Loader2, AlertCircle, CloudUpload } from 'lucide-react'
 import { ColumnSchema } from '@shared/types'
+import { getLogicalViewName } from '@shared/naming-utils'
 
 // Memoized Grid wrapper to prevent unnecessary remounts
 const MemoizedGrid = memo(function MemoizedGrid({
@@ -30,7 +31,7 @@ const MemoizedGrid = memo(function MemoizedGrid({
   onRunAIExtract?: (columnName: string) => void
 }) {
   // [V2.1] Always prefer the Enriched View (v_ prefix) to show AI fields, Metrics and Relations
-  const targetTable = `v_${tableName}`
+  const targetTable = getLogicalViewName(tableName)
   
   return (
     <VirtualDataGrid

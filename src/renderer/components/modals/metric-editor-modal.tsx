@@ -10,6 +10,7 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { ColumnType, FileNode, SmartMetric } from '@shared/types'
+import { getVisibleColumns } from '@shared/utils/schema-utils'
 import { useProjectStore } from '../../stores/useProjectStore'
 import {
   AlertCircle,
@@ -119,8 +120,7 @@ export function MetricEditorModal({
     groups.push({
       title: tAnalysis('smart_metric.current_table'),
       icon: Database,
-      columns: file.columns
-        .filter(col => col.name !== '_ws_row_id')
+      columns: getVisibleColumns(file.columns)
         .map(col => ({
           name: col.name,
           type: col.type,
@@ -137,8 +137,7 @@ export function MetricEditorModal({
         groups.push({
           title: `${tAnalysis('smart_metric.linked_via')} ${prefix}`,
           icon: Link2,
-          columns: targetFile.columns
-            .filter(col => col.name !== '_ws_row_id')
+          columns: getVisibleColumns(targetFile.columns)
             .map(col => ({
               name: getJoinedColumnName(prefix, col.name),
               type: col.type,

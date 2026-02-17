@@ -23,7 +23,13 @@ const SemanticResultSchema = z.object({
     sqlExpression: z.string(),
     description: z.string(),
     reason: z.string(),
-    confidence: z.number().min(0).max(1).optional()
+    confidence: z.number().min(0).max(1).optional(),
+    semantic: z.object({
+      aliases: z.array(z.string()),
+      businessType: z.string(),
+      usageType: z.enum(['Dimension', 'Measure', 'Attribute']).optional(),
+      defaultAggregation: z.enum(['SUM', 'AVG', 'COUNT', 'MAX', 'NONE']).optional(),
+    }).optional()
   })).optional()
 })
 
@@ -38,22 +44,31 @@ export async function analyzeSemantics(
   columns: ColumnSchema[],
   language: string = 'Chinese (Simplified)'
 ): Promise<SemanticAnalysisResult> {
-  // Use existing sample values from ColumnSchema
+  // Use existing sample values and semantic info
   const columnContext = columns.map((col) => {
     return {
       name: col.name,
       type: col.type,
-      samples: col.sampleValues?.slice(0, 5) || []
+      samples: col.sampleValues?.slice(0, 5) || [],
+      existingSemantic: col.semantic || null,
+      source: col.sourceType || 'raw'
     }
   })
 
   const systemPrompt = `You are a Data Analyst and Business Intelligence expert. 
 Your task is to analyze a database table schema and sample data to provide semantic metadata and PROACTIVE insights.
 
+### CORE PRINCIPLES:
+1. **RESPECT EXISTING METADATA**: If a column already has "existingSemantic" (aliases, description), your goal is to REFINE or ENHANCE it. Do not change it significantly unless it is clearly wrong.
+2. **INCREMENTAL IMPROVEMENT**: Focus on filling gaps (e.g., adding missing descriptions or aggregation hints).
+3. **SYSTEM ISOLATION**: Ignore any system columns starting with \`_ws_\` (already filtered but be aware).
+
 ### STEP 1: Column Analysis
 For each column, you must:
 1. Infer its business meaning (Description). **IMPORTANT**: The description MUST be in ${language}.
-2. Suggest 2-3 natural language synonyms/aliases in ${language}.
+2. Suggest 2-3 natural language synonyms/aliases in ${language}. 
+   - **IMPORTANT**: The FIRST alias MUST be the "Primary Display Name" (most professional and concise). 
+   - Subsequent aliases should be synonyms to help the AI match user intents.
 3. Assign a high-level Business Category (businessType). Choose EXACTLY one from this list:
    - ID: Technical primary/foreign keys (e.g. 1, 2, UUID). Used for JOINs.
    - Code: Business-facing identifiers (e.g. SKU-001, Order_No). Used for searching and labels.
@@ -80,17 +95,12 @@ Identify business metrics that can be calculated **FOR EACH ROW** using columns 
 - **STRICT FORBIDDEN**: NEVER use \`SELECT\`, \`FROM\`, \`JOIN\`, or subqueries.
 - **ROBUSTNESS**: Use \`NULLIF(col, 0)\` to prevent division-by-zero errors in ratio calculations.
 - **NAMING**: Use professional business terms in ${language} (e.g., "毛利率", "单均价").
-- **CONFIDENCE**: Only suggest metrics where you have high confidence (> 0.7).
-
-- **Examples**:
-    - If table has \`quantity\` and \`unit_price\`, suggest: \`"quantity" * "unit_price"\`.
-    - If table has \`profit\` and \`revenue\`, suggest: \`"profit" / NULLIF("revenue", 0)\`.
-    - If table has \`birth_date\`, suggest: \`date_diff('year', "birth_date", current_date())\`.
+- **METRIC SEMANTICS**: For every suggested metric, provide its own "semantic" metadata (aliases, businessType, usageType).
 
 OUTPUT RULE:
 1. Return ONLY a valid JSON object matching the requested schema.
 2. All explanations, names, and descriptions MUST be in ${language}.
-3. **CRITICAL**: The "businessType", "usageType", and "defaultAggregation" MUST be exact strings from the provided lists. DO NOT use slashes or combine categories.
+3. **CRITICAL**: The "businessType", "usageType", and "defaultAggregation" MUST be exact strings from the provided lists.
 4. **CRITICAL**: The "sqlExpression" in "metrics" MUST be a valid row-level SQL fragment. ALWAYS wrap column names in double quotes (").
 
 Example Output Structure:
@@ -103,7 +113,7 @@ Example Output Structure:
       "usageType": "Measure",
       "defaultAggregation": "SUM",
       "confidence": 0.95,
-      "reason": "字段名含'amt'且数据为数值，符合销售金额特征"
+      "reason": "..."
     }
   },
   "metrics": [
@@ -111,8 +121,14 @@ Example Output Structure:
       "name": "利润",
       "sqlExpression": "\\"revenue\\" - \\"cost\\"",
       "description": "该笔交易的净利润",
-      "reason": "检测到表中同时包含收入和成本字段，可计算单行利润",
-      "confidence": 0.9
+      "reason": "...",
+      "confidence": 0.9,
+      "semantic": {
+        "aliases": ["净利", "Net Profit"],
+        "businessType": "Money",
+        "usageType": "Measure",
+        "defaultAggregation": "SUM"
+      }
     }
   ]
 }

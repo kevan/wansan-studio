@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useProjectStore } from '@/stores/useProjectStore'
+import { getSidecarTableName, getLogicalViewName } from '@shared/naming-utils'
 
 export function useDataRehydrate() {
   const isProjectLoaded = useProjectStore(s => s.isProjectLoaded)
@@ -31,7 +32,7 @@ export function useDataRehydrate() {
             // 1. Not in validBaseTables
             // 2. Not a sidecar table of a valid base table
             const isKnownBase = validBaseTables.has(t)
-            const isSidecarOfKnown = Array.from(validBaseTables).some(bt => t === `${bt}_ext_ai`)
+            const isSidecarOfKnown = Array.from(validBaseTables).some(bt => t === getSidecarTableName(bt))
             return !isKnownBase && !isSidecarOfKnown
           })
 
@@ -39,7 +40,7 @@ export function useDataRehydrate() {
             console.log(`[Rehydrate] Found ${orphans.length} orphaned tables. Cleaning up...`, orphans)
             for (const table of orphans) {
               await window.electronAPI.deleteTable(table)
-              await window.electronAPI.runSQL(`DROP VIEW IF EXISTS "v_${table}"`)
+              await window.electronAPI.runSQL(`DROP VIEW IF EXISTS "${getLogicalViewName(table)}"`)
             }
           }
         }

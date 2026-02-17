@@ -45,6 +45,8 @@ const electronAPI: ElectronAPI = {
     ipcRenderer.invoke('ai.aiPreviewExtract', params),
   aiBatchExtract: (params: any) =>
     ipcRenderer.invoke('ai.aiBatchExtract', params),
+  dropAIColumn: (params: any) =>
+    ipcRenderer.invoke('ai.dropAIColumn', params),
 
   // Token Audit
   getTokenConfig: () => ipcRenderer.invoke('audit.getTokenConfig'),

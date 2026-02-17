@@ -1,6 +1,6 @@
 import { ColumnSchema, ColumnType, FileNode } from '@shared/types'
 import { Relation } from '@shared/types/project'
-import { getJoinedColumnName, parseJoinedColumnName } from '@shared/naming-utils'
+import { getJoinedColumnName, parseJoinedColumnName, getSidecarTableName, getLogicalViewName } from '@shared/naming-utils'
 import { normalizeDuckDBType } from '@shared/type-utils'
 
 /**
@@ -84,7 +84,7 @@ function resolveExpression(expression: string, colMap: Map<string, string>): str
  * Checks for sidecar table (AI Augmentation) and returns relevant SQL parts.
  */
 async function getSidecarParts(tableName: string) {
-  const sidecarName = `${tableName}_ext_ai`
+  const sidecarName = getSidecarTableName(tableName)
   const result = { selects: [] as string[], join: '' }
   const colMapUpdates = new Map<string, string>()
 
@@ -156,7 +156,7 @@ export const DuckDBViewManager = {
       }
     }
 
-    const viewName = `v_${file.tableName}`
+    const viewName = getLogicalViewName(file.tableName)
     const sql = `
       CREATE OR REPLACE VIEW "${viewName}" AS
       SELECT
