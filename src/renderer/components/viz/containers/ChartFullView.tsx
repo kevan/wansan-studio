@@ -177,6 +177,13 @@ export function ChartFullView() {
     }))
   }
 
+  const handleSplitByChange = (value: string) => {
+    setLocalConfig(prev => ({
+      ...(prev || effectiveConfig || {}),
+      split_by: value || null,
+    }))
+  }
+
   const handleSwapAxes = () => {
     if (!effectiveConfig?.x_axis || yAxisValues.length === 0) return
     setLocalConfig(prev => ({
@@ -501,6 +508,26 @@ export function ChartFullView() {
                           {col}
                         </option>
                       ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-zinc-500 ml-1 uppercase tracking-tight">
+                      {t('split_by_label')}
+                    </label>
+                    <select
+                      value={effectiveConfig?.split_by ?? ''}
+                      onChange={e => handleSplitByChange(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-xs font-bold text-zinc-700 focus:ring-2 focus:ring-indigo-100 focus:bg-white outline-none transition-all cursor-pointer"
+                    >
+                      <option value="">{t('reset')}</option>
+                      {availableColumns
+                        .filter(col => col !== effectiveConfig?.x_axis)
+                        .map(col => (
+                          <option key={col} value={col}>
+                            {col}
+                          </option>
+                        ))}
                     </select>
                   </div>
 

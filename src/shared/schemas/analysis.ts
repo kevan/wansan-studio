@@ -35,6 +35,11 @@ export const AnalysisResultSchema = z.object({
         .union([z.string(), z.array(z.string())])
         .nullable()
         .optional(),
+      split_by: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('The column used to split a single metric into multiple series, e.g. "Category"'),
     })
     .optional(),
   reasoning: z.string().optional(),

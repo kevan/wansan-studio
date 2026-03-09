@@ -40,7 +40,12 @@ const CALCULATION_RULES = `
 const VISUALIZATION_RULES = `
 ### 📊 VISUALIZATION RULES
 1.  **AUTO-DETECT CHART**: 'bar', 'line', 'pie', 'scatter', 'kpi', 'table'.
-2.  **CONFIG**: Return \`x_axis\`, \`y_axis\`, \`series_name\`.
+2.  **CONFIG**: Return \`x_axis\`, \`y_axis\`, \`split_by\`.
+3.  **MULTI-DIMENSION COMPARISON (BREAKDOWN)**:
+    -   If the user asks to compare a metric across multiple categories over time (e.g., "Monthly sales by region"), use the **Long Data Format**.
+    -   **SQL**: \`SELECT "date", "region", sum("sales") FROM ... GROUP BY 1, 2 ORDER BY 1\`
+    -   **Config**: \`x_axis: "date", y_axis: "sum(sales)", split_by: "region"\`.
+    -   This will create a multi-series chart where each "region" is a separate line/bar.
 `
 
 // --- 2. DYNAMIC GENERATORS ---
@@ -103,7 +108,11 @@ Return a **raw JSON object**. Do not wrap in markdown code blocks.
   "title": "String (Short title)",
   "summary": "String (1-sentence insight)",
   "viz_type": "bar" | "line" | "pie" | "scatter" | "table" | "kpi",
-  "viz_config": { ... },
+  "viz_config": {
+    "x_axis": "column_name",
+    "y_axis": "column_name" | ["col1", "col2"],
+    "split_by": "breakdown_column_name (Optional)"
+  },
   "reasoning": "String (Brief explanation)",
   "suggestions": ["String", "String", "String"] (Generate ${suggestionCount} follow-up questions),
   "is_template": boolean,

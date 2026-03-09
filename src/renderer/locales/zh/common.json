@@ -397,6 +397,7 @@
   "data_sources_root": "数据源",
   "relationships_root": "关联关系",
   "data_detail": "数据详情",
+  "split_by_label": "对比维度",
   "breakdown_by": "按维度下钻...",
   "breakdown_analysis": "按 {{dimension}} 下钻",
   "ai_insight": "业务洞察",

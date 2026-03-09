@@ -227,12 +227,18 @@ export function buildEChartsOption(
 ): EChartsOption {
   const x_axis = config?.x_axis
   const y_axis = config?.y_axis
+  const split_by = config?.split_by
   const { series_name: _series_name } = config || {}
+  
   const yAxes = Array.isArray(y_axis)
     ? y_axis.filter(Boolean)
     : y_axis
       ? [y_axis]
       : []
+
+  const getSeriesName = (index: number) => {
+    return yAxes[index]
+  }
 
   const hasData = Array.isArray(data) && data.length > 0
   const hasAxes = !!x_axis && yAxes.length > 0
@@ -243,46 +249,88 @@ export function buildEChartsOption(
     return {}
   }
 
-  const xData = data.map(item => item[x_axis])
+  // --- Multi-Dimension Split Logic (Breakdown) ---
+  let finalXData: any[] = []
+  let finalSeries: echarts.SeriesOption[] = []
+  const useSplit = !!split_by && data.length > 0 && split_by in data[0]
 
-  // Check if X-axis should be numeric (standard scatter) or categorical (dot plot)
+  if (useSplit && yAxes.length > 0) {
+    const yKey = yAxes[0]
+    // 1. Get unique X values and Split values
+    // We preserve the order from the original data as much as possible
+    const xValues: any[] = []
+    const xSeen = new Set()
+    const splitValues: any[] = []
+    const splitSeen = new Set()
+
+    data.forEach(row => {
+      const xv = row[x_axis]
+      const sv = row[split_by!]
+      if (!xSeen.has(xv)) {
+        xSeen.add(xv)
+        xValues.push(xv)
+      }
+      if (!splitSeen.has(sv)) {
+        splitSeen.add(sv)
+        splitValues.push(sv)
+      }
+    })
+
+    // 2. Map data: X -> Split -> Y
+    const lookup = new Map<string, Map<string, number>>()
+    data.forEach(row => {
+      const xv = String(row[x_axis])
+      const sv = String(row[split_by!])
+      const yv = Number(row[yKey])
+      if (!lookup.has(xv)) lookup.set(xv, new Map())
+      lookup.get(xv)!.set(sv, yv)
+    })
+
+    finalXData = xValues
+    finalSeries = splitValues.map(sv => ({
+      name: String(sv),
+      type: (type === 'area' ? 'line' : type === 'combo' ? 'bar' : type) as any,
+      data: xValues.map(xv => lookup.get(String(xv))?.get(String(sv)) ?? null),
+      areaStyle: type === 'area' ? {} : undefined,
+      emphasis: { focus: 'series' },
+    }))
+  } else {
+    // Standard logic (Multiple Y columns)
+    finalXData = data.map(item => item[x_axis])
+    
+    finalSeries =
+      type === 'scatter'
+        ? yAxes.map((key, index) => ({
+            name: getSeriesName(index),
+            type: 'scatter',
+            data: data.map(item => [item[x_axis], item[key]]),
+            emphasis: { focus: 'series' },
+            symbolSize: 10,
+          }))
+        : yAxes.map((key, index) => ({
+            name: getSeriesName(index),
+            type: (type === 'area' ? 'line' : type === 'combo' ? 'bar' : type) as any,
+            data: data.map(item => item[key]),
+            areaStyle: type === 'area' ? {} : undefined,
+            emphasis: { focus: 'series' },
+          }))
+  }
+
+  // --- Base Option Assembly ---
   const isXAxisNumeric =
     type === 'scatter' &&
-    xData.every(val => {
+    finalXData.every(val => {
       if (val === null || val === undefined || val === '') return true
       const num = Number(val)
       return !isNaN(num) && isFinite(num)
     })
 
-  const getSeriesName = (index: number) => {
-    // Always use the actual y-axis column name for correct tooltip display
-    // The series_name config is often misleading or generic
-    return yAxes[index]
-  }
-
-  const baseSeries: echarts.SeriesOption[] =
-    type === 'scatter'
-      ? yAxes.map((key, index) => ({
-          name: getSeriesName(index),
-          type: 'scatter',
-          // If X-axis is numeric, we map [x, y]. ECharts handles strings on category axis automatically.
-          data: data.map(item => [item[x_axis], item[key]]),
-          emphasis: { focus: 'series' },
-          symbolSize: 10,
-        }))
-      : yAxes.map((key, index) => ({
-          name: getSeriesName(index),
-          type: (type === 'area'
-            ? 'line'
-            : type === 'combo'
-              ? 'bar'
-              : type) as any,
-          data: data.map(item => item[key]),
-          areaStyle: type === 'area' ? {} : undefined,
-          // itemStyle: { color: '#4F46E5' } // Removed to allow theme colors to take effect
-        }))
-
   const baseOption: EChartsOption = {
+    legend: {
+      show: finalSeries.length > 1,
+      top: 0,
+      type: 'scroll',
+    },
     tooltip: {
       trigger:
         type === 'pie' || type === 'radar' || (type === 'scatter' && isXAxisNumeric)
@@ -293,23 +341,22 @@ export function buildEChartsOption(
       left: '2%',
       right: '2%',
       bottom: '4%',
-      top: '12%',
+      top: finalSeries.length > 1 ? '16%' : '12%',
       containLabel: true,
     },
     xAxis:
       type === 'scatter'
         ? {
             type: isXAxisNumeric ? ('value' as const) : ('category' as const),
-            data: isXAxisNumeric ? undefined : xData,
-            scale: true, // Optimizes view for numeric axes
+            data: isXAxisNumeric ? undefined : finalXData,
+            scale: true,
             axisLabel: {
               interval: 'auto',
-              // rotate: 45, // Handled by theme
               fontSize: 10,
               hideOverlap: true,
             },
             splitLine: {
-              show: isXAxisNumeric, // Show grid for numeric scatter
+              show: isXAxisNumeric,
               lineStyle: {
                 type: 'dashed',
                 color: '#F3F4F6',
@@ -319,10 +366,9 @@ export function buildEChartsOption(
         : {
             type: 'category' as const,
             triggerEvent: true,
-            data: xData,
+            data: finalXData,
             axisLabel: {
               interval: 'auto',
-              // rotate: 45, // Handled by theme
               fontSize: 10,
               hideOverlap: true,
             },
@@ -338,16 +384,18 @@ export function buildEChartsOption(
       splitLine: {
         lineStyle: {
           type: 'dashed',
-          color: '#F3F4F6', // gray-100
+          color: '#F3F4F6',
         },
       },
     },
-    series: baseSeries,
+    series: finalSeries,
   }
 
+  // Handle specialized charts
   if (type === 'pie' || type === 'rose') {
     return {
       tooltip: { trigger: 'item' },
+      legend: { show: true, top: 0, type: 'scroll' },
       series: [
         {
           name: yAxes[0],
@@ -370,8 +418,9 @@ export function buildEChartsOption(
     }
   }
 
-  // Radar Chart: Each row is a data point, each y_axis is an indicator
+  // Radar Chart: ... (Keep existing logic or update if needed, but Radar already has some comparison logic)
   if (type === 'radar') {
+    // ... existing radar logic
     // Heuristic: If we have fewer than 3 metrics (Y-axes), standard radar chart logic (using metrics as axes)
     // produces a line or a flat shape. In this case, we TRANSPOSE the data:
     // Use X-Axis values (e.g., Months) as the Radar Axes (Indicators), and Y-Axis columns as Series.
@@ -520,7 +569,7 @@ export function buildEChartsOption(
       },
       xAxis: {
         type: 'category' as const,
-        data: xData,
+        data: finalXData,
         axisLabel: { fontSize: 10 },
       },
       yAxis: [

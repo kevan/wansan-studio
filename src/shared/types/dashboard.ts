@@ -44,6 +44,7 @@ export interface ReportData {
     x_axis?: string | null
     y_axis?: string | string[] | null
     series_name?: string | string[]
+    split_by?: string | null
     show_labels?: boolean
   }
   timestamp?: number
