@@ -99,7 +99,7 @@ export function MagicInput({
   // 4. Initialize local state when session changes
   useEffect(() => {
     setValue(activeSession?.inputDraft ?? '')
-  }, [activeSessionId])
+  }, [activeSessionId, activeSession?.inputDraft])
 
   const [cursorPosition, setCursorPosition] = useState(0)
   const [mention, setMention] = useState<MentionState>({ active: false })
@@ -448,13 +448,15 @@ export function MagicInput({
     t,
     resetChat,
     addToast,
-    messages,
     handleExportMarkdown,
+    handleExportExcel,
     isActivated,
     setInputDraft,
     tCommon,
     refreshSessionWidgets,
     setRefreshing,
+    openSqlLab,
+    addManualSqlMessage,
   ])
 
   const filteredCommandPrompts = useMemo(() => {

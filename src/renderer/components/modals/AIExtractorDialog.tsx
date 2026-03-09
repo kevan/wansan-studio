@@ -101,7 +101,7 @@ export function AIExtractorDialog({
         setSelectedColName(textCol.name)
       }
     }
-  }, [isOpen, initialCol, columns])
+  }, [isOpen, initialCol, columns, selectedColName])
 
   // Load sample data when active column changes
   useEffect(() => {

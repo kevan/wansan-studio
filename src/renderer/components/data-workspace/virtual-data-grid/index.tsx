@@ -209,7 +209,7 @@ export function VirtualDataGrid({
     return () => {
       container.removeEventListener('scroll', onScroll)
     }
-  }, [])
+  }, [logGrid])
 
   // Re-check load-more after data changes (e.g. viewport still not filled after a page loads)
   useEffect(() => {

@@ -123,6 +123,7 @@ export function useProjectIO() {
       loadProjectToStore,
       setProjectPath,
       isActivated,
+      recentProjectPaths,
       addRecentProject,
       checkGate,
     ]

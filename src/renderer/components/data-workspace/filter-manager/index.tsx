@@ -150,7 +150,7 @@ export function FilterManager({ tableName, columns, filterState, onChange, error
       delete next[id]
       return next
     })
-  }, [columns])
+  }, [])
 
   const handleRemoveCondition = React.useCallback((id: string) => {
     setDraftState(prev => ({

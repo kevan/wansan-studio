@@ -77,7 +77,7 @@ export function FinalizeStep() {
       mapping: currentTask.columnMapping,
       source: currentTask.sourceName
     })
-  }, [currentTask?.filePath, currentTask?.tempFilePath, pkNames, currentTask?.columnMapping, currentTask?.sourceName])
+  }, [currentTask, pkNames])
 
   // Trigger Pre-check (for Append/Merge Mode)
   useEffect(() => {
