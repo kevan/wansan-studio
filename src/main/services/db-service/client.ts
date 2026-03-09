@@ -8,8 +8,8 @@ export class NativeDBClient {
   private pendingRequests = new Map<
     string,
     {
-      resolve: (value: any) => void // Keep any for resolve/reject as they handle various response types
-      reject: (reason?: any) => void
+      resolve: (value: unknown) => void
+      reject: (reason?: unknown) => void
       returnFull?: boolean
     }
   >()
@@ -127,13 +127,13 @@ export class NativeDBClient {
       )
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise<DBResponse>((resolve, reject) => {
       const reqId = uuidv4()
       this.pendingRequests.set(reqId, {
         resolve,
         reject,
         returnFull: true,
-      } as any)
+      })
       this.child?.postMessage({ reqId, type, payload } as DBRequest)
     })
   }

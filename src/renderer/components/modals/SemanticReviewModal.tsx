@@ -10,9 +10,12 @@ import {
 import { useTranslation } from 'react-i18next'
 import { ReviewLayout } from './review/ReviewLayout'
 import { SemanticReviewPanel } from './review/SemanticReviewPanel'
-import { FileNode } from '@shared/types'
+import { ColumnSemantic, FileNode, SemanticAnalysisResult } from '@shared/types'
 import { Badge } from '@/components/ui/badge'
 import { getVisibleColumns, isSystemColumn } from '@shared/utils/schema-utils'
+
+type ReviewColumn = ColumnSemantic & { confidence?: number }
+type ReviewMetric = NonNullable<SemanticAnalysisResult['metrics']>[number] & { confidence?: number }
 
 interface SemanticReviewModalProps {
   isOpen: boolean
@@ -20,14 +23,11 @@ interface SemanticReviewModalProps {
   onCancel: () => void
   onStartAnalysis: () => void
   onConfirm: (data: {
-    selectedColumns: Record<string, any>
-    selectedMetrics: any[]
+    selectedColumns: Record<string, ColumnSemantic>
+    selectedMetrics: ReviewMetric[]
   }) => void
   isAnalyzing: boolean
-  result: {
-    columns: Record<string, any>
-    metrics?: any[]
-  } | null
+  result: SemanticAnalysisResult | null
 }
 
 export function SemanticReviewModal({
@@ -47,7 +47,8 @@ export function SemanticReviewModal({
   useEffect(() => {
     if (isOpen && result && file) {
       const colKeys = new Set<string>()
-      Object.entries(result.columns).forEach(([key, data]: [string, any]) => {
+      Object.entries(result.columns).forEach(([key, rawData]) => {
+        const data = rawData as ReviewColumn
         // [V1.7.5] Safety: Ignore system columns in AI response
         if (isSystemColumn(key)) return
 
@@ -69,7 +70,8 @@ export function SemanticReviewModal({
       setSelectedColumns(colKeys)
 
       const metricIndices = new Set<number>()
-      ;(result.metrics || []).forEach((m, i) => {
+      ;(result.metrics || []).forEach((metric, i) => {
+        const m = metric as ReviewMetric
         // Check if a metric with same name already exists
         const exists = (file.smartMetrics || []).some(em => em.name === m.name)
         if (!exists && (m.confidence === undefined || m.confidence > 0.8)) {
@@ -85,7 +87,7 @@ export function SemanticReviewModal({
 
   const handleConfirm = () => {
     if (!result) return
-    const filteredColumns: Record<string, any> = {}
+    const filteredColumns: Record<string, ColumnSemantic> = {}
     selectedColumns.forEach(colName => {
       filteredColumns[colName] = result.columns[colName]
     })

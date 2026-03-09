@@ -1,6 +1,12 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FileNode, ColumnSchema, SmartMetric } from '@shared/types'
+import {
+  FileNode,
+  ColumnSchema,
+  ColumnSemantic,
+  SemanticAnalysisResult,
+  SmartMetric,
+} from '@shared/types'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { Edit2, Eye, EyeOff, Key, Sparkles, RefreshCcw, Calculator, Trash2 } from 'lucide-react'
@@ -20,6 +26,16 @@ interface ColumnsViewProps {
   initialExtractColumn?: ColumnSchema | null
 }
 
+type BatchCompletePayload = {
+  tableName: string
+  columnName: string
+  targetColumnName: string
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown error'
+}
+
 export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
   const { t, i18n } = useTranslation(['common', 'analysis'])
   const toast = useToastStore()
@@ -35,7 +51,8 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
   const [activeHint, setActiveHint] = useState<{ prompt: string; targetColumnName: string } | null>(null)
 
   const [showReviewModal, setShowReviewModal] = useState(false)
-  const [analysisResult, setAnalysisResult] = useState<any>(null)
+  const [analysisResult, setAnalysisResult] =
+    useState<SemanticAnalysisResult | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   // Delete Confirmation State
@@ -54,7 +71,7 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
 
   // [V1.7.5] Auto-refresh when AI extraction completes
   React.useEffect(() => {
-    const removeListener = window.electronAPI.onBatchComplete((data: any) => {
+    const removeListener = window.electronAPI.onBatchComplete((data: BatchCompletePayload) => {
        if (data.tableName === file.tableName) {
           console.log('[ColumnsView] AI Batch Complete, refreshing metadata...')
           refreshMetadata(file.id)
@@ -120,8 +137,8 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
     aliases: string[]
     description: string
     businessType: string
-    usageType?: any
-    defaultAggregation?: any
+    usageType?: ColumnSemantic['usageType']
+    defaultAggregation?: ColumnSemantic['defaultAggregation']
   }) => {
     if (!editingColumn) return
     updateColumnSemantic(file.id, editingColumn.name, data)
@@ -156,10 +173,10 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
             type: 'error',
           })
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
         toast.addToast({
             title: 'Error',
-            description: e.message,
+            description: getErrorMessage(e),
             type: 'error',
           })
     }
@@ -187,11 +204,11 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
         throw new Error(aiRes.error || 'AI analysis failed')
 
       setAnalysisResult(aiRes.data)
-    } catch (e: any) {
+    } catch (e: unknown) {
       setShowReviewModal(false)
       toast.addToast({
         title: t('analysis_failed', 'Analysis Failed'),
-        description: e.message,
+        description: getErrorMessage(e),
         type: 'error',
       })
     } finally {
@@ -200,13 +217,13 @@ export function ColumnsView({ file, initialExtractColumn }: ColumnsViewProps) {
   }
 
   const handleApplySemanticReview = async (data: {
-    selectedColumns: Record<string, any>
-    selectedMetrics: any[]
+    selectedColumns: Record<string, ColumnSemantic>
+    selectedMetrics: NonNullable<SemanticAnalysisResult['metrics']>
   }) => {
     const { selectedColumns, selectedMetrics } = data
 
     Object.entries(selectedColumns).forEach(([colName, semantic]) => {
-      updateColumnSemantic(file.id, colName, semantic as any)
+      updateColumnSemantic(file.id, colName, semantic)
     })
 
     for (const m of selectedMetrics) {

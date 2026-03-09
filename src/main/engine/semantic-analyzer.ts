@@ -3,10 +3,23 @@ import { ColumnSchema, SemanticAnalysisResult } from '@shared/types'
 import { callAIAndParse } from './ai-utils'
 import { z } from 'zod'
 
+const businessTypes = [
+  'ID',
+  'Code',
+  'Money',
+  'Category',
+  'Date',
+  'Time',
+  'Quantity',
+  'Location',
+  'Text',
+  'Other',
+] as const
+
 const SemanticResultSchema = z.object({
   columns: z.record(z.string(), z.object({
     aliases: z.array(z.string()),
-    businessType: z.enum(['ID', 'Code', 'Money', 'Category', 'Date', 'Time', 'Quantity', 'Location', 'Text', 'Other'] as any),
+    businessType: z.enum(businessTypes),
     description: z.string(),
     usageType: z.enum(['Dimension', 'Measure', 'Attribute']).optional(),
     defaultAggregation: z.enum(['SUM', 'AVG', 'COUNT', 'MAX', 'NONE']).optional(),

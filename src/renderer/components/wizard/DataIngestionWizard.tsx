@@ -15,9 +15,14 @@ import { useSettingsStore } from '../../stores/useSettingsStore'
 import { Analytics } from '../../services/analytics'
 import { useProGate } from '@/hooks/use-pro-gate'
 import { sanitizeTableName, cleanDisplayName } from '@shared/naming-utils'
+import type { ColumnSchema, DataSourceConfig } from '@shared/types'
 
 const TRIAL_ROW_LIMIT = 50000
 const TRIAL_FILE_LIMIT = 3
+
+function getErrorStack(error: unknown): string {
+  return error instanceof Error && error.stack ? error.stack : String(error)
+}
 
 export function DataIngestionWizard() {
   const {
@@ -156,7 +161,7 @@ export function DataIngestionWizard() {
             task.finalDisplayName || cleanDisplayName(task.fileName, task.sourceName)
 
           // Construct structured source config
-          const sourceConfig: any = task.connectionId ? {
+          const sourceConfig: DataSourceConfig = task.connectionId ? {
             type: 'database',
             connectionId: task.connectionId,
             table: task.originalTableName || '',
@@ -171,7 +176,7 @@ export function DataIngestionWizard() {
           // Use reloadFile to safely update schema and validate relations
           useProjectStore.getState().reloadFile(targetFile.id, {
             lastModified: Date.now(),
-            newColumns: columns as any,
+            newColumns: columns as ColumnSchema[],
           })
 
           // Update other metadata that reloadFile doesn't handle
@@ -229,7 +234,7 @@ export function DataIngestionWizard() {
             task.finalDisplayName || cleanDisplayName(task.fileName, task.sourceName)
 
           // Construct structured source config
-          const sourceConfig: any = task.connectionId ? {
+          const sourceConfig: DataSourceConfig = task.connectionId ? {
             type: 'database',
             connectionId: task.connectionId,
             table: task.originalTableName || '',
@@ -246,7 +251,7 @@ export function DataIngestionWizard() {
             tableName: finalTableName,
             source: sourceConfig, // [REFACTOR]
             status: 'ready',
-            columns: columns as any,
+            columns: columns as ColumnSchema[],
             rowCount: result.data.rowCount,
           })
           addedFileIds.push(fileId)
@@ -292,14 +297,14 @@ export function DataIngestionWizard() {
       })
 
       close()
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Final ingestion failed', e)
       useUIStore
         .getState()
         .showError(
           t('wizard.ingestion_failed'),
           t('chat:error_processing_request'),
-          e.stack || String(e)
+          getErrorStack(e)
         )
     } finally {
       setProcessing(false)

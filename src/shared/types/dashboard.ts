@@ -21,7 +21,7 @@ export interface InsightGenerationContext {
   chartTitle: string
   chartType: string
   aggregatedData: Array<Record<string, unknown>>
-  vizConfig?: any
+  vizConfig?: Record<string, unknown>
   sql?: string
   summary?: string
   language?: 'en' | 'zh'

@@ -1,41 +1,58 @@
 import type {
+  ColumnSemantic,
+  DataSourceConfig,
+  DomainRule,
+  FileNode,
+  GridDisplayState,
+  LocalFileSource,
+  SmartMetric,
+  SyncStatus,
+  TableRelation,
+} from '@shared/types'
+import { normalizeDuckDBType } from '@shared/type-utils'
+import type { ReportData } from '@shared/types/dashboard'
+import type {
   ProjectData,
+  Session,
   ViewMode,
 } from '@shared/types/project'
 import type {
+  AssetManifest,
   ProjectLoadResult,
   SemanticLayer,
 } from '@shared/types/project-manifest'
-import type {
-  DataSourceConfig,
-  FileNode,
-  LocalFileSource,
-  SyncStatus,
-  DomainRule,
-} from '@shared/types'
-import type { Session } from '@shared/types/project'
-import type { ReportData } from '@shared/types/dashboard'
+
+type PersistedAsset = AssetManifest & {
+  smartMetrics?: SmartMetric[]
+  relations?: TableRelation[]
+  displayState?: GridDisplayState
+}
 
 export function shouldShowDataWorkspace(
   appMode: 'analysis' | 'data',
   activeView: ViewMode
 ) {
-  return appMode === 'data' || activeView === 'schema' || activeView === 'preview'
+  return (
+    appMode === 'data' || activeView === 'schema' || activeView === 'preview'
+  )
 }
 
 export function buildProjectSemantic(
   state: Pick<ProjectData, 'files' | 'suggestedPrompts' | 'domainRules'>
 ): SemanticLayer {
-  const tables: Record<string, any> = {}
+  const tables: SemanticLayer['tables'] = {}
 
-  state.files.forEach(f => {
-    tables[f.id] = {
-      columns: f.columns.reduce((acc, col) => {
-        if (col.semantic) acc[col.name] = col.semantic
-        return acc
-      }, {} as Record<string, any>),
-      smartMetrics: f.smartMetrics || [],
-      relations: f.relations || [],
+  state.files.forEach((file) => {
+    tables[file.id] = {
+      columns: file.columns.reduce(
+        (acc, column) => {
+          if (column.semantic) acc[column.name] = column.semantic
+          return acc
+        },
+        {} as Record<string, ColumnSemantic>
+      ),
+      smartMetrics: file.smartMetrics || [],
+      relations: file.relations || [],
     }
   })
 
@@ -43,8 +60,8 @@ export function buildProjectSemantic(
     tables,
     suggestedPrompts: state.suggestedPrompts,
     domainRules: (state.domainRules || [])
-      .filter(rule => rule.isEnabled)
-      .map(rule => rule.content),
+      .filter((rule) => rule.isEnabled)
+      .map((rule) => rule.content),
   }
 }
 
@@ -60,9 +77,10 @@ function deserializeProjectRules(domainRules?: string[]): DomainRule[] {
 export function buildProjectDataFromLoadResult(
   data: ProjectLoadResult
 ): ProjectData {
-  const files: FileNode[] = data.manifest.assets.map(asset => {
-    const metrics = (asset as any).smartMetrics || []
-    const relations = (asset as any).relations || []
+  const files: FileNode[] = data.manifest.assets.map((rawAsset) => {
+    const asset = rawAsset as PersistedAsset
+    const metrics = asset.smartMetrics || []
+    const relations = asset.relations || []
     const now = Date.now()
 
     let source: DataSourceConfig
@@ -84,20 +102,20 @@ export function buildProjectDataFromLoadResult(
       status: (asset.status || 'ready') as SyncStatus,
       progress: 100,
       size: 0,
-      columns: asset.columns.map(c => ({
-        name: c.name,
-        safeName: c.safeName,
-        type: c.type as any,
-        sampleValues: c.sampleValues || [],
-        nullable: c.nullable ?? true,
-        isPrimaryKey: c.isPrimaryKey ?? false,
-        semantic: (c as any).semantic,
+      columns: asset.columns.map((column) => ({
+        name: column.name,
+        safeName: column.safeName,
+        type: normalizeDuckDBType(column.type),
+        sampleValues: column.sampleValues || [],
+        nullable: column.nullable ?? true,
+        isPrimaryKey: column.isPrimaryKey ?? false,
+        semantic: column.semantic,
       })),
       rowCount: asset.rowCount || 0,
       error: undefined,
       lastModified: asset.lastModified || now,
       createdAt: asset.createdAt || now,
-      displayState: (asset as any).displayState,
+      displayState: asset.displayState,
       smartMetrics: metrics,
       relations,
     }

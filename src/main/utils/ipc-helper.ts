@@ -1,8 +1,12 @@
 import { ipcMain, IpcMainInvokeEvent } from 'electron'
 import { IPCContract } from '../../shared/ipc-contract'
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Internal process error'
+}
+
 /**
- * A typed wrapper around ipcMain.handle to ensure the handler 
+ * A typed wrapper around ipcMain.handle to ensure the handler
  * follows the defined IPCContract.
  */
 export function registerHandler<K extends keyof IPCContract>(
@@ -14,15 +18,12 @@ export function registerHandler<K extends keyof IPCContract>(
 ) {
   ipcMain.handle(channel, async (event, params) => {
     try {
-      // In Electron, if params is undefined (void channel), it comes as undefined.
-      // If it's a multi-argument call (not our paradigm), it would be extra arguments.
-      // But since we enforced Named Arguments (Object), params will be the first argument.
       return await handler(event, params)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`[IPC Handler Error] Channel: ${channel}`, error)
       return {
         success: false,
-        error: error.message || 'Internal process error'
+        error: getErrorMessage(error),
       }
     }
   })

@@ -19,6 +19,7 @@ import { secureGet, secureSet } from './secure-storage'
 import { getAppUserAgent } from '../utils/env'
 import { tokenManager } from './token-manager'
 import { TokenActionType } from '../../shared/types/token-audit'
+import type { FilterParam } from '@shared/schemas/analysis.ts'
 import type {
   AIAnalysisContext,
   AIAnalysisResult,
@@ -43,6 +44,29 @@ interface AuditContext {
     row_count?: number
     prompt_preview?: string
   }
+}
+
+type CompletionCreateArgs = Parameters<OpenAI['chat']['completions']['create']>
+type CompletionTarget = OpenAI['chat']['completions']
+type OpenAIUsage = {
+  prompt_tokens: number
+  completion_tokens: number
+}
+type OpenAIResponseWithUsage = {
+  usage?: OpenAIUsage
+  model?: string
+}
+
+function getPromptPreviewFromMessages(args: CompletionCreateArgs) {
+  const payload = args[0]
+  if (!payload || !('messages' in payload) || !Array.isArray(payload.messages)) {
+    return undefined
+  }
+  const userMessage = payload.messages[1]
+  if (!userMessage || typeof userMessage.content !== 'string') {
+    return undefined
+  }
+  return userMessage.content.substring(0, 100)
 }
 
 function decryptBuiltinKey(obfuscated: string): string {
@@ -106,11 +130,11 @@ export class AIService {
     const base = this.requireOpenAI()
 
     const completionProxy = {
-      get: (target: any, prop: string) => {
+      get: (target: CompletionTarget, prop: string) => {
         if (prop !== 'create') return Reflect.get(target, prop)
 
-        return async (...args: any[]) => {
-          const response = await target.create(...args)
+        return async (...args: CompletionCreateArgs) => {
+          const response = await target.create(...args) as OpenAIResponseWithUsage
           const context = this.auditStore.getStore()
 
           if (response?.usage && context) {
@@ -120,7 +144,7 @@ export class AIService {
               inputTokens: response.usage.prompt_tokens,
               outputTokens: response.usage.completion_tokens,
               snapshot: context.snapshot || {
-                prompt_preview: args[0]?.messages?.[1]?.content?.substring(0, 100),
+                prompt_preview: getPromptPreviewFromMessages(args),
               },
             }).catch(err => console.error('[Audit] Log failed', err))
           }
@@ -282,7 +306,7 @@ export class AIService {
     sql: string
     reasoning: string
     is_template?: boolean
-    missing_params?: any[]
+    missing_params?: FilterParam[]
   }> {
     return this.withAudit(
       {
@@ -423,28 +447,28 @@ export class AIService {
   async generateChartInsight(
     context: InsightGenerationContext,
     projectPath: string | null
-  ): Promise<any> {
+  ): Promise<string> {
     return this.withAudit(
       {
         projectPath,
         action: 'insight_gen',
         snapshot: { prompt_preview: context.chartTitle || context.chartType },
       },
-      client => {
+      async client => {
         // Ensure default values if not provided in context
         const enrichedContext = {
           ...context,
           language: context.language || 'en',
           domainRules: context.domainRules || [],
         }
-        return generateInsight(client, enrichedContext, this.model)
+        return generateInsight(client, enrichedContext, this.model) as unknown as string
       }
     )
   }
 
   // [V1.7] Preview Extraction
   async previewExtraction(
-    inputData: any[],
+    inputData: unknown[],
     prompt: string,
     projectPath: string | null
   ): Promise<{ results: string[]; usage?: { input: number; output: number } }> {

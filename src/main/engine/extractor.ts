@@ -10,7 +10,7 @@ import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources'
 export async function previewExtraction(
   client: OpenAI,
   model: string,
-  inputData: any[],
+  inputData: unknown[],
   prompt: string
 ): Promise<{ results: string[]; usage?: { input: number; output: number } }> {
   const inputsStr = inputData.map((v, i) => `${i + 1}. ${String(v)}`).join('\n')

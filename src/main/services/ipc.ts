@@ -19,6 +19,23 @@ import { getSidecarTableName } from '@shared/naming-utils'
 import { ProjectManager } from './project-manager'
 import { tokenManager } from './token-manager'
 
+type AppPathName = Parameters<typeof app.getPath>[0]
+
+type FileProgressInfo = {
+  rowCount?: number
+  isPercentage?: boolean
+  progress?: number
+}
+
+type ExportReportPayload = {
+  type?: string
+  title?: string
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
+}
+
 export function setupIPC(
   databaseService: NativeDatabaseService,
   aiService: AIService,
@@ -109,7 +126,7 @@ export function setupIPC(
   })
 
   registerHandler('sys.getPath', async (_event, name) => {
-    return { success: true, data: app.getPath(name as any) }
+    return { success: true, data: app.getPath(name as AppPathName) }
   })
 
   registerHandler('sys.getAppVersion', async () => {
@@ -122,7 +139,7 @@ export function setupIPC(
 
   // --- Domain: File Operations ---
   registerHandler('file.parseFile', async (event, filePath) => {
-    const onProgress = (info: any) => {
+    const onProgress = (info: FileProgressInfo) => {
       event.sender.send('file:parse-progress', {
         filePath,
         count: info.rowCount,
@@ -183,7 +200,7 @@ export function setupIPC(
   })
 
   registerHandler('file.reIngestFile', async (event, { fileId, filePath, tableName, sheetName, columns, readOptions }) => {
-    const onProgress = (info: any) => {
+    const onProgress = (info: FileProgressInfo) => {
       event.sender.send('file:progress', { fileId, progress: info.rowCount, isPercentage: info.isPercentage, percentage: info.progress })
     }
     const result = await fileService.reIngestFile(filePath, tableName, sheetName, onProgress, columns, readOptions)
@@ -305,9 +322,9 @@ export function setupIPC(
       const sidecarName = getSidecarTableName(tableName)
       await databaseService.exec(`ALTER TABLE "${sidecarName}" DROP COLUMN "${columnName}"`)
       return { success: true }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(`[IPC] Failed to drop AI column: ${columnName}`, e)
-      return { success: false, error: e.message }
+      return { success: false, error: getErrorMessage(e) }
     }
   })
 
@@ -359,7 +376,7 @@ export function setupIPC(
     return { success: false, error: 'Cancelled' }
   })
 
-  registerHandler('export.exportReport', async (event, payload: any) => {
+  registerHandler('export.exportReport', async (event, payload: ExportReportPayload | undefined) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     if (!win) return { success: false, error: 'No window' }
     const { type, title } = payload || {}

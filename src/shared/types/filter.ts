@@ -23,7 +23,7 @@ export interface FilterCondition {
   columnType: string
   sourceType?: 'raw' | 'ai' | 'metric' | 'joined'
   operator: FilterOperator
-  value: any
+  value: unknown
   enabled: boolean
 }
 

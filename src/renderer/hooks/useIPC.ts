@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ElectronAPI } from '@shared/electron-api'
+import type { ElectronAPI } from '@shared/electron-api'
 import type {
   AIConfig,
   ColumnSchema,
@@ -18,11 +18,15 @@ function getIpc() {
 /**
  * A helper hook for simple IPC queries
  */
-function useIPC<T>(method: keyof ElectronAPI, args: any[]) {
+type IpcMethod = keyof ElectronAPI
+type IpcArgs = readonly unknown[]
+type IpcResult<T> = { success: boolean; data?: T; error?: string }
+
+function useIPC<T>(method: IpcMethod, args: IpcArgs) {
   return useQuery({
     queryKey: [method, ...args],
     queryFn: async () => {
-      const fn = getIpc()[method] as any
+      const fn = getIpc()[method] as (...callArgs: IpcArgs) => Promise<IpcResult<T>>
       const response = await fn(...args)
       if (!response.success) {
         throw new Error(response.error || `IPC error in ${method}`)
@@ -166,15 +170,15 @@ export function usePlatform() {
 export function useExportWebReport() {
   return useMutation({
     mutationFn: async (params: {
-      widgets: any[]
+      widgets: unknown[]
       config: { title: string; theme: string; language?: 'en' | 'zh' }
-      fullSnapshot?: any
+      fullSnapshot?: unknown
     }) => {
       const response = await getIpc().exportWebReport(params)
       if (!response.success) {
         throw new Error(response.error || 'Failed to export web report')
       }
-      return (response as any).filePath
+      return (response as { filePath?: string }).filePath
     },
   })
 }
@@ -187,7 +191,7 @@ export function useReIngestFile() {
       tableName: string
       sheetName?: string
       columns?: ColumnSchema[]
-      readOptions?: Record<string, any>
+      readOptions?: Record<string, unknown>
     }) => {
       const response = await getIpc().reIngestFile(params)
       if (!response.success) {

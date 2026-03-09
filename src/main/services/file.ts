@@ -19,6 +19,18 @@ import {
   ValidateColumnTypesParams,
 } from '@shared/electron-api.ts'
 
+type FileProgressInfo = {
+  rowCount?: number
+  isPercentage?: boolean
+  progress?: number
+}
+
+type TableInfoRow = Record<string, unknown>
+
+type TableNameRow = {
+  table_name: string
+}
+
 export class FileService {
   constructor(private databaseService: NativeDatabaseService) {}
 
@@ -219,7 +231,7 @@ export class FileService {
   }
 
   // Legacy parseFile (keep for safety)
-  async parseFile(filePath: string, _onProgress?: (info: any) => void) {
+  async parseFile(filePath: string, _onProgress?: (info: FileProgressInfo) => void) {
     const res = await this.prepareFile(filePath, basename(filePath))
     return [
       {
@@ -284,9 +296,9 @@ export class FileService {
     filePath: string,
     tableName: string,
     sheetName?: string,
-    _onProgress?: any,
+    _onProgress?: (info: FileProgressInfo) => void,
     knownColumns?: ColumnSchema[],
-    readOptions?: Record<string, any>
+    readOptions?: Record<string, unknown>
   ): Promise<ReloadResult> {
     if (filePath === 'DEMO_MEMORY') {
       const result = await ingestJsonData(
@@ -345,16 +357,16 @@ export class FileService {
       )
       // Re-fetch columns to include _ws_row_id
        const finalCols = await Promise.all(
-        columnsResult.map(async (col: any) => {
-          const type = normalizeDuckDBType(col.type)
+        columnsResult.map(async (col: TableInfoRow) => {
+          const type = normalizeDuckDBType(col.type as string)
           return {
-            name: col.name,
-            safeName: col.name,
+            name: col.name as string,
+            safeName: col.name as string,
             type: type as ColumnType,
             sampleValues: await getSampleValues(
               this.databaseService,
               tableName,
-              col.name,
+              col.name as string,
               type as ColumnType
             ),
           }
@@ -402,16 +414,16 @@ export class FileService {
         `PRAGMA table_info('${tableName}');`
       )
       const finalCols = await Promise.all(
-        columnsResult.map(async (col: any) => {
-          const type = normalizeDuckDBType(col.type)
+        columnsResult.map(async (col: TableInfoRow) => {
+          const type = normalizeDuckDBType(col.type as string)
           return {
-            name: col.name,
-            safeName: col.name,
+            name: col.name as string,
+            safeName: col.name as string,
             type: type as ColumnType,
             sampleValues: await getSampleValues(
               this.databaseService,
               tableName,
-              col.name,
+              col.name as string,
               type as ColumnType
             ),
           }
@@ -488,16 +500,16 @@ export class FileService {
       `PRAGMA table_info('${tableName}')`
     )
     const finalCols = await Promise.all(
-      cols.map(async (c: any) => {
-        const type = normalizeDuckDBType(c.type)
+      cols.map(async (c: TableInfoRow) => {
+        const type = normalizeDuckDBType(c.type as string)
         return {
-          name: c.name,
-          safeName: c.name,
+          name: c.name as string,
+          safeName: c.name as string,
           type: type as ColumnType,
           sampleValues: await getSampleValues(
             this.databaseService,
             tableName,
-            c.name,
+            c.name as string,
             type as ColumnType
           ),
         }
@@ -525,7 +537,7 @@ export class FileService {
     )
     for (const t of tables)
       await this.databaseService.exec(
-        `DROP TABLE IF EXISTS "${(t as any).table_name}" `
+        `DROP TABLE IF EXISTS "${(t as TableNameRow).table_name}" `
       )
     await TempFileManager.cleanupOldFiles()
   }

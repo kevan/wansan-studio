@@ -66,7 +66,7 @@ export interface ColumnSchema {
   name: string // Original column name (e.g., "销售额(万元)")
   safeName: string // Sanitized name for SQL (e.g., "销售额(万元)") - *DuckDB supports utf8, but quoting is mandatory*
   type: ColumnType // Inferred DuckDB type
-  sampleValues: any[] // Top 3 non-null values for AI context
+  sampleValues: unknown[] // Top 3 non-null values for AI context
   nullable?: boolean // From UI state, indicates if column can have nulls
 
   isPrimaryKey?: boolean // Optional metadata when a column is a primary key
@@ -85,7 +85,7 @@ export interface TableSchema {
   relations?: RelationSuggestion[] // Relationships where this table is the source
   tempFilePath?: string // Path to temporary file (e.g. converted CSV) for cleanup
   sheetName?: string // Source sheet name for Excel files
-  readOptions?: Record<string, any> // Options used to read the file (e.g. { encoding: 'GBK' })
+  readOptions?: Record<string, unknown> // Options used to read the file (e.g. { encoding: 'GBK' })
 }
 
 export interface AIAnalysisContext {
@@ -99,7 +99,7 @@ export interface AIAnalysisContext {
 
 export interface AIAnalysisResult {
   status: 'success' | 'error'
-  data?: any[] // Raw rows from DuckDB
+  data?: Array<Record<string, unknown>> // Raw rows from DuckDB
   columns?: string[] // Column headers
   sql?: string // The Executed SQL
 
@@ -193,7 +193,7 @@ export interface LocalFileSource {
   subResource?: string // e.g. Excel sheet name
   format?: 'excel' | 'csv' | 'parquet'
   fingerprint?: string // For change detection
-  readOptions?: Record<string, any> // e.g. encoding
+  readOptions?: Record<string, unknown> // e.g. encoding
 }
 
 export interface DatabaseSource {
@@ -298,7 +298,7 @@ export interface RemoteConfig {
     link?: string
     level?: 'info' | 'warning'
   } | null
-  providers?: Record<string, any> // AIProviderConfig
+  providers?: Record<string, unknown> // AIProviderConfig
 }
 
 // 组合类型：发送给前端的最终配置

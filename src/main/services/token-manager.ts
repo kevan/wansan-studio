@@ -49,7 +49,7 @@ export class TokenManager {
   constructor() {
     this.store = new Store<StoreType>({
       name: 'wansan-token-audit',
-      schema: storeSchema as any
+      schema: storeSchema as unknown as ConstructorParameters<typeof Store<StoreType>>[0]['schema']
     })
     this.checkDailyReset()
   }

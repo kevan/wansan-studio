@@ -19,13 +19,14 @@ import {
 } from './api-types'
 import { FilterParam } from './schemas/analysis'
 import { TokenBudgetConfig } from './types/token-audit'
-import { 
-  IngestPreCheckParams, 
-  IngestPreCheckResponse, 
-  AppendDataParams, 
-  CreateTableParams, 
-  ValidateColumnTypesParams 
+import {
+  IngestPreCheckParams,
+  IngestPreCheckResponse,
+  AppendDataParams,
+  CreateTableParams,
+  ValidateColumnTypesParams,
 } from './types/ipc-params'
+import type { ProjectLoadResult } from './types/project-manifest'
 
 /**
  * Single Source of Truth for all IPC communications.
@@ -37,7 +38,7 @@ export interface IPCContract {
   'file.selectFiles': { params: void; return: IPCResponse<{ path: string; size: number }[]> }
   'file.selectDirectory': { params: void; return: IPCResponse<string> }
   'file.parseFile': { params: string; return: ParseFileResponse }
-  'file.inspectFile': { params: string; return: IPCResponse<Array<{ sourceName: string; previewHeaders?: string[]; readOptions?: Record<string, any> }>> }
+  'file.inspectFile': { params: string; return: IPCResponse<Array<{ sourceName: string; previewHeaders?: string[]; readOptions?: Record<string, unknown> }>> }
   'file.prepareFile': { 
     params: { filePath: string; sourceName: string; readOptions?: Record<string, unknown> }
     return: IPCResponse<{ tempFilePath: string; rowCount: number; columns: ColumnSchema[]; preview: unknown[] }> 
@@ -55,7 +56,7 @@ export interface IPCContract {
   'ingest.createTableFromSource': { params: CreateTableParams; return: IPCResponse<{ rowCount: number; columns: ColumnSchema[] }> }
   'ingest.cleanupIngestion': { params: { tempTableNames: string[]; tempFilePaths?: string[] }; return: IPCResponse }
   'ingest.cleanupAllStaging': { params: void; return: IPCResponse }
-  'ingest.ingestJson': { params: { tableName: string; rows: any[] }; return: IPCResponse<any> }
+  'ingest.ingestJson': { params: { tableName: string; rows: unknown[] }; return: IPCResponse<unknown> }
 
   // --- Database Connectors ---
   'db.testDBConnection': { params: { config: import('./types').DBConnectionConfig; password?: string }; return: IPCResponse<boolean> }
@@ -83,7 +84,7 @@ export interface IPCContract {
   'ai.analyzeSemantics': { params: { tableName: string; columns: ColumnSchema[]; language?: 'en' | 'zh' }; return: IPCResponse<SemanticAnalysisResult> }
   'ai.generateMetricExpression': { params: { input: string; columns: Array<{ name: string; type: string }>; mode: 'generate' | 'refine' }; return: IPCResponse<string> }
   'ai.generateInsight': { params: InsightGenerationContext; return: IPCResponse<string> }
-  'ai.aiPreviewExtract': { params: { tableName: string; columnName: string; sampleData: any[]; prompt: string }; return: IPCResponse<{ results: string[]; estimatedCost: number }> }
+  'ai.aiPreviewExtract': { params: { tableName: string; columnName: string; sampleData: unknown[]; prompt: string }; return: IPCResponse<{ results: string[]; estimatedCost: number }> }
   'ai.aiBatchExtract': { params: { tableName: string; columnName: string; targetColumnName: string; prompt: string }; return: IPCResponse<{ jobId: string }> }
   'ai.dropAIColumn': { params: { tableName: string; columnName: string }; return: IPCResponse }
 
@@ -102,7 +103,7 @@ export interface IPCContract {
   // --- Export ---
   'export.exportPDF': { params: unknown; return: IPCResponse }
   'export.exportReport': { params: unknown; return: IPCResponse }
-  'export.exportWebReport': { params: { widgets: unknown[]; config: any; fullSnapshot?: unknown }; return: IPCResponse }
+  'export.exportWebReport': { params: { widgets: unknown[]; config: { title: string; theme: string; language?: 'en' | 'zh' }; fullSnapshot?: unknown }; return: IPCResponse }
   'export.exportExcel': { params: ExportExcelPayload; return: IPCResponse<string> }
   'save.saveImage': { params: { dataUrl: string; name?: string }; return: IPCResponse<string> }
   'save.saveFile': { params: { content: string; extension: string; name: string }; return: IPCResponse<string> }
@@ -110,9 +111,9 @@ export interface IPCContract {
   // --- System ---
   'sys.getDeviceId': { params: void; return: IPCResponse<string> }
   'sys.getUserInfo': { params: void; return: IPCResponse<{ username: string }> }
-  'sys.getPath': { params: any; return: IPCResponse<string> }
+  'sys.getPath': { params: string; return: IPCResponse<string> }
   'sys.getAppVersion': { params: void; return: IPCResponse<string> }
-  'sys.getMainLogs': { params: void; return: IPCResponse<any[]> }
+  'sys.getMainLogs': { params: void; return: IPCResponse<unknown[]> }
   'sys.secureSet': { params: { key: string; value: string }; return: IPCResponse<boolean> }
   'sys.secureGet': { params: string; return: IPCResponse<string | null> }
   'sys.validateLicense': { params: string; return: IPCResponse<boolean> }
@@ -122,7 +123,7 @@ export interface IPCContract {
 
   // --- Project Management ---
   'project.projectCreate': { params: { name: string; location?: string }; return: IPCResponse<string> }
-  'project.projectOpen': { params: string | undefined; return: IPCResponse<any> }
+  'project.projectOpen': { params: string | undefined; return: IPCResponse<ProjectLoadResult> }
   'project.projectSave': { params: { path: string; data: import('./types/project-manifest').ProjectSavePayload }; return: IPCResponse }
   'project.projectClose': { params: void; return: IPCResponse }
   'project.projectGetDefaultPath': { params: void; return: IPCResponse<string> }

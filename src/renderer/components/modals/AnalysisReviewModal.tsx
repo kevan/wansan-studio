@@ -15,9 +15,11 @@ import {
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import {
+  ColumnSemantic,
   ContextAnalysisResult,
-  RelationSuggestion,
   FileNode,
+  RelationSuggestion,
+  SemanticAnalysisResult,
 } from '@shared/types'
 import { getVisibleColumns } from '@shared/utils/schema-utils'
 import { useProjectStore } from '@/stores/useProjectStore'
@@ -57,10 +59,11 @@ export function AnalysisReviewModal({
   // --- SEMANTIC LOOP STATE ---
   const [semanticQueue, setSemanticQueue] = useState<FileNode[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [currentSemanticResult, setCurrentSemanticResult] = useState<{
-    columns: Record<string, any>
-    metrics?: any[]
-  } | null>(null)
+type ReviewColumn = ColumnSemantic & { confidence?: number }
+type ReviewMetric = NonNullable<SemanticAnalysisResult['metrics']>[number] & { confidence?: number }
+
+  const [currentSemanticResult, setCurrentSemanticResult] =
+    useState<SemanticAnalysisResult | null>(null)
   
   const [activeSemanticTab, setActiveSemanticTab] = useState<'columns' | 'metrics'>('columns')
   const [selectedSemColumns, setSelectedSemColumns] = useState<Set<string>>(new Set())
@@ -128,12 +131,14 @@ export function AnalysisReviewModal({
       if (aiRes.success && aiRes.data) {
         setCurrentSemanticResult(aiRes.data)
         const colKeys = new Set<string>()
-        Object.entries(aiRes.data.columns).forEach(([key, data]: [string, any]) => {
+        Object.entries(aiRes.data.columns).forEach(([key, rawData]) => {
+          const data = rawData as ReviewColumn
           if (!data.confidence || data.confidence > 0.8) colKeys.add(key)
         })
         setSelectedSemColumns(colKeys)
         const metricIndices = new Set<number>()
-        ;(aiRes.data.metrics || []).forEach((m: any, i: number) => {
+        ;(aiRes.data.metrics || []).forEach((metric, i: number) => {
+          const m = metric as ReviewMetric
           if (m.confidence === undefined || m.confidence > 0.8) metricIndices.add(i)
         })
         setSelectedSemMetrics(metricIndices)
@@ -157,7 +162,7 @@ export function AnalysisReviewModal({
     }
     if (currentSemanticResult.metrics) {
       for (const idx of Array.from(selectedSemMetrics)) {
-        const m = currentSemanticResult.metrics[idx] as any
+        const m = currentSemanticResult.metrics[idx] as ReviewMetric
         await addSmartMetric(file.id, {
           id: crypto.randomUUID(), name: m.name, sqlExpression: m.sqlExpression, description: m.description
         })

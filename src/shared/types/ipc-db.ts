@@ -19,7 +19,7 @@ export interface DBRequest {
 export interface DBResponse {
   reqId: string
   success: boolean
-  data?: any // We'll keep data as any for now because it's often cast to any[]
+  data?: unknown
   error?: string
-  meta?: any
+  meta?: unknown
 }

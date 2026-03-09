@@ -32,7 +32,7 @@ type DerivedInvokeMethods = {
  */
 export interface ElectronAPI extends DerivedInvokeMethods {
   // Generic invoke (keep for flexibility, but usage should be minimized)
-  invoke: (channel: string, ...args: unknown[]) => Promise<any>
+  invoke: (channel: string, ...args: unknown[]) => Promise<unknown>
 
   // Properties & Environment
   platform: string

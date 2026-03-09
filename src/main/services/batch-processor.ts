@@ -72,7 +72,7 @@ export class BatchProcessor {
     const avgCharsPerToken = prompt.match(/[\u4e00-\u9fa5]/) ? CHARS_PER_TOKEN_ZH : CHARS_PER_TOKEN_EN
 
     // Sample a few rows to get average character length of the source column
-    const samples = await this.db.query(`SELECT "${columnName}" as val FROM "${tableName}" LIMIT 10`) as { val: any }[]
+    const samples = await this.db.query(`SELECT "${columnName}" as val FROM "${tableName}" LIMIT 10`) as { val: unknown }[]
     const avgValLen = samples.reduce((acc, s) => acc + String(s.val || '').length, 0) / (samples.length || 1)
 
     const inputTokensPerRow = (promptChars + avgValLen) / avgCharsPerToken
@@ -140,7 +140,7 @@ export class BatchProcessor {
           LEFT JOIN "${sidecarName}" t2 ON t1._ws_row_id = t2._ws_row_id
           WHERE t2."${targetColumnName}" IS NULL
           LIMIT ${batchSize}
-        `) as { _ws_row_id: number | bigint, val: any }[]
+        `) as { _ws_row_id: number | bigint, val: unknown }[]
 
         if (rows.length === 0) break
 

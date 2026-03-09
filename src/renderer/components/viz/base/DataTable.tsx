@@ -14,7 +14,7 @@ import { ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from 'luci
 import { Button } from '../../ui/button'
 
 interface ReportTableProps {
-  data: Array<Record<string, any>>
+  data: Array<Record<string, unknown>>
   columnFields?: Array<{ name: string; type: string }>
   columns?: string[] // Legacy support
   columnTypes?: Record<string, string> // Legacy support
@@ -124,7 +124,7 @@ export function DataTable({
     }
   }, [])
 
-  const columnDefs: ColumnDef<Record<string, any>>[] =
+  const columnDefs: ColumnDef<Record<string, unknown>>[] =
     effectiveColumnFields.map(field => ({
       accessorKey: field.name,
       header: field.name,
@@ -205,7 +205,7 @@ export function DataTable({
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map(header => {
                   const sorted = header.column.getIsSorted()
-                  const isNumeric = (header.column.columnDef as any).meta?.isNumeric
+                  const isNumeric = (header.column.columnDef.meta as { isNumeric?: boolean } | undefined)?.isNumeric
                   
                   return (
                     <th
@@ -277,7 +277,7 @@ export function DataTable({
                     )}
                   >
                   {row.getVisibleCells().map(cell => {
-                    const isNumeric = (cell.column.columnDef as any).meta?.isNumeric
+                    const isNumeric = (cell.column.columnDef.meta as { isNumeric?: boolean } | undefined)?.isNumeric
 
                     return (
                       <td

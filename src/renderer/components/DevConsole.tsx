@@ -11,6 +11,7 @@ import {
 } from '../stores/useSettingsStore'
 import { useTranslation } from 'react-i18next'
 import legacyData from '@shared/legacy-data.ts'
+import type { GetSchemaResponse } from '@shared/api-types'
 
 interface LogEntry {
   id: number
@@ -217,7 +218,7 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
 
   const printAllTables = useCallback(async () => {
     try {
-      const result = (await window.electronAPI.getSchema()) as any
+      const result = (await window.electronAPI.getSchema()) as GetSchemaResponse
       console.log('📊 Fetching all tables from DuckDB...', result)
 
       if (result.success && result.data && Array.isArray(result.data.tables)) {
@@ -225,11 +226,11 @@ export function DevConsole({ defaultOpen = false }: DevConsoleProps) {
         console.log(`✅ Found ${tables.length} table(s):`)
 
         // 以对象形式打印，方便在控制台折叠查看
-        const tableSummary = tables.reduce((acc: any, table: any) => {
+        const tableSummary = tables.reduce<Record<string, { description: string; columnCount: number; columns: Array<{ name: string; type: string }> }>>((acc, table) => {
           acc[table.tableName || 'unnamed'] = {
             description: table.description || 'N/A',
             columnCount: table.columns?.length || 0,
-            columns: (table.columns || []).map((col: any) => ({
+            columns: (table.columns || []).map((col) => ({
               name: col.name,
               type: col.type || 'unknown',
             })),

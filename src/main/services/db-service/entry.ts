@@ -55,8 +55,20 @@ log('Environment Info:', {
 // Dynamic Loader for Native Module
 let DuckDBClass: typeof DuckDBInstanceType | null = null;
 
+type DuckDBRow = Record<string, unknown>
+
+interface DuckDBResult {
+  getRowObjectsJS: () => Promise<DuckDBRow[]>
+  columnNames: () => string[]
+  columnType: (index: number) => { toString: () => string }
+}
+
 interface DuckDBConnection {
-  run: (sql: string) => Promise<any>
+  run: (sql: string) => Promise<DuckDBResult>
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
 }
 
 async function loadDuckDB() {
@@ -73,12 +85,14 @@ async function loadDuckDB() {
     DuckDBClass = module.DuckDBInstance;
     log('[DB-Worker] @duckdb/node-api loaded successfully')
     return DuckDBClass;
-  } catch (e: any) {
+  } catch (e: unknown) {
     logError('[DB-Worker] Failed to load @duckdb/node-api', e);
 
+    const errorMessage = getErrorMessage(e)
+
     // [Diagnostic] Check if file exists at the reported path
-    if (e.message && e.message.includes('Access is denied') && e.message.includes('\\\\?\\')) {
-        const match = e.message.match(/\\\\.*?\.node/);
+    if (errorMessage.includes('Access is denied') && errorMessage.includes(String.raw`\\?\\`)) {
+        const match = errorMessage.match(/\\.*?\.node/);
         if (match) {
             const nodePath = match[0];
             log(`[DB-Worker] Diagnosing path: ${nodePath}`);
@@ -93,7 +107,7 @@ async function loadDuckDB() {
                         try {
                            fs.accessSync(fsPath, fs.constants.R_OK | fs.constants.X_OK);
                            log('[DB-Worker] File is readable and executable.');
-                        } catch (accessErr) {
+                        } catch (accessErr: unknown) {
                            logError('[DB-Worker] File permission check failed', accessErr);
                         }
                     } catch (statErr) {
@@ -171,7 +185,7 @@ async function handleMessage(msg: DBRequest) {
           }
 
           const QUERY_TIMEOUT = 30000 // 30 seconds
-          const timeoutPromise = new Promise((_, reject) => {
+          const timeoutPromise = new Promise<never>((_, reject) => {
             setTimeout(
               () => reject(new Error(`Query timed out after ${QUERY_TIMEOUT / 1000}s`)),
               QUERY_TIMEOUT
@@ -180,15 +194,15 @@ async function handleMessage(msg: DBRequest) {
 
           // log('Running SQL:', payload.sql) // Optional: might be verbose
           const sql = (payload as { sql: string }).sql
-          const result = (await Promise.race([
+          const result = await Promise.race([
             (connection as DuckDBConnection).run(sql),
             timeoutPromise,
-          ])) as any
+          ])
 
-          let rows = (await Promise.race([
+          let rows = await Promise.race([
             result.getRowObjectsJS(),
             timeoutPromise,
-          ])) as any[]
+          ])
 
           // [Safety] Limit rows to prevent IPC/JSON CPU exhaustion
           const MAX_ROWS = 200000
@@ -239,9 +253,9 @@ async function handleMessage(msg: DBRequest) {
               `)
             const rawColumns = await result.getRowObjectsJS()
             // Apply normalization to schema columns
-            const columns = rawColumns.map((col: any) => ({
+            const columns = rawColumns.map((col: DuckDBRow) => ({
               ...col,
-              type: normalizeDuckDBType(col.type),
+              type: normalizeDuckDBType(col.type as string),
             }))
 
             process.parentPort?.postMessage({
@@ -256,8 +270,8 @@ async function handleMessage(msg: DBRequest) {
             const tables = await tablesResult.getRowObjectsJS()
 
             const tablesWithDetails = await Promise.all(
-              tables.map(async (row: any) => {
-                const tName = row.table_name
+              tables.map(async (row: DuckDBRow) => {
+                const tName = row.table_name as string
                 const colsResult = await (connection as DuckDBConnection).run(`
                       SELECT column_name as name, data_type as type, is_nullable as nullable
                       FROM information_schema.columns
@@ -265,9 +279,9 @@ async function handleMessage(msg: DBRequest) {
                       ORDER BY ordinal_position
                   `)
                 const rawCols = await colsResult.getRowObjectsJS()
-                const columns = rawCols.map((col: any) => ({
+                const columns = rawCols.map((col: DuckDBRow) => ({
                   ...col,
-                  type: normalizeDuckDBType(col.type),
+                  type: normalizeDuckDBType(col.type as string),
                 }))
                 return { tableName: tName, columns, description: '' }
               })
@@ -381,12 +395,12 @@ async function handleMessage(msg: DBRequest) {
         default:
           throw new Error(`Unsupported request type: ${type}`)
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       logError(`[DB-Worker] Error handling ${type}:`, err)
       process.parentPort?.postMessage({
         reqId,
         success: false,
-        error: err.message,
+        error: getErrorMessage(err),
       } as DBResponse)
     }
   })

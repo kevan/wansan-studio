@@ -17,9 +17,35 @@ import {
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 import { ColumnConfig, IngestionTask } from '@shared/types/wizard'
+import { normalizeDuckDBType } from '@shared/type-utils'
 import { DatabaseSelectorDialog } from './DatabaseSelectorDialog'
 import { useToastStore } from '@/stores/useToastStore'
 import { useSettingsStore } from '@/stores/useSettingsStore'
+
+
+type SyncedColumn = {
+  name: string
+  type: string
+  isPrimaryKey?: boolean
+  description?: string
+}
+
+type SyncResultData = {
+  rowCount: number
+  columns: SyncedColumn[]
+}
+
+type PrepareResultData = {
+  tempFilePath: string
+  rowCount: number
+  columns: SyncedColumn[]
+  preview: unknown[]
+  readOptions?: Record<string, unknown>
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown error'
+}
 
 export function FileSelectionStep() {
   const { mode, setTasks, tasks, setDbSelectorOpen } = useWizardStore()
@@ -44,7 +70,7 @@ export function FileSelectionStep() {
 
     try {
       const { dbConnections } = useSettingsStore.getState()
-      let resultData: any
+      let resultData: SyncResultData | PrepareResultData
 
       if (task.connectionId) {
         const conn = dbConnections.find(c => c.id === task.connectionId)
@@ -66,8 +92,13 @@ export function FileSelectionStep() {
         resultData = res.data
       }
 
-      const { tempFilePath, rowCount, columns, preview, readOptions } =
-        resultData
+      const tempFilePath =
+        'tempFilePath' in resultData ? resultData.tempFilePath : undefined
+      const rowCount = resultData.rowCount
+      const columns = resultData.columns
+      const preview = 'preview' in resultData ? resultData.preview : []
+      const readOptions =
+        'readOptions' in resultData ? resultData.readOptions : task.readOptions
 
       // Final Check: Is task still there?
       const latestTasks = useWizardStore.getState().tasks
@@ -128,25 +159,25 @@ export function FileSelectionStep() {
         tableName: finalTableName, // Sync temp table name for consistency if possible, or keep separate?
         // Actually tableName is used for preview queries. If we synced DB to hintTableName, we should use it.
         columns: columns
-          .filter((c: any) => c.name !== '_ws_row_id')
-          .map((c: any) => ({
-            name: c.name,
-            type: c.type as any,
-            isPrimaryKey: c.isPrimaryKey || false, // [FIX] Use DB PK
-            description: c.description, // [NEW] Pass comment
+          .filter((column) => column.name !== '_ws_row_id')
+          .map((column): ColumnConfig => ({
+            name: column.name,
+            type: normalizeDuckDBType(column.type),
+            isPrimaryKey: column.isPrimaryKey || false,
+            description: column.description,
           })),
         previewData: preview || [],
         rowCount: rowCount,
         readOptions: readOptions || task.readOptions,
       })
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('[Wizard] Task preparation failed:', e)
       const latestTasks = useWizardStore.getState().tasks
       const currentIndex = latestTasks.findIndex(t => t.id === task.id)
       if (currentIndex !== -1) {
         useWizardStore.getState().updateTask(currentIndex, {
           status: 'error',
-          error: e.message || 'Synchronization failed',
+          error: getErrorMessage(e) || 'Synchronization failed',
         })
       }
     }
@@ -201,7 +232,7 @@ export function FileSelectionStep() {
           throw new Error(res.error || `Failed to inspect ${file.name}`)
         }
 
-        const fileTasks = res.data.map((item: any) => {
+        const fileTasks = res.data.map((item: { sourceName: string; previewHeaders?: string[]; readOptions?: Record<string, unknown> }) => {
           // [Stage 1] No columns yet. They will be populated in Stage 2 (Prepare).
           const columns: ColumnConfig[] = []
 
@@ -254,9 +285,9 @@ export function FileSelectionStep() {
           })
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Wizard] File inspection failed:', err)
-      setError(err.message || 'Failed to parse files')
+      setError(getErrorMessage(err) || 'Failed to parse files')
     } finally {
       setIsParsing(false)
     }

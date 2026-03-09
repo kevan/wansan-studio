@@ -12,10 +12,10 @@ import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources'
  * - Uniformly samples the rest.
  */
 function smartDownsample(
-  data: any[],
+  data: Array<Record<string, unknown>>,
   limit: number,
   valueKeys: string[] = []
-): any[] {
+): Array<Record<string, unknown>> {
   if (data.length <= limit) return data
 
   const indices = new Set<number>()

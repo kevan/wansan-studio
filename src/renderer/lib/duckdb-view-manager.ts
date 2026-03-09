@@ -3,6 +3,15 @@ import { Relation } from '@shared/types/project'
 import { getJoinedColumnName, parseJoinedColumnName, getSidecarTableName, getLogicalViewName } from '@shared/naming-utils'
 import { normalizeDuckDBType } from '@shared/type-utils'
 
+type TableInfoRow = {
+  name: string
+}
+
+type DescribeRow = {
+  column_name: string
+  column_type: string
+}
+
 /**
  * Escapes regex special characters.
  */
@@ -104,7 +113,7 @@ async function getSidecarParts(tableName: string) {
 
     result.join = `LEFT JOIN "${sidecarName}" AS T_AI ON T1._ws_row_id = T_AI._ws_row_id`
 
-    for (const row of (colsRes.data.data as any[])) {
+    for (const row of colsRes.data.data as TableInfoRow[]) {
       const colName = row.name
       if (colName === '_ws_row_id') continue
 
@@ -176,7 +185,7 @@ export const DuckDBViewManager = {
         throw new Error(descRes.error || 'Failed to describe view')
       }
 
-      return descRes.data.data.map((row: any) => {
+      return descRes.data.data.map((row: DescribeRow) => {
         const colName = row.column_name
         let sourceType: import('@shared/types').ColumnSourceType = 'raw'
         
@@ -236,7 +245,7 @@ export const DuckDBViewManager = {
     expression: string,
     allFiles: FileNode[],
     relations: Relation[]
-  ): Promise<{ value: any; dataType: ColumnType }> {
+  ): Promise<{ value: unknown; dataType: ColumnType }> {
     const { colMap, joinClauses } = prepareViewContext(
       file,
       allFiles,
@@ -260,7 +269,7 @@ export const DuckDBViewManager = {
     return {
       value: row ? row.test_result : null,
       dataType: normalizeDuckDBType(
-        res.data.columnFields.find((f: any) => f.name === 'test_result')?.type || 'UNKNOWN'
+        res.data.columnFields.find((field) => field.name === 'test_result')?.type || 'UNKNOWN'
       ),
     }
   },

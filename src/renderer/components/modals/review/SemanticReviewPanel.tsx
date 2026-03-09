@@ -11,14 +11,14 @@ import {
 import { cn } from '@/utils/cn'
 import { useTranslation } from 'react-i18next'
 
-import { FileNode } from '@shared/types'
+import { ColumnSemantic, FileNode, SemanticAnalysisResult } from '@shared/types'
+
+type ReviewColumn = ColumnSemantic & { confidence?: number }
+type ReviewMetric = NonNullable<SemanticAnalysisResult['metrics']>[number] & { confidence?: number }
 
 interface SemanticReviewPanelProps {
   file: FileNode
-  result: {
-    columns: Record<string, any>
-    metrics?: any[]
-  }
+  result: SemanticAnalysisResult
   selectedColumns: Set<string>
   onToggleColumn: (colName: string) => void
   selectedMetrics: Set<number>
@@ -83,7 +83,8 @@ export function SemanticReviewPanel({
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-[#fcfcfc]">
         {activeTab === 'columns' ? (
           <div className="grid gap-2">
-            {Object.entries(result.columns).map(([colName, data]: [string, any]) => {
+            {Object.entries(result.columns).map(([colName, rawData]) => {
+              const data = rawData as ReviewColumn
               const existing = file.columns.find(c => c.name === colName)?.semantic
               const hasDiff = existing && (
                 (existing.aliases && existing.aliases.length > 0 && JSON.stringify(existing.aliases) !== JSON.stringify(data.aliases)) ||
@@ -143,7 +144,8 @@ export function SemanticReviewPanel({
           </div>
         ) : (
           <div className="grid gap-3">
-            {(result.metrics || []).map((m: any, i: number) => {
+            {(result.metrics || []).map((metric, i: number) => {
+              const m = metric as ReviewMetric
               const exists = (file.smartMetrics || []).some(em => em.name === m.name)
               return (
                 <div 

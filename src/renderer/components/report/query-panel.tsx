@@ -43,12 +43,20 @@ interface QueryPanelProps {
   sql: string
   onChange: (sql: string) => void
   initialSql: string
-  initialData?: any[]
+  initialData?: Array<Record<string, unknown>>
   reasoning?: string
   className?: string
   runOnMount?: boolean
 }
 
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Execution failed'
+}
+
+function getErrorStack(error: unknown): string {
+  return error instanceof Error && error.stack ? error.stack : String(error)
+}
 export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
   (
     {
@@ -66,7 +74,7 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
     const [isRunning, setIsRunning] = useState(false)
     const [isMaximized, setIsMaximized] = useState(false)
     const isRestoring = useProjectStore(s => s.isRestoring)
-    const [previewData, setPreviewData] = useState<any[] | null>(
+    const [previewData, setPreviewData] = useState<Array<Record<string, unknown>> | null>(
       initialData.length > 0 ? initialData : null
     )
     const [previewColumnFields, setPreviewColumnFields] = useState<
@@ -99,8 +107,8 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
           } else {
             throw new Error(res.error)
           }
-        } catch (e: any) {
-          setPreviewError(e.message || 'Execution failed')
+        } catch (e: unknown) {
+          setPreviewError(getErrorMessage(e))
           setPreviewData([])
           setPreviewColumnFields([])
           success = false
@@ -149,11 +157,11 @@ export const QueryPanel = forwardRef<QueryPanelRef, QueryPanelProps>(
             },
           })
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         useUIStore.getState().showError(
           t('export_failed', { ns: 'common' }),
           t('error_processing_request', { ns: 'chat' }),
-          e.stack || String(e)
+          getErrorStack(e)
         )
       }
     }

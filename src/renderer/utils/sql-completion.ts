@@ -1,4 +1,5 @@
-import { Monaco } from '@monaco-editor/react'
+import type { Monaco } from '@monaco-editor/react'
+import type { languages } from 'monaco-editor'
 import { FileNode } from '@shared/types'
 import { getJoinedColumnName } from '@shared/naming-utils'
 
@@ -53,7 +54,7 @@ export function registerSqlCompletion(monaco: Monaco, files: FileNode[]) {
         endColumn: word.endColumn,
       }
 
-      const suggestions: any[] = []
+      const suggestions: languages.CompletionItem[] = []
 
       // 1. Keywords & Snippets
       SQL_KEYWORDS.forEach(kw => {
