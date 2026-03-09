@@ -11,6 +11,14 @@ const COLORS = [
   '#3B82F6', // Blue 500
   '#F43F5E', // Rose 500
   '#14B8A6', // Teal 500
+  '#06B6D4', // Cyan 500
+  '#84CC16', // Lime 500
+  '#F97316', // Orange 500
+  '#A855F7', // Purple 500
+  '#D946EF', // Fuchsia 500
+  '#6366F1', // Indigo 600 (Slightly darker)
+  '#4ADE80', // green 400
+  '#F87171', // Red 400
 ]
 
 // Enhanced Gradient Utils with better opacity transitions
