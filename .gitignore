@@ -95,6 +95,13 @@ public
 tmp/
 temp/
 
+# App Data
+.wansan/
+
+# AI IDE / Agent history
+.claude/
+.gemini/
+
 # Electron
 app/
 out/
