@@ -149,6 +149,14 @@ const MessageItem = React.memo(
     const { t } = useTranslation('chat')
     const settings = useSettingsStore()
     const [showThinking, setShowThinking] = useState(false)
+    const thinkingRef = useRef<HTMLDivElement>(null)
+
+    // Auto-scroll to bottom when thinking process is expanded
+    useEffect(() => {
+      if (showThinking && thinkingRef.current) {
+        thinkingRef.current.scrollTop = thinkingRef.current.scrollHeight
+      }
+    }, [showThinking, message.thinkingContent])
 
     // Stable handler for template configuration
     // This is CRITICAL for ChatReportCard's React.memo to work
@@ -244,26 +252,6 @@ const MessageItem = React.memo(
                     {message.status === 'planning' && t('status_planning')}
                     {message.status === 'executing' && t('status_executing')}
                   </div>
-                  {settings.showThinkingProcess && message.thinkingContent && (
-                    <div className="mt-3">
-                      <button
-                        onClick={() => setShowThinking(!showThinking)}
-                        className="flex items-center gap-1.5 text-[11px] font-medium text-indigo-600/70 hover:text-indigo-700 transition-colors"
-                      >
-                        <Brain className="h-3 w-3" />
-                        {t('thinking_process')}
-                        <ChevronDown className={`h-3 w-3 transition-transform ${showThinking ? 'rotate-180' : ''}`} />
-                      </button>
-                      {showThinking && (
-                        <div className="mt-2 rounded-lg bg-white/70 border border-indigo-100/50 p-3 text-[11px] text-zinc-600 leading-relaxed max-h-60 overflow-y-auto scrollbar-thin whitespace-pre-wrap">
-                          {message.thinkingContent}
-                          {message.status === 'thinking' && (
-                            <span className="inline-block w-1.5 h-3.5 bg-indigo-400 ml-0.5 animate-pulse align-middle" />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
                   {message.planSql && (
                     <div className="mt-3 relative group/code">
                       <pre className="max-h-48 overflow-y-auto rounded-xl bg-white/80 p-3 text-[11px] text-zinc-600 border border-indigo-100/50 font-mono leading-relaxed scrollbar-thin">
@@ -279,6 +267,31 @@ const MessageItem = React.memo(
                           })()}
                         </code>
                       </pre>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Thinking Process - persists after analysis completes */}
+              {settings.showThinkingProcess && message.thinkingContent && (
+                <div className="mb-4 rounded-[1.5rem] border border-zinc-100 bg-zinc-50/60 px-5 py-3">
+                  <button
+                    onClick={() => setShowThinking(!showThinking)}
+                    className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 hover:text-zinc-700 transition-colors"
+                  >
+                    <Brain className="h-3 w-3" />
+                    {t('thinking_process')}
+                    <ChevronDown className={`h-3 w-3 transition-transform ${showThinking ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showThinking && (
+                    <div
+                      ref={thinkingRef}
+                      className="mt-2 rounded-lg bg-white border border-zinc-100 p-3 text-[11px] text-zinc-600 leading-relaxed max-h-60 overflow-y-auto scrollbar-thin whitespace-pre-wrap"
+                    >
+                      {message.thinkingContent}
+                      {message.status === 'thinking' && (
+                        <span className="inline-block w-1.5 h-3.5 bg-indigo-400 ml-0.5 animate-pulse align-middle" />
+                      )}
                     </div>
                   )}
                 </div>
