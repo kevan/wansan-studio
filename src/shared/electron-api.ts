@@ -78,4 +78,7 @@ export interface ElectronAPI extends DerivedInvokeMethods {
       targetColumnName: string
     }) => void
   ) => () => void
+  onAIReasoning: (
+    callback: (data: { chunk: string; fullReasoning: string }) => void
+  ) => () => void
 }

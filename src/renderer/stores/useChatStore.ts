@@ -330,6 +330,14 @@ const sendMessage = async (
     const suggestionCount = useSettingsStore.getState().suggestionCount
 
     const aiStartTime = Date.now()
+
+    const unsubscribeReasoning = window.electronAPI.onAIReasoning(({ fullReasoning }) => {
+      updateMessage(botMsgId, msg => ({
+        ...msg,
+        thinkingContent: fullReasoning,
+      }))
+    })
+
     const planResponse = await window.electronAPI.askAI({
       userQuery: resolvedPrompt,
       schemas: resolvedSchemas,
@@ -464,8 +472,10 @@ const sendMessage = async (
       useProjectStore.getState().renameSession(activeSessionId, plan.title)
     }
 
+    unsubscribeReasoning()
     useProjectStore.getState().setAbortController(null)
   } catch (error: any) {
+    unsubscribeReasoning()
     if (error?.message === 'Cancelled') {
       updateMessage(botMsgId, msg => ({
         ...msg,
@@ -542,6 +552,14 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
     const suggestionCount = useSettingsStore.getState().suggestionCount
 
     const aiStartTime = Date.now()
+
+    const unsubscribeReasoning = window.electronAPI.onAIReasoning(({ fullReasoning }) => {
+      updateMessage(messageId, msg => ({
+        ...msg,
+        thinkingContent: fullReasoning,
+      }))
+    })
+
     const planResponse = await window.electronAPI.askAI({
       userQuery: resolvedPrompt,
       schemas,
@@ -655,8 +673,10 @@ const retryMessage = async (messageId: string, originalQuery: string) => {
         missing_params: plan.missing_params as any,
       },
     }))
+    unsubscribeReasoning()
     useProjectStore.getState().setAbortController(null)
   } catch (error: any) {
+    unsubscribeReasoning()
     if (error?.message === 'Cancelled') {
       updateMessage(messageId, msg => ({
         ...msg,

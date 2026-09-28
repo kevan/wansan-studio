@@ -37,6 +37,7 @@ export interface SettingsState {
   isExpired: boolean
   showChartLabels: boolean
   suggestionCount: number
+  showThinkingProcess: boolean
   setProvider: (provider: AIProviderKey) => void
   activateLicense: (code: string) => Promise<boolean>
   loadSensitiveData: () => Promise<void>
@@ -152,6 +153,7 @@ const initialSettingsState: Omit<
   isExpired: false,
   showChartLabels: false,
   suggestionCount: 3,
+  showThinkingProcess: true,
   ignoreUpdate: () => {},
   addExtractTemplate: () => {},
   removeExtractTemplate: () => {},
@@ -416,6 +418,7 @@ export const useSettingsStore = create<SettingsState>()(
           ignoredUpdateVersion: state.ignoredUpdateVersion,
           showChartLabels: false,
           suggestionCount: 3,
+          showThinkingProcess: true,
         }))
       },
     }),

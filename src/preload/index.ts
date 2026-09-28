@@ -56,6 +56,8 @@ type BatchProgressCallback = FirstArg<ElectronAPI['onBatchProgress']>
 type BatchProgressData = CallbackPayload<BatchProgressCallback>
 type BatchCompleteCallback = FirstArg<ElectronAPI['onBatchComplete']>
 type BatchCompleteData = CallbackPayload<BatchCompleteCallback>
+type AIReasoningCallback = FirstArg<ElectronAPI['onAIReasoning']>
+type AIReasoningData = CallbackPayload<AIReasoningCallback>
 
 const electronAPI: ElectronAPI = {
   invoke: (channel: string, ...args: unknown[]) =>
@@ -207,6 +209,12 @@ const electronAPI: ElectronAPI = {
       callback(data)
     ipcRenderer.on('ai:batch-complete', listener)
     return () => ipcRenderer.removeListener('ai:batch-complete', listener)
+  },
+  onAIReasoning: (callback: AIReasoningCallback) => {
+    const listener = (_event: IpcRendererEvent, data: AIReasoningData) =>
+      callback(data)
+    ipcRenderer.on('ai:reasoning', listener)
+    return () => ipcRenderer.removeListener('ai:reasoning', listener)
   },
 }
 

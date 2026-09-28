@@ -10,6 +10,7 @@ export interface Message {
   error?: string
   planSql?: string
   planReasoning?: string
+  thinkingContent?: string // Streaming reasoning_content from LLM
   contextRef?: {
     query: string
     sqlSummary: string

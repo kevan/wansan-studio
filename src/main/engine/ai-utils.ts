@@ -1,6 +1,7 @@
 import { OpenAI } from 'openai'
 import {
   ChatCompletionCreateParamsNonStreaming,
+  ChatCompletionCreateParamsStreaming,
   CompletionUsage,
 } from 'openai/resources'
 import { ZodSchema } from 'zod'
@@ -73,6 +74,73 @@ export async function callAIAndParse<T>(
     console.error('[AI Utils] Failed to parse or validate AI response:', error)
     throw new Error(
       `AI returned invalid JSON or structure. Raw response: ${resultJson}`
+    )
+  }
+}
+
+/**
+ * Stream-based AI call with reasoning_content capture.
+ * Accumulates reasoning_content (thinking process) and content (JSON),
+ * calls onReasoning for each reasoning chunk, then parses the final JSON.
+ */
+export async function callAIStreamAndParse<T>(
+  openai: OpenAI,
+  body: ChatCompletionCreateParamsNonStreaming,
+  schema: ZodSchema<T>,
+  onReasoning?: (chunk: string, fullReasoning: string) => void
+): Promise<AIResponse<T> & { reasoning: string }> {
+  const streamBody: ChatCompletionCreateParamsStreaming = {
+    ...body,
+    stream: true,
+    // Remove response_format for streaming compatibility with reasoning models
+    response_format: undefined,
+  }
+
+  if (isDev()) {
+    console.log('[AI Utils] Streaming request body:', JSON.stringify(body, null, 2))
+  }
+
+  const stream = await openai.chat.completions.create(streamBody)
+
+  let fullContent = ''
+  let fullReasoning = ''
+
+  for await (const chunk of stream) {
+    const delta = chunk.choices?.[0]?.delta
+    if (!delta) continue
+
+    if (delta.reasoning_content) {
+      fullReasoning += delta.reasoning_content
+      onReasoning?.(delta.reasoning_content, fullReasoning)
+    }
+    if (delta.content) {
+      fullContent += delta.content
+    }
+  }
+
+  if (isDev()) {
+    console.log('[AI Utils] Streaming reasoning length:', fullReasoning.length)
+    console.log('[AI Utils] Streaming content:', fullContent.substring(0, 500))
+  }
+
+  if (!fullContent) {
+    throw new Error('AI returned an empty response.')
+  }
+
+  try {
+    const cleanedJson = extractJSON(fullContent)
+    const parsedResult = parse(cleanedJson)
+    const data = schema.parse(parsedResult)
+
+    return {
+      data,
+      usage: undefined,
+      reasoning: fullReasoning,
+    }
+  } catch (error) {
+    console.error('[AI Utils] Failed to parse streaming response:', error)
+    throw new Error(
+      `AI returned invalid JSON or structure. Raw response: ${fullContent}`
     )
   }
 }

@@ -275,7 +275,8 @@ export class AIService {
 
   async generatePlan(
     context: AIAnalysisContext,
-    projectPath: string | null
+    projectPath: string | null,
+    onReasoning?: (chunk: string, fullReasoning: string) => void
   ): Promise<AIAnalysisResult> {
     const budget = tokenManager.checkBudget(0.05)
     if (!budget.allowed) throw new Error(budget.reason)
@@ -287,7 +288,7 @@ export class AIService {
         snapshot: { prompt_preview: context.userQuery },
       },
       async client => {
-        const aiResult = await generateAnalysis(client, context, this.model)
+        const aiResult = await generateAnalysis(client, context, this.model, onReasoning)
         return {
           status: aiResult.error ? 'error' : 'success',
           ...aiResult,

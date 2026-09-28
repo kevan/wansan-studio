@@ -633,6 +633,25 @@ export function SettingsDialog(_props: SettingsDialogProps) {
                       </Select>
                     </div>
                   </div>
+
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-zinc-50 border border-zinc-100">
+                    <div className="space-y-0.5">
+                      <label className="text-sm font-semibold text-zinc-800">
+                        {t('general.show_thinking_label')}
+                      </label>
+                      <p className="text-xs text-zinc-500">
+                        {t('general.show_thinking_desc')}
+                      </p>
+                    </div>
+                    <Checkbox
+                      checked={settings.showThinkingProcess}
+                      onChange={e =>
+                        settings.updateSettings({
+                          showThinkingProcess: e.target.checked,
+                        })
+                      }
+                    />
+                  </div>
                 </div>
               </section>
 

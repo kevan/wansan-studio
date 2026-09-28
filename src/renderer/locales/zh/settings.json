@@ -53,7 +53,9 @@
     "chart_labels_label": "数值标签",
     "chart_labels_desc": "在图表上直接显示数值",
     "suggestion_count_label": "建议数量",
-    "suggestion_count_desc": "AI 分析后的后续提问建议数"
+    "suggestion_count_desc": "AI 分析后的后续提问建议数",
+    "show_thinking_label": "显示思考过程",
+    "show_thinking_desc": "在 AI 分析时展示模型的推理思考过程，可折叠查看"
   },
   "license": {
     "title": "授权状态",

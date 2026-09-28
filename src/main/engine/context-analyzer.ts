@@ -15,7 +15,7 @@ import {
   serializeSchemas,
 } from './prompts.ts'
 import { ChatCompletionCreateParamsNonStreaming } from 'openai/resources'
-import { callAIAndParse, getModelToUse } from './ai-utils'
+import { callAIAndParse, callAIStreamAndParse, getModelToUse } from './ai-utils'
 
 /**
  * [C3, C4, C5] Analyze Context Engine
@@ -28,7 +28,8 @@ import { callAIAndParse, getModelToUse } from './ai-utils'
 export async function generateAnalysis(
   openai: OpenAI,
   context: AIAnalysisContext,
-  model?: string
+  model?: string,
+  onReasoning?: (chunk: string, fullReasoning: string) => void
 ): Promise<AnalysisResult> {
   const {
     userQuery,
@@ -95,6 +96,15 @@ OUTPUT RULE:
       { role: 'user', content: userPrompt },
     ],
     response_format: { type: 'json_object' },
+  }
+
+  if (onReasoning) {
+    const { data, reasoning } = await callAIStreamAndParse(openai, body, AnalysisResultSchema, onReasoning)
+    // Merge streaming reasoning into result if the JSON didn't include it
+    if (!data.reasoning && reasoning) {
+      data.reasoning = reasoning
+    }
+    return data
   }
 
   const { data } = await callAIAndParse(openai, body, AnalysisResultSchema)

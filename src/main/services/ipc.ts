@@ -273,8 +273,14 @@ export function setupIPC(
   })
 
   // --- Domain: AI & Analysis ---
-  registerHandler('ai.askAI', async (_event, params) => {
-    const result = await aiService.generatePlan(params, projectManager.getCurrentProjectPath())
+  registerHandler('ai.askAI', async (event, params) => {
+    const result = await aiService.generatePlan(
+      params,
+      projectManager.getCurrentProjectPath(),
+      (chunk, fullReasoning) => {
+        event.sender.send('ai:reasoning', { chunk, fullReasoning })
+      }
+    )
     return { success: true, data: result }
   })
 

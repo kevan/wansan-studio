@@ -148,6 +148,7 @@ const MessageItem = React.memo(
   }) => {
     const { t } = useTranslation('chat')
     const settings = useSettingsStore()
+    const [showThinking, setShowThinking] = useState(false)
 
     // Stable handler for template configuration
     // This is CRITICAL for ChatReportCard's React.memo to work
@@ -243,6 +244,26 @@ const MessageItem = React.memo(
                     {message.status === 'planning' && t('status_planning')}
                     {message.status === 'executing' && t('status_executing')}
                   </div>
+                  {settings.showThinkingProcess && message.thinkingContent && (
+                    <div className="mt-3">
+                      <button
+                        onClick={() => setShowThinking(!showThinking)}
+                        className="flex items-center gap-1.5 text-[11px] font-medium text-indigo-600/70 hover:text-indigo-700 transition-colors"
+                      >
+                        <Brain className="h-3 w-3" />
+                        {t('thinking_process')}
+                        <ChevronDown className={`h-3 w-3 transition-transform ${showThinking ? 'rotate-180' : ''}`} />
+                      </button>
+                      {showThinking && (
+                        <div className="mt-2 rounded-lg bg-white/70 border border-indigo-100/50 p-3 text-[11px] text-zinc-600 leading-relaxed max-h-60 overflow-y-auto scrollbar-thin whitespace-pre-wrap">
+                          {message.thinkingContent}
+                          {message.status === 'thinking' && (
+                            <span className="inline-block w-1.5 h-3.5 bg-indigo-400 ml-0.5 animate-pulse align-middle" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {message.planSql && (
                     <div className="mt-3 relative group/code">
                       <pre className="max-h-48 overflow-y-auto rounded-xl bg-white/80 p-3 text-[11px] text-zinc-600 border border-indigo-100/50 font-mono leading-relaxed scrollbar-thin">
