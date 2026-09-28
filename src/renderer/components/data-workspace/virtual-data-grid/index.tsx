@@ -305,7 +305,7 @@ export function VirtualDataGrid({
 
       {isError && (
         <div className="px-3 py-2 border-b border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-xs flex items-center gap-2">
-          <span>{(error as Error).message}</span>
+          <span>{error?.message || 'Unknown error'}</span>
           <Button variant="outline" size="sm" className="h-6 text-xs" onClick={() => refetch()}>
             <RefreshCcw className="w-3 h-3 mr-1" /> Retry
           </Button>
